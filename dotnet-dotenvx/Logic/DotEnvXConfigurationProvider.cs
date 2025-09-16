@@ -1,0 +1,92 @@
+using Org.BouncyCastle.Crypto.Agreement;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Utilities.Encoders;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Org.BouncyCastle.Asn1.Nist;
+using Org.BouncyCastle.Asn1.Sec;
+using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Math;
+using Org.BouncyCastle.Math.EC;
+
+namespace dotnet_dotenvx.Logic;
+
+public class DotEnvXConfigurationProvider : ConfigurationProvider
+{
+    const string Prefix = "encrypted:";
+
+    private static string Decrypt(byte[] secret, byte[] msg)
+    {
+        var ecp = SecNamedCurves.GetByName("secp256k1");
+        var domainParameters = new ECDomainParameters(ecp.Curve, ecp.G, ecp.N, ecp.H, ecp.GetSeed());
+        
+        // Decode Public Key
+        var q = ecp.Curve.DecodePoint(msg[..65]);
+        var publicKey = new ECPublicKeyParameters(q, domainParameters);
+        var encrypted = msg[65..];
+        
+        // Decode Private Key
+        var d = new BigInteger(1, secret);
+        var privateKey = new ECPrivateKeyParameters(d, domainParameters);
+        
+        // Generate AES Shared Secret Key
+        var agreement = new ECDHBasicAgreement();
+        agreement.Init(privateKey);
+        var aesKey = agreement.CalculateAgreement(publicKey);
+
+        return Utils.AesDecrypt(aesKey, msg);
+    }
+
+    private static string? DecryptKeyValue(string value, string privateKey)
+    {
+        if (!value.StartsWith(Prefix)) return value;
+        
+        if (string.IsNullOrEmpty(privateKey)) throw new Exception("Missing private key.");
+
+        string? decryptedValue = null;
+        Exception? error = null;
+        
+        var privateKeys = privateKey.Split(',');
+        foreach (var privateKeyText in privateKeys)
+        {
+            var secret = Hex.Decode(privateKeyText);
+            var encoded = value[Prefix.Length..];
+            var cipherText = Convert.FromBase64String(encoded);
+            try
+            {
+                decryptedValue = Decrypt(secret, cipherText);
+                error = null;
+                break;
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+        }
+        if (error != null) throw error;
+        return decryptedValue;
+    }
+    
+    public override void Load()
+    {
+        var variables = new Dictionary<string, string>();
+        
+        var privateKey = "bf765d17bd08f4794f4bedc0bea3d5ba9682c7f38f887306f10cb30f870c8900";
+        
+        Console.WriteLine($"Private Length: {privateKey.Length}");
+        
+        //using var secp256k1 = new Secp256k1();
+
+        var encrypted = "encrypted:BGUxwqrxyfljxy8x+R/Jx9XWKYy2+AbaTu6W3r5JYLb8MFMziwIJycDK+oJVQEMlRLWdAFBrLFZd6lhaewWeKcYnbJ1tFnv1Rq8iOz8sDdAG19fAVF5Z1lvL9UNMjlMx8tLZtFcd1JrfPWBcUNd/+Sx6ygXAyik=";
+        var decrypted = DecryptKeyValue(encrypted, privateKey);
+        
+        variables.Add("HELLO", decrypted ?? "Bad");
+
+        Data = variables!;
+    }
+}
