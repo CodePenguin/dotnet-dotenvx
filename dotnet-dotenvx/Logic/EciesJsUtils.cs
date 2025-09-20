@@ -7,16 +7,22 @@ using Org.BouncyCastle.Utilities.Encoders;
 
 namespace dotnet_dotenvx.Logic;
 
-public static class Utils
+/// <summary>
+/// C# equivalent for eciesjs src/utils.js (https://github.com/eusend/eciesjs).
+/// </summary>
+public static class EciesJsUtils
 {
+    private const int NonceLength = 16;
     private const int TagLength = 16;
+    private const int TagIndex = NonceLength;
+    private const int CipherTextIndex = NonceLength + TagLength;
 
     public static byte[] AesDecrypt(byte[] key, byte[] data)
     {
         // Split Nonce/Tag/CipherText
-        var nonce = data[..16];
-        var tag = data[16..32];
-        var cipherText = data[32..];
+        var nonce = data[..TagIndex];
+        var tag = data[TagIndex..CipherTextIndex];
+        var cipherText = data[CipherTextIndex..];
         
         // Prepare AES-GCM Cipher
         var keyParameters = new KeyParameter(key);
@@ -36,7 +42,7 @@ public static class Utils
     public static byte[] AesEncrypt(byte[] key, byte[] data)
     {
         // Generate Nonce
-        var nonce = new byte[16];
+        var nonce = new byte[NonceLength];
         var random = new SecureRandom();
         random.NextBytes(nonce);
         

@@ -30,14 +30,13 @@ public class DotEnvXConfigurationProvider : ConfigurationProvider
         Exception? error = null;
         
         var privateKeys = privateKey.Split(',');
-        foreach (var privateKeyText in privateKeys)
+        foreach (var privateKeyHex in privateKeys)
         {
-            var secret = Hex.Decode(privateKeyText);
             var encoded = value[Prefix.Length..];
             var cipherText = Convert.FromBase64String(encoded);
             try
             {
-                var decryptedBytes = Ecies.Decrypt(secret, cipherText);
+                var decryptedBytes = EciesJs.Decrypt(privateKeyHex, cipherText);
                 decryptedValue = Encoding.UTF8.GetString(decryptedBytes);
                 error = null;
                 break;
@@ -47,8 +46,7 @@ public class DotEnvXConfigurationProvider : ConfigurationProvider
                 error = ex;
             }
         }
-        if (error != null) throw error;
-        return decryptedValue;
+        return error != null ? throw error : decryptedValue;
     }
     
     public override void Load()
