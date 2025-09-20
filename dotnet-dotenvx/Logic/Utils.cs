@@ -60,6 +60,6 @@ public static class Utils
     }
     
     public static byte[] DecodeHex(string value) {
-        return Hex.Decode(value);
+        return Hex.Decode(value.StartsWith("0x") ? value[2..] : value);
     }
 }

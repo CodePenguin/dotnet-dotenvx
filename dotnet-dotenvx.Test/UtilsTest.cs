@@ -1,4 +1,3 @@
-using System.Text;
 using dotnet_dotenvx.Logic;
 using Org.BouncyCastle.Security;
 using Shouldly;
@@ -30,5 +29,12 @@ public class UtilsTest
         byte[] data = [..nonce, ..tag, ..encrypted];
         var decrypted = Utils.AesDecrypt(key, data);
         decrypted.ShouldBe("helloworld"u8.ToArray());
+    }
+
+    [Fact]
+    public void TestDecodeHex()
+    {
+        var decoded = Utils.DecodeHex("0x0011");
+        decoded.ShouldBe([0, 0x11]);
     }
 }
