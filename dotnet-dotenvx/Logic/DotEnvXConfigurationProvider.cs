@@ -20,28 +20,6 @@ public class DotEnvXConfigurationProvider : ConfigurationProvider
 {
     const string Prefix = "encrypted:";
 
-    private static string Decrypt(byte[] secret, byte[] msg)
-    {
-        var ecp = SecNamedCurves.GetByName("secp256k1");
-        var domainParameters = new ECDomainParameters(ecp.Curve, ecp.G, ecp.N, ecp.H, ecp.GetSeed());
-        
-        // Decode Public Key
-        var q = ecp.Curve.DecodePoint(msg[..65]);
-        var publicKey = new ECPublicKeyParameters(q, domainParameters);
-        var encrypted = msg[65..];
-        
-        // Decode Private Key
-        var d = new BigInteger(1, secret);
-        var privateKey = new ECPrivateKeyParameters(d, domainParameters);
-        
-        // Generate AES Shared Secret Key
-        var agreement = new ECDHBasicAgreement();
-        agreement.Init(privateKey);
-        var aesKey = agreement.CalculateAgreement(publicKey);
-
-        return Utils.AesDecrypt(aesKey, msg);
-    }
-
     private static string? DecryptKeyValue(string value, string privateKey)
     {
         if (!value.StartsWith(Prefix)) return value;
@@ -59,7 +37,8 @@ public class DotEnvXConfigurationProvider : ConfigurationProvider
             var cipherText = Convert.FromBase64String(encoded);
             try
             {
-                decryptedValue = Decrypt(secret, cipherText);
+                var decryptedBytes = Ecies.Decrypt(secret, cipherText);
+                decryptedValue = Encoding.UTF8.GetString(decryptedBytes);
                 error = null;
                 break;
             }
