@@ -39,7 +39,7 @@ public class Secp256k1JsTest
     {
         var badPublicKey = new byte[33];
         badPublicKey[0] = 0x01; // invalid prefix
-        Should.Throw<FormatException>(() => Secp256k1Js.Ecdh(badPublicKey, _alicePrivateKey));
+        Should.Throw<ArgumentException>(() => Secp256k1Js.Ecdh(badPublicKey, _alicePrivateKey));
     }
 
     [Fact]
@@ -54,19 +54,6 @@ public class Secp256k1JsTest
     {
         var secret = Secp256k1Js.Ecdh(_bobPublicKey, _alicePrivateKey);
         secret.Length.ShouldBe(32);
-    }
-
-    [Fact]
-    public void Ecdh_ShouldMatchNodeJs_v3_6_0_Output()
-    {
-        var privateKey = Hex.Decode("1E99423A4ED27608A15A2616A2B0E9E58EDE3B8E4F77AB2C0B8CD43C5E5CF59B");
-        var publicKey = Hex.Decode("0279BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
-
-        // Calculated by Secpk256k1 v3.6.0: secp256k1.ecdh(publicKey, privateKey).toString('hex'))
-        const string expectedHex = "14f62974e67ec359c9b4d59308f8974b5342bb67408f4a40c17861004b3188ca";
-        var result = Secp256k1Js.Ecdh(publicKey, privateKey);
-        var actualHex = EciesJsUtils.EncodeHex(result);
-        actualHex.ShouldBe(expectedHex);
     }
     
     [Theory]

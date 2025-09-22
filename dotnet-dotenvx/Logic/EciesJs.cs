@@ -7,7 +7,7 @@ using Org.BouncyCastle.Security;
 namespace dotnet_dotenvx.Logic;
 
 /// <summary>
-/// C# equivalent for eciesjs src/index.ts (https://github.com/eusend/eciesjs).
+/// C# equivalent for eciesjs src/index.ts (https://github.com/ecies/js).
 /// </summary>
 public static class EciesJs
 {
@@ -22,6 +22,7 @@ public static class EciesJs
         return EciesJsUtils.AesDecrypt(aesKey, encrypted);
     }
 
+    /*
     public static byte[] Encrypt(string receiverPublicKeyHex, byte[] msg)
     {
         // Decode Public Key
@@ -46,4 +47,5 @@ public static class EciesJs
         var encrypted = EciesJsUtils.AesEncrypt(aesKey.ToByteArrayUnsigned(), msg);
         return [..encodedPublicKey, ..encrypted];
     }
+    */
 }
