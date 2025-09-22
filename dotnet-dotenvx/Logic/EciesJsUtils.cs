@@ -1,4 +1,5 @@
 using System;
+using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -65,7 +66,22 @@ public static class EciesJsUtils
         return nonceTagCipherText;
     }
     
+    
     public static byte[] DecodeHex(string value) {
         return Hex.Decode(value.StartsWith("0x") ? value[2..] : value);
+    }
+
+    public static string EncodeHex(byte[] value)
+    {
+        return System.Text.Encoding.ASCII.GetString(Hex.Encode(value));
+    }
+
+    public static byte[] Sha256(byte[] data)
+    {
+        var digest = new Sha256Digest();
+        var output = new byte[digest.GetDigestSize()];
+        digest.BlockUpdate(data, 0, data.Length);
+        digest.DoFinal(output, 0);
+        return output;
     }
 }

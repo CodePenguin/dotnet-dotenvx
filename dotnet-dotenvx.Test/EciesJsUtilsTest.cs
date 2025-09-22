@@ -7,7 +7,7 @@ namespace dotnet_dotenvx.Test;
 public class EciesJsUtilsTest
 {
     [Fact]
-    public void TestAesWithRandomKey()
+    public void Aes_RandomKey()
     {
         var key = new byte[32];
         var random = new SecureRandom();
@@ -19,7 +19,7 @@ public class EciesJsUtilsTest
     }
 
     [Fact]
-    public void TestAesWithKnownKeyAndText()
+    public void Aes_KnownKeyAndText()
     {
         var key = EciesJsUtils.DecodeHex("0000000000000000000000000000000000000000000000000000000000000000");
         var nonce = EciesJsUtils.DecodeHex("f3e1ba810d2c8900b11312b7c725565f");
@@ -32,9 +32,31 @@ public class EciesJsUtilsTest
     }
 
     [Fact]
-    public void TestDecodeHex()
+    public void DecodeHex_Handle0x()
     {
         var decoded = EciesJsUtils.DecodeHex("0x0011");
         decoded.ShouldBe([0, 0x11]);
+    }
+    
+    [Fact]
+    public void DecodeHex_KnownLowerCase()
+    {
+        var decoded = EciesJsUtils.DecodeHex("48656c6c6f20576f726c6421");
+        decoded.ShouldBe("Hello World!"u8.ToArray());
+    }
+    
+    [Fact]
+    public void DecodeHex_KnownUpperCase()
+    {
+        var decoded = EciesJsUtils.DecodeHex("48656C6C6F20576F726C6421");
+        decoded.ShouldBe("Hello World!"u8.ToArray());
+    }
+    
+    [Fact]
+    public void EncodeHex()
+    {
+        var bytes = "Hello World!"u8.ToArray();
+        var encoded = EciesJsUtils.EncodeHex(bytes);
+        encoded.ShouldBe("48656c6c6f20576f726c6421");
     }
 }
