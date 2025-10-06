@@ -1,9 +1,3 @@
-using Org.BouncyCastle.Crypto.Agreement;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Math;
-using Org.BouncyCastle.Security;
-
 namespace dotnet_dotenvx.Logic;
 
 /// <summary>
@@ -18,7 +12,7 @@ public static class EciesJs
         var receiverPrivateKey = EciesJsUtils.DecodeHex(receiverPrivateKeyHex);
         var encodedPublicKey = msg[..PublicKeyUncompressedLength];
         var encrypted = msg[PublicKeyUncompressedLength..];
-        var aesKey = Secp256k1Js.Ecdh(encodedPublicKey, receiverPrivateKey);
+        var aesKey = EciesJsPublicKey.Decapsulate(encodedPublicKey, receiverPrivateKey);
         return EciesJsUtils.AesDecrypt(aesKey, encrypted);
     }
 

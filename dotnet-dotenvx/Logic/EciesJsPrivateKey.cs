@@ -3,12 +3,12 @@ using NBitcoin.Secp256k1;
 
 namespace dotnet_dotenvx.Logic;
 
-public static class Secp256k1Js
+public static class EciesJsPrivateKey
 {
     /// <summary>
-    /// C# equivalent for secp256k1 v3.6.0 lib/elliptic/index.js (https://github.com/cryptocoinjs/secp256k1-node).
+    /// C# equivalent for encapsulate function from https://github.com/ecies/js/blob/master/src/keys/PrivateKey.ts
     /// </summary>
-    public static byte[] Ecdh(byte[] publicKey, byte[] privateKey)
+    public static byte[] Encapsulate(byte[] privateKey, byte[] publicKey, bool compressed = false)
     {
         ArgumentNullException.ThrowIfNull(privateKey);
         ArgumentNullException.ThrowIfNull(publicKey);
@@ -28,17 +28,14 @@ public static class Secp256k1Js
             throw new ArgumentException("Invalid public key", nameof(publicKey));
         }
 
-        // Multiply: sharedPoint = pubKey * privKey
+        // Get Shared Public Key
+        var senderPoint = GetPublicKey(privateKey, compressed);
         var sharedPoint = ecPublicKey.GetSharedPubkey(ecPrivateKey);
 
-        // Encode as compressed (33 bytes)
-        var compressedSharedPoint = sharedPoint.ToBytes(true);
-        using var sha = new SHA256();
-        sha.Write(new ReadOnlySpan<byte>(compressedSharedPoint));
-        return sha.GetHash();
+        return EciesJsUtils.GetSharedKey(senderPoint, sharedPoint.ToBytes(compressed));
     }
-
-    public static byte[] GetPublicKey(byte[] privateKey, bool compressed = true)
+    
+    public static byte[] GetPublicKey(byte[] privateKey, bool compressed = false)
     {
         ArgumentNullException.ThrowIfNull(privateKey);
         if (privateKey.Length != 32) throw new ArgumentException("Private key must be 32 bytes", nameof(privateKey));

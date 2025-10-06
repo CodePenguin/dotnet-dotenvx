@@ -1,4 +1,5 @@
 using System;
+using System.Security.Cryptography;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -65,13 +66,21 @@ public static class EciesJsUtils
         return nonceTagCipherText;
     }
     
-    
     public static byte[] DecodeHex(string value) {
-        return Hex.Decode(value.StartsWith("0x") ? value[2..] : value);
+        return Convert.FromHexString(value.StartsWith("0x") ? value[2..] : value);
     }
 
     public static string EncodeHex(byte[] value)
     {
         return System.Text.Encoding.ASCII.GetString(Hex.Encode(value));
+    }
+    
+    /// <summary>
+    /// C# equivalent for getSharedKey function from https://github.com/ecies/js/blob/master/src/utils/hash.ts
+    /// </summary>
+    public static byte[] GetSharedKey(byte[] publicKeyBytes, byte[] sharedPointBytes)
+    {
+        byte[] master = [..publicKeyBytes, ..sharedPointBytes];
+        return HKDF.DeriveKey(HashAlgorithmName.SHA256, master, 32);
     }
 }
