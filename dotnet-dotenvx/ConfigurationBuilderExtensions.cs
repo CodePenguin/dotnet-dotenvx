@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Configuration;
 using dotnet_dotenvx.Logic;
+using Microsoft.Extensions.Configuration;
 
 namespace dotnet_dotenvx;
 

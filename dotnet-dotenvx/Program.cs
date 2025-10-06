@@ -1,10 +1,10 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using dotnet_dotenvx;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureHostConfiguration(builder =>
@@ -12,10 +12,7 @@ var host = Host.CreateDefaultBuilder(args)
         builder.AddEnvironmentVariables();
         builder.UseDotEnvX();
     })
-    .ConfigureServices(services =>
-    {
-        services.AddTransient<MyService>();
-    })
+    .ConfigureServices(services => { services.AddTransient<MyService>(); })
     .Build();
 
 var my = host.Services.GetRequiredService<MyService>();

@@ -1,17 +1,18 @@
 using System;
 using System.Security.Cryptography;
+using System.Text;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities.Encoders;
 
-namespace dotnet_dotenvx.Logic;
+namespace dotnet_dotenvx.EciesJs.Interop;
 
 /// <summary>
-/// C# equivalent for eciesjs src/utils.js (https://github.com/eusend/eciesjs).
+///     C# equivalent for eciesjs src/utils.js (https://github.com/eusend/eciesjs).
 /// </summary>
-public static class EciesJsUtils
+public static class Utils
 {
     private const int NonceLength = 16;
     private const int TagLength = 16;
@@ -24,19 +25,19 @@ public static class EciesJsUtils
         var nonce = data[..TagIndex];
         var tag = data[TagIndex..CipherTextIndex];
         var cipherText = data[CipherTextIndex..];
-        
+
         // Prepare AES-GCM Cipher
         var keyParameters = new KeyParameter(key);
         var cipher = new GcmBlockCipher(new AesEngine());
         var parameters = new AeadParameters(keyParameters, TagLength * 8, nonce);
         cipher.Init(false, parameters);
-        
+
         // Decrypt the CipherText/Tag
         byte[] ciphertextTagBytes = [..cipherText, ..tag];
         var decrypted = new byte[cipher.GetOutputSize(ciphertextTagBytes.Length)];
         var processedLength = cipher.ProcessBytes(ciphertextTagBytes, 0, ciphertextTagBytes.Length, decrypted, 0);
         cipher.DoFinal(decrypted, processedLength);
-        
+
         return decrypted;
     }
 
@@ -46,12 +47,12 @@ public static class EciesJsUtils
         var nonce = new byte[NonceLength];
         var random = new SecureRandom();
         random.NextBytes(nonce);
-        
+
         // Prepare AES-GCM Cipher
         var cipher = new GcmBlockCipher(new AesEngine());
         var parameters = new AeadParameters(new KeyParameter(key), TagLength * 8, nonce);
         cipher.Init(true, parameters);
-        
+
         // Encrypt the data
         var cipherTextTag = new byte[cipher.GetOutputSize(data.Length)];
         var processedLength = cipher.ProcessBytes(data, 0, data.Length, cipherTextTag, 0);
@@ -65,18 +66,19 @@ public static class EciesJsUtils
         Buffer.BlockCopy(cipherTextTag, 0, nonceTagCipherText, nonce.Length + TagLength, cipherTextLength);
         return nonceTagCipherText;
     }
-    
-    public static byte[] DecodeHex(string value) {
+
+    public static byte[] DecodeHex(string value)
+    {
         return Convert.FromHexString(value.StartsWith("0x") ? value[2..] : value);
     }
 
     public static string EncodeHex(byte[] value)
     {
-        return System.Text.Encoding.ASCII.GetString(Hex.Encode(value));
+        return Encoding.ASCII.GetString(Hex.Encode(value));
     }
-    
+
     /// <summary>
-    /// C# equivalent for getSharedKey function from https://github.com/ecies/js/blob/master/src/utils/hash.ts
+    ///     C# equivalent for getSharedKey function from https://github.com/ecies/js/blob/master/src/utils/hash.ts
     /// </summary>
     public static byte[] GetSharedKey(byte[] publicKeyBytes, byte[] sharedPointBytes)
     {
