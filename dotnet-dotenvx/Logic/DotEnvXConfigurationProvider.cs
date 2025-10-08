@@ -25,7 +25,7 @@ public class DotEnvXConfigurationProvider : ConfigurationProvider
             var cipherText = Convert.FromBase64String(encoded);
             try
             {
-                var decryptedBytes = EciesJs.Interop.EciesJs.Decrypt(privateKeyHex, cipherText);
+                var decryptedBytes = EciesJs.EciesJs.Decrypt(privateKeyHex, cipherText);
                 decryptedValue = Encoding.UTF8.GetString(decryptedBytes);
                 error = null;
                 break;

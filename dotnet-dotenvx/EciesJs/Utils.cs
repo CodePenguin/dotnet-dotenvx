@@ -7,7 +7,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities.Encoders;
 
-namespace dotnet_dotenvx.EciesJs.Interop;
+namespace dotnet_dotenvx.EciesJs;
 
 /// <summary>
 ///     C# equivalent for eciesjs src/utils.js (https://github.com/eusend/eciesjs).

@@ -1,7 +1,7 @@
 using System;
 using NBitcoin.Secp256k1;
 
-namespace dotnet_dotenvx.EciesJs.Interop;
+namespace dotnet_dotenvx.EciesJs;
 
 public class PrivateKey
 {

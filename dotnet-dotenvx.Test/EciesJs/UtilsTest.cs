@@ -1,8 +1,8 @@
-using dotnet_dotenvx.EciesJs.Interop;
+using dotnet_dotenvx.EciesJs;
 using Org.BouncyCastle.Security;
 using Shouldly;
 
-namespace dotnet_dotenvx.Test.EciesJs.Interop;
+namespace dotnet_dotenvx.Test.EciesJs;
 
 public class UtilsTest
 {

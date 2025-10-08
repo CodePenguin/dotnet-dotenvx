@@ -1,7 +1,7 @@
-using dotnet_dotenvx.EciesJs.Interop;
+using dotnet_dotenvx.EciesJs;
 using Shouldly;
 
-namespace dotnet_dotenvx.Test.EciesJs.Interop;
+namespace dotnet_dotenvx.Test.EciesJs;
 
 public class PublicKeyTest : EciesJsTestBase
 {
