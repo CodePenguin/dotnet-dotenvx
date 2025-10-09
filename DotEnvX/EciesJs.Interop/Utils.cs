@@ -9,7 +9,7 @@ using Org.BouncyCastle.Utilities.Encoders;
 namespace DotEnvX.EciesJs.Interop;
 
 /// <summary>
-///     C# equivalent for eciesjs src/utils.js (https://github.com/eusend/eciesjs).
+///     C# equivalent for eciesjs src/utils.js (https://github.com/ecies/js).
 /// </summary>
 public static class Utils
 {
@@ -18,6 +18,9 @@ public static class Utils
     private const int TagIndex = NonceLength;
     private const int CipherTextIndex = NonceLength + TagLength;
 
+    /// <summary>
+    /// C# equivalent for symDecrypt function from https://github.com/ecies/js/blob/master/src/utils/symmetric.ts
+    /// </summary>
     public static byte[] AesDecrypt(byte[] key, byte[] data)
     {
         // Split Nonce/Tag/CipherText
@@ -40,6 +43,9 @@ public static class Utils
         return decrypted;
     }
 
+    /// <summary>
+    /// C# equivalent for symEncrypt function from https://github.com/ecies/js/blob/master/src/utils/symmetric.ts
+    /// </summary>
     public static byte[] AesEncrypt(byte[] key, byte[] data)
     {
         // Generate Nonce
@@ -66,18 +72,16 @@ public static class Utils
         return nonceTagCipherText;
     }
 
+    /// <summary>
+    /// C# equivalent for decodeHex function from https://github.com/ecies/js/blob/master/src/utils/hex.ts
+    /// </summary>
     public static byte[] DecodeHex(string value)
     {
         return Convert.FromHexString(value.StartsWith("0x") ? value[2..] : value);
     }
 
-    public static string EncodeHex(byte[] value)
-    {
-        return Encoding.ASCII.GetString(Hex.Encode(value));
-    }
-
     /// <summary>
-    ///     C# equivalent for getSharedKey function from https://github.com/ecies/js/blob/master/src/utils/hash.ts
+    /// C# equivalent for getSharedKey function from https://github.com/ecies/js/blob/master/src/utils/hash.ts
     /// </summary>
     public static byte[] GetSharedKey(byte[] publicKeyBytes, byte[] sharedPointBytes)
     {

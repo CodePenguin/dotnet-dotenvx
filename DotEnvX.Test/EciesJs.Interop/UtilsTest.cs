@@ -51,12 +51,4 @@ public class UtilsTest
         var decoded = Utils.DecodeHex("48656C6C6F20576F726C6421");
         decoded.ShouldBe("Hello World!"u8.ToArray());
     }
-
-    [Fact]
-    public void EncodeHex()
-    {
-        var bytes = "Hello World!"u8.ToArray();
-        var encoded = Utils.EncodeHex(bytes);
-        encoded.ShouldBe("48656c6c6f20576f726c6421");
-    }
 }
