@@ -1,9 +1,8 @@
-using System;
 using System.Text;
-using dotnet_dotenvx.Extensions;
+using DotEnvX.Extensions;
 using Org.BouncyCastle.Crypto;
 
-namespace dotnet_dotenvx.DotEnvX.Interop;
+namespace DotEnvX.DotEnvX.Interop;
 
 public static class DotEnvX
 {

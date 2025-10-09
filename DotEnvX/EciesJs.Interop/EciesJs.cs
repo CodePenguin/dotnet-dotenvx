@@ -1,6 +1,4 @@
-using System;
-
-namespace dotnet_dotenvx.EciesJs.Interop;
+namespace DotEnvX.EciesJs.Interop;
 
 /// <summary>
 ///     C# equivalent for eciesjs src/index.ts (https://github.com/ecies/js).

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-namespace dotnet_dotenvx.Configuration;
+namespace DotEnvX.Configuration;
 
 public static class ConfigurationBuilderExtensions
 {

@@ -1,7 +1,6 @@
-using System;
 using NBitcoin.Secp256k1;
 
-namespace dotnet_dotenvx.EciesJs.Interop;
+namespace DotEnvX.EciesJs.Interop;
 
 public class PublicKey
 {

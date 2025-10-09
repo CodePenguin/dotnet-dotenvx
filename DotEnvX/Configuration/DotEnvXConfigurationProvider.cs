@@ -1,9 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 
-namespace dotnet_dotenvx.Configuration;
+namespace DotEnvX.Configuration;
 
 public class DotEnvXConfigurationProvider : ConfigurationProvider
 {

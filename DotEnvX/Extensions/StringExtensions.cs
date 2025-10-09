@@ -1,4 +1,4 @@
-namespace dotnet_dotenvx.Extensions;
+namespace DotEnvX.Extensions;
 
 public static class StringExtensions
 {

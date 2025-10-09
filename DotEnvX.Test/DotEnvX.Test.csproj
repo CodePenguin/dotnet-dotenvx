@@ -23,7 +23,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\dotnet-dotenvx\dotnet-dotenvx.csproj"/>
+        <ProjectReference Include="..\DotEnvX\DotEnvX.csproj" />
     </ItemGroup>
 
 </Project>

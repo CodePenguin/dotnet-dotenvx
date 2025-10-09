@@ -1,4 +1,4 @@
-using dotnet_dotenvx.EciesJs.Interop;
+using DotEnvX.EciesJs.Interop;
 using Org.BouncyCastle.Security;
 using Shouldly;
 

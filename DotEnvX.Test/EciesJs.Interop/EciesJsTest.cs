@@ -18,7 +18,7 @@ public class EciesJsTest
     public void TestDecryptKnown(string privateKeyHex, string encryptedB64, string expected)
     {
         var encrypted = Convert.FromBase64String(encryptedB64);
-        var decrypted = dotnet_dotenvx.EciesJs.Interop.EciesJs.Decrypt(privateKeyHex, encrypted);
+        var decrypted = global::DotEnvX.EciesJs.Interop.EciesJs.Decrypt(privateKeyHex, encrypted);
         var plainText = Encoding.ASCII.GetString(decrypted);
         plainText.ShouldBe(expected);
     }
