@@ -1,6 +1,6 @@
 using System;
 
-namespace dotnet_dotenvx;
+namespace dotnet_dotenvx.DotEnvX.Interop;
 
 public class DotEnvXException(string code, string message) : Exception(message)
 {

@@ -1,7 +1,6 @@
-using dotnet_dotenvx.Logic;
 using Microsoft.Extensions.Configuration;
 
-namespace dotnet_dotenvx;
+namespace dotnet_dotenvx.Configuration;
 
 public static class ConfigurationBuilderExtensions
 {

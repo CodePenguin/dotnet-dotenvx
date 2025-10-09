@@ -1,7 +1,7 @@
 using System.Text;
 using Shouldly;
 
-namespace dotnet_dotenvx.Test.EciesJs;
+namespace dotnet_dotenvx.Test.EciesJs.Interop;
 
 public class EciesJsTest
 {
@@ -18,7 +18,7 @@ public class EciesJsTest
     public void TestDecryptKnown(string privateKeyHex, string encryptedB64, string expected)
     {
         var encrypted = Convert.FromBase64String(encryptedB64);
-        var decrypted = dotnet_dotenvx.EciesJs.EciesJs.Decrypt(privateKeyHex, encrypted);
+        var decrypted = dotnet_dotenvx.EciesJs.Interop.EciesJs.Decrypt(privateKeyHex, encrypted);
         var plainText = Encoding.ASCII.GetString(decrypted);
         plainText.ShouldBe(expected);
     }

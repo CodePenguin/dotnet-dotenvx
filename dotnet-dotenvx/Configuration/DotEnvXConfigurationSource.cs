@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-namespace dotnet_dotenvx.Logic;
+namespace dotnet_dotenvx.Configuration;
 
 public class DotEnvXConfigurationSource : IConfigurationSource
 {

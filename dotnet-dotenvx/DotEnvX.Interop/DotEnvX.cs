@@ -3,7 +3,7 @@ using System.Text;
 using dotnet_dotenvx.Extensions;
 using Org.BouncyCastle.Crypto;
 
-namespace dotnet_dotenvx;
+namespace dotnet_dotenvx.DotEnvX.Interop;
 
 public static class DotEnvX
 {
@@ -12,29 +12,22 @@ public static class DotEnvX
     public static string? DecryptKeyValue(string key, string value, string privateKeyName, string? privateKey)
     {
         if (!value.StartsWith(Prefix)) return value;
-        
+
         var encoded = value[Prefix.Length..];
         var cipherText = Convert.FromBase64String(encoded);
-        
-        if (string.IsNullOrEmpty(encoded))
-        {
-            throw new DotEnvXException("DECRYPTION_FAILED", "second arg must be public key");
-        }
-        
-        if (string.IsNullOrEmpty(privateKey))
-        {
-            throw new DotEnvXException("MISSING_PRIVATE_KEY", $"[MISSING_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={privateKey.Truncate()}'");
-        }
+
+        if (string.IsNullOrEmpty(encoded)) throw new DotEnvXException("DECRYPTION_FAILED", "second arg must be public key");
+
+        if (string.IsNullOrEmpty(privateKey)) throw new DotEnvXException("MISSING_PRIVATE_KEY", $"[MISSING_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={privateKey.Truncate()}'");
 
         string? decryptedValue = null;
         Exception? decryptionError = null;
-        
+
         var privateKeys = privateKey.Split(',');
         foreach (var privateKeyHex in privateKeys)
-        {
             try
             {
-                var decryptedBytes = EciesJs.EciesJs.Decrypt(privateKeyHex, cipherText);
+                var decryptedBytes = EciesJs.Interop.EciesJs.Decrypt(privateKeyHex, cipherText);
                 decryptedValue = Encoding.UTF8.GetString(decryptedBytes);
                 decryptionError = null;
                 break;
@@ -59,14 +52,13 @@ public static class DotEnvX
             {
                 decryptionError = new DotEnvXException("DECRYPTION_FAILED", ex.Message);
             }
-        }
 
         return decryptionError != null ? throw decryptionError : decryptedValue;
     }
 
     public static string EncryptValue(string value, string publicKey)
     {
-        var ciphertext = EciesJs.EciesJs.Encrypt(publicKey, Encoding.UTF8.GetBytes(value));
+        var ciphertext = EciesJs.Interop.EciesJs.Encrypt(publicKey, Encoding.UTF8.GetBytes(value));
         var encoded = Convert.ToBase64String(ciphertext);
         return $"{Prefix}{encoded}";
     }
