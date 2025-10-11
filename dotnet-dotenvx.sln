@@ -2,9 +2,9 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-dotenvx", "dotnet-dotenvx\dotnet-dotenvx.csproj", "{804F4A84-6E9F-4A23-8CE8-75393B5F48A1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotEnvX.Test", "DotEnvX.Test\DotEnvX.Test.csproj", "{713FE818-6DA8-4101-BF22-E87F5660C24D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Test", "Dotenvx.Test\Dotenvx.Test.csproj", "{713FE818-6DA8-4101-BF22-E87F5660C24D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotEnvX", "DotEnvX\DotEnvX.csproj", "{6BFE5053-BC56-4AD5-98B7-24548BE93A1D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx", "Dotenvx\Dotenvx.csproj", "{6BFE5053-BC56-4AD5-98B7-24548BE93A1D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

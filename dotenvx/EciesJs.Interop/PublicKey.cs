@@ -1,6 +1,6 @@
 using NBitcoin.Secp256k1;
 
-namespace DotEnvX.EciesJs.Interop;
+namespace dotenvx.EciesJs.Interop;
 
 public class PublicKey
 {
@@ -9,7 +9,11 @@ public class PublicKey
 
     public PublicKey(byte[] publicKey)
     {
-        if (!ECPubKey.TryCreate(publicKey, _context, out _, out var ecPublicKey)) throw new ArgumentException("Invalid public key", nameof(publicKey));
+        if (!ECPubKey.TryCreate(publicKey, _context, out _, out ECPubKey? ecPublicKey))
+        {
+            throw new ArgumentException("Invalid public key", nameof(publicKey));
+        }
+
         _publicKey = ecPublicKey;
     }
 
@@ -19,12 +23,18 @@ public class PublicKey
     public byte[] Decapsulate(byte[] privateKey, bool compressed = false)
     {
         ArgumentNullException.ThrowIfNull(privateKey);
-        if (privateKey.Length != 32) throw new ArgumentException("Private key must be 32 bytes", nameof(privateKey));
+        if (privateKey.Length != 32)
+        {
+            throw new ArgumentException("Private key must be 32 bytes", nameof(privateKey));
+        }
 
-        if (!_context.TryCreateECPrivKey(privateKey, out var ecPrivateKey)) throw new ArgumentException("Invalid private key", nameof(privateKey));
+        if (!_context.TryCreateECPrivKey(privateKey, out ECPrivKey? ecPrivateKey))
+        {
+            throw new ArgumentException("Invalid private key", nameof(privateKey));
+        }
 
         // Get Shared Public Key
-        var sharedPoint = _publicKey.GetSharedPubkey(ecPrivateKey);
+        ECPubKey sharedPoint = _publicKey.GetSharedPubkey(ecPrivateKey);
 
         return Utils.GetSharedKey(_publicKey.ToBytes(compressed), sharedPoint.ToBytes(compressed));
     }

@@ -2,13 +2,19 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>DotEnvX</ToolCommandName>
+        <PackageId>dotnet-dotenvx</PackageId>
+        <Authors>David Lambert</Authors>
+        <Description>A CLI tool that loads .env files like Node.js @dotenvx/dotenvx.</Description>
+        <PackageVersion>1.0.0</PackageVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>disable</ImplicitUsings>
         <RootNamespace>dotnet_dotenvx</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DotEnvX\DotEnvX.csproj" />
+        <ProjectReference Include="..\Dotenvx\Dotenvx.csproj"/>
     </ItemGroup>
 
 </Project>

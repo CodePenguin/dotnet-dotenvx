@@ -1,28 +1,35 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using DotEnvX.Configuration;
+
+using dotenvx.Configuration;
+
+using dotnet_dotenvx;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-var host = Host.CreateDefaultBuilder(args)
+IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureHostConfiguration(builder =>
     {
         builder.AddEnvironmentVariables();
-        builder.UseDotEnvX();
+        builder.UseDotenvx();
     })
     .ConfigureServices(services => { services.AddTransient<MyService>(); })
     .Build();
 
-var my = host.Services.GetRequiredService<MyService>();
+MyService my = host.Services.GetRequiredService<MyService>();
 await my.ExecuteAsync();
 
-internal class MyService(IConfiguration configuration)
+namespace dotnet_dotenvx
 {
-    public Task ExecuteAsync(CancellationToken stoppingToken = default)
+    internal class MyService(IConfiguration configuration)
     {
-        Console.WriteLine($"Hello, {configuration["HELLO"] ?? "[Not Set]"}");
-        return Task.CompletedTask;
+        public Task ExecuteAsync(CancellationToken stoppingToken = default)
+        {
+            Console.WriteLine($"Hello, {configuration["HELLO"] ?? "[Not Set]"}");
+            return Task.CompletedTask;
+        }
     }
 }
