@@ -26,9 +26,9 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
 
             _parsed[key] = Clean(value, quote);
 
-            if (!overload && InProcessEnv(key))
+            if (!overload && _processEnv.TryGetValue(key, out string? processEnvValue))
             {
-                _parsed[key] = _processEnv[key];
+                _parsed[key] = processEnvValue;
             }
 
             try
@@ -41,7 +41,7 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
             }
 
             bool evaled = false;
-            if (quote != '\'' && (!InProcessEnv(key) || _processEnv[key] == _parsed[key]))
+            if (quote != '\'' && (!_processEnv.TryGetValue(key, out processEnvValue) || processEnvValue == _parsed[key]))
             {
                 string priorEvaled = _parsed[key];
                 try
@@ -71,9 +71,9 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
 
             _runningParsed[key] = _parsed[key];
 
-            if (_processEnv.ContainsKey(key) && !overload)
+            if (_processEnv.TryGetValue(key, out processEnvValue) && !overload)
             {
-                _preExisted[key] = _processEnv[key];
+                _preExisted[key] = processEnvValue;
             }
             else
             {
@@ -125,14 +125,14 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
 
     private static string Eval(string key, string value)
     {
-        // Placeholder for evalKeyValue
+        // TODO: Placeholder for evalKeyValue
         return value;
     }
 
     private string Expand(string value)
     {
         Dictionary<string, string> env = new(_runningParsed);
-        foreach (var kvp in _processEnv.Where(kvp => overload || !env.ContainsKey(kvp.Key)))
+        foreach (KeyValuePair<string, string> kvp in _processEnv.Where(kvp => overload || !env.ContainsKey(kvp.Key)))
         {
             env[kvp.Key] = kvp.Value;
         }
@@ -171,18 +171,13 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
                 break;
             }
 
-            if (_literals.ContainsKey(key) && LiteralsRegex().IsMatch(_literals[key]))
+            if (_literals.TryGetValue(key, out string? literalValue) && LiteralsRegex().IsMatch(literalValue))
             {
                 break;
             }
         }
 
         return result;
-    }
-
-    private bool InProcessEnv(string key)
-    {
-        return _processEnv.ContainsKey(key);
     }
 
     private string GetLines()
@@ -204,6 +199,7 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
 
     [GeneratedRegex(@"(:\+|\+|:-|-)")]
     private static partial Regex OpRegex();
+
     [GeneratedRegex(@"\r\n?|\r")]
     private static partial Regex NormalizeLineEndingsRegex();
 }
