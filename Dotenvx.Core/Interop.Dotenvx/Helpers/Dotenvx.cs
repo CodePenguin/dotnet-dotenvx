@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Text;
 
+using Dotenvx.Core.Interop.Dotenvx.Services;
 using Dotenvx.Core.Interop.Dotenvx.Types;
-
 using Org.BouncyCastle.Crypto;
 
 namespace Dotenvx.Core.Interop.Dotenvx.Helpers;
@@ -13,9 +13,99 @@ public static class Dotenvx
 
     public static ConfigResult Config(ConfigOptions options)
     {
-        throw new NotImplementedException();
+        // allow user to set processEnv to write to
+        IDictionary<string, string> processEnv = new Dictionary<string, string>(Environment.GetEnvironmentVariables()
+            .Cast<DictionaryEntry>()
+            .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
+
+        if (options.ProcessEnv != null && options.ProcessEnv.Any())
+        {
+            processEnv = options.ProcessEnv;
+        }
+
+        // overload
+        bool overload = options.Overload || options.Override;
+
+        // ignore
+        List<string> ignore = options.Ignore ?? [];
+
+        // strict
+        bool strict = options.Strict;
+
+        // envKeysFile
+        string envKeysFile = options.EnvKeysFile ?? string.Empty;
+
+        // DOTENV_KEY
+        string dotenvKey = Environment.GetEnvironmentVariable("DOTENV_KEY") ?? string.Empty;
+        if (!string.IsNullOrEmpty(options.DotenvKey))
+        {
+            dotenvKey = options.DotenvKey;
+        }
+
+        try
+        {
+            List<EnvItem> envs = BuildEnvs.Execute(options, dotenvKey);
+
+            RunResult runResult = new Run(envs, overload, dotenvKey, envKeysFile, processEnv).Execute();
+
+            Exception? lastError = null;
+            IDictionary<string, string> parsedAll = new Dictionary<string, string>();
+
+            foreach (ProcessedEnv processedEnv in runResult.ProcessedEnvs)
+            {
+                foreach (Exception error in processedEnv.Errors)
+                {
+                    string errorCode = error is DotenvxException dotenvxError ? dotenvxError.Code : "GENERIC_ERROR";
+
+                    // Check if the error code is in the ignore list
+                    bool isIgnored = ignore.Any(ignoreCode => errorCode.Contains(ignoreCode));
+                    if (isIgnored)
+                    {
+                        continue;
+                    }
+
+                    if (strict)
+                    {
+                        throw error; // Re-throw the original exception if strict mode is enabled
+                    }
+
+                    lastError = error;
+
+                    if (errorCode == "MISSING_ENV_FILE")
+                    {
+                        if (string.IsNullOrEmpty(options.Convention))
+                        {
+                            // Logger.Error(errorMessage);
+                        }
+                    }
+                    // Logger.Error(errorMessage);
+                }
+
+                foreach (KeyValuePair<string, string> entry in processedEnv.Injected)
+                {
+                    parsedAll[entry.Key] = entry.Value;
+                }
+
+                foreach (KeyValuePair<string, string> entry in processedEnv.PreExisted)
+                {
+                    parsedAll[entry.Key] = entry.Value;
+                }
+            }
+
+            return lastError != null
+                ? new ConfigResult { Parsed = parsedAll, Error = lastError }
+                : new ConfigResult { Parsed = parsedAll }; // No error
+        }
+        catch (Exception error)
+        {
+            if (strict)
+            {
+                throw; // re-throw if strict
+            }
+            return new ConfigResult { Parsed = new Dictionary<string, string>(), Error = error };
+        }
     }
-    
+
     public static string? DecryptKeyValue(string key, string value, string privateKeyName, string? privateKey)
     {
         if (!value.StartsWith(Prefix))
@@ -83,7 +173,7 @@ public static class Dotenvx
 
     public static IDictionary<string, string> Parse(string? src, ParseOptions? options = null)
     {
-        IDictionary<string,string> processEnv = Environment.GetEnvironmentVariables()
+        IDictionary<string, string> processEnv = Environment.GetEnvironmentVariables()
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => (string?)entry.Value ?? string.Empty);
 
@@ -93,13 +183,13 @@ public static class Dotenvx
         }
 
         // private decryption key
-        var privateKey = options?.PrivateKey ?? null;
+        string? privateKey = options?.PrivateKey ?? null;
 
         // overload
-        var overload = options?.Overload ?? options?.Override ?? false;
-        
-        var response = new Parse(src, privateKey, processEnv ?? new Dictionary<string, string>(), overload).Execute();
-        
+        bool overload = options?.Overload ?? options?.Override ?? false;
+
+        ParseResult response = new Parse(src, privateKey, processEnv ?? new Dictionary<string, string>(), overload).Execute();
+
         // display any errors
         // TODO: Need to log errors
 

@@ -2,6 +2,6 @@ namespace Dotenvx.Core.Interop.Dotenvx.Types;
 
 public class ConfigResult
 {
-    public required IDictionary<string, string> Parsed { get; set; }
-    public required string Error { get; set; }
+    public required IDictionary<string, string> Parsed { get; init; }
+    public Exception? Error { get; init; } = null;
 }
