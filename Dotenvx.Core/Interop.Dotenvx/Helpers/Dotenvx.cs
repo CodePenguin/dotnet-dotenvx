@@ -1,13 +1,21 @@
 using System.Collections;
 using System.Text;
+
+using Dotenvx.Core.Interop.Dotenvx.Types;
+
 using Org.BouncyCastle.Crypto;
 
-namespace dotenvx.Dotenvx.Interop;
+namespace Dotenvx.Core.Interop.Dotenvx.Helpers;
 
 public static class Dotenvx
 {
     private const string Prefix = "encrypted:";
 
+    public static ConfigResult Config(ConfigOptions options)
+    {
+        throw new NotImplementedException();
+    }
+    
     public static string? DecryptKeyValue(string key, string value, string privateKeyName, string? privateKey)
     {
         if (!value.StartsWith(Prefix))
@@ -36,7 +44,7 @@ public static class Dotenvx
         {
             try
             {
-                byte[] decryptedBytes = EciesJs.Interop.EciesJs.Decrypt(privateKeyHex, cipherText);
+                byte[] decryptedBytes = EciesJs.EciesJs.Decrypt(privateKeyHex, cipherText);
                 decryptedValue = Encoding.UTF8.GetString(decryptedBytes);
                 decryptionError = null;
                 break;
@@ -68,7 +76,7 @@ public static class Dotenvx
 
     public static string EncryptValue(string value, string publicKey)
     {
-        byte[] ciphertext = EciesJs.Interop.EciesJs.Encrypt(publicKey, Encoding.UTF8.GetBytes(value));
+        byte[] ciphertext = EciesJs.EciesJs.Encrypt(publicKey, Encoding.UTF8.GetBytes(value));
         string encoded = Convert.ToBase64String(ciphertext);
         return $"{Prefix}{encoded}";
     }
@@ -90,7 +98,7 @@ public static class Dotenvx
         // overload
         var overload = options?.Overload ?? options?.Override ?? false;
         
-        var response = new Parse(src, privateKey, processEnv ?? new Dictionary<string, string>(), overload).Run();
+        var response = new Parse(src, privateKey, processEnv ?? new Dictionary<string, string>(), overload).Execute();
         
         // display any errors
         // TODO: Need to log errors

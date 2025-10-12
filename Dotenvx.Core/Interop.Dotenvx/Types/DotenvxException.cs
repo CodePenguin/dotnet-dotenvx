@@ -1,4 +1,4 @@
-namespace dotenvx.Dotenvx.Interop;
+namespace Dotenvx.Core.Interop.Dotenvx.Types;
 
 public class DotenvxException(string code, string message) : Exception(message)
 {
@@ -17,6 +17,8 @@ public class DecryptionFailedException(string message) : DotenvxException("DECRY
 public class InvalidPrivateKeyException(string key, string privateKeyName, string privateKey) : DotenvxException("INVALID_PRIVATE_KEY", $"[INVALID_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'");
 
 public class MalformedEncryptedDataException(string key) : DotenvxException("MALFORMED_ENCRYPTED_DATA", $"[MALFORMED_ENCRYPTED_DATA] could not decrypt {key} because encrypted data appears malformed");
+
+public class MissingEnvFileException(string envFilepath, string filepath) : DotenvxException("MISSING_ENV_FILE", $"[MISSING_ENV_FILE] missing {envFilepath} file ({filepath})");
 
 public class MissingPrivateKeyException(string key, string privateKeyName, string privateKey) : DotenvxException("MISSING_PRIVATE_KEY", $"[MISSING_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'");
 

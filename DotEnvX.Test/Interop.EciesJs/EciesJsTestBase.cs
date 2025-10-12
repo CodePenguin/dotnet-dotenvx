@@ -1,4 +1,4 @@
-namespace dotnet_dotenvx.Test.EciesJs.Interop;
+namespace Dotenvx.Test.Interop.EciesJs;
 
 public abstract class EciesJsTestBase
 {

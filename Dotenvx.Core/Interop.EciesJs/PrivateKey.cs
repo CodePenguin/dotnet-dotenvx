@@ -1,6 +1,6 @@
 using NBitcoin.Secp256k1;
 
-namespace dotenvx.EciesJs.Interop;
+namespace Dotenvx.Core.Interop.EciesJs;
 
 public class PrivateKey
 {

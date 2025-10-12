@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-dotenvx", "dotnet-do
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Test", "Dotenvx.Test\Dotenvx.Test.csproj", "{713FE818-6DA8-4101-BF22-E87F5660C24D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx", "Dotenvx\Dotenvx.csproj", "{6BFE5053-BC56-4AD5-98B7-24548BE93A1D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Core", "Dotenvx.Core\Dotenvx.Core.csproj", "{6BFE5053-BC56-4AD5-98B7-24548BE93A1D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

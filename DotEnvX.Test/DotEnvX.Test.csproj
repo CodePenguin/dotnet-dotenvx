@@ -2,7 +2,6 @@
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
-        <RootNamespace>dotnet_dotenvx.Test</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
 
@@ -29,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Dotenvx\Dotenvx.csproj"/>
+        <ProjectReference Include="..\Dotenvx.Core\Dotenvx.Core.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -37,7 +36,7 @@
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
         <None Update=".env">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
         <None Update=".env.eval">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

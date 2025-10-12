@@ -5,7 +5,7 @@ using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 
-namespace dotenvx.EciesJs.Interop;
+namespace Dotenvx.Core.Interop.EciesJs;
 
 /// <summary>
 ///     C# equivalent for eciesjs src/utils.js (https://github.com/ecies/js).

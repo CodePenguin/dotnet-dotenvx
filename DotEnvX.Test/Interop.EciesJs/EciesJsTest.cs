@@ -2,7 +2,7 @@ using System.Text;
 
 using Shouldly;
 
-namespace dotnet_dotenvx.Test.EciesJs.Interop;
+namespace Dotenvx.Test.Interop.EciesJs;
 
 public class EciesJsTest
 {
@@ -19,7 +19,7 @@ public class EciesJsTest
     public void TestDecryptKnown(string privateKeyHex, string encryptedB64, string expected)
     {
         byte[] encrypted = Convert.FromBase64String(encryptedB64);
-        byte[] decrypted = dotenvx.EciesJs.Interop.EciesJs.Decrypt(privateKeyHex, encrypted);
+        byte[] decrypted = global::Dotenvx.Core.Interop.EciesJs.EciesJs.Decrypt(privateKeyHex, encrypted);
         string plainText = Encoding.ASCII.GetString(decrypted);
         plainText.ShouldBe(expected);
     }

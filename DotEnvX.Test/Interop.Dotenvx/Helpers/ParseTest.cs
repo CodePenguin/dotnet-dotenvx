@@ -1,7 +1,8 @@
-using dotenvx.Dotenvx.Interop;
+using Dotenvx.Core.Interop.Dotenvx.Helpers;
+
 using Shouldly;
 
-namespace dotnet_dotenvx.Test.DotEnvX.Interop;
+namespace Dotenvx.Test.Interop.Dotenvx.Helpers;
 
 public class ParseTest
 {
@@ -12,7 +13,7 @@ public class ParseTest
     public void TestDotenvxParseTests()
     {
         var src = File.ReadAllText("./.env");
-        var parsed = new Parse(src).Run().Parsed;
+        var parsed = new Parse(src).Execute().Parsed;
         parsed.ShouldNotBeNull("should return an object");
         parsed["BASIC"].ShouldBe("basic", "sets basic environment variable");
         parsed["AFTER_LINE"].ShouldBe("after_line", "reads after a skipped line");
@@ -57,14 +58,14 @@ public class ParseTest
             { "PASSWORD", "password"},
             { "DB", "tests" }
         };
-
-        var rPayload = Dotenvx.Parse("SERVER=localhost\rPASSWORD=password\rDB=tests\r");
+        
+        var rPayload = Core.Interop.Dotenvx.Helpers.Dotenvx.Parse("SERVER=localhost\rPASSWORD=password\rDB=tests\r");
         rPayload.ShouldBe(expectedPayload, @"can parse (\r) line endings");
 
-        var nPayload = Dotenvx.Parse("SERVER=localhost\nPASSWORD=password\nDB=tests\n");
+        var nPayload = Core.Interop.Dotenvx.Helpers.Dotenvx.Parse("SERVER=localhost\nPASSWORD=password\nDB=tests\n");
         nPayload.ShouldBe(expectedPayload, @"can parse (\n) line endings");
 
-        var rnPayload = Dotenvx.Parse("SERVER=localhost\r\nPASSWORD=password\r\nDB=tests\r\n");
+        var rnPayload = Core.Interop.Dotenvx.Helpers.Dotenvx.Parse("SERVER=localhost\r\nPASSWORD=password\r\nDB=tests\r\n");
         rnPayload.ShouldBe(expectedPayload, @"can parse (\n) line endings");
     }
 
@@ -72,7 +73,7 @@ public class ParseTest
     public void TestDotenvxMultilineParseTests()
     {
         var src = File.ReadAllText("./.env.multiline");
-        var parsed = new Parse(src).Run().Parsed;
+        var parsed = new Parse(src).Execute().Parsed;
         parsed["BASIC"].ShouldBe("basic", "sets basic environment variable");
         parsed["AFTER_LINE"].ShouldBe("after_line", "reads after a skipped line");
         parsed["EMPTY"].ShouldBe("", "defaults empty values to empty string");

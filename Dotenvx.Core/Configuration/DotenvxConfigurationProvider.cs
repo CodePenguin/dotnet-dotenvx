@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-namespace dotenvx.Configuration;
+namespace Dotenvx.Core.Configuration;
 
 public class DotenvxConfigurationProvider : ConfigurationProvider
 {

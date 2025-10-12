@@ -1,10 +1,10 @@
-using dotenvx.Configuration;
+using Dotenvx.Core.Configuration;
 
 using Microsoft.Extensions.Configuration;
 
 using Shouldly;
 
-namespace dotnet_dotenvx.Test.Configuration;
+namespace Dotenvx.Test.Configuration;
 
 public class ConfigurationBuilderExtensionsTest
 {
