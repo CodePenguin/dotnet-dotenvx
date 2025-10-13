@@ -10,81 +10,106 @@ public class ConfigTest
     private const string EnvLocalFileName = "./.env.local";
 
     [Fact]
-    public void TakesStringForPathOption()
-    {
-        Dictionary<string, string> processEnv = new();
-        ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = processEnv };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
-
-        result.Parsed["BASIC"].ShouldBe("basic");
-        processEnv["BASIC"].ShouldBe("basic");
-    }
-
-    [Fact]
     public void TakesArrayForPathOption()
     {
-        Dictionary<string, string> processEnv = new();
-        ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = processEnv };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        try
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+            ConfigOptions options = new() { Path = [EnvFileName] };
+            ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
 
-        result.Parsed["BASIC"].ShouldBe("basic");
-        processEnv["BASIC"].ShouldBe("basic");
+            result.Parsed["BASIC"].ShouldBe("basic");
+            Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+        }
     }
 
     [Fact]
     public void TakesTwoOrMoreFilesAndFirstOneWins()
     {
-        Dictionary<string, string> processEnv = new();
-        ConfigOptions options = new() { Path = [EnvLocalFileName, EnvFileName], ProcessEnv = processEnv };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        try
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+            ConfigOptions options = new() { Path = [EnvLocalFileName, EnvFileName] };
+            ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
 
-        result.Parsed["BASIC"].ShouldBe("local_basic");
-        processEnv["BASIC"].ShouldBe("local_basic");
+            result.Parsed["BASIC"].ShouldBe("local_basic");
+            Environment.GetEnvironmentVariable("BASIC").ShouldBe("local_basic");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+        }
     }
 
     [Fact]
     public void DoesNotWriteOverKeysAlreadyInProcessEnv()
     {
-        Dictionary<string, string> processEnv = new() { { "BASIC", "existing" } };
-        ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = processEnv };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        try
+        {
+            Environment.SetEnvironmentVariable("BASIC", "existing");
+            ConfigOptions options = new() { Path = [EnvFileName] };
+            ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
 
-        result.Parsed["BASIC"].ShouldBe("existing");
-        processEnv["BASIC"].ShouldBe("existing");
+            result.Parsed["BASIC"].ShouldBe("existing");
+            Environment.GetEnvironmentVariable("BASIC").ShouldBe("existing");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+        }
     }
 
     [Fact]
-    public void WritesOverKeysAlreadyInProcessEnvIfOverrideTrue()
+    public void WritesOverKeysAlreadyInProcessEnvIfOverloadTrue()
     {
-        Dictionary<string, string> processEnv = new() { { "BASIC", "existing" } };
-        ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = processEnv, Override = true };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        try
+        {
+            Environment.SetEnvironmentVariable("BASIC", "existing");
+            ConfigOptions options = new() { Path = [EnvFileName], Overload = true };
+            ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
 
-        result.Parsed["BASIC"].ShouldBe("basic");
-        processEnv["BASIC"].ShouldBe("basic");
+            result.Parsed["BASIC"].ShouldBe("basic");
+            Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+        }
     }
 
     [Fact]
     public void CanWriteToADifferentObjectThanProcessEnv()
     {
         Dictionary<string, string> myObject = new();
-        Dictionary<string, string> processEnv = new() { { "BASIC", "other" } }; // This will be used by the parser for variable expansion, but not written to
+        // This will be used by the parser for variable expansion, but not written to
         ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = myObject };
         ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
 
         result.Parsed["BASIC"].ShouldBe("basic");
         myObject["BASIC"].ShouldBe("basic");
-        processEnv.ShouldNotContainKey("BASIC");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBeNull();
     }
 
     [Fact]
     public void ReturnsParsedObject()
     {
-        ConfigOptions options = new() { Path = [EnvFileName] };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        try
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+            ConfigOptions options = new() { Path = [EnvFileName] };
+            ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
 
-        result.Error.ShouldBeNull();
-        result.Parsed["BASIC"].ShouldBe("basic");
+            result.Error.ShouldBeNull();
+            result.Parsed["BASIC"].ShouldBe("basic");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+        }
     }
 
     [Fact]
@@ -99,43 +124,73 @@ public class ConfigTest
     [Fact]
     public void SetsValuesFromBothEnvLocalAndEnvWhenBothExist()
     {
-        Dictionary<string, string> processEnv = new();
-        // In this scenario, .env.local is first, so its values should take precedence.
-        ConfigOptions options = new() { Path = [EnvLocalFileName, EnvFileName], ProcessEnv = processEnv };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        try
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+            Environment.SetEnvironmentVariable("LOCAL", null);
+            Environment.SetEnvironmentVariable("SINGLE_QUOTES", null);
+            // In this scenario, .env.local is first, so its values should take precedence.
+            ConfigOptions options = new() { Path = [EnvLocalFileName, EnvFileName] };
+            ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
 
-        // from .env.local (first file wins)
-        result.Parsed["BASIC"].ShouldBe("local_basic");
-        processEnv["BASIC"].ShouldBe("local_basic");
+            // from .env.local (first file wins)
+            result.Parsed["BASIC"].ShouldBe("local_basic");
+            Environment.GetEnvironmentVariable("BASIC").ShouldBe("local_basic");
 
-        // from .env.local only
-        result.Parsed["LOCAL"].ShouldBe("local");
-        processEnv["LOCAL"].ShouldBe("local");
+            // from .env.local only
+            result.Parsed["LOCAL"].ShouldBe("local");
+            Environment.GetEnvironmentVariable("LOCAL").ShouldBe("local");
 
-        // from .env only
-        result.Parsed["SINGLE_QUOTES"].ShouldBe("single_quotes");
-        processEnv["SINGLE_QUOTES"].ShouldBe("single_quotes");
+            // from .env only
+            result.Parsed["SINGLE_QUOTES"].ShouldBe("single_quotes");
+            Environment.GetEnvironmentVariable("SINGLE_QUOTES").ShouldBe("single_quotes");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+            Environment.SetEnvironmentVariable("LOCAL", null);
+            Environment.SetEnvironmentVariable("SINGLE_QUOTES", null);
+        }
     }
 
     [Fact]
     public void DoesNotOverrideExistingFalsyValues()
     {
-        Dictionary<string, string> processEnv = new() { { "BASIC", "" } };
-        ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = processEnv };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        try
+        {
+            Environment.SetEnvironmentVariable("BASIC", "");
+            ConfigOptions options = new() { Path = [EnvFileName] };
+            ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
 
-        result.Parsed["BASIC"].ShouldBe("");
-        processEnv["BASIC"].ShouldBe("");
+            /*
+            Node.js behavior is to not override blank values but .NET 8.0 removes the environment variables when set to blank
+            Expected behavior changes after .NET 9.0 https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/9.0/empty-env-variable
+            */
+            const string expected = "basic"; // Will be string.Empty in .NET 9.0
+            result.Parsed["BASIC"].ShouldBe(expected);
+            Environment.GetEnvironmentVariable("BASIC").ShouldBe(expected);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+        }
     }
 
     [Fact]
-    public void DoesOverrideExistingFalsyValuesIfOverrideTrue()
+    public void DoesOverrideExistingFalsyValuesIfOverloadTrue()
     {
-        Dictionary<string, string> processEnv = new() { { "BASIC", "" } };
-        ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = processEnv, Override = true };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        try
+        {
+            Environment.SetEnvironmentVariable("BASIC", "");
+            ConfigOptions options = new() { Path = [EnvFileName], Overload = true };
+            ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
 
-        result.Parsed["BASIC"].ShouldBe("basic");
-        processEnv["BASIC"].ShouldBe("basic");
+            result.Parsed["BASIC"].ShouldBe("basic");
+            Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+        }
     }
 }

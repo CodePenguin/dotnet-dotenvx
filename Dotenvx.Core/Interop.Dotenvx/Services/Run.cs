@@ -15,17 +15,19 @@ public class Run
 
     private readonly List<ProcessedEnv> _processedEnvs = [];
     private readonly IDictionary<string, string> _processEnv;
+    private readonly bool _useSystemEnv;
     private readonly HashSet<string> _readableFilepaths = [];
     private readonly HashSet<string> _readableStrings = [];
     private readonly HashSet<string> _uniqueInjectedKeys = [];
 
-    public Run(List<EnvItem>? envs = null, bool overload = false, string dotenvKey = "", string? envKeysFilepath = null, IDictionary<string, string>? processEnv = null)
+    public Run(List<EnvItem>? envs = null, bool overload = false, string? envKeysFilepath = null, IDictionary<string, string>? processEnv = null)
     {
+        _useSystemEnv = processEnv == null;
         _processEnv = processEnv ?? new Dictionary<string, string>(Environment.GetEnvironmentVariables()
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
         _beforeEnv = new Dictionary<string, string>(_processEnv);
-        _envs = DetermineEnvs.Execute(envs ?? [], _processEnv, dotenvKey);
+        _envs = DetermineEnvs.Execute(envs ?? [], _processEnv);
         _overload = overload;
         _envKeysFilepath = envKeysFilepath;
     }
@@ -90,6 +92,10 @@ public class Run
         foreach ((string key, string value) in parsed)
         {
             _processEnv[key] = value;
+            if (_useSystemEnv)
+            {
+                Environment.SetEnvironmentVariable(key, value);
+            }
         }
     }
 

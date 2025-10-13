@@ -7,11 +7,8 @@ public static class DetermineEnvs
 {
     private static readonly List<EnvItem> DefaultEnvs = [new EnvItem { Type = EnvType.EnvFile, Value = ".env" }];
 
-    public static List<EnvItem> Execute(List<EnvItem>? envs, IDictionary<string, string> processEnv, string dotenvKey)
+    public static List<EnvItem> Execute(List<EnvItem>? envs, IDictionary<string, string> processEnv)
     {
-        // Ignoring vault logic, this implementation simplifies the original JS logic
-        // by not defaulting to .env.vault when DOTENV_KEY is present.
-
         var privateKeyNames = DotenvPrivateKeyNames.Execute(processEnv);
 
         if (envs == null || envs.Count == 0)

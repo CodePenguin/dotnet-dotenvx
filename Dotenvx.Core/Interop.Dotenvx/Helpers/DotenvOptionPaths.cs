@@ -7,7 +7,7 @@ namespace Dotenvx.Core.Interop.Dotenvx.Helpers
         public static List<string> Execute(ConfigOptions options)
         {
             // TODO: Translate logic from dotenvOptionPaths.js
-            return options.Path ?? new List<string>();
+            return options.Path ?? [];
         }
     }
 }

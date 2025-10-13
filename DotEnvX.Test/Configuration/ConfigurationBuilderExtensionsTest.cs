@@ -21,6 +21,6 @@ public class ConfigurationBuilderExtensionsTest
     public void AddDotEnvX_DefaultEnvFile()
     {
         IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx().Build();
-        configuration["HELLO"].ShouldBe("World");
+        configuration["BASIC"].ShouldBe("basic");
     }
 }

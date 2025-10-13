@@ -14,17 +14,9 @@ public static class Dotenvx
     public static ConfigResult Config(ConfigOptions options)
     {
         // allow user to set processEnv to write to
-        IDictionary<string, string> processEnv = new Dictionary<string, string>(Environment.GetEnvironmentVariables()
+        IDictionary<string, string> processEnv = options.ProcessEnv ?? new Dictionary<string, string>(Environment.GetEnvironmentVariables()
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
-
-        if (options.ProcessEnv != null && options.ProcessEnv.Any())
-        {
-            processEnv = options.ProcessEnv;
-        }
-
-        // overload
-        bool overload = options.Overload || options.Override;
 
         // ignore
         List<string> ignore = options.Ignore ?? [];
@@ -35,18 +27,11 @@ public static class Dotenvx
         // envKeysFile
         string envKeysFile = options.EnvKeysFile ?? string.Empty;
 
-        // DOTENV_KEY
-        string dotenvKey = Environment.GetEnvironmentVariable("DOTENV_KEY") ?? string.Empty;
-        if (!string.IsNullOrEmpty(options.DotenvKey))
-        {
-            dotenvKey = options.DotenvKey;
-        }
-
         try
         {
-            List<EnvItem> envs = BuildEnvs.Execute(options, dotenvKey);
+            List<EnvItem> envs = BuildEnvs.Execute(options);
 
-            RunResult runResult = new Run(envs, overload, dotenvKey, envKeysFile, processEnv).Execute();
+            RunResult runResult = new Run(envs, options.Overload, envKeysFile, options.ProcessEnv).Execute();
 
             Exception? lastError = null;
             IDictionary<string, string> parsedAll = new Dictionary<string, string>();
@@ -186,7 +171,7 @@ public static class Dotenvx
         string? privateKey = options?.PrivateKey ?? null;
 
         // overload
-        bool overload = options?.Overload ?? options?.Override ?? false;
+        bool overload = options?.Overload ?? false;
 
         ParseResult response = new Parse(src, privateKey, processEnv ?? new Dictionary<string, string>(), overload).Execute();
 
