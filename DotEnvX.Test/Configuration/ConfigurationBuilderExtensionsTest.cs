@@ -4,7 +4,7 @@ using Shouldly;
 
 namespace Dotenvx.Test.Configuration;
 
-public class ConfigurationBuilderExtensionsTest
+public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
 {
     [Fact]
     public void AddDotEnvX_AddsDotEnvXConfigurationSourceToList()

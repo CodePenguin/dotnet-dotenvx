@@ -4,7 +4,7 @@ using Shouldly;
 
 namespace Dotenvx.Test.Interop.Dotenvx.Helpers;
 
-public class DotenvxTest
+public class DotenvxTest : EnvironmentTestBase
 {
     private const string PublicKey = "02b106c30579baf896ae1fddf077cbcb4fef5e7d457932974878dcb51f42b45498";
     private const string PrivateKey = "1fc1cafa954a7a2bf0a6fbff46189c9e03e3a66b4d1133108ab9fcdb9e154b70";
