@@ -84,14 +84,22 @@ public class ConfigTest
     [Fact]
     public void CanWriteToADifferentObjectThanProcessEnv()
     {
-        Dictionary<string, string> myObject = new();
-        // This will be used by the parser for variable expansion, but not written to
-        ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = myObject };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        try
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+            Dictionary<string, string> myObject = new();
+            // This will be used by the parser for variable expansion, but not written to
+            ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = myObject };
+            ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
 
-        result.Parsed["BASIC"].ShouldBe("basic");
-        myObject["BASIC"].ShouldBe("basic");
-        Environment.GetEnvironmentVariable("BASIC").ShouldBeNull();
+            result.Parsed["BASIC"].ShouldBe("basic");
+            myObject["BASIC"].ShouldBe("basic");
+            Environment.GetEnvironmentVariable("BASIC").ShouldBeNull();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("BASIC", null);
+        }
     }
 
     [Fact]

@@ -4,13 +4,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace Dotenvx.Core.Configuration;
 
-public class DotenvxConfigurationProvider : ConfigurationProvider
+public class DotenvxConfigurationProvider(DotenvxConfigurationSource source) : ConfigurationProvider
 {
     public override void Load()
     {
         Dictionary<string, string?> variables = new();
-        // TODO: Expose options
         ConfigOptions options = new();
+        source.Options?.Invoke(options);
         ConfigResult result = Interop.Dotenvx.Helpers.Dotenvx.Config(options);
         foreach (KeyValuePair<string, string> keyValuePair in result.Parsed)
         {

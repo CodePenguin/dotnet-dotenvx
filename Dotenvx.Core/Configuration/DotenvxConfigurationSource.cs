@@ -1,11 +1,14 @@
+using Dotenvx.Core.Interop.Dotenvx.Types;
 using Microsoft.Extensions.Configuration;
 
 namespace Dotenvx.Core.Configuration;
 
-public class DotenvxConfigurationSource : IConfigurationSource
+public class DotenvxConfigurationSource(Action<ConfigOptions>? options = null) : IConfigurationSource
 {
+    public Action<ConfigOptions>? Options { get; } = options;
+
     public IConfigurationProvider Build(IConfigurationBuilder builder)
     {
-        return new DotenvxConfigurationProvider();
+        return new DotenvxConfigurationProvider(this);
     }
 }

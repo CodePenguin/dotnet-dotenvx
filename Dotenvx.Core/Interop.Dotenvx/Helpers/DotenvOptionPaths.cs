@@ -1,13 +1,13 @@
 using Dotenvx.Core.Interop.Dotenvx.Types;
 
-namespace Dotenvx.Core.Interop.Dotenvx.Helpers
+namespace Dotenvx.Core.Interop.Dotenvx.Helpers;
+
+public static class DotenvOptionPaths
 {
-    public static class DotenvOptionPaths
+    public static List<string> Execute(ConfigOptions options)
     {
-        public static List<string> Execute(ConfigOptions options)
-        {
-            // TODO: Translate logic from dotenvOptionPaths.js
-            return options.Path ?? [];
-        }
+        return options.Path != null 
+            ? options.Path.Select(ResolveHome.Execute).ToList()
+            : [];
     }
 }

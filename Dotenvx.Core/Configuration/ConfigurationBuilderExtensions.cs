@@ -1,12 +1,14 @@
+using Dotenvx.Core.Interop.Dotenvx.Types;
+
 using Microsoft.Extensions.Configuration;
 
 namespace Dotenvx.Core.Configuration;
 
 public static class ConfigurationBuilderExtensions
 {
-    public static IConfigurationBuilder UseDotenvx(this IConfigurationBuilder configurationBuilder)
+    public static IConfigurationBuilder UseDotenvx(this IConfigurationBuilder configurationBuilder, Action<ConfigOptions>? options = null)
     {
-        configurationBuilder.Add(new DotenvxConfigurationSource());
+        configurationBuilder.Add(new DotenvxConfigurationSource(options));
         return configurationBuilder;
     }
 }
