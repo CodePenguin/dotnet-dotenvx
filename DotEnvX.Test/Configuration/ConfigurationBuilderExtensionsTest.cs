@@ -7,23 +7,23 @@ namespace Dotenvx.Test.Configuration;
 public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
 {
     [Fact]
-    public void AddDotEnvX_AddsDotEnvXConfigurationSourceToList()
+    public void UseDotenvx_AddsDotenvxConfigurationSourceToList()
     {
         ConfigurationBuilder configurationBuilder = new();
         configurationBuilder.UseDotenvx();
-        DotenvxConfigurationSource? dotEnvXSource = configurationBuilder.Sources.OfType<DotenvxConfigurationSource>().FirstOrDefault();
-        dotEnvXSource.ShouldNotBeNull();
+        DotenvxConfigurationSource? dotenvxSource = configurationBuilder.Sources.OfType<DotenvxConfigurationSource>().FirstOrDefault();
+        dotenvxSource.ShouldNotBeNull();
     }
 
     [Fact]
-    public void AddDotEnvX_DefaultEnvFile()
+    public void UseDotenvx_DefaultEnvFile()
     {
         IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx().Build();
         configuration["BASIC"].ShouldBe("basic");
     }
 
     [Fact]
-    public void AddDotEnvX_ExpandsVariables()
+    public void UseDotenvx_ExpandsVariables()
     {
         IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
         {
@@ -33,7 +33,7 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void AddDotEnvX_LocalFileOverrides()
+    public void UseDotenvx_LocalFileOverrides()
     {
         IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
         {
@@ -43,7 +43,7 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void AddDotEnvX_MissingFile_DoesNotThrow()
+    public void UseDotenvx_MissingFile_DoesNotThrow()
     {
         IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
         {
