@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Dotenvx.Core.Configuration;
+using Dotenvx.Configuration;
 
 using dotnet_dotenvx;
 
