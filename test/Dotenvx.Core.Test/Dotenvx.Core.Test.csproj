@@ -28,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Dotenvx.Core\Dotenvx.Core.csproj" />
+        <ProjectReference Include="..\..\src\Dotenvx.Core\Dotenvx.Core.csproj" />
     </ItemGroup>
 
     <ItemGroup>

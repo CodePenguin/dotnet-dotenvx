@@ -1,14 +1,14 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-dotenvx", "dotnet-dotenvx\dotnet-dotenvx.csproj", "{804F4A84-6E9F-4A23-8CE8-75393B5F48A1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-dotenvx", "src\dotnet-dotenvx\dotnet-dotenvx.csproj", "{804F4A84-6E9F-4A23-8CE8-75393B5F48A1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Core.Test", "Dotenvx.Core.Test\Dotenvx.Core.Test.csproj", "{713FE818-6DA8-4101-BF22-E87F5660C24D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Core.Test", "test\Dotenvx.Core.Test\Dotenvx.Core.Test.csproj", "{713FE818-6DA8-4101-BF22-E87F5660C24D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Core", "Dotenvx.Core\Dotenvx.Core.csproj", "{6BFE5053-BC56-4AD5-98B7-24548BE93A1D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Core", "src\Dotenvx.Core\Dotenvx.Core.csproj", "{6BFE5053-BC56-4AD5-98B7-24548BE93A1D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Configuration", "Dotenvx.Configuration\Dotenvx.Configuration.csproj", "{BE7189EE-D97F-4912-ACE7-3E6BD171D9F1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Configuration", "src\Dotenvx.Configuration\Dotenvx.Configuration.csproj", "{BE7189EE-D97F-4912-ACE7-3E6BD171D9F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Configuration.Test", "Dotenvx.Configuration.Test\Dotenvx.Configuration.Test.csproj", "{5CD4C6D6-B56B-418D-8B99-3F95A667443A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Configuration.Test", "test\Dotenvx.Configuration.Test\Dotenvx.Configuration.Test.csproj", "{5CD4C6D6-B56B-418D-8B99-3F95A667443A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
