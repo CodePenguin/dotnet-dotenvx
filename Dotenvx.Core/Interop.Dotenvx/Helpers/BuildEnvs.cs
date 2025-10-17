@@ -2,16 +2,16 @@ using Dotenvx.Core.Interop.Dotenvx.Types;
 
 namespace Dotenvx.Core.Interop.Dotenvx.Helpers
 {
-    public static class BuildEnvs
+    public static partial class Helpers
     {
-        public static List<EnvItem> Execute(ConfigOptions options)
+        internal static List<EnvItem> BuildEnvs(ConfigOptions options)
         {
-            var optionPaths = DotenvOptionPaths.Execute(options);
+            var optionPaths = Helpers.DotenvOptionPaths(options);
             var envs = new List<EnvItem>();
 
             if (!string.IsNullOrEmpty(options.Convention))
             {
-                envs.AddRange(Conventions.Execute(options.Convention));
+                envs.AddRange(Helpers.Conventions(options.Convention));
             }
             
             foreach (var optionPath in optionPaths)

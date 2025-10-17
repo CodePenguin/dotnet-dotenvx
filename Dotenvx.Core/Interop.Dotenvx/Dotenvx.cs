@@ -1,16 +1,13 @@
 using System.Collections;
-using System.Text;
 
+using Dotenvx.Core.Interop.Dotenvx.Helpers;
 using Dotenvx.Core.Interop.Dotenvx.Services;
 using Dotenvx.Core.Interop.Dotenvx.Types;
-using Org.BouncyCastle.Crypto;
 
-namespace Dotenvx.Core.Interop.Dotenvx.Helpers;
+namespace Dotenvx.Core.Interop.Dotenvx;
 
-public static class Dotenvx
+public static class Main
 {
-    private const string Prefix = "encrypted:";
-
     public static ConfigResult Config(ConfigOptions options)
     {
         // allow user to set processEnv to write to
@@ -29,7 +26,7 @@ public static class Dotenvx
 
         try
         {
-            List<EnvItem> envs = BuildEnvs.Execute(options);
+            List<EnvItem> envs = Helpers.Helpers.BuildEnvs(options);
 
             RunResult runResult = new Run(envs, options.Overload, envKeysFile, options.ProcessEnv).Execute();
 
@@ -90,72 +87,7 @@ public static class Dotenvx
             return new ConfigResult { Parsed = new Dictionary<string, string>(), Error = error };
         }
     }
-
-    public static string? DecryptKeyValue(string key, string value, string privateKeyName, string? privateKey)
-    {
-        if (!value.StartsWith(Prefix))
-        {
-            return value;
-        }
-
-        string encoded = value[Prefix.Length..];
-        byte[] cipherText = Convert.FromBase64String(encoded);
-
-        if (string.IsNullOrEmpty(encoded))
-        {
-            throw new DecryptionFailedException("second arg must be public key");
-        }
-
-        if (string.IsNullOrEmpty(privateKey))
-        {
-            throw new MissingPrivateKeyException(key, privateKeyName, privateKey ?? string.Empty);
-        }
-
-        string? decryptedValue = null;
-        Exception? decryptionError = null;
-
-        string[] privateKeys = privateKey.Split(',');
-        foreach (string privateKeyHex in privateKeys)
-        {
-            try
-            {
-                byte[] decryptedBytes = EciesJs.EciesJs.Decrypt(privateKeyHex, cipherText);
-                decryptedValue = Encoding.UTF8.GetString(decryptedBytes);
-                decryptionError = null;
-                break;
-            }
-            catch (ArgumentException ex)
-            {
-                decryptionError = ex.ParamName switch
-                {
-                    nameof(privateKeyName) => new InvalidPrivateKeyException(key, privateKeyName, privateKey),
-                    _ => new MalformedEncryptedDataException(key)
-                };
-            }
-            catch (FormatException)
-            {
-                decryptionError = new InvalidPrivateKeyException(key, privateKeyName, privateKey);
-            }
-            catch (InvalidCipherTextException)
-            {
-                decryptionError = new WrongPrivateKeyException(key, privateKeyName, privateKey);
-            }
-            catch (Exception ex)
-            {
-                decryptionError = new DecryptionFailedException(ex.Message);
-            }
-        }
-
-        return decryptionError != null ? throw decryptionError : decryptedValue;
-    }
-
-    public static string EncryptValue(string value, string publicKey)
-    {
-        byte[] ciphertext = EciesJs.EciesJs.Encrypt(publicKey, Encoding.UTF8.GetBytes(value));
-        string encoded = Convert.ToBase64String(ciphertext);
-        return $"{Prefix}{encoded}";
-    }
-
+    
     public static IDictionary<string, string> Parse(string? src, ParseOptions? options = null)
     {
         IDictionary<string, string> processEnv = Environment.GetEnvironmentVariables()

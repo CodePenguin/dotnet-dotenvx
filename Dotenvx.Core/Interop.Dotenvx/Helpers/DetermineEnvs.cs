@@ -3,11 +3,11 @@ using Dotenvx.Core.Interop.Dotenvx.Types;
 
 namespace Dotenvx.Core.Interop.Dotenvx.Helpers;
 
-public static class DetermineEnvs
+public static partial class Helpers
 {
-    private static readonly List<EnvItem> DefaultEnvs = [new EnvItem { Type = EnvType.EnvFile, Value = ".env" }];
+    private static readonly List<EnvItem> DefaultEnvs = [new() { Type = EnvType.EnvFile, Value = ".env" }];
 
-    public static List<EnvItem> Execute(List<EnvItem>? envs, IDictionary<string, string> processEnv)
+    internal static List<EnvItem> DetermineEnvs(List<EnvItem>? envs, IDictionary<string, string> processEnv)
     {
         var privateKeyNames = DotenvPrivateKeyNames.Execute(processEnv);
 
@@ -35,7 +35,7 @@ public static class DetermineEnvs
         var envs = new List<EnvItem>();
         foreach (var privateKeyName in privateKeyNames)
         {
-            var filename = GuessPrivateKeyFilename.Execute(privateKeyName);
+            var filename = Helpers.GuessPrivateKeyFilename(privateKeyName);
             envs.Add(new EnvItem { Type = EnvType.EnvFile, Value = filename });
         }
         return envs;

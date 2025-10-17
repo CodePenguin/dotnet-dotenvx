@@ -1,8 +1,8 @@
 namespace Dotenvx.Core.Interop.Dotenvx.Helpers;
 
-public static class GuessPrivateKeyName
+public static partial class Helpers
 {
-    public static string Execute(string envFilepath)
+    internal static string GuessPrivateKeyName(string envFilepath)
     {
         // TODO: Translate logic from guessPrivateKeyName.js
         return string.Empty;

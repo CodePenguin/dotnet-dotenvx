@@ -128,7 +128,7 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
 
     private string Decrypt(string key, string value)
     {
-        return Dotenvx.DecryptKeyValue(key, value, _privateKeyName, privateKey) ?? string.Empty;
+        return Helpers.DecryptKeyValue(key, value, _privateKeyName, privateKey) ?? string.Empty;
     }
 
     private static string Eval(string key, string value)

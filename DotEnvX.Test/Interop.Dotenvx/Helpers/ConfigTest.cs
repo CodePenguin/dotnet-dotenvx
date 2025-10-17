@@ -1,3 +1,4 @@
+using Dotenvx.Core.Interop.Dotenvx;
 using Dotenvx.Core.Interop.Dotenvx.Types;
 
 using Shouldly;
@@ -13,7 +14,7 @@ public class ConfigTest : EnvironmentTestBase
     public void TakesArrayForPathOption()
     {
         ConfigOptions options = new() { Path = [EnvFileName] };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Main.Config(options);
 
         result.Parsed["BASIC"].ShouldBe("basic");
         Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
@@ -23,7 +24,7 @@ public class ConfigTest : EnvironmentTestBase
     public void TakesTwoOrMoreFilesAndFirstOneWins()
     {
         ConfigOptions options = new() { Path = [EnvLocalFileName, EnvFileName] };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Main.Config(options);
 
         result.Parsed["BASIC"].ShouldBe("local_basic");
         Environment.GetEnvironmentVariable("BASIC").ShouldBe("local_basic");
@@ -34,7 +35,7 @@ public class ConfigTest : EnvironmentTestBase
     {
         Environment.SetEnvironmentVariable("BASIC", "existing");
         ConfigOptions options = new() { Path = [EnvFileName] };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Main.Config(options);
 
         result.Parsed["BASIC"].ShouldBe("existing");
         Environment.GetEnvironmentVariable("BASIC").ShouldBe("existing");
@@ -45,7 +46,7 @@ public class ConfigTest : EnvironmentTestBase
     {
         Environment.SetEnvironmentVariable("BASIC", "existing");
         ConfigOptions options = new() { Path = [EnvFileName], Overload = true };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Main.Config(options);
 
         result.Parsed["BASIC"].ShouldBe("basic");
         Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
@@ -57,7 +58,7 @@ public class ConfigTest : EnvironmentTestBase
         Dictionary<string, string> myObject = new();
         // This will be used by the parser for variable expansion, but not written to
         ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = myObject };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Main.Config(options);
 
         result.Parsed["BASIC"].ShouldBe("basic");
         myObject["BASIC"].ShouldBe("basic");
@@ -68,7 +69,7 @@ public class ConfigTest : EnvironmentTestBase
     public void ReturnsParsedObject()
     {
         ConfigOptions options = new() { Path = [EnvFileName] };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Main.Config(options);
 
         result.Error.ShouldBeNull();
         result.Parsed["BASIC"].ShouldBe("basic");
@@ -78,7 +79,7 @@ public class ConfigTest : EnvironmentTestBase
     public void ReturnsErrorWhenFileMissing()
     {
         ConfigOptions options = new() { Path = ["nonexistent.env"] };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Main.Config(options);
         result.Error.ShouldNotBeNull();
         result.Error.ShouldBeOfType<MissingEnvFileException>();
     }
@@ -88,7 +89,7 @@ public class ConfigTest : EnvironmentTestBase
     {
         // In this scenario, .env.local is first, so its values should take precedence.
         ConfigOptions options = new() { Path = [EnvLocalFileName, EnvFileName] };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Main.Config(options);
 
         // from .env.local (first file wins)
         result.Parsed["BASIC"].ShouldBe("local_basic");
@@ -108,7 +109,7 @@ public class ConfigTest : EnvironmentTestBase
     {
         Environment.SetEnvironmentVariable("BASIC", "");
         ConfigOptions options = new() { Path = [EnvFileName] };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Main.Config(options);
 
         /*
         Node.js behavior is to not override blank values but .NET 8.0 removes the environment variables when set to blank
@@ -124,7 +125,7 @@ public class ConfigTest : EnvironmentTestBase
     {
         Environment.SetEnvironmentVariable("BASIC", "");
         ConfigOptions options = new() { Path = [EnvFileName], Overload = true };
-        ConfigResult result = Core.Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Main.Config(options);
 
         result.Parsed["BASIC"].ShouldBe("basic");
         Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");

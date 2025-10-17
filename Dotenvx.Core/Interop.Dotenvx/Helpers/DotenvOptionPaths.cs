@@ -2,12 +2,12 @@ using Dotenvx.Core.Interop.Dotenvx.Types;
 
 namespace Dotenvx.Core.Interop.Dotenvx.Helpers;
 
-public static class DotenvOptionPaths
+public static partial class Helpers
 {
-    public static List<string> Execute(ConfigOptions options)
+    internal static List<string> DotenvOptionPaths(ConfigOptions options)
     {
         return options.Path != null 
-            ? options.Path.Select(ResolveHome.Execute).ToList()
+            ? options.Path.Select(Helpers.ResolveHome).ToList()
             : [];
     }
 }

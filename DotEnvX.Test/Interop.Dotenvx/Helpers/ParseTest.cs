@@ -1,3 +1,4 @@
+using Dotenvx.Core.Interop.Dotenvx;
 using Dotenvx.Core.Interop.Dotenvx.Helpers;
 
 using Shouldly;
@@ -59,13 +60,13 @@ public class ParseTest
             { "DB", "tests" }
         };
         
-        var rPayload = Core.Interop.Dotenvx.Helpers.Dotenvx.Parse("SERVER=localhost\rPASSWORD=password\rDB=tests\r");
+        var rPayload = Main.Parse("SERVER=localhost\rPASSWORD=password\rDB=tests\r");
         rPayload.ShouldBe(expectedPayload, @"can parse (\r) line endings");
 
-        var nPayload = Core.Interop.Dotenvx.Helpers.Dotenvx.Parse("SERVER=localhost\nPASSWORD=password\nDB=tests\n");
+        var nPayload = Main.Parse("SERVER=localhost\nPASSWORD=password\nDB=tests\n");
         nPayload.ShouldBe(expectedPayload, @"can parse (\n) line endings");
 
-        var rnPayload = Core.Interop.Dotenvx.Helpers.Dotenvx.Parse("SERVER=localhost\r\nPASSWORD=password\r\nDB=tests\r\n");
+        var rnPayload = Main.Parse("SERVER=localhost\r\nPASSWORD=password\r\nDB=tests\r\n");
         rnPayload.ShouldBe(expectedPayload, @"can parse (\n) line endings");
     }
 

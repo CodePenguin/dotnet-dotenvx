@@ -27,7 +27,7 @@ public class Run
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
         _beforeEnv = new Dictionary<string, string>(_processEnv);
-        _envs = DetermineEnvs.Execute(envs ?? [], _processEnv);
+        _envs = Helpers.Helpers.DetermineEnvs(envs ?? [], _processEnv);
         _overload = overload;
         _envKeysFilepath = envKeysFilepath;
     }
@@ -116,8 +116,8 @@ public class Run
             string src = File.ReadAllText(filepath, encoding);
             _readableFilepaths.Add(envFilepath);
 
-            string privateKey = FindPrivateKey.Execute(envFilepath, _envKeysFilepath);
-            string privateKeyName = GuessPrivateKeyName.Execute(envFilepath);
+            string privateKey = Helpers.Helpers.FindPrivateKey(envFilepath, _envKeysFilepath);
+            string privateKeyName = Helpers.Helpers.GuessPrivateKeyName(envFilepath);
 
             ParseResult parseResult = new Parse(src, privateKey, _processEnv, _overload, privateKeyName).Execute();
             row.PrivateKeyName = privateKeyName;

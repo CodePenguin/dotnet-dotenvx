@@ -11,7 +11,7 @@ public class DotenvxConfigurationProvider(DotenvxConfigurationSource source) : C
         Dictionary<string, string?> variables = new();
         ConfigOptions options = new();
         source.Options?.Invoke(options);
-        ConfigResult result = Interop.Dotenvx.Helpers.Dotenvx.Config(options);
+        ConfigResult result = Interop.Dotenvx.Main.Config(options);
         foreach (KeyValuePair<string, string> keyValuePair in result.Parsed)
         {
             variables.Add(keyValuePair.Key, keyValuePair.Value);
