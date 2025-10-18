@@ -24,15 +24,15 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
         {
             string key = match.Groups[1].Value;
             string value = match.Groups[2].Value;
-            char quote = Quote(value);
-
-            _parsed[key] = Clean(value, quote);
+            char quote = Quote(value); // must be raw match
+            _parsed[key] = Clean(value, quote); // file value
 
             if (!overload && _processEnv.TryGetValue(key, out string? processEnvValue))
             {
-                _parsed[key] = processEnvValue;
+                _parsed[key] = processEnvValue; // use process.env pre-existing value
             }
 
+            // decrypt
             try
             {
                 _parsed[key] = Decrypt(key, _parsed[key]);
@@ -42,10 +42,12 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
                 _errors.Add(e);
             }
 
+            // eval empty, double, or backticks
             bool evaled = false;
             if (quote != '\'' && (!_processEnv.TryGetValue(key, out processEnvValue) || processEnvValue == _parsed[key]))
             {
                 string priorEvaled = _parsed[key];
+                // eval
                 try
                 {
                     _parsed[key] = Eval(key, priorEvaled);
@@ -61,9 +63,10 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
                 }
             }
 
+            // expand empty, double, or backticks
             if (!evaled && quote != '\'' && (!_processEnv.ContainsKey(key) || overload))
             {
-                _parsed[key] = Expand(_parsed[key]);
+                _parsed[key] = Helpers.ResolveEscapeSequences(Expand(_parsed[key]));
             }
 
             if (quote == '\'')
@@ -71,15 +74,16 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
                 _literals[key] = _parsed[key];
             }
 
+            // for use with progressive expansion
             _runningParsed[key] = _parsed[key];
 
             if (_processEnv.TryGetValue(key, out processEnvValue) && !overload)
             {
-                _preExisted[key] = processEnvValue;
+                _preExisted[key] = processEnvValue; // track preExisted
             }
             else
             {
-                _injected[key] = _parsed[key];
+                _injected[key] = _parsed[key]; // track injected
             }
         }
 
@@ -116,11 +120,16 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
 
     private static string Clean(string value, char quote)
     {
+        // Remove surrounding quotes
         value = CleanRegex().Replace(Trimmer(value), "$2");
 
+        // Expand newlines if double quoted
         if (quote == '"')
         {
-            value = value.Replace("\\n", "\n").Replace("\\r", "\r").Replace("\\t", "\t");
+            value = value
+                .Replace("\\n", "\n") // newline
+                .Replace("\\r", "\r") // carriage return
+                .Replace("\\t", "\t"); // tabs
         }
 
         return value;
@@ -131,18 +140,23 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
         return Helpers.DecryptKeyValue(key, value, _privateKeyName, privateKey) ?? string.Empty;
     }
 
-    private static string Eval(string key, string value)
+    private string Eval(string key, string value)
     {
-        // TODO: Placeholder for evalKeyValue
-        return value;
+        return Helpers.EvalKeyValue(key, value, _processEnv, _runningParsed);
     }
 
     private string Expand(string value)
     {
-        Dictionary<string, string> env = new(_runningParsed);
-        foreach (KeyValuePair<string, string> kvp in _processEnv.Where(kvp => overload || !env.ContainsKey(kvp.Key)))
+        Dictionary<string, string> env;
+        if (overload)
         {
-            env[kvp.Key] = kvp.Value;
+            env = new Dictionary<string, string>(_processEnv);
+            _runningParsed.ToList().ForEach(p => env[p.Key] = p.Value);
+        }
+        else
+        {
+            env = new Dictionary<string, string>(_runningParsed);
+            _processEnv.ToList().ForEach(p => env[p.Key] = p.Value);
         }
 
         string result = value;
@@ -153,8 +167,11 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
             string template = match.Groups[0].Value;
             string expression = match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value;
 
+            // match the operators `:+`, `+`, `:-`, and `-`
+            // find first match
             Match opMatch = OpRegex().Match(expression);
             string? splitter = opMatch.Success ? opMatch.Value : null;
+            
             string[] parts = splitter != null ? expression.Split([splitter], StringSplitOptions.None) : [expression];
 
             string defaultValue;
@@ -174,11 +191,14 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
 
             result = result.Replace(template, val ?? defaultValue);
 
+            // if the result equaled what was in env then stop expanding - handle self-referential check as well
             if (result == env.GetValueOrDefault(key))
             {
                 break;
             }
 
+            // if the result came from what was a literal value then stop expanding
+            // BUT only if the literal value contains expansion patterns (${...} or $VAR)
             if (_literals.TryGetValue(key, out string? literalValue) && LiteralsRegex().IsMatch(literalValue))
             {
                 break;

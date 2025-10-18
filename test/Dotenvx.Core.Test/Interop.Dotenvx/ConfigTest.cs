@@ -1,14 +1,23 @@
 using Dotenvx.Core.Interop.DotenvxJs;
 using Dotenvx.Core.Interop.DotenvxJs.Types;
-
 using Shouldly;
 
-namespace Dotenvx.Core.Test.Interop.Dotenvx.Helpers;
+namespace Dotenvx.Core.Test.Interop.Dotenvx;
 
 public class ConfigTest : EnvironmentTestBase
 {
     private const string EnvFileName = "./.env";
     private const string EnvLocalFileName = "./.env.local";
+
+    [Fact]
+    public void UsesDefaultPathWhenNoPathProvided()
+    {
+        ConfigOptions options = new();
+        ConfigResult result = Main.Config(options);
+
+        result.Parsed["BASIC"].ShouldBe("basic");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
+    }
 
     [Fact]
     public void TakesArrayForPathOption()
@@ -21,7 +30,7 @@ public class ConfigTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TakesTwoOrMoreFilesAndFirstOneWins()
+    public void TakesTwoOrMoreFilesInTheArrayForPathOption()
     {
         ConfigOptions options = new() { Path = [EnvLocalFileName, EnvFileName] };
         ConfigResult result = Main.Config(options);
@@ -53,58 +62,6 @@ public class ConfigTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void CanWriteToADifferentObjectThanProcessEnv()
-    {
-        Dictionary<string, string> myObject = new();
-        // This will be used by the parser for variable expansion, but not written to
-        ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = myObject };
-        ConfigResult result = Main.Config(options);
-
-        result.Parsed["BASIC"].ShouldBe("basic");
-        myObject["BASIC"].ShouldBe("basic");
-        Environment.GetEnvironmentVariable("BASIC").ShouldBeNull();
-    }
-
-    [Fact]
-    public void ReturnsParsedObject()
-    {
-        ConfigOptions options = new() { Path = [EnvFileName] };
-        ConfigResult result = Main.Config(options);
-
-        result.Error.ShouldBeNull();
-        result.Parsed["BASIC"].ShouldBe("basic");
-    }
-
-    [Fact]
-    public void ReturnsErrorWhenFileMissing()
-    {
-        ConfigOptions options = new() { Path = ["nonexistent.env"] };
-        ConfigResult result = Main.Config(options);
-        result.Error.ShouldNotBeNull();
-        result.Error.ShouldBeOfType<MissingEnvFileException>();
-    }
-
-    [Fact]
-    public void SetsValuesFromBothEnvLocalAndEnvWhenBothExist()
-    {
-        // In this scenario, .env.local is first, so its values should take precedence.
-        ConfigOptions options = new() { Path = [EnvLocalFileName, EnvFileName] };
-        ConfigResult result = Main.Config(options);
-
-        // from .env.local (first file wins)
-        result.Parsed["BASIC"].ShouldBe("local_basic");
-        Environment.GetEnvironmentVariable("BASIC").ShouldBe("local_basic");
-
-        // from .env.local only
-        result.Parsed["LOCAL"].ShouldBe("local");
-        Environment.GetEnvironmentVariable("LOCAL").ShouldBe("local");
-
-        // from .env only
-        result.Parsed["SINGLE_QUOTES"].ShouldBe("single_quotes");
-        Environment.GetEnvironmentVariable("SINGLE_QUOTES").ShouldBe("single_quotes");
-    }
-
-    [Fact]
     public void DoesNotOverrideExistingFalsyValues()
     {
         Environment.SetEnvironmentVariable("BASIC", "");
@@ -129,5 +86,75 @@ public class ConfigTest : EnvironmentTestBase
 
         result.Parsed["BASIC"].ShouldBe("basic");
         Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
+    }
+
+    [Fact]
+    public void CanWriteToADifferentObjectThanProcessEnv()
+    {
+        Dictionary<string, string> myObject = new();
+        ConfigOptions options = new() { Path = [EnvFileName], ProcessEnv = myObject };
+        ConfigResult result = Main.Config(options);
+
+        result.Parsed["BASIC"].ShouldBe("basic");
+        myObject["BASIC"].ShouldBe("basic");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBeNull();
+    }
+
+    [Fact]
+    public void ReturnsParsedObject()
+    {
+        ConfigOptions options = new() { Path = [EnvFileName] };
+        ConfigResult result = Main.Config(options);
+
+        result.Error.ShouldBeNull();
+        result.Parsed["BASIC"].ShouldBe("basic");
+    }
+
+    [Fact]
+    public void ReturnsErrorWhenFileMissing()
+    {
+        ConfigOptions options = new() { Path = ["nonexistent.env"] };
+        ConfigResult result = Main.Config(options);
+
+        result.Error.ShouldNotBeNull();
+        result.Error.ShouldBeOfType<MissingEnvFileException>();
+    }
+
+    [Fact]
+    public void SetsValuesFromBothEnvLocalAndEnvWhenBothExist()
+    {
+        ConfigOptions options = new() { Path = [EnvLocalFileName, EnvFileName] };
+        ConfigResult result = Main.Config(options);
+
+        result.Parsed["BASIC"].ShouldBe("local_basic");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBe("local_basic");
+
+        result.Parsed["LOCAL"].ShouldBe("local");
+        Environment.GetEnvironmentVariable("LOCAL").ShouldBe("local");
+
+        result.Parsed["SINGLE_QUOTES"].ShouldBe("single_quotes");
+        Environment.GetEnvironmentVariable("SINGLE_QUOTES").ShouldBe("single_quotes");
+    }
+    
+    [Fact]
+    public void HandlesInlineComments()
+    {
+        ConfigOptions options = new() { Path = [EnvFileName] };
+        ConfigResult result = Main.Config(options);
+
+        result.Parsed["INLINE_COMMENTS"].ShouldBe("inline comments");
+        Environment.GetEnvironmentVariable("INLINE_COMMENTS").ShouldBe("inline comments");
+    }
+
+    [Fact]
+    public void HandlesQuotedValues()
+    {
+        ConfigOptions options = new() { Path = [EnvFileName] };
+        ConfigResult result = Main.Config(options);
+
+        result.Parsed["RETAIN_INNER_QUOTES"].ShouldBe("{\"foo\": \"bar\"}");
+        result.Parsed["RETAIN_INNER_QUOTES_AS_STRING"].ShouldBe("{\"foo\": \"bar\"}");
+        Environment.GetEnvironmentVariable("RETAIN_INNER_QUOTES").ShouldBe("{\"foo\": \"bar\"}");
+        Environment.GetEnvironmentVariable("RETAIN_INNER_QUOTES_AS_STRING").ShouldBe("{\"foo\": \"bar\"}");
     }
 }

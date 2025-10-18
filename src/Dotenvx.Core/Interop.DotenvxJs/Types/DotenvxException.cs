@@ -12,6 +12,8 @@ public class DotenvxException(string code, string message) : Exception(message)
     }
 }
 
+public class CommandSubstitutionFailed(string key, string command, string message) : DotenvxException("COMMAND_SUBSTITUTION_FAILED", $"[COMMAND_SUBSTITUTION_FAILED] could not eval {key} containing command '{command}': {message}");
+
 public class DecryptionFailedException(string message) : DotenvxException("DECRYPTION_FAILED", message);
 
 public class InvalidPrivateKeyException(string key, string privateKeyName, string privateKey) : DotenvxException("INVALID_PRIVATE_KEY", $"[INVALID_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'");
