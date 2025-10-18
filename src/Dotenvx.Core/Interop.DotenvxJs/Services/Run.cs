@@ -15,12 +15,13 @@ public class Run
 
     private readonly List<ProcessedEnv> _processedEnvs = [];
     private readonly IDictionary<string, string> _processEnv;
-    private readonly bool _useSystemEnv;
     private readonly HashSet<string> _readableFilepaths = [];
     private readonly HashSet<string> _readableStrings = [];
     private readonly HashSet<string> _uniqueInjectedKeys = [];
+    private readonly bool _useSystemEnv;
 
-    public Run(List<EnvItem>? envs = null, bool overload = false, string? envKeysFilepath = null, IDictionary<string, string>? processEnv = null)
+    public Run(List<EnvItem>? envs = null, bool overload = false, string? envKeysFilepath = null,
+        IDictionary<string, string>? processEnv = null)
     {
         _useSystemEnv = processEnv == null;
         _processEnv = processEnv ?? new Dictionary<string, string>(Environment.GetEnvironmentVariables()
@@ -62,11 +63,11 @@ public class Run
 
     private void InjectEnv(string env)
     {
-        var row = new ProcessedEnv { Type = EnvType.Env, String = env };
+        ProcessedEnv row = new() { Type = EnvType.Env, String = env };
 
         try
         {
-            var parseResult = new Parse(env, null, _processEnv, _overload).Execute();
+            ParseResult parseResult = new Parse(env, null, _processEnv, _overload).Execute();
             row.Parsed = parseResult.Parsed;
             row.Errors = parseResult.Errors;
             row.Injected = parseResult.Injected;
@@ -86,7 +87,7 @@ public class Run
 
         _processedEnvs.Add(row);
     }
-    
+
     private void Inject(IDictionary<string, string> parsed)
     {
         foreach ((string key, string value) in parsed)

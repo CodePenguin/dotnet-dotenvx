@@ -11,7 +11,8 @@ public static class Main
     public static ConfigResult Config(ConfigOptions options)
     {
         // allow user to set processEnv to write to
-        IDictionary<string, string> processEnv = options.ProcessEnv ?? new Dictionary<string, string>(Environment.GetEnvironmentVariables()
+        IDictionary<string, string> processEnv = options.ProcessEnv ?? new Dictionary<string, string>(Environment
+            .GetEnvironmentVariables()
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
 
@@ -84,10 +85,11 @@ public static class Main
             {
                 throw; // re-throw if strict
             }
+
             return new ConfigResult { Parsed = new Dictionary<string, string>(), Error = error };
         }
     }
-    
+
     public static IDictionary<string, string> Parse(string? src, ParseOptions? options = null)
     {
         IDictionary<string, string> processEnv = Environment.GetEnvironmentVariables()
@@ -105,7 +107,8 @@ public static class Main
         // overload
         bool overload = options?.Overload ?? false;
 
-        ParseResult response = new Parse(src, privateKey, processEnv ?? new Dictionary<string, string>(), overload).Execute();
+        ParseResult response = new Parse(src, privateKey, processEnv ?? new Dictionary<string, string>(), overload)
+            .Execute();
 
         // display any errors
         // TODO: Need to log errors

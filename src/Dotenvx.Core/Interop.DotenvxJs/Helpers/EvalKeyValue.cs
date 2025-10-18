@@ -6,11 +6,12 @@ namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
 
 public static partial class Helpers
 {
-    public static string EvalKeyValue(string key, string value, IDictionary<string, string> processEnv, Dictionary<string, string> runningParsed)
+    public static string EvalKeyValue(string key, string value, IDictionary<string, string> processEnv,
+        Dictionary<string, string> runningParsed)
     {
         // Match everything between the outermost $() using a regex with non-capturing groups
-        var matches = EvalRegex().Matches(value);
-        
+        MatchCollection matches = EvalRegex().Matches(value);
+
         return matches.Aggregate(value, (newValue, match) =>
         {
             // Extract command by removing $() wrapper
@@ -20,8 +21,8 @@ public static partial class Helpers
             try
             {
                 // Combine environment variables
-                var envVars = new Dictionary<string, string>(processEnv);
-                foreach (var kvp in runningParsed)
+                Dictionary<string, string> envVars = new(processEnv);
+                foreach (KeyValuePair<string, string> kvp in runningParsed)
                 {
                     envVars[kvp.Key] = kvp.Value;
                 }

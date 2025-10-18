@@ -17,7 +17,8 @@ public class PrivateKeyTest : EciesJsTestBase
         AlicePrivateKeyHex,
         BobPublicKeyHex,
         "9208dc63cb2f85470216148e08a419daa4c60df3ae26c7a5fcd0aa9bd86eaf1a")]
-    public void Ecdh_ComputesExpectedSharedSecret(string privateKeyHex, string peerPublicKeyHex, string expectedSharedHex)
+    public void Ecdh_ComputesExpectedSharedSecret(string privateKeyHex, string peerPublicKeyHex,
+        string expectedSharedHex)
     {
         byte[] peerPublicKey = Convert.FromHexString(peerPublicKeyHex);
         byte[] expectedShared = Convert.FromHexString(expectedSharedHex);
@@ -81,12 +82,14 @@ public class PrivateKeyTest : EciesJsTestBase
         byte[] alicePublicKey = PrivateKey.FromHex(AlicePrivateKeyHex).GetPublicKey();
         string alicePublicKeyHex = Convert.ToHexString(alicePublicKey).ToLowerInvariant();
         alicePublicKey.Length.ShouldBe(65);
-        alicePublicKeyHex.ShouldBe("049a168fc647dc0c6c1e921ecf32b61263b6779ccd37f248de507f97d52ae1830ddc679da2dc5c79c0677deb11ec07f8274a106ad6c784bb4e75379b67c8d7b32e");
+        alicePublicKeyHex.ShouldBe(
+            "049a168fc647dc0c6c1e921ecf32b61263b6779ccd37f248de507f97d52ae1830ddc679da2dc5c79c0677deb11ec07f8274a106ad6c784bb4e75379b67c8d7b32e");
 
         // Calculated by eciesjs v0.4.15: Buffer.from(BobPrivateKey.publicKey.toBytes(false)).toString("hex")
         byte[] bobPublicKey = PrivateKey.FromHex(BobPrivateKeyHex).GetPublicKey();
         string bobPublicKeyHex = Convert.ToHexString(bobPublicKey).ToLowerInvariant();
         bobPublicKey.Length.ShouldBe(65);
-        bobPublicKeyHex.ShouldBe("0474dd2e8ab51fe05b27f026f894e42b6a42d8c00caeec7b542cb8a0bb7b2dd96916060bacc1b174e64e1ed92dc6110bfd75b1a028e7c423b467b07020126a154f");
+        bobPublicKeyHex.ShouldBe(
+            "0474dd2e8ab51fe05b27f026f894e42b6a42d8c00caeec7b542cb8a0bb7b2dd96916060bacc1b174e64e1ed92dc6110bfd75b1a028e7c423b467b07020126a154f");
     }
 }

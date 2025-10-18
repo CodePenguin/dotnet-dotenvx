@@ -22,7 +22,8 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void DecryptKeyValue_EmptyEncryptedValueThrowsError()
     {
-        DotenvxException exception = Should.Throw<DotenvxException>(() => DotenvxHelpers.DecryptKeyValue("KEY", "encrypted:", "DOTENV_PRIVATE_KEY", PrivateKey));
+        DotenvxException exception = Should.Throw<DotenvxException>(() =>
+            DotenvxHelpers.DecryptKeyValue("KEY", "encrypted:", "DOTENV_PRIVATE_KEY", PrivateKey));
         exception.Code.ShouldBe("DECRYPTION_FAILED");
         exception.Message.ShouldBe("second arg must be public key");
     }
@@ -31,33 +32,42 @@ public class MainTest : EnvironmentTestBase
     public void DecryptKeyValue_EmptyPrivateKeyThrowsError()
     {
         string encryptedString = DotenvxHelpers.EncryptValue("hello", PublicKey);
-        DotenvxException exception = Should.Throw<DotenvxException>(() => DotenvxHelpers.DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY", ""));
+        DotenvxException exception = Should.Throw<DotenvxException>(() =>
+            DotenvxHelpers.DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY", ""));
         exception.Code.ShouldBe("MISSING_PRIVATE_KEY");
-        exception.Message.ShouldBe("[MISSING_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY='");
+        exception.Message.ShouldBe(
+            "[MISSING_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY='");
     }
 
     [Fact]
     public void DecryptKeyValue_HardCodedScenario()
     {
-        string? decrypted = DotenvxHelpers.DecryptKeyValue("KEY", "encrypted:BMVCQpz/+NYDcGZhbXyqbwP8IDJSTXl4xDQsgusQHEVFAWOXQnKRBTOzRiwuYIJzjuWnKkrQJEDEi8Av9xnfx61jVTJymVWLjVmFK7CM+6lmKOnIhPMzu0Mi0dH82P81bOXjkZTHIIcA", "DOTENV_PRIVATE_KEY", PrivateKey);
+        string? decrypted = DotenvxHelpers.DecryptKeyValue("KEY",
+            "encrypted:BMVCQpz/+NYDcGZhbXyqbwP8IDJSTXl4xDQsgusQHEVFAWOXQnKRBTOzRiwuYIJzjuWnKkrQJEDEi8Av9xnfx61jVTJymVWLjVmFK7CM+6lmKOnIhPMzu0Mi0dH82P81bOXjkZTHIIcA",
+            "DOTENV_PRIVATE_KEY", PrivateKey);
         decrypted.ShouldBe("expanded");
     }
 
     [Fact]
     public void DecryptKeyValue_InvalidEncryptedValueThrowsError()
     {
-        DotenvxException exception = Should.Throw<DotenvxException>(() => DotenvxHelpers.DecryptKeyValue("KEY", "encrypted:ADJIvD6DxJdTcFdg1tcasYa9G1O5YVtFJs0yJgem+aGIlRJl9N1Fbq6kdPtIwfS0c6VJF4EN6H+D0JUwJ4FmoerQi0XQ4mv4AyA73KjrxVEqmSypg2InsV0e4WxdP5Qx/jVVSgxD", "DOTENV_PRIVATE_KEY", PrivateKey));
+        DotenvxException exception = Should.Throw<DotenvxException>(() => DotenvxHelpers.DecryptKeyValue("KEY",
+            "encrypted:ADJIvD6DxJdTcFdg1tcasYa9G1O5YVtFJs0yJgem+aGIlRJl9N1Fbq6kdPtIwfS0c6VJF4EN6H+D0JUwJ4FmoerQi0XQ4mv4AyA73KjrxVEqmSypg2InsV0e4WxdP5Qx/jVVSgxD",
+            "DOTENV_PRIVATE_KEY", PrivateKey));
         exception.Code.ShouldBe("MALFORMED_ENCRYPTED_DATA");
-        exception.Message.ShouldBe("[MALFORMED_ENCRYPTED_DATA] could not decrypt KEY because encrypted data appears malformed");
+        exception.Message.ShouldBe(
+            "[MALFORMED_ENCRYPTED_DATA] could not decrypt KEY because encrypted data appears malformed");
     }
 
     [Fact]
     public void DecryptKeyValue_InvalidPrivateKeyThrowsError()
     {
         string encryptedString = DotenvxHelpers.EncryptValue("hello", PublicKey);
-        DotenvxException exception = Should.Throw<DotenvxException>(() => DotenvxHelpers.DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY", "invalid-private-key"));
+        DotenvxException exception = Should.Throw<DotenvxException>(() =>
+            DotenvxHelpers.DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY", "invalid-private-key"));
         exception.Code.ShouldBe("INVALID_PRIVATE_KEY");
-        exception.Message.ShouldBe("[INVALID_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY=invalid…'");
+        exception.Message.ShouldBe(
+            "[INVALID_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY=invalid…'");
     }
 
     [Fact]
@@ -71,15 +81,18 @@ public class MainTest : EnvironmentTestBase
     public void DecryptKeyValue_PrivateKeyNull()
     {
         string encryptedString = DotenvxHelpers.EncryptValue("hello", PublicKey);
-        DotenvxException exception = Should.Throw<DotenvxException>(() => DotenvxHelpers.DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY_PRODUCTION", null));
+        DotenvxException exception = Should.Throw<DotenvxException>(() =>
+            DotenvxHelpers.DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY_PRODUCTION", null));
         exception.Code.ShouldBe("MISSING_PRIVATE_KEY");
-        exception.Message.ShouldBe("[MISSING_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY_PRODUCTION='");
+        exception.Message.ShouldBe(
+            "[MISSING_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY_PRODUCTION='");
     }
 
     [Fact]
     public void DecryptKeyValue_ShortEncryptedValueThrowsError()
     {
-        DotenvxException exception = Should.Throw<DotenvxException>(() => DotenvxHelpers.DecryptKeyValue("KEY", "encrypted:1234", "DOTENV_PRIVATE_KEY", PrivateKey));
+        DotenvxException exception = Should.Throw<DotenvxException>(() =>
+            DotenvxHelpers.DecryptKeyValue("KEY", "encrypted:1234", "DOTENV_PRIVATE_KEY", PrivateKey));
         exception.Code.ShouldBe("DECRYPTION_FAILED");
         exception.Message.ShouldBe("second arg must be public key");
     }
@@ -96,9 +109,11 @@ public class MainTest : EnvironmentTestBase
     public void DecryptKeyValue_WrongPrivateKeyThrowsError()
     {
         string encryptedString = DotenvxHelpers.EncryptValue("hello", PublicKey);
-        DotenvxException exception = Should.Throw<DotenvxException>(() => DotenvxHelpers.DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY", "9c1ab41477004e68066129a8866887d316ba5d7177593dbc5e3026d6f64d32f8"));
+        DotenvxException exception = Should.Throw<DotenvxException>(() => DotenvxHelpers.DecryptKeyValue("KEY",
+            encryptedString, "DOTENV_PRIVATE_KEY", "9c1ab41477004e68066129a8866887d316ba5d7177593dbc5e3026d6f64d32f8"));
         exception.Code.ShouldBe("WRONG_PRIVATE_KEY");
-        exception.Message.ShouldBe("[WRONG_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY=9c1ab41…'");
+        exception.Message.ShouldBe(
+            "[WRONG_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY=9c1ab41…'");
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+
 using Shouldly;
 
 namespace Dotenvx.Configuration.Test;
@@ -10,7 +11,8 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     {
         ConfigurationBuilder configurationBuilder = new();
         configurationBuilder.UseDotenvx();
-        DotenvxConfigurationSource? dotenvxSource = configurationBuilder.Sources.OfType<DotenvxConfigurationSource>().FirstOrDefault();
+        DotenvxConfigurationSource? dotenvxSource =
+            configurationBuilder.Sources.OfType<DotenvxConfigurationSource>().FirstOrDefault();
         dotenvxSource.ShouldNotBeNull();
     }
 

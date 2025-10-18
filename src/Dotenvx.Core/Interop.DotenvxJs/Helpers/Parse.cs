@@ -4,7 +4,12 @@ using Dotenvx.Core.Interop.DotenvxJs.Types;
 
 namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
 
-public partial class Parse(string? src, string? privateKey = null, IDictionary<string, string>? processEnv = null, bool overload = false, string? privateKeyName = null)
+public partial class Parse(
+    string? src,
+    string? privateKey = null,
+    IDictionary<string, string>? processEnv = null,
+    bool overload = false,
+    string? privateKeyName = null)
 {
     private readonly List<Exception> _errors = [];
     private readonly IDictionary<string, string> _injected = new Dictionary<string, string>();
@@ -44,7 +49,8 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
 
             // eval empty, double, or backticks
             bool evaled = false;
-            if (quote != '\'' && (!_processEnv.TryGetValue(key, out processEnvValue) || processEnvValue == _parsed[key]))
+            if (quote != '\'' &&
+                (!_processEnv.TryGetValue(key, out processEnvValue) || processEnvValue == _parsed[key]))
             {
                 string priorEvaled = _parsed[key];
                 // eval
@@ -87,11 +93,12 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
             }
         }
 
-        return new ParseResult {
+        return new ParseResult
+        {
             Parsed = _parsed,
-            ProcessEnv = _processEnv, 
+            ProcessEnv = _processEnv,
             Injected = _injected,
-            PreExisted = _preExisted, 
+            PreExisted = _preExisted,
             Errors = _errors
         };
     }
@@ -171,7 +178,7 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
             // find first match
             Match opMatch = OpRegex().Match(expression);
             string? splitter = opMatch.Success ? opMatch.Value : null;
-            
+
             string[] parts = splitter != null ? expression.Split([splitter], StringSplitOptions.None) : [expression];
 
             string defaultValue;
@@ -216,7 +223,9 @@ public partial class Parse(string? src, string? privateKey = null, IDictionary<s
     [GeneratedRegex(@"^(['""`])([\s\S]*)\1$")]
     private static partial Regex CleanRegex();
 
-    [GeneratedRegex("""(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)""", RegexOptions.Multiline)]
+    [GeneratedRegex(
+        """(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)""",
+        RegexOptions.Multiline)]
     private static partial Regex LineRegex();
 
     [GeneratedRegex(@"\$\{[^}]+\}|\$[A-Za-z_][A-Za-z0-9_]*")]

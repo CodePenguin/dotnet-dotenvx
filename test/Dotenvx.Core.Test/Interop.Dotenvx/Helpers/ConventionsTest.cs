@@ -115,8 +115,7 @@ public class ConventionsTest : IDisposable
 
         envs.ShouldBeEquivalentTo(new List<EnvItem>
         {
-            new() { Type = EnvType.EnvFile, Value = ".env.local" },
-            new() { Type = EnvType.EnvFile, Value = ".env" }
+            new() { Type = EnvType.EnvFile, Value = ".env.local" }, new() { Type = EnvType.EnvFile, Value = ".env" }
         });
     }
 

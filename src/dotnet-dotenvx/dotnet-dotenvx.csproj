@@ -14,8 +14,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Dotenvx.Configuration\Dotenvx.Configuration.csproj" />
-        <ProjectReference Include="..\Dotenvx.Core\Dotenvx.Core.csproj" />
+        <ProjectReference Include="..\Dotenvx.Configuration\Dotenvx.Configuration.csproj"/>
+        <ProjectReference Include="..\Dotenvx.Core\Dotenvx.Core.csproj"/>
     </ItemGroup>
 
 </Project>

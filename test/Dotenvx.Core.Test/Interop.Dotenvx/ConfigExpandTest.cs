@@ -1,5 +1,6 @@
 using Dotenvx.Core.Interop.DotenvxJs;
 using Dotenvx.Core.Interop.DotenvxJs.Types;
+
 using Shouldly;
 
 namespace Dotenvx.Core.Test.Interop.Dotenvx;
@@ -16,10 +17,10 @@ public class ConfigExpandTest : EnvironmentTestBase
 
         result.Parsed["BASIC"].ShouldBe("basic");
         Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
-        
+
         result.Parsed["BASIC_EXPAND"].ShouldBe("basic");
         Environment.GetEnvironmentVariable("BASIC_EXPAND").ShouldBe("basic");
-        
+
         result.Parsed["MACHINE_EXPAND"].ShouldBe("file");
         Environment.GetEnvironmentVariable("MACHINE_EXPAND").ShouldBe("file");
     }
@@ -62,60 +63,62 @@ public class ConfigExpandTest : EnvironmentTestBase
     {
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
-        
+
         result.Parsed["ESCAPED_EXPAND"].ShouldBe("$ESCAPED");
         Environment.GetEnvironmentVariable("ESCAPED_EXPAND").ShouldBe("$ESCAPED");
-        
+
         result.Parsed["ESCAPED_EXPAND"].ShouldBe("$ESCAPED");
         Environment.GetEnvironmentVariable("ESCAPED_EXPAND").ShouldBe("$ESCAPED");
-        
+
         result.Parsed["EXPAND_DEFAULT"].ShouldBe("file");
         Environment.GetEnvironmentVariable("EXPAND_DEFAULT").ShouldBe("file");
-        
+
         result.Parsed["EXPAND_DEFAULT_NESTED"].ShouldBe("file");
         Environment.GetEnvironmentVariable("EXPAND_DEFAULT_NESTED").ShouldBe("file");
 
         result.Parsed["EXPAND_DEFAULT_NESTED2"].ShouldBe("file");
         Environment.GetEnvironmentVariable("EXPAND_DEFAULT_NESTED2").ShouldBe("file");
-        
+
         result.Parsed["UNDEFINED_EXPAND"].ShouldBe("");
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND").ShouldBe(EmptyEnvironmentVariableValue);
-        
+
         result.Parsed["UNDEFINED_EXPAND_NESTED"].ShouldBe("file");
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_NESTED").ShouldBe("file");
-        
+
         result.Parsed["UNDEFINED_EXPAND_DEFAULT"].ShouldBe("default");
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT").ShouldBe("default");
-        
+
         result.Parsed["UNDEFINED_EXPAND_DEFAULT2"].ShouldBe("default");
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT2").ShouldBe("default");
-        
+
         result.Parsed["UNDEFINED_EXPAND_DEFAULT_NESTED"].ShouldBe("default");
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_NESTED").ShouldBe("default");
-        
+
         result.Parsed["UNDEFINED_EXPAND_DEFAULT_NESTED2"].ShouldBe("default");
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_NESTED2").ShouldBe("default");
-        
+
         result.Parsed["UNDEFINED_EXPAND_DEFAULT_NESTED_TWICE"].ShouldBe("default");
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_NESTED_TWICE").ShouldBe("default");
-        
+
         result.Parsed["UNDEFINED_EXPAND_DEFAULT_NESTED_TWICE2"].ShouldBe("default");
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_NESTED_TWICE2").ShouldBe("default");
-        
+
         result.Parsed["UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS"].ShouldBe("/default/path:with/colon");
-        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS").ShouldBe("/default/path:with/colon");
-        
+        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS")
+            .ShouldBe("/default/path:with/colon");
+
         result.Parsed["UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS2"].ShouldBe("/default/path:with/colon");
-        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS2").ShouldBe("/default/path:with/colon");
+        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS2")
+            .ShouldBe("/default/path:with/colon");
     }
-    
+
     [Fact]
     public void ExpandsEnvExpandCorrectlyWhenMachineAlreadySet()
     {
         Environment.SetEnvironmentVariable("MACHINE", "machine");
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
-        
+
         result.Parsed["ESCAPED_EXPAND"].ShouldBe("$ESCAPED");
         Environment.GetEnvironmentVariable("ESCAPED_EXPAND").ShouldBe("$ESCAPED");
 
@@ -165,28 +168,32 @@ public class ConfigExpandTest : EnvironmentTestBase
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_NESTED_TWICE2").ShouldBe("default");
 
         result.Parsed["UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS"].ShouldBe("/default/path:with/colon");
-        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS").ShouldBe("/default/path:with/colon");
+        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS")
+            .ShouldBe("/default/path:with/colon");
 
         result.Parsed["UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS2"].ShouldBe("/default/path:with/colon");
-        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS2").ShouldBe("/default/path:with/colon");
+        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS2")
+            .ShouldBe("/default/path:with/colon");
 
         result.Parsed["UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS_NESTED"].ShouldBe("/default/path:with/colon");
-        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS_NESTED").ShouldBe("/default/path:with/colon");
+        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS_NESTED")
+            .ShouldBe("/default/path:with/colon");
 
         result.Parsed["UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS_NESTED2"].ShouldBe("/default/path:with/colon");
-        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS_NESTED2").ShouldBe("/default/path:with/colon");
+        Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_DEFAULT_SPECIAL_CHARACTERS_NESTED2")
+            .ShouldBe("/default/path:with/colon");
     }
-    
+
     [Fact]
     public void ExpandsEnvExpandCorrectlyWhenMachineAlreadySetButOverloadIsTrue()
     {
         Environment.SetEnvironmentVariable("MACHINE", "machine");
         ConfigOptions options = new() { Path = [EnvExpandFileName], Overload = true };
         ConfigResult result = Main.Config(options);
-        
+
         result.Parsed["MACHINE"].ShouldBe("file");
         Environment.GetEnvironmentVariable("MACHINE").ShouldBe("file");
-        
+
         result.Parsed["MACHINE_EXPAND"].ShouldBe("file");
         Environment.GetEnvironmentVariable("MACHINE_EXPAND").ShouldBe("file");
 
@@ -217,7 +224,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["UNDEFINED_EXPAND_NESTED"].ShouldBe("file");
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_NESTED").ShouldBe("file");
     }
-    
+
     [Fact]
     public void ExpandsMongoRealWorldExample()
     {
@@ -225,29 +232,32 @@ public class ConfigExpandTest : EnvironmentTestBase
         ConfigResult result = Main.Config(options);
 
         result.Parsed["MONGOLAB_URI"].ShouldBe("mongodb://username:password@abcd1234.mongolab.com:12345/heroku_db");
-        result.Parsed["MONGOLAB_URI_RECURSIVELY"].ShouldBe("mongodb://username:password@abcd1234.mongolab.com:12345/heroku_db");
-        result.Parsed["NO_CURLY_BRACES_URI"].ShouldBe("mongodb://username:password@abcd1234.mongolab.com:12345/heroku_db");
-        result.Parsed["NO_CURLY_BRACES_URI_RECURSIVELY"].ShouldBe("mongodb://username:password@abcd1234.mongolab.com:12345/heroku_db");
+        result.Parsed["MONGOLAB_URI_RECURSIVELY"]
+            .ShouldBe("mongodb://username:password@abcd1234.mongolab.com:12345/heroku_db");
+        result.Parsed["NO_CURLY_BRACES_URI"]
+            .ShouldBe("mongodb://username:password@abcd1234.mongolab.com:12345/heroku_db");
+        result.Parsed["NO_CURLY_BRACES_URI_RECURSIVELY"]
+            .ShouldBe("mongodb://username:password@abcd1234.mongolab.com:12345/heroku_db");
     }
-    
+
     [Fact]
     public void ExpandsWithPeriodsInKeyName()
     {
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
-        
+
         result.Parsed["POSTGRESQL.MAIN.USER"].ShouldBe("postgres");
     }
-    
+
     [Fact]
     public void DoesNotExpandDollar()
     {
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
-        
+
         result.Parsed["DOLLAR"].ShouldBe("$");
     }
-    
+
     [Fact]
     public void HandlesOneTwoVariables()
     {
@@ -259,16 +269,16 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["ONETWO_SIMPLE2"].ShouldBe("onetwo");
         result.Parsed["ONETWO_SUPER_SIMPLE"].ShouldBe("onetwo");
     }
-    
+
     [Fact]
     public void HandlesTwoDollarSigns()
     {
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
-        
+
         result.Parsed["TWO_DOLLAR_SIGNS"].ShouldBe("abcd$$1234");
     }
-    
+
     [Fact]
     public void DoesNotChoke()
     {
@@ -284,7 +294,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["DONT_CHOKE7"].ShouldBe("?\\$6)m*xhTVewc#NVVgxX%eBhJjoHYzpXFg=gzn[rWXPLj5UWj@z\\$/UDm8o79n/p%");
         result.Parsed["DONT_CHOKE8"].ShouldBe("@}:[4#g%[R-CFR});bY(Z[KcDQDsVn2_y4cSdU<Mjy!c^F`G<!Ks7]kbS]N1:bP:");
     }
-    
+
     [Fact]
     public void ExpandsDomainWithHost()
     {
@@ -294,42 +304,43 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["HOST"].ShouldBe("something");
         result.Parsed["DOMAIN"].ShouldBe("https://something");
     }
-    
+
     [Fact]
     public void DoesNotExpandSingleQuote()
     {
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
-        
+
         result.Parsed["SINGLE_QUOTE"].ShouldBe("$BASIC");
     }
-    
+
     [Fact]
     public void HandlesDeepNesting()
     {
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
-        
-        result.Parsed["DEEP8"].ShouldBe("prefix5-prefix4-prefix3-prefix2-prefix1-basic-suffix1-suffix2-suffix3-suffix4-suffix5");
+
+        result.Parsed["DEEP8"]
+            .ShouldBe("prefix5-prefix4-prefix3-prefix2-prefix1-basic-suffix1-suffix2-suffix3-suffix4-suffix5");
     }
-    
+
     [Fact]
     public void HandlesSelfReferencing()
     {
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
-        
+
         result.Parsed["EXPAND_SELF"].ShouldBe("");
         result.Parsed["DEEP_SELF"].ShouldBe("basic-bar");
         result.Parsed["DEEP_SELF_PRIOR"].ShouldBe("prefix2-foo-suffix2");
     }
-    
+
     [Fact]
     public void HandlesProgressiveUpdating()
     {
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
-        
+
         result.Parsed["PROGRESSIVE"].ShouldBe("first-second");
     }
 

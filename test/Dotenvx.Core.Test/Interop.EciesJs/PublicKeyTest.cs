@@ -17,7 +17,8 @@ public class PublicKeyTest : EciesJsTestBase
         BobPrivateKeyHex,
         AlicePublicKeyHex,
         "9208dc63cb2f85470216148e08a419daa4c60df3ae26c7a5fcd0aa9bd86eaf1a")]
-    public void Ecdh_ComputesExpectedSharedSecret(string privateKeyHex, string peerPublicKeyHex, string expectedSharedHex)
+    public void Ecdh_ComputesExpectedSharedSecret(string privateKeyHex, string peerPublicKeyHex,
+        string expectedSharedHex)
     {
         byte[] privateKey = Convert.FromHexString(privateKeyHex);
         byte[] peerPublicKey = Convert.FromHexString(peerPublicKeyHex);
@@ -42,7 +43,8 @@ public class PublicKeyTest : EciesJsTestBase
     {
         byte[] badPublicKey = new byte[33];
         badPublicKey[0] = 0x01; // invalid prefix
-        Should.Throw<ArgumentException>(() => new PublicKey(badPublicKey).Decapsulate(Convert.FromHexString(AlicePrivateKeyHex)));
+        Should.Throw<ArgumentException>(() =>
+            new PublicKey(badPublicKey).Decapsulate(Convert.FromHexString(AlicePrivateKeyHex)));
     }
 
     [Fact]

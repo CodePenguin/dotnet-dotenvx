@@ -9,7 +9,7 @@ public static partial class Helpers
 
     internal static List<EnvItem> DetermineEnvs(List<EnvItem>? envs, IDictionary<string, string> processEnv)
     {
-        var privateKeyNames = DotenvPrivateKeyNames.Execute(processEnv);
+        List<string> privateKeyNames = DotenvPrivateKeyNames.Execute(processEnv);
 
         if (envs == null || envs.Count == 0)
         {
@@ -25,19 +25,20 @@ public static partial class Helpers
             return envs;
         }
 
-        var combinedEnvs = new List<EnvItem>(DefaultEnvs);
+        List<EnvItem> combinedEnvs = new(DefaultEnvs);
         combinedEnvs.AddRange(envs);
         return combinedEnvs;
     }
 
     private static List<EnvItem> DetermineEnvsFromDotenvPrivateKey(List<string> privateKeyNames)
     {
-        var envs = new List<EnvItem>();
-        foreach (var privateKeyName in privateKeyNames)
+        List<EnvItem> envs = new();
+        foreach (string privateKeyName in privateKeyNames)
         {
-            var filename = GuessPrivateKeyFilename(privateKeyName);
+            string filename = GuessPrivateKeyFilename(privateKeyName);
             envs.Add(new EnvItem { Type = Types.EnvType.EnvFile, Value = filename });
         }
+
         return envs;
     }
 }

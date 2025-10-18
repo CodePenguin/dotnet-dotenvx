@@ -1,6 +1,6 @@
 namespace Dotenvx.Core.Interop.DotenvxJs.Types;
 
-public class ParseResult()
+public class ParseResult
 {
     public required IDictionary<string, string> Parsed { get; init; }
     public required IDictionary<string, string> ProcessEnv { get; init; }

@@ -3,7 +3,8 @@ namespace Dotenvx.Configuration.Test;
 public class EnvironmentTestBase : IDisposable
 {
     // Store existing environment keys
-    private readonly List<string> _existingEnvironmentKeys = Environment.GetEnvironmentVariables().Keys.OfType<string>().ToList();
+    private readonly List<string> _existingEnvironmentKeys =
+        Environment.GetEnvironmentVariables().Keys.OfType<string>().ToList();
 
     public void Dispose()
     {

@@ -1,5 +1,6 @@
 using Dotenvx.Core.Interop.DotenvxJs;
 using Dotenvx.Core.Interop.DotenvxJs.Types;
+
 using Shouldly;
 
 namespace Dotenvx.Core.Test.Interop.Dotenvx;
@@ -135,7 +136,7 @@ public class ConfigTest : EnvironmentTestBase
         result.Parsed["SINGLE_QUOTES"].ShouldBe("single_quotes");
         Environment.GetEnvironmentVariable("SINGLE_QUOTES").ShouldBe("single_quotes");
     }
-    
+
     [Fact]
     public void HandlesInlineComments()
     {

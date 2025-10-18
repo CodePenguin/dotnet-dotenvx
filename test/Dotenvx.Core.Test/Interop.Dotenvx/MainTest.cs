@@ -5,9 +5,9 @@ using Shouldly;
 namespace Dotenvx.Core.Test.Interop.Dotenvx;
 
 public class MainTest : EnvironmentTestBase
-{    
-    private const string BackendEnvFile = "./tests/monorepo/apps/backend/.env";
-    private const string FrontendEnvFile = "./tests/monorepo/apps/frontend/.env";
+{
+    private const string BackendEnvFile = "tests/monorepo/apps/backend/.env";
+    private const string FrontendEnvFile = "tests/monorepo/apps/frontend/.env";
 
     private const string EncryptedValue =
         "encrypted:BE9Y7LKANx77X1pv1HnEoil93fPa5c9rpL/1ps48uaRT9zM8VR6mHx9yM+HktKdsPGIZELuZ7rr2mn1gScsmWitppAgE/1lVprNYBCqiYeaTcKXjDUXU5LfsEsflnAsDhT/kWG1l";
@@ -211,6 +211,7 @@ public class MainTest : EnvironmentTestBase
         };
 
         ConfigResult result = Main.Config(options);
+
         result.ShouldNotBeNull();
     }
 
