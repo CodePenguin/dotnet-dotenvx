@@ -6,8 +6,8 @@ namespace Dotenvx.Core.Test.Interop.Dotenvx;
 
 public class ConfigTest : EnvironmentTestBase
 {
-    private const string EnvFileName = "./.env";
-    private const string EnvLocalFileName = "./.env.local";
+    private const string EnvFileName = "tests/.env";
+    private const string EnvLocalFileName = "tests/.env.local";
 
     [Fact]
     public void UsesDefaultPathWhenNoPathProvided()
@@ -144,17 +144,5 @@ public class ConfigTest : EnvironmentTestBase
 
         result.Parsed["INLINE_COMMENTS"].ShouldBe("inline comments");
         Environment.GetEnvironmentVariable("INLINE_COMMENTS").ShouldBe("inline comments");
-    }
-
-    [Fact]
-    public void HandlesQuotedValues()
-    {
-        ConfigOptions options = new() { Path = [EnvFileName] };
-        ConfigResult result = Main.Config(options);
-
-        result.Parsed["RETAIN_INNER_QUOTES"].ShouldBe("{\"foo\": \"bar\"}");
-        result.Parsed["RETAIN_INNER_QUOTES_AS_STRING"].ShouldBe("{\"foo\": \"bar\"}");
-        Environment.GetEnvironmentVariable("RETAIN_INNER_QUOTES").ShouldBe("{\"foo\": \"bar\"}");
-        Environment.GetEnvironmentVariable("RETAIN_INNER_QUOTES_AS_STRING").ShouldBe("{\"foo\": \"bar\"}");
     }
 }

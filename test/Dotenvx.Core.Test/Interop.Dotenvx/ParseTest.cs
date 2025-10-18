@@ -12,7 +12,7 @@ public class ParseTest
     [Fact]
     public void TestDotenvxParseTests()
     {
-        var src = File.ReadAllText("./.env");
+        var src = File.ReadAllText("tests/.env");
         var parsed = Main.Parse(src);
         parsed.ShouldNotBeNull("should return an object");
         parsed["BASIC"].ShouldBe("basic", "sets basic environment variable");

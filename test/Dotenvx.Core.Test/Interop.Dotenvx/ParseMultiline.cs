@@ -12,7 +12,7 @@ public class ParseMultiline
     [Fact]
     public void TestDotenvxMultilineParseTests()
     {
-        var src = File.ReadAllText("./.env.multiline");
+        var src = File.ReadAllText("tests/.env.multiline");
         var parsed = Main.Parse(src);
         parsed["BASIC"].ShouldBe("basic", "sets basic environment variable");
         parsed["AFTER_LINE"].ShouldBe("after_line", "reads after a skipped line");

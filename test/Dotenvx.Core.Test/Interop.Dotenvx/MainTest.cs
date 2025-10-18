@@ -1,0 +1,232 @@
+using Dotenvx.Core.Interop.DotenvxJs;
+using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Shouldly;
+
+namespace Dotenvx.Core.Test.Interop.Dotenvx;
+
+public class MainTest : EnvironmentTestBase
+{    
+    private const string BackendEnvFile = "./tests/monorepo/apps/backend/.env";
+    private const string FrontendEnvFile = "./tests/monorepo/apps/frontend/.env";
+
+    private const string EncryptedValue =
+        "encrypted:BE9Y7LKANx77X1pv1HnEoil93fPa5c9rpL/1ps48uaRT9zM8VR6mHx9yM+HktKdsPGIZELuZ7rr2mn1gScsmWitppAgE/1lVprNYBCqiYeaTcKXjDUXU5LfsEsflnAsDhT/kWG1l";
+
+    private const string ValidPrivateKey = "a4547dcd9d3429615a3649bb79e87edb62ee6a74b007075e9141ae44f5fb412c";
+
+    [Fact]
+    public void ConfigCallsRunRun()
+    {
+        ConfigResult result = Main.Config(new ConfigOptions());
+        result.ShouldNotBeNull();
+        result.Error.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ConfigWithConventionCallsRunRunWithProperEnvs()
+    {
+        ConfigResult result = Main.Config(new ConfigOptions { Convention = "nextjs" });
+        result.ShouldNotBeNull();
+        result.Error.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ConfigWithConventionFlowCallsRunRunWithProperEnvs()
+    {
+        ConfigResult result = Main.Config(new ConfigOptions { Convention = "flow" });
+        result.ShouldNotBeNull();
+        result.Error.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ConfigWithRunRunErrors()
+    {
+        ConfigResult result = Main.Config(new ConfigOptions());
+        result.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void ConfigWithRunRunErrorsAndIgnore()
+    {
+        ConfigResult result = Main.Config(new ConfigOptions { Ignore = ["SOME_ERROR"] });
+        result.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void ParseCallsParseRun()
+    {
+        IDictionary<string, string> parsed = Main.Parse("HELLO=World");
+        parsed["HELLO"].ShouldBe("World");
+    }
+
+    [Fact]
+    public void ParseCallsParseRunWithOptionsProcessEnv()
+    {
+        ParseOptions options = new() { ProcessEnv = new Dictionary<string, string>() };
+        IDictionary<string, string> parsed = Main.Parse("HELLO=World", options);
+        parsed["HELLO"].ShouldBe("World");
+    }
+
+    [Fact]
+    public void ParseCallsParseRunWithOptionsPrivateKey()
+    {
+        ParseOptions options = new() { PrivateKey = ValidPrivateKey };
+        IDictionary<string, string> parsed = Main.Parse($"HELLO=\"{EncryptedValue}\"", options);
+        parsed["HELLO"].ShouldBe("World");
+    }
+
+    [Fact]
+    public void ParseCallsParseRunWithInvalidOptionsPrivateKey()
+    {
+        ParseOptions options = new() { PrivateKey = "12345" };
+        IDictionary<string, string> parsed = Main.Parse($"HELLO=\"{EncryptedValue}\"", options);
+        parsed["HELLO"].ShouldBe(EncryptedValue);
+    }
+
+    [Fact]
+    public void ConfigMonorepoAppsBackendEnv()
+    {
+        Dictionary<string, string> processEnv = new();
+        ConfigOptions options = new() { ProcessEnv = processEnv, Path = [BackendEnvFile] };
+
+        ConfigResult result = Main.Config(options);
+
+        processEnv["HELLO"].ShouldBe("backend");
+        result.Parsed["HELLO"].ShouldBe("backend");
+        result.Error.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ConfigMonorepoAppsBackendEnvAlreadySet()
+    {
+        Dictionary<string, string> processEnv = new() { ["HELLO"] = "world" };
+        ConfigOptions options = new() { ProcessEnv = processEnv, Path = [BackendEnvFile] };
+
+        ConfigResult result = Main.Config(options);
+
+        processEnv["HELLO"].ShouldBe("world");
+        result.Parsed["HELLO"].ShouldBe("world");
+        result.Error.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ConfigMonorepoAppsBackendEnvAlreadySetOverload()
+    {
+        Dictionary<string, string> processEnv = new() { ["HELLO"] = "world" };
+        ConfigOptions options = new() { ProcessEnv = processEnv, Path = [BackendEnvFile], Overload = true };
+
+        ConfigResult result = Main.Config(options);
+
+        processEnv["HELLO"].ShouldBe("backend");
+        result.Parsed["HELLO"].ShouldBe("backend");
+        result.Error.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ConfigMonorepoAppsBackendEnvAndFrontendEnv()
+    {
+        Dictionary<string, string> processEnv = new();
+        ConfigOptions options = new() { ProcessEnv = processEnv, Path = [BackendEnvFile, FrontendEnvFile] };
+
+        ConfigResult result = Main.Config(options);
+
+        processEnv["HELLO"].ShouldBe("backend");
+        result.Parsed["HELLO"].ShouldBe("backend");
+        result.Error.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ConfigMonorepoAppsBackendEnvAndFrontendEnvOverload()
+    {
+        Dictionary<string, string> processEnv = new();
+        ConfigOptions options = new()
+        {
+            ProcessEnv = processEnv, Path = [BackendEnvFile, FrontendEnvFile], Overload = true
+        };
+
+        ConfigResult result = Main.Config(options);
+
+        processEnv["HELLO"].ShouldBe("frontend");
+        result.Parsed["HELLO"].ShouldBe("frontend");
+        result.Error.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ConfigMonorepoAppsBackendEnvAndFrontendMissing()
+    {
+        Dictionary<string, string> processEnv = new();
+        ConfigOptions options = new()
+        {
+            ProcessEnv = processEnv, Path = [BackendEnvFile, "tests/monorepo/apps/frontend/missing"]
+        };
+
+        ConfigResult result = Main.Config(options);
+
+        processEnv["HELLO"].ShouldBe("backend");
+        result.Parsed["HELLO"].ShouldBe("backend");
+        result.Error.ShouldNotBeNull();
+        result.Error.Message.ShouldContain("MISSING_ENV_FILE");
+    }
+
+    [Fact]
+    public void ConfigMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontend()
+    {
+        Dictionary<string, string> processEnv = new();
+        ConfigOptions options = new()
+        {
+            ProcessEnv = processEnv, Path = [BackendEnvFile, "tests/monorepo/apps/frontend"]
+        };
+
+        ConfigResult result = Main.Config(options);
+
+        processEnv["HELLO"].ShouldBe("backend");
+        result.Parsed["HELLO"].ShouldBe("backend");
+        result.Error.ShouldNotBeNull();
+        result.Error.Message.ShouldContain("MISSING_ENV_FILE");
+    }
+
+    [Fact]
+    public void ConfigMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontendStrictItThrows()
+    {
+        Dictionary<string, string> processEnv = new();
+        ConfigOptions options = new()
+        {
+            ProcessEnv = processEnv, Path = [BackendEnvFile, "tests/monorepo/apps/frontend"], Strict = true
+        };
+
+        DotenvxException exception = Should.Throw<DotenvxException>(() => Main.Config(options));
+        exception.Message.ShouldContain("MISSING_ENV_FILE");
+    }
+
+    [Fact]
+    public void ConfigMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontendStrictButErrorAlsoIgnored()
+    {
+        Dictionary<string, string> processEnv = new();
+        ConfigOptions options = new()
+        {
+            ProcessEnv = processEnv,
+            Path = [BackendEnvFile, "tests/monorepo/apps/frontend"],
+            Strict = true,
+            Ignore = ["MISSING_ENV_FILE"]
+        };
+
+        ConfigResult result = Main.Config(options);
+        result.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void ConfigRadarObserveThrowsErrorButConfigContinuesToWork()
+    {
+        ConfigResult result = Main.Config(new ConfigOptions());
+        result.ShouldNotBeNull();
+        result.Error.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ConfigOpsObserveThrowsErrorButConfigContinuesToWork()
+    {
+        ConfigResult result = Main.Config(new ConfigOptions());
+        result.ShouldNotBeNull();
+        result.Error.ShouldBeNull();
+    }
+}

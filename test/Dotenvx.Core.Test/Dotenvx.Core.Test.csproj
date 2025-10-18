@@ -32,30 +32,109 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Update=".env">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Update=".env.eval">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Update=".env.expand">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Update=".env.export">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Update=".env.local">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Update=".env.multiline">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Update="multiline.txt">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
         <None Update="xunit.runner.json">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="..\dotenvx\tests\.env">
+            <Link>.env</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+      <Content Include="..\dotenvx\tests\.env">
+        <Link>tests\.env</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\dotenvx\tests\.env.eval">
+        <Link>tests\.env.eval</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\dotenvx\tests\.env.expand">
+        <Link>tests\.env.expand</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\dotenvx\tests\.env.export">
+        <Link>tests\.env.export</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\dotenvx\tests\.env.local">
+        <Link>tests\.env.local</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\dotenvx\tests\.env.multiline">
+        <Link>tests\.env.multiline</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\.env.keys">
+        <Link>tests\monorepo\.env.keys</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\app1\.env">
+        <Link>tests\monorepo\apps\app1\.env</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\app1\.env.production">
+        <Link>tests\monorepo\apps\app1\.env.production</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env">
+        <Link>tests\monorepo\apps\backend\.env</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.example">
+        <Link>tests\monorepo\apps\backend\.env.example</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.keys">
+        <Link>tests\monorepo\apps\backend\.env.keys</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.previous">
+        <Link>tests\monorepo\apps\backend\.env.previous</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.untracked">
+        <Link>tests\monorepo\apps\backend\.env.untracked</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.vault">
+        <Link>tests\monorepo\apps\backend\.env.vault</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\.env">
+        <Link>tests\monorepo\apps\encrypted\.env</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\.env.keys">
+        <Link>tests\monorepo\apps\encrypted\.env.keys</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\secrets.ci.txt">
+        <Link>tests\monorepo\apps\encrypted\secrets.ci.txt</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\secrets.txt">
+        <Link>tests\monorepo\apps\encrypted\secrets.txt</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\frontend\.env">
+        <Link>tests\monorepo\apps\frontend\.env</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\multiline\.env">
+        <Link>tests\monorepo\apps\multiline\.env</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\multiline\.env.crlf">
+        <Link>tests\monorepo\apps\multiline\.env.crlf</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\multiple\.env">
+        <Link>tests\monorepo\apps\multiple\.env</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\multiple\.env.keys">
+        <Link>tests\monorepo\apps\multiple\.env.keys</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\multiple\.env.production">
+        <Link>tests\monorepo\apps\multiple\.env.production</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\shebang\.env">
+        <Link>tests\monorepo\apps\shebang\.env</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\monorepo\apps\unencrypted\.env">
+        <Link>tests\monorepo\apps\unencrypted\.env</Link>
+      </Content>
+      <Content Include="..\dotenvx\tests\multiline.txt">
+        <Link>tests\multiline.txt</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>

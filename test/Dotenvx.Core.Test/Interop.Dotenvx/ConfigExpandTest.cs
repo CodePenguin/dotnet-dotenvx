@@ -6,7 +6,7 @@ namespace Dotenvx.Core.Test.Interop.Dotenvx;
 
 public class ConfigExpandTest : EnvironmentTestBase
 {
-    private const string EnvExpandFileName = "./.env.expand";  // Match original path
+    private const string EnvExpandFileName = "tests/.env.expand";
 
     [Fact]
     public void Expands()

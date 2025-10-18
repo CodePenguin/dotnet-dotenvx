@@ -26,7 +26,7 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     {
         IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
         {
-            options.Path = [".env.expand"];
+            options.Path = ["./tests/.env.expand"];
         }).Build();
         configuration["BASIC_EXPAND"].ShouldBe("basic");
     }
@@ -36,7 +36,7 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     {
         IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
         {
-            options.Path = [".env.local", ".env"];
+            options.Path = ["./tests/.env.local", "./tests/.env"];
         }).Build();
         configuration["BASIC"].ShouldBe("local_basic");
     }
@@ -46,7 +46,7 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     {
         IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
         {
-            options.Path = ["nonexistent.env"];
+            options.Path = ["./tests/nonexistent.env"];
         }).Build();
         configuration.AsEnumerable().ShouldBeEmpty();
     }
