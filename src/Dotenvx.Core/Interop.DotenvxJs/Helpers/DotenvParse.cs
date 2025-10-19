@@ -6,9 +6,10 @@ public static partial class Helpers
 {
     private static readonly Regex LineRegex = DotenvParseRegex();
 
-    private static Dictionary<string, object> DotenvParse(string src, bool skipExpandForDoubleQuotes = false, bool skipConvertingWindowsNewlines = false, bool collectAllValues = false)
+    private static Dictionary<string, object> DotenvParse(string src, bool skipExpandForDoubleQuotes = false,
+        bool skipConvertingWindowsNewlines = false, bool collectAllValues = false)
     {
-        var obj = new Dictionary<string, object>();
+        Dictionary<string, object> obj = new();
 
         // Convert buffer to string (assuming src is already string)
         string lines = src;
@@ -19,7 +20,7 @@ public static partial class Helpers
             lines = NormalizeNewLinesRegex().Replace(lines, "\n");
         }
 
-        var matches = LineRegex.Matches(lines);
+        MatchCollection matches = LineRegex.Matches(lines);
         foreach (Match match in matches)
         {
             string key = match.Groups[1].Value;
@@ -51,6 +52,7 @@ public static partial class Helpers
                 {
                     obj[key] = new List<string>();
                 }
+
                 ((List<string>)obj[key]).Add(value);
             }
             else
@@ -63,8 +65,11 @@ public static partial class Helpers
         return obj;
     }
 
-    [GeneratedRegex(@"(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)", RegexOptions.Multiline)]
+    [GeneratedRegex(
+        @"(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)",
+        RegexOptions.Multiline)]
     private static partial Regex DotenvParseRegex();
+
     [GeneratedRegex(@"\r\n?")]
     private static partial Regex NormalizeNewLinesRegex();
 }

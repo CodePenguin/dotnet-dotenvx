@@ -137,7 +137,8 @@ public class ParseTest
     public void RespectsDoubleAndSingleQuotesInsideBackticks()
     {
         IDictionary<string, string> parsed = Main.Parse(_src);
-        parsed["DOUBLE_AND_SINGLE_QUOTES_INSIDE_BACKTICKS"].ShouldBe("double \"quotes\" and single 'quotes' work inside backticks");
+        parsed["DOUBLE_AND_SINGLE_QUOTES_INSIDE_BACKTICKS"]
+            .ShouldBe("double \"quotes\" and single 'quotes' work inside backticks");
     }
 
     [Fact]

@@ -2,7 +2,9 @@ using Dotenvx.Core.Interop.DotenvxJs;
 using Dotenvx.Core.Interop.DotenvxJs.Helpers;
 using Dotenvx.Core.Interop.DotenvxJs.Services;
 using Dotenvx.Core.Interop.DotenvxJs.Types;
+
 using Moq;
+
 using Shouldly;
 
 namespace Dotenvx.Core.Test.Interop.Dotenvx;
@@ -20,8 +22,16 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigCallsRunRun()
     {
-        var mockRun = new Mock<Run>(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult { ProcessedEnvs = [], ReadableStrings = [], ReadableFilepaths = [], UniqueInjectedKeys = [], BeforeEnv = new Dictionary<string, string>(), AfterEnv = new Dictionary<string, string>() });
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
+        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        {
+            ProcessedEnvs = [],
+            ReadableStrings = [],
+            ReadableFilepaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
         Main.RunFactory = (_, _, _, _) => mockRun.Object;
 
         ConfigResult result = Main.Config(new ConfigOptions());
@@ -34,8 +44,16 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigWithConventionCallsRunRunWithProperEnvs()
     {
-        var mockRun = new Mock<Run>(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult { ProcessedEnvs = [], ReadableStrings = [], ReadableFilepaths = [], UniqueInjectedKeys = [], BeforeEnv = new Dictionary<string, string>(), AfterEnv = new Dictionary<string, string>() });
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
+        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        {
+            ProcessedEnvs = [],
+            ReadableStrings = [],
+            ReadableFilepaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
         Main.RunFactory = (_, _, _, _) => mockRun.Object;
 
         ConfigResult result = Main.Config(new ConfigOptions { Convention = "nextjs" });
@@ -48,8 +66,16 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigWithConventionFlowCallsRunRunWithProperEnvs()
     {
-        var mockRun = new Mock<Run>(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult { ProcessedEnvs = [], ReadableStrings = [], ReadableFilepaths = [], UniqueInjectedKeys = [], BeforeEnv = new Dictionary<string, string>(), AfterEnv = new Dictionary<string, string>() });
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
+        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        {
+            ProcessedEnvs = [],
+            ReadableStrings = [],
+            ReadableFilepaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
         Main.RunFactory = (_, _, _, _) => mockRun.Object;
 
         ConfigResult result = Main.Config(new ConfigOptions { Convention = "flow" });
@@ -62,9 +88,18 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigWithRunRunErrors()
     {
-        var error = new DotenvxException("GENERIC_ERROR", "some error") { Help = "some help" };
-        var mockRun = new Mock<Run>(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult { ProcessedEnvs = [new ProcessedEnv { Errors = [error] }], ReadableStrings = [], ReadableFilepaths = [], UniqueInjectedKeys = [], BeforeEnv = new Dictionary<string, string>(), AfterEnv = new Dictionary<string, string>() });
+        DotenvxException error = new("GENERIC_ERROR", "some error") { Help = "some help" };
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
+        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        {
+            ProcessedEnvs =
+                [new ProcessedEnv { Errors = [error] }],
+            ReadableStrings = [],
+            ReadableFilepaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
         Main.RunFactory = (_, _, _, _) => mockRun.Object;
 
         ConfigResult result = Main.Config(new ConfigOptions());
@@ -76,9 +111,18 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigWithRunRunErrorsAndIgnore()
     {
-        var error = new DotenvxException("SOME_ERROR", "some error") { Help = "some help" };
-        var mockRun = new Mock<Run>(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult { ProcessedEnvs = [new ProcessedEnv { Errors = [error] }], ReadableStrings = [], ReadableFilepaths = [], UniqueInjectedKeys = [], BeforeEnv = new Dictionary<string, string>(), AfterEnv = new Dictionary<string, string>() });
+        DotenvxException error = new("SOME_ERROR", "some error") { Help = "some help" };
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
+        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        {
+            ProcessedEnvs =
+                [new ProcessedEnv { Errors = [error] }],
+            ReadableStrings = [],
+            ReadableFilepaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
         Main.RunFactory = (_, _, _, _) => mockRun.Object;
 
         ConfigResult result = Main.Config(new ConfigOptions { Ignore = ["SOME_ERROR"] });
@@ -90,8 +134,15 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ParseCallsParseRun()
     {
-        var mockParse = new Mock<Parse>("", null!, new Dictionary<string, string>(), false, null!);
-        mockParse.Setup(p => p.Execute()).Returns(new ParseResult { Parsed = new Dictionary<string, string> { ["HELLO"] = "World" }, ProcessEnv = new Dictionary<string, string>(), Injected = new Dictionary<string, string>(), PreExisted = new Dictionary<string, string>(), Errors = [] });
+        Mock<Parse> mockParse = new("", null!, new Dictionary<string, string>(), false, null!);
+        mockParse.Setup(p => p.Execute()).Returns(new ParseResult
+        {
+            Parsed = new Dictionary<string, string> { ["HELLO"] = "World" },
+            ProcessEnv = new Dictionary<string, string>(),
+            Injected = new Dictionary<string, string>(),
+            PreExisted = new Dictionary<string, string>(),
+            Errors = []
+        });
         Main.ParseFactory = (_, _, _, _, _) => mockParse.Object;
 
         IDictionary<string, string> parsed = Main.Parse("HELLO=World");
@@ -103,8 +154,15 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ParseCallsParseRunWithOptionsProcessEnv()
     {
-        var mockParse = new Mock<Parse>("", null!, new Dictionary<string, string>(), false, null!);
-        mockParse.Setup(p => p.Execute()).Returns(new ParseResult { Parsed = new Dictionary<string, string> { ["HELLO"] = "World" }, ProcessEnv = new Dictionary<string, string>(), Injected = new Dictionary<string, string>(), PreExisted = new Dictionary<string, string>(), Errors = [] });
+        Mock<Parse> mockParse = new("", null!, new Dictionary<string, string>(), false, null!);
+        mockParse.Setup(p => p.Execute()).Returns(new ParseResult
+        {
+            Parsed = new Dictionary<string, string> { ["HELLO"] = "World" },
+            ProcessEnv = new Dictionary<string, string>(),
+            Injected = new Dictionary<string, string>(),
+            PreExisted = new Dictionary<string, string>(),
+            Errors = []
+        });
         Main.ParseFactory = (_, _, _, _, _) => mockParse.Object;
 
         ParseOptions options = new() { ProcessEnv = new Dictionary<string, string>() };
@@ -117,8 +175,15 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ParseCallsParseRunWithOptionsPrivateKey()
     {
-        var mockParse = new Mock<Parse>("", null!, new Dictionary<string, string>(), false, null!);
-        mockParse.Setup(p => p.Execute()).Returns(new ParseResult { Parsed = new Dictionary<string, string> { ["HELLO"] = "World" }, ProcessEnv = new Dictionary<string, string>(), Injected = new Dictionary<string, string>(), PreExisted = new Dictionary<string, string>(), Errors = [] });
+        Mock<Parse> mockParse = new("", null!, new Dictionary<string, string>(), false, null!);
+        mockParse.Setup(p => p.Execute()).Returns(new ParseResult
+        {
+            Parsed = new Dictionary<string, string> { ["HELLO"] = "World" },
+            ProcessEnv = new Dictionary<string, string>(),
+            Injected = new Dictionary<string, string>(),
+            PreExisted = new Dictionary<string, string>(),
+            Errors = []
+        });
         Main.ParseFactory = (_, _, _, _, _) => mockParse.Object;
 
         ParseOptions options = new() { PrivateKey = ValidPrivateKey };
@@ -131,8 +196,15 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ParseCallsParseRunWithInvalidOptionsPrivateKey()
     {
-        var mockParse = new Mock<Parse>("", null!, new Dictionary<string, string>(), false, null!);
-        mockParse.Setup(p => p.Execute()).Returns(new ParseResult { Parsed = new Dictionary<string, string> { ["HELLO"] = EncryptedValue }, ProcessEnv = new Dictionary<string, string>(), Injected = new Dictionary<string, string>(), PreExisted = new Dictionary<string, string>(), Errors = [] });
+        Mock<Parse> mockParse = new("", null!, new Dictionary<string, string>(), false, null!);
+        mockParse.Setup(p => p.Execute()).Returns(new ParseResult
+        {
+            Parsed = new Dictionary<string, string> { ["HELLO"] = EncryptedValue },
+            ProcessEnv = new Dictionary<string, string>(),
+            Injected = new Dictionary<string, string>(),
+            PreExisted = new Dictionary<string, string>(),
+            Errors = []
+        });
         Main.ParseFactory = (_, _, _, _, _) => mockParse.Object;
 
         ParseOptions options = new() { PrivateKey = "12345" };
@@ -260,8 +332,16 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontendStrictButErrorAlsoIgnored()
     {
-        var mockRun = new Mock<Run>(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult { ProcessedEnvs = [], ReadableStrings = [], ReadableFilepaths = [], UniqueInjectedKeys = [], BeforeEnv = new Dictionary<string, string>(), AfterEnv = new Dictionary<string, string>() });
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
+        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        {
+            ProcessedEnvs = [],
+            ReadableStrings = [],
+            ReadableFilepaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
         Main.RunFactory = (_, _, _, _) => mockRun.Object;
 
         Dictionary<string, string> processEnv = new();
@@ -282,8 +362,16 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigRadarObserveThrowsErrorButConfigContinuesToWork()
     {
-        var mockRun = new Mock<Run>(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult { ProcessedEnvs = [], ReadableStrings = [], ReadableFilepaths = [], UniqueInjectedKeys = [], BeforeEnv = new Dictionary<string, string>(), AfterEnv = new Dictionary<string, string>() });
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
+        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        {
+            ProcessedEnvs = [],
+            ReadableStrings = [],
+            ReadableFilepaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
         Main.RunFactory = (_, _, _, _) => mockRun.Object;
 
         ConfigResult result = Main.Config(new ConfigOptions());
@@ -296,8 +384,16 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigOpsObserveThrowsErrorButConfigContinuesToWork()
     {
-        var mockRun = new Mock<Run>(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult { ProcessedEnvs = [], ReadableStrings = [], ReadableFilepaths = [], UniqueInjectedKeys = [], BeforeEnv = new Dictionary<string, string>(), AfterEnv = new Dictionary<string, string>() });
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
+        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        {
+            ProcessedEnvs = [],
+            ReadableStrings = [],
+            ReadableFilepaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
         Main.RunFactory = (_, _, _, _) => mockRun.Object;
 
         ConfigResult result = Main.Config(new ConfigOptions());

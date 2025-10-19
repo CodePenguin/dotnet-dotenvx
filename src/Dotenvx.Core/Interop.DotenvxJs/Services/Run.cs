@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Text;
 
-using Dotenvx.Core.Interop.DotenvxJs.Helpers;
 using Dotenvx.Core.Interop.DotenvxJs.Types;
 
 namespace Dotenvx.Core.Interop.DotenvxJs.Services;
@@ -120,7 +119,8 @@ public class Run
             string? privateKey = Helpers.Helpers.FindPrivateKey(envFilepath, _envKeysFilepath);
             string privateKeyName = Helpers.Helpers.GuessPrivateKeyName(envFilepath);
 
-            ParseResult parseResult = Main.ParseFactory(src, privateKey, _processEnv, _overload, privateKeyName).Execute();
+            ParseResult parseResult =
+                Main.ParseFactory(src, privateKey, _processEnv, _overload, privateKeyName).Execute();
             row.PrivateKeyName = privateKeyName;
             row.PrivateKey = privateKey;
             row.Src = src;

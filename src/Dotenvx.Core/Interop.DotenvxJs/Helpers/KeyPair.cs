@@ -19,21 +19,21 @@ public class KeyPair
 
     public Dictionary<string, string> Run()
     {
-        var result = new Dictionary<string, string>();
+        Dictionary<string, string> result = new();
 
-        foreach (var envFilepath in _envFiles)
+        foreach (string envFilepath in _envFiles)
         {
             // public key
-            var publicKeyName = Helpers.GuessPublicKeyName(envFilepath);
-            var publicKeyValue = Helpers.SmartDotenvPublicKey(envFilepath);
+            string publicKeyName = Helpers.GuessPublicKeyName(envFilepath);
+            string? publicKeyValue = Helpers.SmartDotenvPublicKey(envFilepath);
             if (publicKeyValue != null)
             {
                 result[publicKeyName] = publicKeyValue;
             }
 
             // private key
-            var privateKeyName = Helpers.GuessPrivateKeyName(envFilepath);
-            var privateKeyValue = Helpers.SmartDotenvPrivateKey(envFilepath, _envKeysFilepath);
+            string privateKeyName = Helpers.GuessPrivateKeyName(envFilepath);
+            string? privateKeyValue = Helpers.SmartDotenvPrivateKey(envFilepath, _envKeysFilepath);
             if (privateKeyValue != null)
             {
                 result[privateKeyName] = privateKeyValue;

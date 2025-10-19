@@ -57,9 +57,9 @@ public static partial class Helpers
         }
 
         string keysSrc = File.ReadAllText(keysFilepath);
-        var keysParsed = DotenvParse(keysSrc);
+        Dictionary<string, object> keysParsed = DotenvParse(keysSrc);
 
-        if (keysParsed.TryGetValue(privateKeyName, out var value) && value is string s && !string.IsNullOrEmpty(s))
+        if (keysParsed.TryGetValue(privateKeyName, out object? value) && value is string s && !string.IsNullOrEmpty(s))
         {
             return s;
         }
@@ -75,10 +75,10 @@ public static partial class Helpers
         }
 
         string envSrc = File.ReadAllText(envFilepath);
-        var envParsed = DotenvParse(envSrc);
+        Dictionary<string, object> envParsed = DotenvParse(envSrc);
 
         string? publicKeyName = null;
-        foreach (var keyName in envParsed.Keys)
+        foreach (string keyName in envParsed.Keys)
         {
             if (keyName != PublicKeySchema && !keyName.StartsWith(PublicKeySchema))
             {
@@ -89,6 +89,8 @@ public static partial class Helpers
             break;
         }
 
-        return publicKeyName?.Replace(PublicKeySchema, PrivateKeySchema); // return inverted (DOTENV_PUBLIC_KEY* -> DOTENV_PRIVATE_KEY*) if found
+        return
+            publicKeyName?.Replace(PublicKeySchema,
+                PrivateKeySchema); // return inverted (DOTENV_PUBLIC_KEY* -> DOTENV_PRIVATE_KEY*) if found
     }
 }

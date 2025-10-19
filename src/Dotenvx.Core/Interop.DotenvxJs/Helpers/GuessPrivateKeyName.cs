@@ -1,5 +1,3 @@
-using System.IO;
-
 namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
 
 public static partial class Helpers
