@@ -33,7 +33,7 @@ public class Run
         _envKeysFilepath = envKeysFilepath;
     }
 
-    public RunResult Execute()
+    public virtual RunResult Execute()
     {
         foreach (EnvItem env in _envs)
         {
@@ -67,7 +67,7 @@ public class Run
 
         try
         {
-            ParseResult parseResult = new Parse(env, null, _processEnv, _overload).Execute();
+            ParseResult parseResult = Main.ParseFactory(env, null, _processEnv, _overload, null).Execute();
             row.Parsed = parseResult.Parsed;
             row.Errors = parseResult.Errors;
             row.Injected = parseResult.Injected;
@@ -120,7 +120,7 @@ public class Run
             string privateKey = Helpers.Helpers.FindPrivateKey(envFilepath, _envKeysFilepath);
             string privateKeyName = Helpers.Helpers.GuessPrivateKeyName(envFilepath);
 
-            ParseResult parseResult = new Parse(src, privateKey, _processEnv, _overload, privateKeyName).Execute();
+            ParseResult parseResult = Main.ParseFactory(src, privateKey, _processEnv, _overload, privateKeyName).Execute();
             row.PrivateKeyName = privateKeyName;
             row.PrivateKey = privateKey;
             row.Src = src;

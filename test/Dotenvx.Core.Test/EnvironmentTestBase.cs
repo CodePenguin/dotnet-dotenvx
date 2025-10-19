@@ -1,3 +1,7 @@
+using Dotenvx.Core.Interop.DotenvxJs;
+using Dotenvx.Core.Interop.DotenvxJs.Helpers;
+using Dotenvx.Core.Interop.DotenvxJs.Services;
+
 namespace Dotenvx.Core.Test;
 
 public class EnvironmentTestBase : IDisposable
@@ -19,6 +23,13 @@ public class EnvironmentTestBase : IDisposable
             .Where(key => !_existingEnvironmentKeys.Contains(key))
             .ToList()
             .ForEach(key => Environment.SetEnvironmentVariable(key, null));
+
+        // Reset Mock Factories
+        Main.RunFactory = (envs, overload, envKeysFile, processEnv)
+            => new Run(envs, overload, envKeysFile, processEnv);
+        Main.ParseFactory = (src, privateKey, processEnv, overload, privateKeyName)
+            => new Parse(src, privateKey, processEnv, overload, privateKeyName);
+
         GC.SuppressFinalize(this);
     }
 }

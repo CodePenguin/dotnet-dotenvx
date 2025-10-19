@@ -21,6 +21,7 @@ public static partial class Helpers
             try
             {
                 // Combine environment variables
+                // ReSharper disable once CollectionNeverQueried.Local (Remove once Eval is implemented)
                 Dictionary<string, string> envVars = new(processEnv);
                 foreach (KeyValuePair<string, string> kvp in runningParsed)
                 {
@@ -36,8 +37,10 @@ public static partial class Helpers
             }
 
             // Chomp the result and replace match with result
+#pragma warning disable CS0162 // Remove once Eval is implemented
             result = result.TrimEnd('\n', '\r');
             return newValue.Replace(match.Value, result);
+#pragma warning restore CS0162 // Remove once Eval is implemented
         });
     }
 

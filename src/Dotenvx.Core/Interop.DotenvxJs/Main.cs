@@ -8,6 +8,10 @@ namespace Dotenvx.Core.Interop.DotenvxJs;
 
 public static class Main
 {
+    // Factory Methods
+    public static Func<List<EnvItem>, bool, string?, IDictionary<string, string>?, Run> RunFactory { get; set; } = (envs, overload, envKeysFile, processEnv) => new Run(envs, overload, envKeysFile, processEnv);
+    public static Func<string?, string?, IDictionary<string, string>?, bool, string?, Parse> ParseFactory { get; set; } = (src, privateKey, processEnv, overload, privateKeyName) => new Parse(src, privateKey, processEnv, overload, privateKeyName);
+    
     public static ConfigResult Config(ConfigOptions options)
     {
         // allow user to set processEnv to write to
@@ -29,7 +33,7 @@ public static class Main
         {
             List<EnvItem> envs = Helpers.Helpers.BuildEnvs(options);
 
-            RunResult runResult = new Run(envs, options.Overload, envKeysFile, options.ProcessEnv).Execute();
+            RunResult runResult = RunFactory(envs, options.Overload, envKeysFile, options.ProcessEnv).Execute();
 
             Exception? lastError = null;
             IDictionary<string, string> parsedAll = new Dictionary<string, string>();
@@ -107,7 +111,7 @@ public static class Main
         // overload
         bool overload = options?.Overload ?? false;
 
-        ParseResult response = new Parse(src, privateKey, processEnv ?? new Dictionary<string, string>(), overload)
+        ParseResult response = ParseFactory(src, privateKey, processEnv ?? new Dictionary<string, string>(), overload, null)
             .Execute();
 
         // display any errors

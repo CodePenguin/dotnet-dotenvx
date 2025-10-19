@@ -3,6 +3,7 @@ namespace Dotenvx.Core.Interop.DotenvxJs.Types;
 public class DotenvxException(string code, string message) : Exception(message)
 {
     public string Code { get; private set; } = code;
+    public string? Help { get; set; }
 
     protected static string Truncate(string? value, int showCharacters = 7)
     {

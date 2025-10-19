@@ -20,7 +20,7 @@ public partial class Parse(
     private readonly IDictionary<string, string> _processEnv = processEnv ?? new Dictionary<string, string>();
     private readonly Dictionary<string, string> _runningParsed = new();
 
-    public ParseResult Execute()
+    public virtual ParseResult Execute()
     {
         string lines = GetLines();
         MatchCollection matches = LineRegex().Matches(lines);
