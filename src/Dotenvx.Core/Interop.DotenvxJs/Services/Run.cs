@@ -117,7 +117,7 @@ public class Run
             string src = File.ReadAllText(filepath, encoding);
             _readableFilepaths.Add(envFilepath);
 
-            string privateKey = Helpers.Helpers.FindPrivateKey(envFilepath, _envKeysFilepath);
+            string? privateKey = Helpers.Helpers.FindPrivateKey(envFilepath, _envKeysFilepath);
             string privateKeyName = Helpers.Helpers.GuessPrivateKeyName(envFilepath);
 
             ParseResult parseResult = Main.ParseFactory(src, privateKey, _processEnv, _overload, privateKeyName).Execute();

@@ -1,0 +1,22 @@
+using System.IO;
+
+namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+
+public static partial class Helpers
+{
+    public static string GuessPublicKeyName(string filepath)
+    {
+        string filename = Path.GetFileName(filepath).ToLower();
+
+        // .env
+        if (filename == ".env")
+        {
+            return "DOTENV_PUBLIC_KEY";
+        }
+
+        // .env.ENVIRONMENT
+        string environment = GuessEnvironment(filename);
+
+        return $"DOTENV_PUBLIC_KEY_{environment.ToUpper()}";
+    }
+}

@@ -4,7 +4,16 @@ public static partial class Helpers
 {
     private static string GuessPrivateKeyFilename(string privateKeyName)
     {
-        // TODO: Translate logic from guessPrivateKeyFilename.js
-        return ".env"; // Return default for now
+        const string prefix = "DOTENV_PRIVATE_KEY";
+
+        // .env
+        if (privateKeyName == prefix)
+        {
+            return ".env";
+        }
+
+        // .env.ENVIRONMENT
+        string suffix = privateKeyName[$"{prefix}_".Length..].Replace("_", ".").ToLower();
+        return $".env.{suffix}";
     }
 }

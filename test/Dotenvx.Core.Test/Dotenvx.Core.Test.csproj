@@ -98,15 +98,19 @@
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\.env">
             <Link>tests\monorepo\apps\encrypted\.env</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\.env.keys">
             <Link>tests\monorepo\apps\encrypted\.env.keys</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\secrets.ci.txt">
             <Link>tests\monorepo\apps\encrypted\secrets.ci.txt</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\secrets.txt">
             <Link>tests\monorepo\apps\encrypted\secrets.txt</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\frontend\.env">
             <Link>tests\monorepo\apps\frontend\.env</Link>
