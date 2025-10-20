@@ -27,7 +27,7 @@ public class MainTest : EnvironmentTestBase
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
-            ReadableFilepaths = [],
+            ReadableFilePaths = [],
             UniqueInjectedKeys = [],
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
@@ -49,7 +49,7 @@ public class MainTest : EnvironmentTestBase
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
-            ReadableFilepaths = [],
+            ReadableFilePaths = [],
             UniqueInjectedKeys = [],
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
@@ -71,7 +71,7 @@ public class MainTest : EnvironmentTestBase
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
-            ReadableFilepaths = [],
+            ReadableFilePaths = [],
             UniqueInjectedKeys = [],
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
@@ -95,7 +95,7 @@ public class MainTest : EnvironmentTestBase
             ProcessedEnvs =
                 [new ProcessedEnv { Errors = [error] }],
             ReadableStrings = [],
-            ReadableFilepaths = [],
+            ReadableFilePaths = [],
             UniqueInjectedKeys = [],
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
@@ -118,7 +118,7 @@ public class MainTest : EnvironmentTestBase
             ProcessedEnvs =
                 [new ProcessedEnv { Errors = [error] }],
             ReadableStrings = [],
-            ReadableFilepaths = [],
+            ReadableFilePaths = [],
             UniqueInjectedKeys = [],
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
@@ -337,7 +337,7 @@ public class MainTest : EnvironmentTestBase
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
-            ReadableFilepaths = [],
+            ReadableFilePaths = [],
             UniqueInjectedKeys = [],
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
@@ -367,7 +367,7 @@ public class MainTest : EnvironmentTestBase
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
-            ReadableFilepaths = [],
+            ReadableFilePaths = [],
             UniqueInjectedKeys = [],
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
@@ -389,7 +389,7 @@ public class MainTest : EnvironmentTestBase
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
-            ReadableFilepaths = [],
+            ReadableFilePaths = [],
             UniqueInjectedKeys = [],
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()

@@ -6,7 +6,7 @@ public static partial class Helpers
 {
     private static readonly Regex LineRegex = DotenvParseRegex();
 
-    private static Dictionary<string, object> DotenvParse(string src, bool skipExpandForDoubleQuotes = false,
+    public static Dictionary<string, object> DotenvParse(string src, bool skipExpandForDoubleQuotes = false,
         bool skipConvertingWindowsNewlines = false, bool collectAllValues = false)
     {
         Dictionary<string, object> obj = new();

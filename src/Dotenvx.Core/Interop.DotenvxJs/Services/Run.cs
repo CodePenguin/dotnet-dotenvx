@@ -53,7 +53,7 @@ public class Run
         {
             ProcessedEnvs = _processedEnvs,
             ReadableStrings = _readableStrings.ToList(),
-            ReadableFilepaths = _readableFilepaths.ToList(),
+            ReadableFilePaths = _readableFilepaths.ToList(),
             UniqueInjectedKeys = _uniqueInjectedKeys.ToList(),
             BeforeEnv = _beforeEnv,
             AfterEnv = new Dictionary<string, string>(_processEnv)
@@ -101,7 +101,7 @@ public class Run
 
     private void InjectEnvFile(string envFilepath)
     {
-        ProcessedEnv row = new() { Type = EnvType.EnvFile, Filepath = envFilepath };
+        ProcessedEnv row = new() { Type = EnvType.EnvFile, FilePath = envFilepath };
 
         string filepath = Path.GetFullPath(envFilepath);
 
