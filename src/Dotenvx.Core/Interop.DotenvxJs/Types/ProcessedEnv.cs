@@ -3,7 +3,7 @@ namespace Dotenvx.Core.Interop.DotenvxJs.Types;
 public class ProcessedEnv
 {
     public EnvType Type { get; set; }
-    public string Filepath { get; set; } = string.Empty;
+    public string FilePath { get; set; } = string.Empty;
     public string String { get; set; } = string.Empty;
     public IDictionary<string, string> Parsed { get; set; } = new Dictionary<string, string>();
     public IList<Exception> Errors { get; set; } = new List<Exception>();

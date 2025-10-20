@@ -1,4 +1,4 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Services;
+namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
 
 public static class DotenvPrivateKeyNames
 {

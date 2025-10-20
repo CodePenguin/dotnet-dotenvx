@@ -16,7 +16,7 @@ public static partial class Helpers
 
         foreach (string optionPath in optionPaths)
         {
-            envs.Add(new EnvItem { Type = Types.EnvType.EnvFile, Value = optionPath });
+            envs.Add(new EnvItem { Type = EnvType.EnvFile, Value = optionPath });
         }
 
         return envs;

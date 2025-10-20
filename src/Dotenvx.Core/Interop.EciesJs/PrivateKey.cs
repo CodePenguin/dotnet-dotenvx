@@ -2,6 +2,9 @@ using NBitcoin.Secp256k1;
 
 namespace Dotenvx.Core.Interop.EciesJs;
 
+/// <summary>
+///     C# equivalent for eciesjs src/keys/PrivateKey.ts (https://github.com/ecies/js).
+/// </summary>
 public class PrivateKey
 {
     private readonly Context _context = Context.Instance;
@@ -19,9 +22,6 @@ public class PrivateKey
         _privateKey = LoadFromBytes(privateKey);
     }
 
-    /// <summary>
-    ///     C# equivalent for encapsulate function from https://github.com/ecies/js/blob/master/src/keys/PrivateKey.ts
-    /// </summary>
     public byte[] Encapsulate(byte[] publicKey, bool compressed = false)
     {
         if (!ECPubKey.TryCreate(publicKey, _context, out _, out ECPubKey? ecPublicKey))
@@ -56,5 +56,10 @@ public class PrivateKey
         return _context.TryCreateECPrivKey(privateKey, out ECPrivKey? ecPrivateKey)
             ? ecPrivateKey
             : throw new ArgumentException("Invalid private key", nameof(privateKey));
+    }
+
+    public string ToHex()
+    {
+        return Convert.ToHexString(_privateKey.sec.ToBytes());
     }
 }
