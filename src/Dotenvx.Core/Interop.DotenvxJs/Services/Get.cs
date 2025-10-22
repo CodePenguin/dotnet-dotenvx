@@ -1,4 +1,5 @@
 using System.Collections;
+
 using Dotenvx.Core.Interop.DotenvxJs.Types;
 
 namespace Dotenvx.Core.Interop.DotenvxJs.Services;
@@ -7,22 +8,21 @@ public class Get(string? key, List<EnvItem> envs, bool overload, bool all, strin
 {
     public GetResult Run()
     {
-        var processEnv = new Dictionary<string, string>(Environment.GetEnvironmentVariables()
+        Dictionary<string, string> processEnv = new(Environment.GetEnvironmentVariables()
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
-        var run = new Run(envs, overload, envKeysFilepath, processEnv);
-        var runResult = run.Execute();
+        RunResult runResult = new Run(envs, overload, envKeysFilepath, processEnv).Execute();
 
-        var errors = new List<Exception>();
-        foreach (var processedEnv in runResult.ProcessedEnvs)
+        List<Exception> errors = [];
+        foreach (ProcessedEnv processedEnv in runResult.ProcessedEnvs)
         {
             errors.AddRange(processedEnv.Errors);
         }
 
         if (key != null)
         {
-            var parsed = new Dictionary<string, string>();
-            if (processEnv.TryGetValue(key, out var value))
+            Dictionary<string, string> parsed = [];
+            if (processEnv.TryGetValue(key, out string? value))
             {
                 parsed[key] = value;
             }
@@ -40,17 +40,17 @@ public class Get(string? key, List<EnvItem> envs, bool overload, bool all, strin
                 return new GetResult { Parsed = processEnv, Errors = errors };
             }
 
-            var parsed = new Dictionary<string, string>();
-            foreach (var processedEnv in runResult.ProcessedEnvs)
+            Dictionary<string, string> parsed = [];
+            foreach (ProcessedEnv processedEnv in runResult.ProcessedEnvs)
             {
                 if (processedEnv.Parsed.Count <= 0)
                 {
                     continue;
                 }
 
-                foreach (var parsedKey in processedEnv.Parsed.Keys)
+                foreach (string parsedKey in processedEnv.Parsed.Keys)
                 {
-                    if (processEnv.TryGetValue(parsedKey, out var value))
+                    if (processEnv.TryGetValue(parsedKey, out string? value))
                     {
                         parsed[parsedKey] = value;
                     }

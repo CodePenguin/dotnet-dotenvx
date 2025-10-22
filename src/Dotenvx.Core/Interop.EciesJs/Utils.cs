@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
 
+using NBitcoin.Secp256k1;
+
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -77,6 +79,25 @@ public static class Utils
     public static byte[] DecodeHex(string value)
     {
         return Convert.FromHexString(value.StartsWith("0x") ? value[2..] : value);
+    }
+    
+    
+    /// <summary>
+    ///     C# equivalent for getPublicKey function from https://github.com/ecies/js/blob/master/src/utils/elliptic.ts
+    /// </summary>
+    public static byte[] GetPublicKey(byte[] privateKey, bool compressed = false)
+    {
+        if (privateKey.Length != 32)
+        {
+            throw new ArgumentException("Private key must be 32 bytes", nameof(privateKey));
+        }
+
+        if (!Context.Instance.TryCreateECPrivKey(privateKey, out ECPrivKey? ecPrivateKey))
+        {
+            throw new ArgumentException("Invalid private key", nameof(privateKey));
+        }
+        ECPubKey publicKey = ecPrivateKey.CreatePubKey();
+        return publicKey.ToBytes(compressed);
     }
 
     /// <summary>

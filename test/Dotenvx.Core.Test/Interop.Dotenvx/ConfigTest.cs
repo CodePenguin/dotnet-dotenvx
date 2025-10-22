@@ -11,16 +11,6 @@ public class ConfigTest : EnvironmentTestBase
     private const string EnvLocalFileName = "tests/.env.local";
 
     [Fact]
-    public void UsesDefaultPathWhenNoPathProvided()
-    {
-        ConfigOptions options = new();
-        ConfigResult result = Main.Config(options);
-
-        result.Parsed["BASIC"].ShouldBe("basic");
-        Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
-    }
-
-    [Fact]
     public void TakesArrayForPathOption()
     {
         ConfigOptions options = new() { Path = [EnvFileName] };

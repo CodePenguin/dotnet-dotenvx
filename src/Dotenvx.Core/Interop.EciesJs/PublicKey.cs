@@ -43,9 +43,14 @@ public class PublicKey
     {
         return new PublicKey(Utils.DecodeHex(hex));
     }
+    
+    public byte[] ToBytes(bool compressed = true)
+    {
+        return _publicKey.ToBytes(compressed);
+    }
 
     public string ToHex(bool compressed = true)
     {
-        return Convert.ToHexString(_publicKey.ToBytes(compressed));
+        return Convert.ToHexString(_publicKey.ToBytes(compressed)).ToLower();
     }
 }

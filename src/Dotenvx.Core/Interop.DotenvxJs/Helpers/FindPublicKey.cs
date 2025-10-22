@@ -11,7 +11,7 @@ public static partial class Helpers
             opsOn
                 ? new ProKeyPair(envFilepath).Run() // TODO: implement custom envKeysFilepath
                 : new Dictionary<string, string?>();
-        Dictionary<string, string> keypairs = new KeyPair(envFilepath, envKeysFilepath).Run();
+        Dictionary<string, string> keypairs = new Services.KeyPair(envFilepath, envKeysFilepath).Run();
 
         return proKeypairs.GetValueOrDefault(publicKeyName) ?? keypairs.GetValueOrDefault(publicKeyName);
     }

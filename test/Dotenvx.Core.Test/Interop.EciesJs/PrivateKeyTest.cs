@@ -63,13 +63,13 @@ public class PrivateKeyTest : EciesJsTestBase
     public void GetPublicKey_Compressed_ShouldMatchNodeJsOutput()
     {
         // Calculated by eciesjs v0.4.15: Buffer.from(AlicePrivateKey.publicKey.toBytes(true)).toString("hex")
-        byte[] alicePublicKey = PrivateKey.FromHex(AlicePrivateKeyHex).GetPublicKey(true);
+        byte[] alicePublicKey = PrivateKey.FromHex(AlicePrivateKeyHex).PublicKey.ToBytes();
         string alicePublicKeyHex = Convert.ToHexString(alicePublicKey).ToLowerInvariant();
         alicePublicKey.Length.ShouldBe(33);
         alicePublicKeyHex.ShouldBe("029a168fc647dc0c6c1e921ecf32b61263b6779ccd37f248de507f97d52ae1830d");
 
         // Calculated by eciesjs v0.4.15: Buffer.from(BobPrivateKey.publicKey.toBytes(true)).toString("hex")
-        byte[] bobPublicKey = PrivateKey.FromHex(BobPrivateKeyHex).GetPublicKey(true);
+        byte[] bobPublicKey = PrivateKey.FromHex(BobPrivateKeyHex).PublicKey.ToBytes();
         string bobPublicKeyHex = Convert.ToHexString(bobPublicKey).ToLowerInvariant();
         bobPublicKey.Length.ShouldBe(33);
         bobPublicKeyHex.ShouldBe("0374dd2e8ab51fe05b27f026f894e42b6a42d8c00caeec7b542cb8a0bb7b2dd969");
@@ -79,14 +79,14 @@ public class PrivateKeyTest : EciesJsTestBase
     public void GetPublicKey_Uncompressed_ShouldMatchNodeJsOutput()
     {
         // Calculated by eciesjs v0.4.15: Buffer.from(AlicePrivateKey.publicKey.toBytes(false)).toString("hex")
-        byte[] alicePublicKey = PrivateKey.FromHex(AlicePrivateKeyHex).GetPublicKey();
+        byte[] alicePublicKey = PrivateKey.FromHex(AlicePrivateKeyHex).PublicKey.ToBytes(false);
         string alicePublicKeyHex = Convert.ToHexString(alicePublicKey).ToLowerInvariant();
         alicePublicKey.Length.ShouldBe(65);
         alicePublicKeyHex.ShouldBe(
             "049a168fc647dc0c6c1e921ecf32b61263b6779ccd37f248de507f97d52ae1830ddc679da2dc5c79c0677deb11ec07f8274a106ad6c784bb4e75379b67c8d7b32e");
 
         // Calculated by eciesjs v0.4.15: Buffer.from(BobPrivateKey.publicKey.toBytes(false)).toString("hex")
-        byte[] bobPublicKey = PrivateKey.FromHex(BobPrivateKeyHex).GetPublicKey();
+        byte[] bobPublicKey = PrivateKey.FromHex(BobPrivateKeyHex).PublicKey.ToBytes(false);
         string bobPublicKeyHex = Convert.ToHexString(bobPublicKey).ToLowerInvariant();
         bobPublicKey.Length.ShouldBe(65);
         bobPublicKeyHex.ShouldBe(

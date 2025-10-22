@@ -16,6 +16,11 @@ public class EnvironmentTestBase : IDisposable
     private readonly List<string> _existingEnvironmentKeys =
         Environment.GetEnvironmentVariables().Keys.OfType<string>().ToList();
 
+    protected void ClearEnvironment()
+    {
+        _existingEnvironmentKeys.ForEach(key => Environment.SetEnvironmentVariable(key, null));
+    }
+
     public void Dispose()
     {
         // Remove any keys that were not in the original environment

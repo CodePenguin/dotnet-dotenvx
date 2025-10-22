@@ -3,7 +3,6 @@ namespace Dotenvx.Core.Interop.DotenvxJs.Types;
 public class DotenvxException(string code, string message) : Exception(message)
 {
     public string Code { get; private set; } = code;
-    public string? Help { get; set; }
 }
 
 public class CommandSubstitutionFailed(string key, string command, string message) : DotenvxException(

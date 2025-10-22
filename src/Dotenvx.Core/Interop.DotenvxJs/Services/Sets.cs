@@ -86,7 +86,7 @@ public class Sets
 
                 if (existingPrivateKey != null)
                 {
-                    (string PublicKey, string PrivateKey) kp = Helpers.Helpers.DeriveKeyPair(existingPrivateKey);
+                    (string PublicKey, string PrivateKey) kp = Helpers.Helpers.KeyPair(existingPrivateKey);
                     publicKey = kp.PublicKey;
                     privateKey = kp.PrivateKey;
 
@@ -133,7 +133,7 @@ public class Sets
                     envSrc = ps.EnvSrc;
 
                     (string PublicKey, string PrivateKey)
-                        kp = Helpers.Helpers.DeriveKeyPair(); // generates a fresh keypair in memory
+                        kp = Helpers.Helpers.KeyPair(); // generates a fresh keypair in memory
                     publicKey = kp.PublicKey;
                     privateKey = kp.PrivateKey;
 

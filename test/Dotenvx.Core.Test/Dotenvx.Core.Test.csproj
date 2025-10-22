@@ -41,10 +41,6 @@
 
     <ItemGroup>
         <Content Include="..\dotenvx\tests\.env">
-            <Link>.env</Link>
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <Content Include="..\dotenvx\tests\.env">
             <Link>tests\.env</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
@@ -70,12 +66,15 @@
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\.env.keys">
             <Link>tests\monorepo\.env.keys</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\app1\.env">
             <Link>tests\monorepo\apps\app1\.env</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\app1\.env.production">
             <Link>tests\monorepo\apps\app1\.env.production</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env">
             <Link>tests\monorepo\apps\backend\.env</Link>
@@ -83,18 +82,19 @@
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.example">
             <Link>tests\monorepo\apps\backend\.env.example</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.keys">
             <Link>tests\monorepo\apps\backend\.env.keys</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.previous">
             <Link>tests\monorepo\apps\backend\.env.previous</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.untracked">
             <Link>tests\monorepo\apps\backend\.env.untracked</Link>
-        </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.vault">
-            <Link>tests\monorepo\apps\backend\.env.vault</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\.env">
             <Link>tests\monorepo\apps\encrypted\.env</Link>
@@ -118,9 +118,11 @@
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\multiline\.env">
             <Link>tests\monorepo\apps\multiline\.env</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\multiline\.env.crlf">
             <Link>tests\monorepo\apps\multiline\.env.crlf</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\multiple\.env">
             <Link>tests\monorepo\apps\multiple\.env</Link>
@@ -133,9 +135,11 @@
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\shebang\.env">
             <Link>tests\monorepo\apps\shebang\.env</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\unencrypted\.env">
             <Link>tests\monorepo\apps\unencrypted\.env</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\dotenvx\tests\multiline.txt">
             <Link>tests\multiline.txt</Link>

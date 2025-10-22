@@ -1,45 +1,14 @@
+using Dotenvx.Core.Interop.EciesJs;
+
 namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
 
-public class KeyPair
+public static partial class Helpers
 {
-    private readonly string[] _envFiles;
-    private readonly string? _envKeysFilepath;
-
-    public KeyPair(string envFile = ".env", string? envKeysFilepath = null)
+    public static (string PublicKey, string PrivateKey) KeyPair(string? existingPrivateKey = null)
     {
-        _envFiles = [envFile];
-        _envKeysFilepath = envKeysFilepath;
-    }
-
-    public KeyPair(string[] envFiles, string? envKeysFilepath = null)
-    {
-        _envFiles = envFiles;
-        _envKeysFilepath = envKeysFilepath;
-    }
-
-    public Dictionary<string, string> Run()
-    {
-        Dictionary<string, string> result = new();
-
-        foreach (string envFilepath in _envFiles)
-        {
-            // public key
-            string publicKeyName = Helpers.GuessPublicKeyName(envFilepath);
-            string? publicKeyValue = Helpers.SmartDotenvPublicKey(envFilepath);
-            if (publicKeyValue != null)
-            {
-                result[publicKeyName] = publicKeyValue;
-            }
-
-            // private key
-            string privateKeyName = Helpers.GuessPrivateKeyName(envFilepath);
-            string? privateKeyValue = Helpers.SmartDotenvPrivateKey(envFilepath, _envKeysFilepath);
-            if (privateKeyValue != null)
-            {
-                result[privateKeyName] = privateKeyValue;
-            }
-        }
-
-        return result;
+        PrivateKey kp = existingPrivateKey != null
+            ? PrivateKey.FromHex(existingPrivateKey)
+            : new PrivateKey();
+        return (kp.PublicKey.ToHex(), kp.ToHex());
     }
 }

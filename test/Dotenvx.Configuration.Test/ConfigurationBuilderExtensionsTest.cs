@@ -19,8 +19,17 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     [Fact]
     public void UseDotenvx_DefaultEnvFile()
     {
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx().Build();
-        configuration["BASIC"].ShouldBe("basic");
+        var originalDirectory =  Environment.CurrentDirectory;
+        try
+        {
+            Environment.CurrentDirectory = "tests/";
+            IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx().Build();
+            configuration["BASIC"].ShouldBe("basic");
+        }
+        finally
+        {
+            Environment.CurrentDirectory = originalDirectory;
+        }
     }
 
     [Fact]

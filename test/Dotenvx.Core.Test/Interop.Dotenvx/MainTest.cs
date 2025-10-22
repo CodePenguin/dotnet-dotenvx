@@ -88,7 +88,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigWithRunRunErrors()
     {
-        DotenvxException error = new("GENERIC_ERROR", "some error") { Help = "some help" };
+        DotenvxException error = new("GENERIC_ERROR", "some error");
         Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
         mockRun.Setup(r => r.Execute()).Returns(new RunResult
         {
@@ -111,7 +111,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigWithRunRunErrorsAndIgnore()
     {
-        DotenvxException error = new("SOME_ERROR", "some error") { Help = "some help" };
+        DotenvxException error = new("SOME_ERROR", "some error");
         Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>());
         mockRun.Setup(r => r.Execute()).Returns(new RunResult
         {

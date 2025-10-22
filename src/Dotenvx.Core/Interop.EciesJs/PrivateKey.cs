@@ -7,6 +7,7 @@ namespace Dotenvx.Core.Interop.EciesJs;
 /// </summary>
 public class PrivateKey
 {
+    public PublicKey PublicKey { get; private set; }
     private readonly Context _context = Context.Instance;
     private readonly ECPrivKey _privateKey;
 
@@ -15,11 +16,13 @@ public class PrivateKey
         byte[] privateKey = new byte[32];
         new Random().NextBytes(privateKey);
         _privateKey = LoadFromBytes(privateKey);
+        PublicKey = new PublicKey(Utils.GetPublicKey(privateKey));
     }
 
     public PrivateKey(byte[] privateKey)
     {
         _privateKey = LoadFromBytes(privateKey);
+        PublicKey = new PublicKey(_privateKey.CreatePubKey().ToBytes());
     }
 
     public byte[] Encapsulate(byte[] publicKey, bool compressed = false)
@@ -29,7 +32,7 @@ public class PrivateKey
             throw new ArgumentException("Invalid public key", nameof(publicKey));
         }
 
-        byte[] senderPoint = GetPublicKey(compressed);
+        byte[] senderPoint = PublicKey.ToBytes(compressed);
         ECPubKey sharedPoint = ecPublicKey.GetSharedPubkey(_privateKey);
 
         return Utils.GetSharedKey(senderPoint, sharedPoint.ToBytes(compressed));
@@ -38,12 +41,6 @@ public class PrivateKey
     public static PrivateKey FromHex(string hex)
     {
         return new PrivateKey(Utils.DecodeHex(hex));
-    }
-
-    public byte[] GetPublicKey(bool compressed = false)
-    {
-        ECPubKey publicKey = _privateKey.CreatePubKey();
-        return publicKey.ToBytes(compressed);
     }
 
     private ECPrivKey LoadFromBytes(byte[] privateKey)
@@ -60,6 +57,6 @@ public class PrivateKey
 
     public string ToHex()
     {
-        return Convert.ToHexString(_privateKey.sec.ToBytes());
+        return Convert.ToHexString(_privateKey.sec.ToBytes()).ToLower();
     }
 }

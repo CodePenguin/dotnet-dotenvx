@@ -26,7 +26,7 @@ public static class EciesJs
         PrivateKey privateKey = new();
         byte[] receiverPublicKey = Utils.DecodeHex(receiverPublicKeyHex);
         byte[] sharedKey = privateKey.Encapsulate(receiverPublicKey);
-        byte[] publicKey = privateKey.GetPublicKey();
+        byte[] publicKey = privateKey.PublicKey.ToBytes(false);
         byte[] encrypted = Utils.AesEncrypt(sharedKey, data);
         return [..publicKey, ..encrypted];
     }

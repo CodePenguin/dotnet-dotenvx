@@ -13,7 +13,7 @@ public class ProcessedSet
     public string? PublicKey { get; set; }
     public string? PrivateKey { get; set; }
     public string? PrivateKeyName { get; set; }
-    public bool? PrivateKeyAdded { get; set; }
+    public bool PrivateKeyAdded { get; set; }
     public string? EnvKeysFilePath { get; set; }
     public string EnvSrc { get; set; } = string.Empty;
     public Exception? Error { get; set; }
