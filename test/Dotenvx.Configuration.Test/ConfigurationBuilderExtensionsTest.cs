@@ -19,7 +19,7 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     [Fact]
     public void UseDotenvx_DefaultEnvFile()
     {
-        var originalDirectory =  Environment.CurrentDirectory;
+        string originalDirectory = Environment.CurrentDirectory;
         try
         {
             Environment.CurrentDirectory = "tests/";

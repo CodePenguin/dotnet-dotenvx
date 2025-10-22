@@ -7,7 +7,6 @@ namespace Dotenvx.Core.Interop.EciesJs;
 /// </summary>
 public class PrivateKey
 {
-    public PublicKey PublicKey { get; private set; }
     private readonly Context _context = Context.Instance;
     private readonly ECPrivKey _privateKey;
 
@@ -24,6 +23,8 @@ public class PrivateKey
         _privateKey = LoadFromBytes(privateKey);
         PublicKey = new PublicKey(_privateKey.CreatePubKey().ToBytes());
     }
+
+    public PublicKey PublicKey { get; }
 
     public byte[] Encapsulate(byte[] publicKey, bool compressed = false)
     {
