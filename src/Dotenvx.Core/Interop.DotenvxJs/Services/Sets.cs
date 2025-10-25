@@ -17,7 +17,7 @@ public class Sets
     private readonly HashSet<string> _unchangedFilepaths = [];
     private readonly string? _value;
 
-    public Sets(string? key, string? value, List<EnvItem> envs, bool encrypt, string? envKeysFilepath)
+    public Sets(string? key, string? value, List<EnvItem> envs, bool encrypt = true, string? envKeysFilepath = null)
     {
         _key = key;
         _value = value;

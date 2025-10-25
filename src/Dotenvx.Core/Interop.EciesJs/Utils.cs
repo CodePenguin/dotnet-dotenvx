@@ -80,7 +80,7 @@ public static class Utils
     {
         return Convert.FromHexString(value.StartsWith("0x") ? value[2..] : value);
     }
-    
+
     /// <summary>
     ///     C# equivalent for getPublicKey function from https://github.com/ecies/js/blob/master/src/utils/elliptic.ts
     /// </summary>

@@ -74,9 +74,6 @@
         <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.untracked">
             <Link>tests\monorepo\apps\backend\.env.untracked</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.vault">
-            <Link>tests\monorepo\apps\backend\.env.vault</Link>
-        </Content>
         <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\.env">
             <Link>tests\monorepo\apps\encrypted\.env</Link>
         </Content>
