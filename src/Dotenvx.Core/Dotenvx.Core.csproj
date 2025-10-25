@@ -8,8 +8,8 @@
 
     <ItemGroup>
         <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2"/>
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9"/>
-        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.9"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0"/>
         <PackageReference Include="NBitcoin.Secp256k1" Version="3.1.6"/>
     </ItemGroup>
 
