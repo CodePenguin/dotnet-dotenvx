@@ -496,11 +496,14 @@ public class SetsTest : EnvironmentTestBase
         string originalFileContents = File.ReadAllText(envFile);
         try
         {
-            Environment.SetEnvironmentVariable("DOTENV_PUBLIC_KEY","03eaf2142ab3d55bdf108962334e06696db798e7412cfc51d75e74b4f87f299bba");
-            
+            Environment.SetEnvironmentVariable("DOTENV_PUBLIC_KEY",
+                "03eaf2142ab3d55bdf108962334e06696db798e7412cfc51d75e74b4f87f299bba");
+
             List<EnvItem> envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
-            SetsResult result = new Sets("HELLO", "unencrypted", envs).Run(); // this value should be the same value as currently in the file
+            SetsResult
+                result = new Sets("HELLO", "unencrypted", envs)
+                    .Run(); // this value should be the same value as currently in the file
 
             result.ProcessedEnvs.Count.ShouldBe(1);
             ProcessedSet row = result.ProcessedEnvs[0];
