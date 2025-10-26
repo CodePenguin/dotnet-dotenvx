@@ -19,8 +19,8 @@ public class Run
     private readonly HashSet<string> _uniqueInjectedKeys = [];
     private readonly bool _useSystemEnv;
 
-    public Run(List<EnvItem>? envs = null, bool overload = false, string? envKeysFilepath = null,
-        IDictionary<string, string>? processEnv = null)
+    public Run(List<EnvItem>? envs = null, bool overload = false, string? dotenvKey = null,
+        IDictionary<string, string>? processEnv = null, string? envKeysFilepath = null, bool opsOn = true)
     {
         _useSystemEnv = processEnv == null;
         _processEnv = processEnv ?? new Dictionary<string, string>(Environment.GetEnvironmentVariables()

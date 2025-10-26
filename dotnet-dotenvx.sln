@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld", "samples\Hello
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld.UseDotenvx", "samples\HelloWorld.UseDotenvx\HelloWorld.UseDotenvx.csproj", "{8FA4535C-1263-42DA-AC82-E31EAFC910E9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-dotenvx.Test", "test\dotnet-dotenvx.Test\dotnet-dotenvx.Test.csproj", "{519D3DF5-E708-4E7F-94C4-6D21F61CEAF9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -54,6 +56,10 @@ Global
 		{8FA4535C-1263-42DA-AC82-E31EAFC910E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8FA4535C-1263-42DA-AC82-E31EAFC910E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8FA4535C-1263-42DA-AC82-E31EAFC910E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{519D3DF5-E708-4E7F-94C4-6D21F61CEAF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{519D3DF5-E708-4E7F-94C4-6D21F61CEAF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{519D3DF5-E708-4E7F-94C4-6D21F61CEAF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{519D3DF5-E708-4E7F-94C4-6D21F61CEAF9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{BE7189EE-D97F-4912-ACE7-3E6BD171D9F1} = {0DFDEEB7-CE68-4FE8-89C4-1FBDD914C5CB}
@@ -63,5 +69,6 @@ Global
 		{713FE818-6DA8-4101-BF22-E87F5660C24D} = {5128B3C6-9E9D-4949-9DA4-72E6C5F069FF}
 		{8E27FA4E-31D4-45E8-A06D-6262EFB9D963} = {C41CCAFC-687B-4F59-A837-31BA9A320DAB}
 		{8FA4535C-1263-42DA-AC82-E31EAFC910E9} = {C41CCAFC-687B-4F59-A837-31BA9A320DAB}
+		{519D3DF5-E708-4E7F-94C4-6D21F61CEAF9} = {5128B3C6-9E9D-4949-9DA4-72E6C5F069FF}
 	EndGlobalSection
 EndGlobal
