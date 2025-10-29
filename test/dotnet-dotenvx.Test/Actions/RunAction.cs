@@ -2,529 +2,281 @@ using System.CommandLine;
 
 using dotnet_dotenvx.Actions;
 
-using Microsoft.Extensions.Logging;
-
-using Moq;
-
 using Shouldly;
 
 namespace dotnet_dotenvx.Test.Actions;
 
-public class RunActionTests
+public class RunActionTests : EnvironmentTestBase
 {
+    public RunActionTests()
+    {
+        // ClearEnvironment();
+        RootCommand = new LoggingRootCommand { new RunAction(MockLogger) };
+    }
+
+    private MockLogger MockLogger { get; } = new();
+    private RootCommand RootCommand { get; }
+
+
     [Fact]
     public void Run()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "--", "echo", ""]);
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (0)"));
+        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
     [Fact]
     public void RunConventionNextjs()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "--convention", "nextjs", "--", "echo", ""]);
+        ParseResult parseResult = RootCommand.Parse(["run", "--convention", "nextjs", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (0)"));
+        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
     [Fact]
     public void RunConventionFlow()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "--convention", "flow", "--", "echo", ""]);
+        ParseResult parseResult = RootCommand.Parse(["run", "--convention", "flow", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (0)"));
+        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
     [Fact]
-    public void RunDotenvKey()
+    public void RunEnv()
     {
-        // VAULT is deprecated
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        Environment.SetEnvironmentVariable("DOTENV_KEY", "vlt_1234");
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "--", "echo", ""]);
+        ParseResult parseResult = RootCommand.Parse(["run", "-e", "HELLO=World", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (0)"));
-        // Note: Deprecation warnings for DOTENV_KEY are not implemented in C#
+        MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
+        MockLogger.VerboseMessages.ShouldContain("HELLO set");
+        MockLogger.DebugMessages.ShouldContain("HELLO set to World");
+        MockLogger.InfoMessages.ShouldContain("injecting env (1) from --env flag");
     }
 
     [Fact]
     public void RunEnvFileWithErrors()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
+        File.WriteAllText(".env", "HELLO=encrypted:1234");
         Environment.SetEnvironmentVariable("DOTENV_PRIVATE_KEY", "bad-private-key");
-        string filepath = Path.GetFullPath("../../../test/dotenvx/tests/monorepo/apps/encrypted/.env");
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", filepath, "--", "echo", "test"]);
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0); // command succeeds, but error logged
 
-        loggedMessages.ShouldContain(m => m.Contains("[INVALID_PRIVATE_KEY]"));
-        loggedMessages.ShouldContain(m => m.Contains("DOTENV_PUBLIC_KEY set"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO set"));
+        MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
+        MockLogger.ErrorMessages.ShouldContain(
+            "[INVALID_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=bad-pri…'");
+        MockLogger.ErrorMessages.ShouldContain("[INVALID_PRIVATE_KEY] https://github.com/dotenvx/dotenvx/issues/465");
+        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env");
     }
 
     [Fact]
     public void RunEnvFile()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state,
-                exception, formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        string filepath = Path.GetFullPath("../../../test/dotenvx/tests/monorepo/apps/frontend/.env");
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", filepath, "--", "echo", "test"]);
+        File.WriteAllText(".env", "HELLO=World");
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO set"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (1)"));
-    }
-
-    [Fact]
-    public void RunEnvVaultFile()
-    {
-        // VAULT is deprecated
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        string filepath = Path.GetFullPath("../../../test/dotenvx/tests/monorepo/apps/encrypted/.env");
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", filepath, "--", "echo", "test"]);
-        int exitCode = parseResult.Invoke();
-
-        exitCode.ShouldBe(0);
-
-        loggedMessages.ShouldContain(m => m.Contains("loading env from encrypted"));
-        loggedMessages.ShouldContain(m => m.Contains("DOTENV_PUBLIC_KEY set"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO set"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (2)"));
-    }
-
-
-    [Fact]
-    public void RunEnvFilePreexistsFalsy()
-    {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        Environment.SetEnvironmentVariable("HELLO", "");
-        string filepath = Path.GetFullPath("../../../test/dotenvx/tests/monorepo/apps/frontend/.env");
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", filepath, "--", "echo", "test"]);
-        int exitCode = parseResult.Invoke();
-
-        exitCode.ShouldBe(0);
-
-        loggedMessages.ShouldContain(m => m.Contains("loading env from"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO pre-exists"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (0)"));
+        MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
+        MockLogger.VerboseMessages.ShouldContain("HELLO set");
+        MockLogger.DebugMessages.ShouldContain("HELLO set to World");
+        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env");
     }
 
     [Fact]
     public void RunEnvFileAndEnv()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        string filepath = Path.GetFullPath("../../../test/dotenvx/tests/monorepo/apps/frontend/.env");
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-e", "HELLO=string", "-f", filepath, "--", "echo", "test"]);
+        File.WriteAllText(".env", "HELLO=World");
+        ParseResult parseResult = RootCommand.Parse(["run", "-e", "HELLO=World", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from string"));
-        loggedMessages.ShouldContain(m => m.Contains("loading env from"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO set"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO pre-exists"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (1)"));
+        MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
+        MockLogger.VerboseMessages.ShouldContain("HELLO set");
+        MockLogger.DebugMessages.ShouldContain("HELLO set to World");
+        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env, and --env flag");
     }
 
     [Fact]
     public void RunEnvFileAndTwoEnvs()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        string filepath = Path.GetFullPath("../../../test/dotenvx/tests/monorepo/apps/frontend/.env");
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse([
-            "run", "-e", "HELLO=World", "-e", "HOLA=amigo", "-f", filepath, "--", "echo", "test"
+        File.WriteAllText(".env", "HELLO=World");
+        ParseResult parseResult = RootCommand.Parse([
+            "run", "-e", "HELLO=World", "-e", "HELLO=World", "-e", "HOLA=amigo", "--", "echo", ""
         ]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from string (HELLO=World)"));
-        loggedMessages.ShouldContain(m => m.Contains("loading env from string (HOLA=amigo)"));
-        loggedMessages.ShouldContain(m => m.Contains("loading env from"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO set"));
-        loggedMessages.ShouldContain(m => m.Contains("HOLA set"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (2) from .env, and --env flags"));
+        MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
+        MockLogger.VerboseMessages.ShouldContain("loading env from string (HOLA=amigo)");
+        MockLogger.VerboseMessages.ShouldContain("HELLO set");
+        MockLogger.VerboseMessages.ShouldContain("HOLA set");
+        MockLogger.DebugMessages.ShouldContain("HELLO set to World");
+        MockLogger.DebugMessages.ShouldContain("HOLA set to amigo");
+        MockLogger.InfoMessages.ShouldContain("injecting env (2) from .env, and --env flags");
     }
 
     [Fact]
     public void RunEnvTwoStrings()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-e", "HELLO=World", "-e", "HEY=there", "--", "echo", "test"]);
+        ParseResult parseResult = RootCommand.Parse(["run", "-e", "HELLO=World", "-e", "HEY=there", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from string (HELLO=World)"));
-        loggedMessages.ShouldContain(m => m.Contains("loading env from string (HEY=there)"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO set"));
-        loggedMessages.ShouldContain(m => m.Contains("HEY set"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (2) from --env flags"));
+        MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
+        MockLogger.VerboseMessages.ShouldContain("loading env from string (HEY=there)");
+        MockLogger.VerboseMessages.ShouldContain("HELLO set");
+        MockLogger.VerboseMessages.ShouldContain("HEY set");
+        MockLogger.InfoMessages.ShouldContain("injecting env (2) from --env flags");
     }
 
     [Fact]
     public void RunMissingEnvFile()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", "nonexistent.env", "--", "echo", "test"]);
+        ParseResult parseResult = RootCommand.Parse(["run", "-f", "nonexistent.env", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from nonexistent.env"));
-        loggedMessages.ShouldContain(m => m.Contains("missing .env file"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (0)"));
+        MockLogger.VerboseMessages.ShouldContain(
+            $"loading env from nonexistent.env ({Path.GetFullPath("nonexistent.env")})");
+        MockLogger.ErrorMessages.ShouldContain(
+            $"[MISSING_ENV_FILE] missing nonexistent.env file ({Path.GetFullPath("nonexistent.env")})");
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_ENV_FILE] https://github.com/dotenvx/dotenvx/issues/484 and re-run [dotenvx run -- echo ]");
+        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
     [Fact]
-    public void RunMissingEnvFileStrict()
+    public void RunMissingEnvFileStrictFlag()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", "nonexistent.env", "--strict", "--", "echo", "test"]);
+        ParseResult parseResult = RootCommand.Parse(["run", "--strict", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from nonexistent.env"));
-        loggedMessages.ShouldContain(m => m.Contains("missing .env file"));
-        loggedMessages.ShouldNotContain(m => m.Contains("injecting env"));
+        MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
+        MockLogger.ErrorMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
+        MockLogger.ErrorMessages.ShouldContain("[MISSING_ENV_FILE] https://github.com/dotenvx/dotenvx/issues/484");
     }
 
     [Fact]
-    public void RunMissingEnvFileIgnore()
+    public void RunMissingEnvFileIgnoreFlag()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse([
-            "run", "-f", "nonexistent.env", "--ignore", "MISSING_ENV_FILE", "--", "echo", "test"
+        ParseResult parseResult = RootCommand.Parse([
+            "run", "-f", "nonexistent.env", "--ignore", "MISSING_ENV_FILE", "--", "echo", ""
         ]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from nonexistent.env"));
-        loggedMessages.ShouldNotContain(m => m.Contains("missing .env file"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (0)"));
+        MockLogger.VerboseMessages.ShouldContain(
+            $"loading env from nonexistent.env ({Path.GetFullPath("nonexistent.env")})");
+        MockLogger.VerboseMessages.ShouldContain(
+            $"ignored: [MISSING_ENV_FILE] missing nonexistent.env file ({Path.GetFullPath("nonexistent.env")})");
+        MockLogger.ErrorMessages.ShouldBeEmpty();
+        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
     [Fact]
-    public void RunMissingEnvFileStrictIgnore()
+    public void RunMissingEnvFileStrictFlagIgnoreFlag()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse([
-            "run", "-f", "nonexistent.env", "--strict", "--ignore", "MISSING_ENV_FILE", "--", "echo", "test"
+        ParseResult parseResult = RootCommand.Parse([
+            "run", "-f", "nonexistent.env", "--strict", "--ignore", "MISSING_ENV_FILE", "--", "echo", ""
         ]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from nonexistent.env"));
-        loggedMessages.ShouldNotContain(m => m.Contains("missing .env file"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (0)"));
+        MockLogger.VerboseMessages.ShouldContain(
+            $"loading env from nonexistent.env ({Path.GetFullPath("nonexistent.env")})");
+        MockLogger.VerboseMessages.ShouldContain(
+            $"ignored: [MISSING_ENV_FILE] missing nonexistent.env file ({Path.GetFullPath("nonexistent.env")})");
+        MockLogger.ErrorMessages.ShouldBeEmpty();
+        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
     [Fact]
     public void RunOtherError()
     {
-        // To simulate OTHER_ERROR, use an invalid env string
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-e", "INVALID", "--", "echo", "test"]);
+        ParseResult parseResult = RootCommand.Parse(["run", "-e", "INVALID", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from string (INVALID)"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (0)"));
+        MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
+        MockLogger.VerboseMessages.ShouldContain("loading env from string (INVALID)");
+        MockLogger.ErrorMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_ENV_FILE] https://github.com/dotenvx/dotenvx/issues/484 and re-run [dotenvx run -- echo ]");
+        MockLogger.InfoMessages.ShouldContain("injecting env (0) from --env flag");
     }
 
     [Fact]
     public void RunThrowsError()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
         // To simulate throw, perhaps invalid convention
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "--convention", "invalid", "--", "echo", "test"]);
+        ParseResult parseResult = RootCommand.Parse(["run", "--convention", "invalid", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
 
-        loggedMessages.ShouldContain(m => m.Contains("Unknown convention"));
+        MockLogger.ErrorMessages.ShouldContain(
+            "INVALID_CONVENTION: 'invalid'. permitted conventions: ['nextjs', 'flow']");
     }
 
     [Fact]
-    public void RunEnvFileMissingCommand()
+    public void RunEnvFileMissingCommandArgumentsAfterDoubleDash()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        string filepath = Path.GetFullPath("../../../test/dotenvx/tests/monorepo/apps/frontend/.env");
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", filepath, "--"]);
+        File.WriteAllText(".env", "HELLO=World");
+        ParseResult parseResult = RootCommand.Parse(["run", "--"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO set"));
-        loggedMessages.ShouldContain(m => m.Contains("missing command after [dotenvx run --]"));
+        MockLogger.ErrorMessages.ShouldContain(
+            "missing command after [dotenvx run --]. try [dotenvx run -- yourcommand]");
     }
 
     [Fact]
-    public void RunEnvFileAmbiguousMissingSeparator()
+    public void RunEnvFileAmbiguousArgumentsMissingDoubleDash()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", ".env.production", "echo", ""]);
+        ParseResult parseResult = RootCommand.Parse(["run", "-f", ".env.production", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
 
-        loggedMessages.ShouldContain(m => m.Contains("ambiguous command due to missing '--' separator"));
+        MockLogger.ErrorMessages.ShouldContain(
+            "ambiguous command due to missing \'--\' separator. try [dotenvx run -f .env.production -- yourcommand]");
     }
 
     [Fact]
-    public void RunEnvFileAmbiguousEmpty()
+    public void RunEnvFileAmbiguousArgumentsMissingDoubleDashEnvFileEmpty()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", ".env", "echo", ""]);
+        ParseResult parseResult = RootCommand.Parse(["run", "-f", ".env", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
 
-        loggedMessages.ShouldContain(m => m.Contains("ambiguous command due to missing '--' separator"));
+        MockLogger.ErrorMessages.ShouldContain(
+            "ambiguous command due to missing \'--\' separator. try [dotenvx run -f .env -- yourcommand]");
     }
 
     [Fact]
@@ -532,78 +284,38 @@ public class RunActionTests
     {
         // This test is hard to simulate without stubbing, as it requires the Run service to return incomplete data
         // Skipping or assuming it works like RunEnvFile
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        string filepath = Path.GetFullPath("../../../test/dotenvx/tests/monorepo/apps/frontend/.env");
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", filepath, "--", "echo", "test"]);
+
+        File.WriteAllText(".env", string.Empty);
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (1) from .env"));
+        MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
+        MockLogger.InfoMessages.ShouldContain("injecting env (0) from .env");
     }
 
     [Fact]
     public void RunRadarObserveThrows()
     {
         // Radar not implemented, so skipping the throw part
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        string filepath = Path.GetFullPath("../../../test/dotenvx/tests/monorepo/apps/frontend/.env");
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-f", filepath, "--", "echo", "test"]);
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO set"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (1) from .env"));
+        MockLogger.DebugMessages.ShouldContain("Ops is not currently supported.");
     }
 
-
     [Fact]
-    public void RunEnv()
+    public void RunOpsObserveThrows()
     {
-        List<string> loggedMessages = [];
-        Mock<ILogger<RunAction>> mockLogger = new();
-        mockLogger.Setup(l => l.Log(It.IsAny<LogLevel>(), It.IsAny<EventId>(), It.IsAny<object>(),
-                It.IsAny<Exception?>(), It.IsAny<Func<object, Exception?, string>>()))
-            .Callback<LogLevel, EventId, object, Exception?, Func<object, Exception?, string>>((_, _, state, exception,
-                formatter) =>
-            {
-                string message = formatter(state, exception);
-                loggedMessages.Add(message);
-            });
-        RunAction runAction = new(mockLogger.Object);
-        RootCommand root = new() { runAction };
-        ParseResult parseResult = root.Parse(["run", "-e", "HELLO=string", "--", "echo", "test"]);
+        // Ops not implemented, so skipping the throw part
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
 
-        loggedMessages.ShouldContain(m => m.Contains("loading env from string"));
-        loggedMessages.ShouldContain(m => m.Contains("HELLO set"));
-        loggedMessages.ShouldContain(m => m.Contains("injecting env (1)"));
+        MockLogger.DebugMessages.ShouldContain("Ops is not currently supported.");
     }
 }

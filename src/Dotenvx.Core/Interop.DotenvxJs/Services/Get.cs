@@ -11,7 +11,7 @@ public class Get(string? key, List<EnvItem> envs, bool overload, bool all, strin
         Dictionary<string, string> processEnv = new(Environment.GetEnvironmentVariables()
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
-        RunResult runResult = new Run(envs, overload, envKeysFilepath, processEnv).Execute();
+        RunResult runResult = new Run(envs, overload, processEnv, envKeysFilepath).Execute();
 
         List<Exception> errors = [];
         foreach (ProcessedEnv processedEnv in runResult.ProcessedEnvs)

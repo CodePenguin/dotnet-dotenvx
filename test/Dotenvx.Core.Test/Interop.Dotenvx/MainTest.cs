@@ -22,7 +22,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigCallsRunRun()
     {
-        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>(), null!, false);
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
         mockRun.Setup(r => r.Execute()).Returns(new RunResult
         {
             ProcessedEnvs = [],
@@ -44,7 +44,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigWithConventionCallsRunRunWithProperEnvs()
     {
-        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>(), null!, false);
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
         mockRun.Setup(r => r.Execute()).Returns(new RunResult
         {
             ProcessedEnvs = [],
@@ -66,7 +66,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigWithConventionFlowCallsRunRunWithProperEnvs()
     {
-        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>(), null!, false);
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
         mockRun.Setup(r => r.Execute()).Returns(new RunResult
         {
             ProcessedEnvs = [],
@@ -89,7 +89,7 @@ public class MainTest : EnvironmentTestBase
     public void ConfigWithRunRunErrors()
     {
         DotenvxException error = new("GENERIC_ERROR", "some error");
-        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>(), null!, false);
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
         mockRun.Setup(r => r.Execute()).Returns(new RunResult
         {
             ProcessedEnvs =
@@ -112,7 +112,7 @@ public class MainTest : EnvironmentTestBase
     public void ConfigWithRunRunErrorsAndIgnore()
     {
         DotenvxException error = new("SOME_ERROR", "some error");
-        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>(), null!, false);
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
         mockRun.Setup(r => r.Execute()).Returns(new RunResult
         {
             ProcessedEnvs =
@@ -332,7 +332,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontendStrictButErrorAlsoIgnored()
     {
-        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>(), null!, false);
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
         mockRun.Setup(r => r.Execute()).Returns(new RunResult
         {
             ProcessedEnvs = [],
@@ -362,7 +362,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigRadarObserveThrowsErrorButConfigContinuesToWork()
     {
-        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>(), null!, false);
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
         mockRun.Setup(r => r.Execute()).Returns(new RunResult
         {
             ProcessedEnvs = [],
@@ -384,7 +384,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void ConfigOpsObserveThrowsErrorButConfigContinuesToWork()
     {
-        Mock<Run> mockRun = new(new List<EnvItem>(), false, null!, new Dictionary<string, string>(), null!, false);
+        Mock<Run> mockRun = new(new List<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
         mockRun.Setup(r => r.Execute()).Returns(new RunResult
         {
             ProcessedEnvs = [],

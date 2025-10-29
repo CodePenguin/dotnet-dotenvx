@@ -16,8 +16,15 @@ public class EnvironmentTestBase : IDisposable
     private readonly List<string> _existingEnvironmentKeys =
         Environment.GetEnvironmentVariables().Keys.OfType<string>().ToList();
 
+    private readonly string _originalDirectory = Environment.CurrentDirectory;
+
     public void Dispose()
     {
+        if (Environment.CurrentDirectory != _originalDirectory)
+        {
+            Environment.CurrentDirectory = _originalDirectory;
+        }
+
         // Remove any keys that were not in the original environment
         Environment.GetEnvironmentVariables().Keys.OfType<string>()
             .Where(key => !_existingEnvironmentKeys.Contains(key))

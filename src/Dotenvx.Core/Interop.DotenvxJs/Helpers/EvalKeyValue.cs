@@ -29,7 +29,7 @@ public static partial class Helpers
                 }
 
                 // TODO: Implement EvalKeyValue command execution.
-                throw new NotImplementedException();
+                throw new NotSupportedException("Command Substitution is not supported.");
             }
             catch (Exception ex) when (ex is not DotenvxException)
             {

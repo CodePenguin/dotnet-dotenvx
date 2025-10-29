@@ -1,12 +1,13 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Diagnostics;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 
+using Dotenvx.Core.Helpers;
 using Dotenvx.Core.Interop.DotenvxJs.Helpers;
 using Dotenvx.Core.Interop.DotenvxJs.Services;
 using Dotenvx.Core.Interop.DotenvxJs.Types;
@@ -19,6 +20,9 @@ namespace dotnet_dotenvx.Actions;
 
 public class RunAction : Command
 {
+    private readonly Argument<string[]> _args =
+        new("command") { Arity = ArgumentArity.ZeroOrMore, Hidden = true };
+
     private readonly Option<string> _conventionOption =
         new("--convention") { Description = "load a .env convention (available conventions: ['nextjs', 'flow'])" };
 
@@ -52,11 +56,10 @@ public class RunAction : Command
     private readonly Option<bool> _strictOption =
         new("--strict") { Description = "Process exits on any errors" };
 
-    public RunAction(ILogger<RunAction> logger) : base("Run",
+    public RunAction(ILogger<RunAction> logger) : base("run",
         "inject env at runtime [dotnet dotenvx run -- yourcommand]")
     {
         _logger = logger;
-        TreatUnmatchedTokensAsErrors = false;
         Add(_envOption);
         Add(_envFileOption);
         Add(_envKeysFileOption);
@@ -65,10 +68,11 @@ public class RunAction : Command
         Add(_conventionOption);
         Add(_ignoreOption);
         Add(_opsOffOption);
-        SetAction(Execute);
+        Add(_args);
+        SetAction(async pr => await Execute(pr));
     }
 
-    private int Execute(ParseResult parseResult)
+    private async Task<int> Execute(ParseResult parseResult)
     {
         string[]? envs = parseResult.GetValue(_envOption);
         string[]? envFile = parseResult.GetValue(_envFileOption);
@@ -77,11 +81,11 @@ public class RunAction : Command
         bool strict = parseResult.GetValue(_strictOption);
         string? convention = parseResult.GetValue(_conventionOption);
         string[] ignoreList = parseResult.GetValue(_ignoreOption) ?? [];
-        string[] commandArgs = parseResult.UnmatchedTokens.ToArray();
+        string[] commandArgs = parseResult.GetValue(_args) ?? [];
         bool opsOff = parseResult.GetValue(_opsOffOption);
 
         // dotenvx-ops related
-        bool opsOnFlag = !opsOff;
+        bool opsOn = !opsOff;
 
         _logger.LogDebug("process command [{Join}]", string.Join(' ', commandArgs));
 
@@ -97,11 +101,11 @@ public class RunAction : Command
         };
         _logger.LogDebug("options: {Options}", JsonSerializer.Serialize(options));
 
-        if (commandArgs.Length < 1)
-        {
-            // Check for separator '--'
-            bool hasSeparator = Environment.GetCommandLineArgs().Contains("--");
+        // Check for separator '--'
+        bool hasSeparator = parseResult.Tokens.Any(x => x.Type == TokenType.DoubleDash);
 
+        if (commandArgs.Length < 1 || !hasSeparator)
+        {
             if (hasSeparator)
             {
                 _logger.LogError("missing command after [dotenvx run --]. try [dotenvx run -- yourcommand]");
@@ -116,6 +120,8 @@ public class RunAction : Command
 
             return 1;
         }
+
+        IDictionary<string, string> processEnv = EnvironmentHelper.GetEnvironmentVariablesAsDictionary();
 
         try
         {
@@ -136,11 +142,7 @@ public class RunAction : Command
                 envItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
             }
 
-            string? dotenvKey = Environment.GetEnvironmentVariable("DOTENV_KEY");
-            IDictionary processEnv = Environment.GetEnvironmentVariables();
-
-            Run runService = new(envItems, overload, dotenvKey,
-                (IDictionary<string, string>)processEnv, envKeysFile?.FirstOrDefault(), opsOnFlag);
+            Run runService = new(envItems, overload, processEnv, envKeysFile?.FirstOrDefault(), opsOn);
             RunResult result = runService.Execute();
 
             IList<ProcessedEnv> processedEnvs = result.ProcessedEnvs;
@@ -148,27 +150,23 @@ public class RunAction : Command
             IList<string> readableFilepaths = result.ReadableFilePaths;
             IList<string> uniqueInjectedKeys = result.UniqueInjectedKeys;
 
-            // TODO: Implement Radar and Ops services
+            if (opsOn)
+            {
+                // TODO: Implement Radar/Ops handling
+                _logger.LogDebug("Ops is not currently supported.");
+            }
 
             foreach (ProcessedEnv processedEnv in processedEnvs)
             {
                 switch (processedEnv.Type)
                 {
-                    case EnvType.EnvFile when !string.IsNullOrEmpty(processedEnv.PrivateKey):
-                        _logger.LogInformation(
-                            "loading env from encrypted {ProcessedEnvFilePath} ({FullFilePath})",
-                            processedEnv.FilePath, Path.GetFullPath(processedEnv.FilePath));
-                        _logger.LogDebug(
-                            "decrypting encrypted env from {ProcessedEnvFilePath} ({FullFilePath})",
-                            processedEnv.FilePath, Path.GetFullPath(processedEnv.FilePath));
-                        break;
                     case EnvType.EnvFile:
-                        _logger.LogInformation(
+                        _logger.LogTrace(
                             "loading env from {ProcessedEnvFilePath} ({FullFilePath})",
                             processedEnv.FilePath, Path.GetFullPath(processedEnv.FilePath));
                         break;
                     case EnvType.Env:
-                        _logger.LogInformation(
+                        _logger.LogTrace(
                             "loading env from string ({ProcessedEnv})",
                             processedEnv.String);
                         break;
@@ -182,7 +180,7 @@ public class RunAction : Command
                     string code = dotenvError?.Code ?? "UNKNOWN";
                     if (ignoreList.Contains(code))
                     {
-                        _logger.LogInformation("ignored: {ErrorMessage}", error.Message);
+                        _logger.LogTrace("ignored: {ErrorMessage}", error.Message);
                         continue; // ignore error
                     }
 
@@ -222,14 +220,14 @@ public class RunAction : Command
                 // verbose/debug injected key/value
                 foreach (KeyValuePair<string, string> kvp in processedEnv.Injected)
                 {
-                    _logger.LogInformation("{KvpKey} set", kvp.Key);
+                    _logger.LogTrace("{KvpKey} set", kvp.Key);
                     _logger.LogDebug("{KvpKey} set to {KvpValue}", kvp.Key, kvp.Value);
                 }
 
                 // verbose/debug preExisted key/value
                 foreach (KeyValuePair<string, string> kvp in processedEnv.PreExisted)
                 {
-                    _logger.LogInformation("{KvpKey} pre-exists (protip: use --overload to override)", kvp.Key);
+                    _logger.LogTrace("{KvpKey} pre-exists (protip: use --overload to override)", kvp.Key);
                     _logger.LogDebug("{KvpKey} pre-exists as {KvpValue} (protip: use --overload to override)", kvp.Key,
                         kvp.Value);
                 }
@@ -270,31 +268,6 @@ public class RunAction : Command
         }
 
         // Execute the command
-        return ExecuteCommand(commandArgs, Environment.GetEnvironmentVariables());
-    }
-
-    private static int ExecuteCommand(string[] commandArgs, IDictionary environmentVariables)
-    {
-        Process process = new()
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = commandArgs[0],
-                Arguments = string.Join(' ', commandArgs.Skip(1)),
-                UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false
-            }
-        };
-
-        // Set environment variables
-        foreach (DictionaryEntry entry in environmentVariables)
-        {
-            process.StartInfo.EnvironmentVariables[entry.Key.ToString()!] = entry.Value?.ToString();
-        }
-
-        process.Start();
-        process.WaitForExit();
-        return process.ExitCode;
+        return await Helpers.ExecuteCommand(_logger, commandArgs, processEnv);
     }
 }

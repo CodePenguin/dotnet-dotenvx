@@ -13,7 +13,11 @@ IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices(services =>
     {
         services.AddDotenvxCommands();
-        services.AddLogging(builder => builder.AddConsole());
+        services.AddLogging(builder => builder.AddSimpleConsole(options =>
+        {
+            options.IncludeScopes = false;
+            options.SingleLine = true;
+        }));
     })
     .ConfigureLogging(options =>
     {

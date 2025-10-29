@@ -21,17 +21,9 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     [Fact]
     public void UseDotenvx_DefaultEnvFile()
     {
-        string originalDirectory = Environment.CurrentDirectory;
-        try
-        {
-            Environment.CurrentDirectory = "tests/";
-            IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx().Build();
-            configuration["BASIC"].ShouldBe("basic");
-        }
-        finally
-        {
-            Environment.CurrentDirectory = originalDirectory;
-        }
+        Environment.CurrentDirectory = "tests/";
+        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx().Build();
+        configuration["BASIC"].ShouldBe("basic");
     }
 
     [Fact]
@@ -124,17 +116,9 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     [Fact]
     public void UseDotenvx_NullOptionsCallback_Works()
     {
-        string originalDirectory = Environment.CurrentDirectory;
-        try
-        {
-            Environment.CurrentDirectory = "tests/";
-            Action<ConfigOptions?>? callback = null;
-            IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(callback).Build();
-            configuration["BASIC"].ShouldBe("basic");
-        }
-        finally
-        {
-            Environment.CurrentDirectory = originalDirectory;
-        }
+        Environment.CurrentDirectory = "tests/";
+        Action<ConfigOptions?>? callback = null;
+        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(callback).Build();
+        configuration["BASIC"].ShouldBe("basic");
     }
 }

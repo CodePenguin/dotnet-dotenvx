@@ -1,6 +1,6 @@
-using System.Collections;
 using System.Text;
 
+using Dotenvx.Core.Helpers;
 using Dotenvx.Core.Interop.DotenvxJs.Types;
 
 namespace Dotenvx.Core.Interop.DotenvxJs.Services;
@@ -19,13 +19,11 @@ public class Run
     private readonly HashSet<string> _uniqueInjectedKeys = [];
     private readonly bool _useSystemEnv;
 
-    public Run(List<EnvItem>? envs = null, bool overload = false, string? dotenvKey = null,
+    public Run(List<EnvItem>? envs = null, bool overload = false,
         IDictionary<string, string>? processEnv = null, string? envKeysFilepath = null, bool opsOn = true)
     {
         _useSystemEnv = processEnv == null;
-        _processEnv = processEnv ?? new Dictionary<string, string>(Environment.GetEnvironmentVariables()
-            .Cast<DictionaryEntry>()
-            .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
+        _processEnv = processEnv ?? EnvironmentHelper.GetEnvironmentVariablesAsDictionary();
         _beforeEnv = new Dictionary<string, string>(_processEnv);
         _envs = Helpers.Helpers.DetermineEnvs(envs ?? [], _processEnv);
         _overload = overload;

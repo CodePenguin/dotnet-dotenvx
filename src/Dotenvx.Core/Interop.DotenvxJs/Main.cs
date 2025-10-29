@@ -9,8 +9,8 @@ namespace Dotenvx.Core.Interop.DotenvxJs;
 public static class Main
 {
     // Factory Methods
-    public static Func<List<EnvItem>, bool, string?, IDictionary<string, string>?, Run> RunFactory { get; set; } =
-        (envs, overload, envKeysFile, processEnv) => new Run(envs, overload, envKeysFile, processEnv);
+    public static Func<List<EnvItem>, bool, IDictionary<string, string>?, string?, Run> RunFactory { get; set; } =
+        (envs, overload, processEnv, envKeysFilepath) => new Run(envs, overload, processEnv, envKeysFilepath);
 
     public static Func<string?, string?, IDictionary<string, string>?, bool, string?, Parse>
         ParseFactory { get; set; } = (src, privateKey, processEnv, overload, privateKeyName) =>
@@ -37,7 +37,7 @@ public static class Main
         {
             List<EnvItem> envs = Helpers.Helpers.BuildEnvs(options);
 
-            RunResult runResult = RunFactory(envs, options.Overload, envKeysFile, options.ProcessEnv).Execute();
+            RunResult runResult = RunFactory(envs, options.Overload, options.ProcessEnv, envKeysFile).Execute();
 
             Exception? lastError = null;
             IDictionary<string, string> parsedAll = new Dictionary<string, string>();
