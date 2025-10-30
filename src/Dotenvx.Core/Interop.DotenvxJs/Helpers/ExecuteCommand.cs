@@ -99,12 +99,16 @@ public static partial class Helpers
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = commandArgs[0],
-                    Arguments = string.Join(' ', commandArgs.Skip(1)),
                     UseShellExecute = false,
                     RedirectStandardOutput = false,
                     RedirectStandardError = false
                 }
             };
+
+            foreach (var arg in commandArgs.Skip(1))
+            {
+                child.StartInfo.ArgumentList.Add(arg);   
+            }
 
             // Set environment variables
             foreach (KeyValuePair<string, string> kvp in env)

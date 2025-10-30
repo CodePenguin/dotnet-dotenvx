@@ -10,16 +10,16 @@ public class LoggingRootCommand : RootCommand
 {
     // Log Level Options
     private readonly Option<bool> _debugLogLevel =
-        new("--debug", "-d") { Description = "sets log level to debug", Recursive = false };
+        new("--debug", "-d") { Description = "sets log level to debug", Recursive = true };
 
     private readonly Option<string> _logLevel =
-        new("--log-level", "-l") { Description = "set log level", Recursive = false };
+        new("--log-level", "-l") { Description = "set log level", Recursive = true };
 
     private readonly Option<bool> _quietLogLevel =
-        new("--quiet", "-q") { Description = "sets log level to error", Recursive = false };
+        new("--quiet", "-q") { Description = "sets log level to error", Recursive = true };
 
     private readonly Option<bool> _verboseLogLevel =
-        new("--verbose", "-v") { Description = "sets log level to verbose", Recursive = false };
+        new("--verbose", "-v") { Description = "sets log level to verbose", Recursive = true };
 
     public LoggingRootCommand(string description = "") : base(description)
     {
