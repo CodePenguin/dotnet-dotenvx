@@ -24,7 +24,7 @@ public class RunAction : Command
         new("command") { Arity = ArgumentArity.ZeroOrMore, Hidden = true };
 
     private readonly Option<string> _conventionOption =
-        new("--convention") { Description = "load a .env convention (available conventions: ['nextjs', 'flow'])" };
+        new("--convention") { Description = "load a .env convention (available conventions: ['nextjs', 'flow'])", HelpName = "name" };
 
     private readonly Option<string[]?> _envFileOption =
         new("--file", "-f") { Description = "path(s) to your env file(s)" };
@@ -39,7 +39,7 @@ public class RunAction : Command
         new("--env", "-e") { Description = "environment variable(s) set as string (example: \"HELLO=World\")" };
 
     private readonly Option<string[]?> _ignoreOption =
-        new("--ignore") { Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)" };
+        new("--ignore") { Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)" , HelpName = "errorCodes..." };
 
     private readonly ILogger<RunAction> _logger;
 

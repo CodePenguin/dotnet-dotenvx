@@ -10,16 +10,16 @@ public class LoggingRootCommand : RootCommand
 {
     // Log Level Options
     private readonly Option<bool> _debugLogLevel =
-        new("--debug", "-d") { Description = "sets log level to debug" };
+        new("--debug", "-d") { Description = "sets log level to debug", Recursive = false };
 
     private readonly Option<string> _logLevel =
-        new("--log-level", "-l") { Description = "set log level", DefaultValueFactory = _ => "info" };
+        new("--log-level", "-l") { Description = "set log level", Recursive = false };
 
     private readonly Option<bool> _quietLogLevel =
-        new("--quiet", "-q") { Description = "sets log level to error" };
+        new("--quiet", "-q") { Description = "sets log level to error", Recursive = false };
 
     private readonly Option<bool> _verboseLogLevel =
-        new("--verbose", "-v") { Description = "sets log level to verbose" };
+        new("--verbose", "-v") { Description = "sets log level to verbose", Recursive = false };
 
     public LoggingRootCommand(string description = "") : base(description)
     {
@@ -41,9 +41,8 @@ public class LoggingRootCommand : RootCommand
         return mappings.Item1 != null ? mappings.Item2 : null;
     }
 
-    public void SetLogLevel(string[] args, Action<LogLevel> callback)
+    public void SetLogLevel(ParseResult parseResult, Action<LogLevel> callback)
     {
-        ParseResult parseResult = Parse(args);
         LogLevel logLevel =
             ToLogLevel(parseResult.GetValue(_logLevel))
             ?? LogLevelFlagsToLogLevel(parseResult)
@@ -57,9 +56,10 @@ public class LoggingRootCommand : RootCommand
         {
             "debug" => LogLevel.Debug,
             "error" => LogLevel.Error,
+            "info" => LogLevel.Information,
             "silly" or "verbose" => LogLevel.Trace,
             "warn" => LogLevel.Warning,
-            _ => LogLevel.Information
+            _ => null
         };
     }
 }

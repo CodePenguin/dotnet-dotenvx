@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.IO;
 
 using Microsoft.Extensions.Logging;
 
@@ -8,13 +9,17 @@ public static class LoggingBuilderExtensions
 {
     public static void SetDotenvxLogLevel(this ILoggingBuilder builder, string[] args)
     {
-        LoggingRootCommand rootCommand = new();
+        LoggingRootCommand rootCommand = new() { TreatUnmatchedTokensAsErrors = false };
         rootCommand.SetAction(parseResult =>
         {
-            rootCommand.SetLogLevel(args, logLevel => builder.AddFilter(nameof(dotnet_dotenvx), logLevel));
-            rootCommand.SetLogLevel(args, logLevel => builder.AddFilter(nameof(Dotenvx.Core), logLevel));
+            rootCommand.SetLogLevel(parseResult, logLevel =>
+            {
+                builder.AddFilter(nameof(dotnet_dotenvx), logLevel);
+                builder.AddFilter(nameof(Dotenvx.Core), logLevel);
+            });
         });
+
         ParseResult parseResult = rootCommand.Parse(args);
-        parseResult.Invoke();
+        parseResult.Invoke(new InvocationConfiguration { Error = TextWriter.Null, Output = TextWriter.Null });
     }
 }

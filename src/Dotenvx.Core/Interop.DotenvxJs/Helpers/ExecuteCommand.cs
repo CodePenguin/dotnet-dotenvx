@@ -21,7 +21,7 @@ public static partial class Helpers
             return null;
         }
     }
-    
+
     public static async Task<int> ExecuteCommand(ILogger logger, string[] commandArgs, IDictionary<string, string> env)
     {
         logger.LogDebug("executing process command [{Command}]", string.Join(' ', commandArgs));
