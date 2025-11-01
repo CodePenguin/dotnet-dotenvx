@@ -8,9 +8,6 @@ public class ParseTest
 {
     private readonly string _src = File.ReadAllText("tests/.env");
 
-    /// <summary>
-    ///     Equivalent tests from https://github.com/dotenvx/dotenvx/blob/main/tests/lib/parse.test.js
-    /// </summary>
     [Fact]
     public void ShouldReturnAnObject()
     {

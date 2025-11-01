@@ -271,12 +271,30 @@ public class ConfigExpandTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void HandlesTwoDollarSigns()
+    public void HandlesTwoDollarSignsFollowedByDigit()
     {
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
 
-        result.Parsed["TWO_DOLLAR_SIGNS"].ShouldBe("abcd$$1234");
+        result.Parsed["TWO_DOLLAR_SIGNS_FOLLOWED_BY_DIGIT"].ShouldBe("abcd$$1234foo");
+    }
+
+    [Fact]
+    public void HandlesTwoDollarSignsFollowedByLetter()
+    {
+        ConfigOptions options = new() { Path = [EnvExpandFileName] };
+        ConfigResult result = Main.Config(options);
+
+        result.Parsed["TWO_DOLLAR_SIGNS_FOLLOWED_BY_LETTER"].ShouldBe("pa$@");
+    }
+
+    [Fact]
+    public void HandlesTwoDollarSignsFollowedByLetterButSingleQuoted()
+    {
+        ConfigOptions options = new() { Path = [EnvExpandFileName] };
+        ConfigResult result = Main.Config(options);
+
+        result.Parsed["TWO_DOLLAR_SIGNS_FOLLOWED_BY_LETTER_SINGLE_QUOTE"].ShouldBe("pa$$word@");
     }
 
     [Fact]

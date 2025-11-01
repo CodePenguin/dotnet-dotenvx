@@ -45,7 +45,12 @@ public class MissingKeyException(string key) : DotenvxException(
     "MISSING_KEY",
     $"[MISSING_KEY] missing {key} key");
 
-public class InvalidDotenvPrivateKeyException(string publicKeyName, string publicKey, string existingPublicKey, string privateKeyName, string existingPrivateKey) : DotenvxException(
+public class InvalidDotenvPrivateKeyException(
+    string publicKeyName,
+    string publicKey,
+    string existingPublicKey,
+    string privateKeyName,
+    string existingPrivateKey) : DotenvxException(
     "INVALID_DOTENV_PRIVATE_KEY",
     $"derived public key ({Helpers.Helpers.Truncate(publicKey)}) does not match the existing public key ({Helpers.Helpers.Truncate(existingPublicKey)})",
     $"debug info: {privateKeyName}={Helpers.Helpers.Truncate(existingPrivateKey)} (derived {publicKeyName}={Helpers.Helpers.Truncate(publicKey)} vs existing {publicKeyName}={Helpers.Helpers.Truncate(existingPublicKey)})");

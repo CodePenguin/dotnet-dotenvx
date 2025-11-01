@@ -99,7 +99,8 @@ public class Sets
                     // if derivation doesn't match what's in the file (or preset in env)
                     if (existingPublicKey != null && existingPublicKey != publicKey)
                     {
-                        throw new InvalidDotenvPrivateKeyException(publicKeyName, existingPublicKey, privateKeyName, privateKey, existingPrivateKey);
+                        throw new InvalidDotenvPrivateKeyException(publicKeyName, existingPublicKey, privateKeyName,
+                            privateKey, existingPrivateKey);
                     }
 
                     // typical scenario when encrypting a monorepo second .env file from a prior generated -fk .env.keys file

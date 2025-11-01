@@ -29,15 +29,15 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="..\dotenvx\tests\.env">
+        <Content Include="..\..\dotenvx\tests\.env">
             <Link>tests/.env</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\.env">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\encrypted\.env">
             <Link>tests/monorepo/apps/encrypted/.env</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\frontend\.env">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\frontend\.env">
             <Link>tests/monorepo/apps/frontend/.env</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>

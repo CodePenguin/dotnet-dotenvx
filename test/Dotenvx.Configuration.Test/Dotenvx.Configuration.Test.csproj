@@ -29,88 +29,88 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="..\dotenvx\tests\.env">
+        <Content Include="..\..\dotenvx\tests\.env">
             <Link>tests\.env</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Include="..\dotenvx\tests\.env.eval">
+        <Content Include="..\..\dotenvx\tests\.env.eval">
             <Link>tests\.env.eval</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\.env.expand">
+        <Content Include="..\..\dotenvx\tests\.env.expand">
             <Link>tests\.env.expand</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Include="..\dotenvx\tests\.env.export">
+        <Content Include="..\..\dotenvx\tests\.env.export">
             <Link>tests\.env.export</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\.env.local">
+        <Content Include="..\..\dotenvx\tests\.env.local">
             <Link>tests\.env.local</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Include="..\dotenvx\tests\.env.multiline">
+        <Content Include="..\..\dotenvx\tests\.env.multiline">
             <Link>tests\.env.multiline</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\.env.keys">
+        <Content Include="..\..\dotenvx\tests\monorepo\.env.keys">
             <Link>tests\monorepo\.env.keys</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\app1\.env">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\app1\.env">
             <Link>tests\monorepo\apps\app1\.env</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\app1\.env.production">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\app1\.env.production">
             <Link>tests\monorepo\apps\app1\.env.production</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\backend\.env">
             <Link>tests\monorepo\apps\backend\.env</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.example">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\backend\.env.example">
             <Link>tests\monorepo\apps\backend\.env.example</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.keys">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\backend\.env.keys">
             <Link>tests\monorepo\apps\backend\.env.keys</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.previous">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\backend\.env.previous">
             <Link>tests\monorepo\apps\backend\.env.previous</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\backend\.env.untracked">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\backend\.env.untracked">
             <Link>tests\monorepo\apps\backend\.env.untracked</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\.env">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\encrypted\.env">
             <Link>tests\monorepo\apps\encrypted\.env</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\.env.keys">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\encrypted\.env.keys">
             <Link>tests\monorepo\apps\encrypted\.env.keys</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\secrets.ci.txt">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\encrypted\secrets.ci.txt">
             <Link>tests\monorepo\apps\encrypted\secrets.ci.txt</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\encrypted\secrets.txt">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\encrypted\secrets.txt">
             <Link>tests\monorepo\apps\encrypted\secrets.txt</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\frontend\.env">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\frontend\.env">
             <Link>tests\monorepo\apps\frontend\.env</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\multiline\.env">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\multiline\.env">
             <Link>tests\monorepo\apps\multiline\.env</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\multiline\.env.crlf">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\multiline\.env.crlf">
             <Link>tests\monorepo\apps\multiline\.env.crlf</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\multiple\.env">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\multiple\.env">
             <Link>tests\monorepo\apps\multiple\.env</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\multiple\.env.keys">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\multiple\.env.keys">
             <Link>tests\monorepo\apps\multiple\.env.keys</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\multiple\.env.production">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\multiple\.env.production">
             <Link>tests\monorepo\apps\multiple\.env.production</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\shebang\.env">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\shebang\.env">
             <Link>tests\monorepo\apps\shebang\.env</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\monorepo\apps\unencrypted\.env">
+        <Content Include="..\..\dotenvx\tests\monorepo\apps\unencrypted\.env">
             <Link>tests\monorepo\apps\unencrypted\.env</Link>
         </Content>
-        <Content Include="..\dotenvx\tests\multiline.txt">
+        <Content Include="..\..\dotenvx\tests\multiline.txt">
             <Link>tests\multiline.txt</Link>
         </Content>
     </ItemGroup>

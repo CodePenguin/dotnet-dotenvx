@@ -1,0 +1,3 @@
+[submodule "dotenvx"]
+	path = dotenvx
+	url = https://github.com/dotenvx/dotenvx.git

@@ -4,13 +4,18 @@ using Shouldly;
 
 namespace Dotenvx.Core.Test.Interop.Dotenvx;
 
-public class ParseMultiline
+public class ParseMultilineTest
 {
+    private const string SplitLinesSrc =
+        """
+        SPLIT_KEY_VALUE_LINES
+        =split line
+        SPLIT_KEY_VALUE_SPACED_LINES
+            =split line with spaces
+        """;
+
     private readonly string _src = File.ReadAllText("tests/.env.multiline");
 
-    /// <summary>
-    ///     Equivalent tests from https://github.com/dotenvx/dotenvx/blob/main/tests/lib/parse-multiline.test.js
-    /// </summary>
     [Fact]
     public void SetsBasicEnvironmentVariable()
     {
@@ -155,14 +160,14 @@ public class ParseMultiline
     [Fact]
     public void ParsesSplitKeyValueLines()
     {
-        IDictionary<string, string> parsed = Main.Parse(_src);
+        IDictionary<string, string> parsed = Main.Parse(SplitLinesSrc);
         parsed["SPLIT_KEY_VALUE_LINES"].ShouldBe("split line");
     }
 
     [Fact]
     public void ParsesSplitKeyValueLinesWithSpaces()
     {
-        IDictionary<string, string> parsed = Main.Parse(_src);
+        IDictionary<string, string> parsed = Main.Parse(SplitLinesSrc);
         parsed["SPLIT_KEY_VALUE_SPACED_LINES"].ShouldBe("split line with spaces");
     }
 }
