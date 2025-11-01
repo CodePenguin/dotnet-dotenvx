@@ -1,7 +1,6 @@
 using dotnet_dotenvx.Extensions;
 
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -13,15 +12,12 @@ IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices(services =>
     {
         services.AddDotenvxCommands();
-        services.AddLogging(builder => builder.AddSimpleConsole(options =>
-        {
-            options.IncludeScopes = false;
-            options.SingleLine = true;
-        }));
+        services.AddDotenvxLogging(args);
     })
     .ConfigureLogging(options =>
     {
-        options.SetDotenvxLogLevel(args);
+        options.ClearProviders();
+        options.AddDotenvx();
     })
     .Build();
 

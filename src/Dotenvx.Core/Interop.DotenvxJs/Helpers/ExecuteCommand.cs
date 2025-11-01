@@ -1,8 +1,9 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Text.Json;
 
-using Microsoft.Extensions.Logging;
+using Dotenvx.Core.Interop.DotenvxJs.Shared;
 
 namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
 
@@ -22,9 +23,10 @@ public static partial class Helpers
         }
     }
 
-    public static async Task<int> ExecuteCommand(ILogger logger, string[] commandArgs, IDictionary<string, string> env)
+    public static async Task<int> ExecuteCommand(IDotenvxLogger logger, string[] commandArgs,
+        IDictionary<string, string> env)
     {
-        logger.LogDebug("executing process command [{Command}]", string.Join(' ', commandArgs));
+        logger.Debug($"executing process command [{string.Join(' ', commandArgs)}]");
 
         Process? child = null;
         string? signalSent = null;
@@ -32,19 +34,19 @@ public static partial class Helpers
         // Signal handlers - in C#, use Console.CancelKeyPress for SIGINT
         void SigintHandler(object? sender, ConsoleCancelEventArgs e)
         {
-            logger.LogDebug("received SIGINT");
-            logger.LogDebug("checking command process");
-            logger.LogDebug("{Child}", child);
+            logger.Debug("received SIGINT");
+            logger.Debug("checking command process");
+            logger.Debug(JsonSerializer.Serialize(child));
 
             if (child != null)
             {
-                logger.LogDebug("sending SIGINT to command process");
+                logger.Debug("sending SIGINT to command process");
                 signalSent = "SIGINT";
                 child.Kill(); // Send kill to the command process
             }
             else
             {
-                logger.LogDebug("no command process to send SIGINT to");
+                logger.Debug("no command process to send SIGINT to");
             }
         }
 
@@ -57,12 +59,12 @@ public static partial class Helpers
                 if (foundPath != null)
                 {
                     commandArgs[0] = Path.GetFullPath(foundPath);
-                    logger.LogDebug("expanding process command to [{Command}]", string.Join(' ', commandArgs));
+                    logger.Debug($"expanding process command to [{string.Join(' ', commandArgs)}]");
                 }
             }
             catch
             {
-                logger.LogDebug("could not expand process command. using [{Command}]", string.Join(' ', commandArgs));
+                logger.Debug($"could not expand process command. using [{string.Join(' ', commandArgs)}]");
             }
 
             // Expand any other commands that follow a --
@@ -81,13 +83,12 @@ public static partial class Helpers
                         if (foundPath != null)
                         {
                             commandArgs[i] = Path.GetFullPath(foundPath);
-                            logger.LogDebug("expanding process command to [{Command}]", string.Join(' ', commandArgs));
+                            logger.Debug($"expanding process command to [{string.Join(' ', commandArgs)}]");
                         }
                     }
                     catch
                     {
-                        logger.LogDebug("could not expand process command. using [{Command}]",
-                            string.Join(' ', commandArgs));
+                        logger.Debug($"could not expand process command. using [{string.Join(' ', commandArgs)}]");
                     }
 
                     expandNext = false;
@@ -105,9 +106,9 @@ public static partial class Helpers
                 }
             };
 
-            foreach (var arg in commandArgs.Skip(1))
+            foreach (string arg in commandArgs.Skip(1))
             {
-                child.StartInfo.ArgumentList.Add(arg);   
+                child.StartInfo.ArgumentList.Add(arg);
             }
 
             // Set environment variables
@@ -140,7 +141,7 @@ public static partial class Helpers
                 return 0;
             }
 
-            logger.LogDebug("received exitCode {ExitCode}", exitCode);
+            logger.Debug($"received exitCode {exitCode}");
             throw new Exception($"Command exited with exit code {exitCode}");
         }
         catch (Exception error)
@@ -151,14 +152,9 @@ public static partial class Helpers
                 return GetExitCodeFromProcess(child) ?? 1;
             }
 
-            if (error is Win32Exception { NativeErrorCode: 2 /*ERROR_FILE_NOT_FOUND*/ })
-            {
-                logger.LogError("Unknown command: {Command}", commandArgs[0]);
-            }
-            else
-            {
-                logger.LogError("{ErrorMessage}", error.Message);
-            }
+            logger.Error(error is Win32Exception { NativeErrorCode: 2 /*ERROR_FILE_NOT_FOUND*/ }
+                ? $"Unknown command: {commandArgs[0]}"
+                : error.Message);
 
             // Return the error code from the command process, or 1 if unavailable
             return GetExitCodeFromProcess(child) ?? 1;

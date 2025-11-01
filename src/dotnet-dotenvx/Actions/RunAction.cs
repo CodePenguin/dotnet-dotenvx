@@ -10,9 +10,8 @@ using System.Threading.Tasks;
 using Dotenvx.Core.Helpers;
 using Dotenvx.Core.Interop.DotenvxJs.Helpers;
 using Dotenvx.Core.Interop.DotenvxJs.Services;
+using Dotenvx.Core.Interop.DotenvxJs.Shared;
 using Dotenvx.Core.Interop.DotenvxJs.Types;
-
-using Microsoft.Extensions.Logging;
 
 using ParseResult = System.CommandLine.ParseResult;
 
@@ -24,7 +23,10 @@ public class RunAction : Command
         new("command") { Arity = ArgumentArity.ZeroOrMore, Hidden = true };
 
     private readonly Option<string> _conventionOption =
-        new("--convention") { Description = "load a .env convention (available conventions: ['nextjs', 'flow'])", HelpName = "name" };
+        new("--convention")
+        {
+            Description = "load a .env convention (available conventions: ['nextjs', 'flow'])", HelpName = "name"
+        };
 
     private readonly Option<string[]?> _envFileOption =
         new("--file", "-f") { Description = "path(s) to your env file(s)" };
@@ -39,9 +41,12 @@ public class RunAction : Command
         new("--env", "-e") { Description = "environment variable(s) set as string (example: \"HELLO=World\")" };
 
     private readonly Option<string[]?> _ignoreOption =
-        new("--ignore") { Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)" , HelpName = "errorCodes..." };
+        new("--ignore")
+        {
+            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes..."
+        };
 
-    private readonly ILogger<RunAction> _logger;
+    private readonly IDotenvxLogger _logger;
 
     private readonly Option<bool> _opsOffOption =
         new("--ops-off") { Description = "disable dotenvx-ops features", Hidden = true };
@@ -56,7 +61,7 @@ public class RunAction : Command
     private readonly Option<bool> _strictOption =
         new("--strict") { Description = "Process exits on any errors" };
 
-    public RunAction(ILogger<RunAction> logger) : base("run",
+    public RunAction(IDotenvxLogger logger) : base("run",
         "inject env at runtime [dotnet dotenvx run -- yourcommand]")
     {
         _logger = logger;
@@ -87,7 +92,7 @@ public class RunAction : Command
         // dotenvx-ops related
         bool opsOn = !opsOff;
 
-        _logger.LogDebug("process command [{Join}]", string.Join(' ', commandArgs));
+        _logger.Debug($"process command [{string.Join(' ', commandArgs)}]");
 
         var options = new
         {
@@ -99,7 +104,7 @@ public class RunAction : Command
             ignoreList,
             opsOff
         };
-        _logger.LogDebug("options: {Options}", JsonSerializer.Serialize(options));
+        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
 
         // Check for separator '--'
         bool hasSeparator = parseResult.Tokens.Any(x => x.Type == TokenType.DoubleDash);
@@ -108,14 +113,13 @@ public class RunAction : Command
         {
             if (hasSeparator)
             {
-                _logger.LogError("missing command after [dotenvx run --]. try [dotenvx run -- yourcommand]");
+                _logger.Error("missing command after [dotenvx run --]. try [dotenvx run -- yourcommand]");
             }
             else
             {
                 string realExample = envFile?.FirstOrDefault() ?? ".env";
-                _logger.LogError(
-                    "ambiguous command due to missing '--' separator. try [dotenvx run -f {RealExample} -- yourcommand]",
-                    realExample);
+                _logger.Error(
+                    $"ambiguous command due to missing '--' separator. try [dotenvx run -f {realExample} -- yourcommand]");
             }
 
             return 1;
@@ -153,7 +157,7 @@ public class RunAction : Command
             if (opsOn)
             {
                 // TODO: Implement Radar/Ops handling
-                _logger.LogDebug("Ops is not currently supported.");
+                _logger.Debug("Ops is not currently supported.");
             }
 
             foreach (ProcessedEnv processedEnv in processedEnvs)
@@ -161,14 +165,11 @@ public class RunAction : Command
                 switch (processedEnv.Type)
                 {
                     case EnvType.EnvFile:
-                        _logger.LogTrace(
-                            "loading env from {ProcessedEnvFilePath} ({FullFilePath})",
-                            processedEnv.FilePath, Path.GetFullPath(processedEnv.FilePath));
+                        _logger.Verbose(
+                            $"loading env from {processedEnv.FilePath} ({Path.GetFullPath(processedEnv.FilePath)})");
                         break;
                     case EnvType.Env:
-                        _logger.LogTrace(
-                            "loading env from string ({ProcessedEnv})",
-                            processedEnv.String);
+                        _logger.Verbose($"loading env from string ({processedEnv.String})");
                         break;
                     default:
                         throw new InvalidOperationException();
@@ -180,7 +181,7 @@ public class RunAction : Command
                     string code = dotenvError?.Code ?? "UNKNOWN";
                     if (ignoreList.Contains(code))
                     {
-                        _logger.LogTrace("ignored: {ErrorMessage}", error.Message);
+                        _logger.Verbose($"ignored: {error.Message}");
                         continue; // ignore error
                     }
 
@@ -196,40 +197,38 @@ public class RunAction : Command
                             continue;
                         }
 
-                        _logger.LogError(error.Message);
+                        _logger.Error(error.Message);
                         if (!string.IsNullOrEmpty(dotenvError?.Help))
                         {
-                            _logger.LogError(
-                                "{ErrorHelp} and re-run [dotenvx run -- {Command}]",
-                                dotenvError.Help, string.Join(' ', commandArgs));
+                            _logger.Error(
+                                $"{dotenvError.Help} and re-run [dotenvx run -- {string.Join(' ', commandArgs)}]");
                         }
                     }
                     else
                     {
-                        _logger.LogError("{ErrorMessage}", error.Message);
+                        _logger.Error(error.Message);
                         if (!string.IsNullOrEmpty(dotenvError?.Help))
                         {
-                            _logger.LogError("{ErrorHelp}", dotenvError.Help);
+                            _logger.Error(dotenvError.Help);
                         }
                     }
                 }
 
                 // debug parsed
-                _logger.LogDebug("parsed: {Serialize}", JsonSerializer.Serialize(processedEnv.Parsed));
+                _logger.Debug($"parsed: {JsonSerializer.Serialize(processedEnv.Parsed)}");
 
                 // verbose/debug injected key/value
                 foreach (KeyValuePair<string, string> kvp in processedEnv.Injected)
                 {
-                    _logger.LogTrace("{KvpKey} set", kvp.Key);
-                    _logger.LogDebug("{KvpKey} set to {KvpValue}", kvp.Key, kvp.Value);
+                    _logger.Verbose($"{kvp.Key} set");
+                    _logger.Debug($"{kvp.Key} set to {kvp.Value}");
                 }
 
                 // verbose/debug preExisted key/value
                 foreach (KeyValuePair<string, string> kvp in processedEnv.PreExisted)
                 {
-                    _logger.LogTrace("{KvpKey} pre-exists (protip: use --overload to override)", kvp.Key);
-                    _logger.LogDebug("{KvpKey} pre-exists as {KvpValue} (protip: use --overload to override)", kvp.Key,
-                        kvp.Value);
+                    _logger.Verbose($"{kvp.Key} pre-exists (protip: use --overload to override)");
+                    _logger.Debug($"{kvp.Key} pre-exists as {kvp.Value} (protip: use --overload to override)");
                 }
             }
 
@@ -254,14 +253,14 @@ public class RunAction : Command
                     }
             }
 
-            _logger.LogInformation("{Message}", msg);
+            _logger.SuccessV(msg);
         }
         catch (Exception error)
         {
-            _logger.LogError("{ErrorMessage}", error.Message);
+            _logger.Error(error.Message);
             if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
             {
-                _logger.LogError("{ErrorHelp}", ex.Help);
+                _logger.Error(ex.Help);
             }
 
             return 1;

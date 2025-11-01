@@ -1,8 +1,5 @@
-using System;
 using System.CommandLine;
 using System.Linq;
-
-using Microsoft.Extensions.Logging;
 
 namespace dotnet_dotenvx;
 
@@ -30,36 +27,26 @@ public class LoggingRootCommand : RootCommand
         Add(_debugLogLevel);
     }
 
-    private LogLevel? LogLevelFlagsToLogLevel(ParseResult parseResult)
+    private string? LogLevelFlagsToLogLevel(ParseResult parseResult)
     {
-        (Option<bool>, LogLevel) mappings = new[]
+        (Option<bool>, string) mappings = new[]
             {
-                (_quietLogLevel, LogLevel.Error), (_debugLogLevel, LogLevel.Debug),
-                (_verboseLogLevel, LogLevel.Trace)
+                (_debugLogLevel, "debug"), (_verboseLogLevel, "verbose"), (_quietLogLevel, "error")
             }
             .FirstOrDefault(mapping => parseResult.GetValue(mapping.Item1));
         return mappings.Item1 != null ? mappings.Item2 : null;
     }
 
-    public void SetLogLevel(ParseResult parseResult, Action<LogLevel> callback)
+    public string GetLogLevel(ParseResult parseResult)
     {
-        LogLevel logLevel =
-            ToLogLevel(parseResult.GetValue(_logLevel))
+        return
+            parseResult.GetValue(_logLevel)
             ?? LogLevelFlagsToLogLevel(parseResult)
-            ?? LogLevel.Information;
-        callback(logLevel);
+            ?? "info";
     }
 
-    private static LogLevel? ToLogLevel(string? getValue)
+    public bool IsVerboseMode(ParseResult parseResult)
     {
-        return getValue?.ToLowerInvariant() switch
-        {
-            "debug" => LogLevel.Debug,
-            "error" => LogLevel.Error,
-            "info" => LogLevel.Information,
-            "silly" or "verbose" => LogLevel.Trace,
-            "warn" => LogLevel.Warning,
-            _ => null
-        };
+        return parseResult.GetValue(_logLevel) == "verbose" || parseResult.GetValue(_verboseLogLevel);
     }
 }

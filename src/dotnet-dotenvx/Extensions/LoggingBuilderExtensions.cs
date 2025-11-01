@@ -1,25 +1,43 @@
-using System.CommandLine;
-using System.IO;
+using Dotenvx.Core.Interop.DotenvxJs.Shared;
 
+using dotnet_dotenvx.Logging;
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace dotnet_dotenvx.Extensions;
 
 public static class LoggingBuilderExtensions
 {
-    public static void SetDotenvxLogLevel(this ILoggingBuilder builder, string[] args)
+    public static void AddDotenvx(this ILoggingBuilder builder)
     {
-        LoggingRootCommand rootCommand = new() { TreatUnmatchedTokensAsErrors = false };
-        rootCommand.SetAction(parseResult =>
+        builder.Services.AddSingleton<ILoggerProvider>(serviceProvider =>
         {
-            rootCommand.SetLogLevel(parseResult, logLevel =>
+            DotenvxLoggerConfiguration configuration = serviceProvider.GetRequiredService<DotenvxLoggerConfiguration>();
+
+            LogLevel minimumLogLevel = DotenvxLogLevelToLogLevel(configuration.LogLevel);
+
+            //builder.SetMinimumLevel(minimumLogLevel);
+            builder.AddFilter<DotenvxLoggerProvider>(null, minimumLogLevel);
+            builder.AddFilter(nameof(dotnet_dotenvx), minimumLogLevel);
+            builder.AddFilter(nameof(Dotenvx.Core), minimumLogLevel);
+
+            return new DotenvxLoggerProvider(new DotenvxCustomLoggerConfiguration
             {
-                builder.AddFilter(nameof(dotnet_dotenvx), logLevel);
-                builder.AddFilter(nameof(Dotenvx.Core), logLevel);
+                MinimumLogLevel = minimumLogLevel
             });
         });
+    }
 
-        ParseResult parseResult = rootCommand.Parse(args);
-        parseResult.Invoke(new InvocationConfiguration { Error = TextWriter.Null, Output = TextWriter.Null });
+    private static LogLevel DotenvxLogLevelToLogLevel(string getValue)
+    {
+        return getValue.ToLowerInvariant() switch
+        {
+            "debug" or "verbose" => LogLevel.Debug,
+            "error" => LogLevel.Error,
+            "silly" => LogLevel.Trace,
+            "warn" => LogLevel.Warning,
+            _ => LogLevel.Information
+        };
     }
 }
