@@ -1,8 +1,10 @@
+using Dotenvx.Core.Interop.DotenvxJs.Shared;
+
 using Microsoft.Extensions.Logging;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Shared;
+namespace dotnet_dotenvx.Logging;
 
-public class DotenvxLogger(ILogger<DotenvxLogger> logger, DotenvxLoggerConfiguration configuration) : IDotenvxLogger
+public class DotenvxLogger(ILogger<DotenvxLogger> logger, DotenvxLoggerOptions options) : IDotenvxLogger
 {
     private static readonly string Version = typeof(DotenvxLogger).Assembly.GetName().Version?.ToString() ?? "0.0.0";
 
@@ -39,7 +41,7 @@ public class DotenvxLogger(ILogger<DotenvxLogger> logger, DotenvxLoggerConfigura
 
     public void Verbose(string message)
     {
-        if (!configuration.Verbose)
+        if (options.LogLevel < DotenvxLogLevel.Verbose)
         {
             return;
         }
@@ -49,6 +51,11 @@ public class DotenvxLogger(ILogger<DotenvxLogger> logger, DotenvxLoggerConfigura
 
     public void Debug(string message)
     {
+        if (options.LogLevel < DotenvxLogLevel.Debug)
+        {
+            return;
+        }
+
         logger.LogDebug("{Message}", Shared.GetColor("plum")(message));
     }
 }

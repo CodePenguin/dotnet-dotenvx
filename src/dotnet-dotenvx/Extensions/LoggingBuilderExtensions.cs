@@ -1,5 +1,3 @@
-using Dotenvx.Core.Interop.DotenvxJs.Shared;
-
 using dotnet_dotenvx.Logging;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -9,34 +7,22 @@ namespace dotnet_dotenvx.Extensions;
 
 public static class LoggingBuilderExtensions
 {
-    public static void AddDotenvx(this ILoggingBuilder builder)
+    public static void AddDotenvx(this ILoggingBuilder builder, DotenvxLoggerOptions options)
     {
-        builder.Services.AddSingleton<ILoggerProvider>(serviceProvider =>
-        {
-            DotenvxLoggerConfiguration configuration = serviceProvider.GetRequiredService<DotenvxLoggerConfiguration>();
-
-            LogLevel minimumLogLevel = DotenvxLogLevelToLogLevel(configuration.LogLevel);
-
-            //builder.SetMinimumLevel(minimumLogLevel);
-            builder.AddFilter<DotenvxLoggerProvider>(null, minimumLogLevel);
-            builder.AddFilter(nameof(dotnet_dotenvx), minimumLogLevel);
-            builder.AddFilter(nameof(Dotenvx.Core), minimumLogLevel);
-
-            return new DotenvxLoggerProvider(new DotenvxCustomLoggerConfiguration
-            {
-                MinimumLogLevel = minimumLogLevel
-            });
-        });
+        LogLevel minimumLogLevel = DotenvxLogLevelToLogLevel(options.LogLevel);
+        builder.AddFilter<DotenvxLoggerProvider>(null, minimumLogLevel);
+        builder.Services.AddSingleton<ILoggerProvider>(_ =>
+            new DotenvxLoggerProvider(new DotenvxCustomLoggerConfiguration { MinimumLogLevel = minimumLogLevel }));
     }
 
-    private static LogLevel DotenvxLogLevelToLogLevel(string getValue)
+    private static LogLevel DotenvxLogLevelToLogLevel(DotenvxLogLevel logLevel)
     {
-        return getValue.ToLowerInvariant() switch
+        return logLevel switch
         {
-            "debug" or "verbose" => LogLevel.Debug,
-            "error" => LogLevel.Error,
-            "silly" => LogLevel.Trace,
-            "warn" => LogLevel.Warning,
+            DotenvxLogLevel.Debug or DotenvxLogLevel.Verbose => LogLevel.Debug,
+            DotenvxLogLevel.Error => LogLevel.Error,
+            DotenvxLogLevel.Silly => LogLevel.Trace,
+            DotenvxLogLevel.Warn => LogLevel.Warning,
             _ => LogLevel.Information
         };
     }

@@ -1,11 +1,10 @@
-using System.CommandLine;
-using System.IO;
-
 using Dotenvx.Core.Interop.DotenvxJs.Shared;
 
 using dotnet_dotenvx.Actions;
+using dotnet_dotenvx.Logging;
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace dotnet_dotenvx.Extensions;
 
@@ -17,28 +16,14 @@ public static class ServiceCollectionExtensions
         services.AddTransient<RunAction>();
     }
 
-    public static void AddDotenvxLogging(this IServiceCollection services, string[] args)
+    public static void AddDotenvxLogging(this IServiceCollection services, DotenvxLoggerOptions options)
     {
-        DotenvxLoggerConfiguration configuration = GetDotenvxLoggerConfiguration(args);
-        services.AddSingleton(configuration);
-        services.AddSingleton<IDotenvxLogger, DotenvxLogger>();
-    }
-
-    private static DotenvxLoggerConfiguration GetDotenvxLoggerConfiguration(string[] args)
-    {
-        string logLevel = "info";
-        bool verbose = false;
-
-        LoggingRootCommand rootCommand = new() { TreatUnmatchedTokensAsErrors = false };
-        rootCommand.SetAction(parseResult =>
+        services.AddSingleton(options);
+        services.AddSingleton<IDotenvxLogger>(serviceProvider =>
         {
-            logLevel = rootCommand.GetLogLevel(parseResult);
-            verbose = rootCommand.IsVerboseMode(parseResult);
+            DotenvxLogger logger = new(serviceProvider.GetRequiredService<ILogger<DotenvxLogger>>(), options);
+            logger.Debug($"Setting log level to {options.LogLevel.ToString().ToLower()}");
+            return logger;
         });
-
-        ParseResult parseResult = rootCommand.Parse(args);
-        parseResult.Invoke(new InvocationConfiguration { Error = TextWriter.Null, Output = TextWriter.Null });
-
-        return new DotenvxLoggerConfiguration { LogLevel = logLevel, Verbose = verbose };
     }
 }

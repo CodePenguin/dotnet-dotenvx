@@ -1,8 +1,12 @@
+using dotnet_dotenvx;
 using dotnet_dotenvx.Extensions;
+using dotnet_dotenvx.Logging;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+
+DotenvxLoggerOptions loggerOptions = DotenvxRootCommand.GetDotenvxLoggerConfiguration(args);
 
 IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureHostConfiguration(builder =>
@@ -12,12 +16,12 @@ IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices(services =>
     {
         services.AddDotenvxCommands();
-        services.AddDotenvxLogging(args);
+        services.AddDotenvxLogging(loggerOptions);
     })
     .ConfigureLogging(options =>
     {
         options.ClearProviders();
-        options.AddDotenvx();
+        options.AddDotenvx(loggerOptions);
     })
     .Build();
 
