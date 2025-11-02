@@ -10,6 +10,7 @@ public abstract class EnvironmentTestBase : IDisposable
 
     public void Dispose()
     {
+        TearDown();
         if (Environment.CurrentDirectory != _originalDirectory)
         {
             Environment.CurrentDirectory = _originalDirectory;
@@ -28,5 +29,10 @@ public abstract class EnvironmentTestBase : IDisposable
     protected void ClearEnvironment()
     {
         _existingEnvironmentKeys.ForEach(key => Environment.SetEnvironmentVariable(key, null));
+    }
+    
+    protected virtual void TearDown()
+    {
+        // override in descendents
     }
 }

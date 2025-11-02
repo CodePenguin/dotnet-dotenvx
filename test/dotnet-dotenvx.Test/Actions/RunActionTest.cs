@@ -6,9 +6,9 @@ using Shouldly;
 
 namespace dotnet_dotenvx.Test.Actions;
 
-public class RunActionTests : EnvironmentTestBase
+public class RunActionTest : EnvironmentTestBase
 {
-    public RunActionTests()
+    public RunActionTest()
     {
         // ClearEnvironment();
         RootCommand = new LoggingRootCommand { new RunAction(MockLogger) };
@@ -25,7 +25,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
@@ -36,7 +35,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
@@ -47,7 +45,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
@@ -58,7 +55,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
@@ -74,7 +70,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0); // command succeeds, but error logged
-
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain(
             "[INVALID_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=bad-pri…'");
@@ -90,7 +85,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
@@ -105,7 +99,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
@@ -122,7 +115,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HOLA=amigo)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
@@ -139,7 +131,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HEY=there)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
@@ -154,7 +145,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.VerboseMessages.ShouldContain(
             $"loading env from nonexistent.env ({Path.GetFullPath("nonexistent.env")})");
         MockLogger.ErrorMessages.ShouldContain(
@@ -171,7 +161,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain("[MISSING_ENV_FILE] https://github.com/dotenvx/dotenvx/issues/484");
@@ -186,7 +175,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.VerboseMessages.ShouldContain(
             $"loading env from nonexistent.env ({Path.GetFullPath("nonexistent.env")})");
         MockLogger.VerboseMessages.ShouldContain(
@@ -204,7 +192,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.VerboseMessages.ShouldContain(
             $"loading env from nonexistent.env ({Path.GetFullPath("nonexistent.env")})");
         MockLogger.VerboseMessages.ShouldContain(
@@ -220,7 +207,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain("loading env from string (INVALID)");
         MockLogger.ErrorMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
@@ -237,7 +223,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-
         MockLogger.ErrorMessages.ShouldContain(
             "INVALID_CONVENTION: 'invalid'. permitted conventions: ['nextjs', 'flow']");
     }
@@ -250,7 +235,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-
         MockLogger.ErrorMessages.ShouldContain(
             "missing command after [dotenvx run --]. try [dotenvx run -- yourcommand]");
     }
@@ -262,7 +246,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-
         MockLogger.ErrorMessages.ShouldContain(
             "ambiguous command due to missing \'--\' separator. try [dotenvx run -f .env.production -- yourcommand]");
     }
@@ -274,7 +257,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-
         MockLogger.ErrorMessages.ShouldContain(
             "ambiguous command due to missing \'--\' separator. try [dotenvx run -f .env -- yourcommand]");
     }
@@ -290,7 +272,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.InfoMessages.ShouldContain("injecting env (0) from .env");
     }
@@ -303,7 +284,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.DebugMessages.ShouldContain("Ops is not currently supported.");
     }
 
@@ -315,7 +295,6 @@ public class RunActionTests : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-
         MockLogger.DebugMessages.ShouldContain("Ops is not currently supported.");
     }
 }

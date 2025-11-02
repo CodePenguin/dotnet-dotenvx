@@ -9,10 +9,12 @@ namespace dotnet_dotenvx;
 public class DotenvxRootCommand : LoggingRootCommand
 {
     public DotenvxRootCommand(
+        GetAction getAction,
         RunAction runAction
     ) : base("A secure dotenv for .NET – based on dotenvx from the creator of `dotenv`")
     {
         // Add Actions
+        Subcommands.Add(getAction);
         Subcommands.Add(runAction);
     }
 

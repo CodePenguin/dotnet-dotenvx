@@ -13,6 +13,7 @@ public static class ServiceCollectionExtensions
     public static void AddDotenvxCommands(this IServiceCollection services)
     {
         services.AddTransient<DotenvxRootCommand>();
+        services.AddTransient<GetAction>();
         services.AddTransient<RunAction>();
     }
 
