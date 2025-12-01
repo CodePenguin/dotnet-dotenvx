@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 using NBitcoin.Secp256k1;
 
@@ -7,12 +8,12 @@ using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 
-namespace Dotenvx.Core.Interop.EciesJs;
+namespace Dotenvx.Interop.EciesJs;
 
 /// <summary>
 ///     C# equivalent for eciesjs src/utils.js (https://github.com/ecies/js).
 /// </summary>
-public static class Utils
+public static partial class Utils
 {
     private const int NonceLength = 16;
     private const int TagLength = 16;
@@ -78,7 +79,11 @@ public static class Utils
     /// </summary>
     public static byte[] DecodeHex(string value)
     {
-        return Convert.FromHexString(value.StartsWith("0x") ? value[2..] : value);
+        // Remove "0x" prefix if present
+        value = value.StartsWith("0x") ? value[2..] : value;
+        // Node.js's Buffer.from(value, 'hex') truncates at the first non-hex character
+        value = ExtractFirstHexString().Match(value).Value;
+        return Convert.FromHexString(value);
     }
 
     /// <summary>
@@ -108,4 +113,7 @@ public static class Utils
         byte[] master = [..publicKeyBytes, ..sharedPointBytes];
         return HKDF.DeriveKey(HashAlgorithmName.SHA256, master, 32);
     }
+
+    [GeneratedRegex("^[0-9a-fA-F]*")]
+    private static partial Regex ExtractFirstHexString();
 }

@@ -1,30 +1,43 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Services;
+using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
-public class KeyPair(string envFile = ".env", string? envKeysFilepath = null)
+namespace Dotenvx.Interop.DotenvxJs.Services;
+
+/// <remarks>Reference source: dotenvx/src/lib/services/keypair.js</remarks>
+// ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
+public class KeyPair(string envFile = ".env", string? envKeysFilePath = null)
 {
+    private static readonly Func<string, string?, KeyPair> DefaultFactory =
+        (envFile, envKeysFile) => new KeyPair(envFile, envKeysFile);
+
     private readonly string[] _envFiles = [envFile];
 
-    public Dictionary<string, string> Run()
+    protected KeyPair() : this(".env")
     {
-        Dictionary<string, string> result = new();
+        // For unit tests
+    }
 
-        foreach (string envFilepath in _envFiles)
+    public static Func<string, string?, KeyPair> Factory { get; internal set; } = DefaultFactory;
+
+    internal static void ResetFactory()
+    {
+        Factory = DefaultFactory;
+    }
+
+    public virtual Dictionary<string, string?> Run()
+    {
+        Dictionary<string, string?> result = new();
+
+        foreach (string envFilePath in _envFiles)
         {
             // public key
-            string publicKeyName = Helpers.Helpers.GuessPublicKeyName(envFilepath);
-            string? publicKeyValue = Helpers.Helpers.SmartDotenvPublicKey(envFilepath);
-            if (publicKeyValue != null)
-            {
-                result[publicKeyName] = publicKeyValue;
-            }
+            string publicKeyName = GuessPublicKeyName(envFilePath);
+            string? publicKeyValue = SmartDotenvPublicKey(envFilePath);
+            result[publicKeyName] = publicKeyValue;
 
             // private key
-            string privateKeyName = Helpers.Helpers.GuessPrivateKeyName(envFilepath);
-            string? privateKeyValue = Helpers.Helpers.SmartDotenvPrivateKey(envFilepath, envKeysFilepath);
-            if (privateKeyValue != null)
-            {
-                result[privateKeyName] = privateKeyValue;
-            }
+            string privateKeyName = GuessPrivateKeyName(envFilePath);
+            string? privateKeyValue = SmartDotenvPrivateKey(envFilePath, envKeysFilePath);
+            result[privateKeyName] = privateKeyValue;
         }
 
         return result;

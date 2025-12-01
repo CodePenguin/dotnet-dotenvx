@@ -1,4 +1,4 @@
-using Dotenvx.Core.Interop.EciesJs;
+using Dotenvx.Interop.EciesJs;
 
 using Shouldly;
 
@@ -17,7 +17,7 @@ public class PrivateKeyTest : EciesJsTestBase
         AlicePrivateKeyHex,
         BobPublicKeyHex,
         "9208dc63cb2f85470216148e08a419daa4c60df3ae26c7a5fcd0aa9bd86eaf1a")]
-    public void Ecdh_ComputesExpectedSharedSecret(string privateKeyHex, string peerPublicKeyHex,
+    public void TestEcdhComputesExpectedSharedSecret(string privateKeyHex, string peerPublicKeyHex,
         string expectedSharedHex)
     {
         byte[] peerPublicKey = Convert.FromHexString(peerPublicKeyHex);
@@ -28,7 +28,7 @@ public class PrivateKeyTest : EciesJsTestBase
     }
 
     [Fact]
-    public void Ecdh_ComputesSameSharedSecret()
+    public void TestEcdhComputesSameSharedSecret()
     {
         // Calculated by eciesjs 0.4.15 Buffer.from(AlicePrivateKey.encapsulate(BobPublicKey, false)).toString("hex")
         byte[] aliceShared = PrivateKey.FromHex(AlicePrivateKeyHex).Encapsulate(Convert.FromHexString(BobPublicKeyHex));
@@ -38,7 +38,7 @@ public class PrivateKeyTest : EciesJsTestBase
     }
 
     [Fact]
-    public void Ecdh_Invalid_PublicKey_Throws()
+    public void TestEcdhInvalidPublicKeyThrows()
     {
         byte[] badPublicKey = new byte[33];
         badPublicKey[0] = 0x01; // invalid prefix
@@ -46,21 +46,21 @@ public class PrivateKeyTest : EciesJsTestBase
     }
 
     [Fact]
-    public void Ecdh_Invalid_PrivateKey_Throws()
+    public void TestEcdhInvalidPrivateKeyThrows()
     {
         byte[] badPrivateKey = new byte[10]; // too short
         Should.Throw<ArgumentException>(() => new PrivateKey(badPrivateKey));
     }
 
     [Fact]
-    public void Ecdh_Returns32Bytes()
+    public void TestEcdhReturns32Bytes()
     {
         byte[] secret = PrivateKey.FromHex(AlicePrivateKeyHex).Encapsulate(Convert.FromHexString(BobPublicKeyHex));
         secret.Length.ShouldBe(32);
     }
 
     [Fact]
-    public void GetPublicKey_Compressed_ShouldMatchNodeJsOutput()
+    public void TestGetPublicKeyCompressedShouldMatchNodeJsOutput()
     {
         // Calculated by eciesjs v0.4.15: Buffer.from(AlicePrivateKey.publicKey.toBytes(true)).toString("hex")
         byte[] alicePublicKey = PrivateKey.FromHex(AlicePrivateKeyHex).PublicKey.ToBytes();
@@ -76,7 +76,7 @@ public class PrivateKeyTest : EciesJsTestBase
     }
 
     [Fact]
-    public void GetPublicKey_Uncompressed_ShouldMatchNodeJsOutput()
+    public void TestGetPublicKeyUncompressedShouldMatchNodeJsOutput()
     {
         // Calculated by eciesjs v0.4.15: Buffer.from(AlicePrivateKey.publicKey.toBytes(false)).toString("hex")
         byte[] alicePublicKey = PrivateKey.FromHex(AlicePrivateKeyHex).PublicKey.ToBytes(false);

@@ -1,5 +1,6 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/guessPublicKeyName.js</remarks>
 public static partial class Helpers
 {
     public static string GuessPublicKeyName(string filepath)

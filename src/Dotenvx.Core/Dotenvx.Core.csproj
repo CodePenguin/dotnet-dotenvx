@@ -4,12 +4,20 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>Dotenvx</RootNamespace>
     </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Dotenvx.Configuration.Test"/>
+        <InternalsVisibleTo Include="Dotenvx.Core.Test"/>
+        <InternalsVisibleTo Include="Dotenvx.Test"/>
+    </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2"/>
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="8.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0-rc.2.25502.107"/>
         <PackageReference Include="NBitcoin.Secp256k1" Version="3.1.6"/>
     </ItemGroup>

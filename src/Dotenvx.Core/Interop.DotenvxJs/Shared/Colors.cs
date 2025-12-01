@@ -1,4 +1,6 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Shared;
+using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+
+namespace Dotenvx.Interop.DotenvxJs.Shared;
 
 public static class Shared
 {
@@ -35,7 +37,7 @@ public static class Shared
             throw new ArgumentException($"Invalid color {color}");
         }
 
-        int colorDepth = Helpers.Helpers.GetColorDepth();
+        int colorDepth = GetColorDepth();
 
         switch (colorDepth)
         {
@@ -56,6 +58,6 @@ public static class Shared
 
     public static string Bold(string message)
     {
-        return Helpers.Helpers.GetColorDepth() >= 4 ? $"\x1b[1m{message}\x1b[22m" : message;
+        return GetColorDepth() >= 4 ? $"\x1b[1m{message}\x1b[22m" : message;
     }
 }

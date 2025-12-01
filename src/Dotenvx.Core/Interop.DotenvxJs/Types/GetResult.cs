@@ -1,7 +1,7 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Types;
+namespace Dotenvx.Interop.DotenvxJs.Types;
 
 public class GetResult
 {
-    public required IDictionary<string, string> Parsed { get; set; }
-    public required IList<Exception> Errors { get; set; }
+    public required IReadOnlyDictionary<string, string> Parsed { get; init; }
+    public required Exception[] Errors { get; init; }
 }

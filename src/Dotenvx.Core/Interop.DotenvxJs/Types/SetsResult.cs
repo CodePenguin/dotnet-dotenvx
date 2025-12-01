@@ -1,8 +1,8 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Types;
+namespace Dotenvx.Interop.DotenvxJs.Types;
 
 public class SetsResult
 {
-    public required IList<ProcessedSet> ProcessedEnvs { get; set; }
-    public required IList<string> ChangedFilePaths { get; set; }
-    public required IList<string> UnchangedFilePaths { get; set; }
+    public required ProcessedSet[] ProcessedEnvs { get; init; }
+    public required string[] ChangedFilePaths { get; init; }
+    public required string[] UnchangedFilePaths { get; init; }
 }

@@ -1,13 +1,14 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/smartDotenvPrivateKey.js</remarks>
 public static partial class Helpers
 {
     private const string PublicKeySchema = "DOTENV_PUBLIC_KEY";
     private const string PrivateKeySchema = "DOTENV_PRIVATE_KEY";
 
-    public static string? SmartDotenvPrivateKey(string envFilepath, string? envKeysFilepath = null)
+    public static string? SmartDotenvPrivateKey(string envFilePath, string? envKeysFilePath = null)
     {
-        string? privateKeyName = GuessPrivateKeyName(envFilepath); // DOTENV_PRIVATE_KEY_${ENVIRONMENT}
+        string? privateKeyName = GuessPrivateKeyName(envFilePath); // DOTENV_PRIVATE_KEY_${ENVIRONMENT}
 
         // 1. attempt process.env first
         string? privateKey = SearchProcessEnv(privateKeyName);
@@ -17,14 +18,14 @@ public static partial class Helpers
         }
 
         // 2. attempt .env.keys second (path/to/.env.keys)
-        privateKey = SearchKeysFile(privateKeyName, envFilepath, envKeysFilepath);
+        privateKey = SearchKeysFile(privateKeyName, envFilePath, envKeysFilePath);
         if (privateKey != null)
         {
             return privateKey;
         }
 
         // 3. attempt inverting `DOTENV_PUBLIC_KEY*` name inside file (unlocks custom filenames not matching .env.${ENVIRONMENT} pattern)
-        privateKeyName = InvertForPrivateKeyName(envFilepath);
+        privateKeyName = InvertForPrivateKeyName(envFilePath);
         if (privateKeyName == null)
         {
             return null;
@@ -38,25 +39,25 @@ public static partial class Helpers
         }
 
         // 3.2. attempt .env.keys second (path/to/.env.keys)
-        privateKey = SearchKeysFile(privateKeyName, envFilepath, envKeysFilepath);
+        privateKey = SearchKeysFile(privateKeyName, envFilePath, envKeysFilePath);
         return privateKey ?? null;
     }
 
-    private static string? SearchKeysFile(string privateKeyName, string envFilepath, string? envKeysFilepath)
+    private static string? SearchKeysFile(string privateKeyName, string envFilePath, string? envKeysFilePath)
     {
-        string keysFilepath = Path.Combine(Path.GetDirectoryName(envFilepath)!, ".env.keys"); // typical scenario
-        if (!string.IsNullOrEmpty(envKeysFilepath))
+        string keysFilePath = Path.Combine(Path.GetDirectoryName(envFilePath)!, ".env.keys"); // typical scenario
+        if (!string.IsNullOrEmpty(envKeysFilePath))
         {
             // user specified
-            keysFilepath = Path.GetFullPath(envKeysFilepath);
+            keysFilePath = Path.GetFullPath(envKeysFilePath);
         }
 
-        if (!File.Exists(keysFilepath))
+        if (!Fsx.ExistsSync(keysFilePath))
         {
             return null;
         }
 
-        string keysSrc = File.ReadAllText(keysFilepath);
+        string keysSrc = Fsx.ReadFileX(keysFilePath);
         Dictionary<string, object> keysParsed = DotenvParse(keysSrc);
 
         if (keysParsed.TryGetValue(privateKeyName, out object? value) && value is string s && !string.IsNullOrEmpty(s))
@@ -67,14 +68,14 @@ public static partial class Helpers
         return null;
     }
 
-    private static string? InvertForPrivateKeyName(string envFilepath)
+    private static string? InvertForPrivateKeyName(string envFilePath)
     {
-        if (!File.Exists(envFilepath))
+        if (!Fsx.ExistsSync(envFilePath))
         {
             return null;
         }
 
-        string envSrc = File.ReadAllText(envFilepath);
+        string envSrc = Fsx.ReadFileX(envFilePath);
         Dictionary<string, object> envParsed = DotenvParse(envSrc);
 
         string? publicKeyName = null;

@@ -1,12 +1,13 @@
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Types;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/conventions.js</remarks>
 public static partial class Helpers
 {
     private static readonly string[] ValidEnvs = ["development", "test", "production"];
 
-    public static List<EnvItem> Conventions(string convention)
+    public static EnvItem[] Conventions(string convention)
     {
         string env = Environment.GetEnvironmentVariable("DOTENV_ENV") ??
                      Environment.GetEnvironmentVariable("NODE_ENV") ?? "development";
@@ -28,16 +29,16 @@ public static partial class Helpers
                         ? new EnvItem { Type = EnvType.EnvFile, Value = $".env.{canonicalEnv}" }
                         : null,
                     new EnvItem { Type = EnvType.EnvFile, Value = ".env" }
-                }.Where(x => x != null).OfType<EnvItem>().ToList();
+                }.Where(x => x != null).OfType<EnvItem>().ToArray();
             case "flow":
-                return new[]
-                {
+                return
+                [
                     new EnvItem { Type = EnvType.EnvFile, Value = $".env.{env}.local" },
                     new EnvItem { Type = EnvType.EnvFile, Value = $".env.{env}" },
                     new EnvItem { Type = EnvType.EnvFile, Value = ".env.local" },
                     new EnvItem { Type = EnvType.EnvFile, Value = ".env" },
                     new EnvItem { Type = EnvType.EnvFile, Value = ".env.defaults" }
-                }.ToList();
+                ];
             default:
                 throw new Exception($"INVALID_CONVENTION: '{convention}'. permitted conventions: ['nextjs', 'flow']");
         }

@@ -1,13 +1,12 @@
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Types;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/dotenvOptionPaths.js</remarks>
 public static partial class Helpers
 {
-    private static List<string> DotenvOptionPaths(ConfigOptions options)
+    private static string[] DotenvOptionPaths(ConfigOptions options)
     {
-        return options.Path != null
-            ? options.Path.Select(ResolveHome).ToList()
-            : [];
+        return options.Path?.Select(ResolveHome).ToArray() ?? [];
     }
 }

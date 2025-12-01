@@ -1,11 +1,11 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Types;
+namespace Dotenvx.Interop.DotenvxJs.Types;
 
 public class RunResult
 {
-    public required IList<ProcessedEnv> ProcessedEnvs { get; set; }
-    public required IList<string> ReadableStrings { get; set; }
-    public required IList<string> ReadableFilePaths { get; set; }
-    public required IList<string> UniqueInjectedKeys { get; set; }
-    public required IDictionary<string, string> BeforeEnv { get; set; }
-    public required IDictionary<string, string> AfterEnv { get; set; }
+    public required RunProcessedEnv[] ProcessedEnvs { get; init; }
+    public required string[] ReadableStrings { get; init; }
+    public required string[] ReadableFilePaths { get; init; }
+    public required string[] UniqueInjectedKeys { get; init; }
+    public required IReadOnlyDictionary<string, string> BeforeEnv { get; init; }
+    public required IReadOnlyDictionary<string, string> AfterEnv { get; init; }
 }

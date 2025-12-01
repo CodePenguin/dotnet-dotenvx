@@ -1,9 +1,10 @@
 using System.Text.RegularExpressions;
 
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Types;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/evalKeyValue.js</remarks>
 public static partial class Helpers
 {
     public static string EvalKeyValue(string key, string value, IDictionary<string, string> processEnv,

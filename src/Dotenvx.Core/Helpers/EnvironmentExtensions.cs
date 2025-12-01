@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace Dotenvx.Core.Helpers;
+namespace Dotenvx.Helpers;
 
 public static class EnvironmentHelper
 {

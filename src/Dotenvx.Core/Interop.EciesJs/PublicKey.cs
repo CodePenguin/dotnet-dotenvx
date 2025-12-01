@@ -1,6 +1,6 @@
 using NBitcoin.Secp256k1;
 
-namespace Dotenvx.Core.Interop.EciesJs;
+namespace Dotenvx.Interop.EciesJs;
 
 /// <summary>
 ///     C# equivalent for eciesjs src/keys/PublicKey.ts (https://github.com/ecies/js).

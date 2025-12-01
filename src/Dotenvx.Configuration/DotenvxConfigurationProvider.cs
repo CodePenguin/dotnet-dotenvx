@@ -1,5 +1,5 @@
-using Dotenvx.Core.Interop.DotenvxJs;
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs;
+using Dotenvx.Interop.DotenvxJs.Types;
 
 using Microsoft.Extensions.Configuration;
 

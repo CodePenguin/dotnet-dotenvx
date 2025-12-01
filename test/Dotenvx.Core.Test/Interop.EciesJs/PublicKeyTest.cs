@@ -1,4 +1,4 @@
-using Dotenvx.Core.Interop.EciesJs;
+using Dotenvx.Interop.EciesJs;
 
 using Shouldly;
 
@@ -17,7 +17,7 @@ public class PublicKeyTest : EciesJsTestBase
         BobPrivateKeyHex,
         AlicePublicKeyHex,
         "9208dc63cb2f85470216148e08a419daa4c60df3ae26c7a5fcd0aa9bd86eaf1a")]
-    public void Ecdh_ComputesExpectedSharedSecret(string privateKeyHex, string peerPublicKeyHex,
+    public void TestEcdhComputesExpectedSharedSecret(string privateKeyHex, string peerPublicKeyHex,
         string expectedSharedHex)
     {
         byte[] privateKey = Convert.FromHexString(privateKeyHex);
@@ -29,7 +29,7 @@ public class PublicKeyTest : EciesJsTestBase
     }
 
     [Fact]
-    public void Ecdh_ComputesSameSharedSecret()
+    public void TestEcdhComputesSameSharedSecret()
     {
         // Calculated by eciesjs 0.4.15 Buffer.from(BobPrivateKey.encapsulate(AlicePublicKey, false)).toString("hex")
         byte[] aliceShared = PrivateKey.FromHex(AlicePrivateKeyHex).Encapsulate(Convert.FromHexString(BobPublicKeyHex));
@@ -39,7 +39,7 @@ public class PublicKeyTest : EciesJsTestBase
     }
 
     [Fact]
-    public void Ecdh_Invalid_PublicKey_Throws()
+    public void TestEcdhInvalidPublicKeyThrows()
     {
         byte[] badPublicKey = new byte[33];
         badPublicKey[0] = 0x01; // invalid prefix
@@ -48,14 +48,14 @@ public class PublicKeyTest : EciesJsTestBase
     }
 
     [Fact]
-    public void Ecdh_Invalid_PrivateKey_Throws()
+    public void TestEcdhInvalidPrivateKeyThrows()
     {
         byte[] badPrivateKey = new byte[10]; // too short
         Should.Throw<ArgumentException>(() => PublicKey.FromHex(BobPublicKeyHex).Decapsulate(badPrivateKey));
     }
 
     [Fact]
-    public void Ecdh_Returns32Bytes()
+    public void TestEcdhReturns32Bytes()
     {
         byte[] secret = PublicKey.FromHex(BobPublicKeyHex).Decapsulate(Convert.FromHexString(AlicePrivateKeyHex));
         secret.Length.ShouldBe(32);

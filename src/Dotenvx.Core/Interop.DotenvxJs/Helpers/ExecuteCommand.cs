@@ -1,12 +1,14 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
-using Dotenvx.Core.Interop.DotenvxJs.Shared;
+using Dotenvx.Interop.DotenvxJs.Shared;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/executeCommand.js</remarks>
 public static partial class Helpers
 {
     private static readonly string[] ErrorSignals = ["SIGINT", "SIGTERM"];
@@ -102,7 +104,8 @@ public static partial class Helpers
                     FileName = commandArgs[0],
                     UseShellExecute = false,
                     RedirectStandardOutput = false,
-                    RedirectStandardError = false
+                    RedirectStandardError = false,
+                    RedirectStandardInput = false
                 }
             };
 
@@ -168,9 +171,16 @@ public static partial class Helpers
     private static string? WhichSync(string command)
     {
         // Equivalent to which.sync - find executable in PATH
+        if (File.Exists(command))
+        {
+            return command;
+        }
+
+        bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         string? pathVar = Environment.GetEnvironmentVariable("PATH");
-        string[]? paths = pathVar?.Split(Path.PathSeparator);
-        return paths?.Select(p => Path.Combine(p, command))
+        string[] paths = pathVar?.Split(Path.PathSeparator) ?? [];
+        string[] extensions = isWindows && !Path.HasExtension(command) ? [".exe", ".cmd", ".bat"] : [""];
+        return paths.SelectMany(_ => extensions, (path, extension) => Path.Combine(path, command + extension))
             .FirstOrDefault(File.Exists);
     }
 }

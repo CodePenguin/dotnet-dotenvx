@@ -1,49 +1,77 @@
 using System.Collections;
+using System.Text.Json;
 
-using Dotenvx.Core.Interop.DotenvxJs.Helpers;
-using Dotenvx.Core.Interop.DotenvxJs.Services;
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Interop.DotenvxJs.Services;
+using Dotenvx.Interop.DotenvxJs.Shared;
+using Dotenvx.Interop.DotenvxJs.Types;
 
-namespace Dotenvx.Core.Interop.DotenvxJs;
+using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
+namespace Dotenvx.Interop.DotenvxJs;
+
+/// <remarks>Reference source: dotenvx/src/lib/main.js</remarks>
 public static class Main
 {
-    // Factory Methods
-    public static Func<List<EnvItem>, bool, IDictionary<string, string>?, string?, Run> RunFactory { get; set; } =
-        (envs, overload, processEnv, envKeysFilepath) => new Run(envs, overload, processEnv, envKeysFilepath);
-
-    public static Func<string?, string?, IDictionary<string, string>?, bool, string?, Parse>
-        ParseFactory { get; set; } = (src, privateKey, processEnv, overload, privateKeyName) =>
-        new Parse(src, privateKey, processEnv, overload, privateKeyName);
-
-    public static ConfigResult Config(ConfigOptions options)
+    public static ConfigResult Config(ConfigOptions? options)
     {
+        options ??= new ConfigOptions();
+        IDotenvxLogger? logger = options.Logger;
+        SetLogLevel(logger, options);
+
         // allow user to set processEnv to write to
-        IDictionary<string, string> processEnv = options.ProcessEnv ?? new Dictionary<string, string>(Environment
-            .GetEnvironmentVariables()
-            .Cast<DictionaryEntry>()
-            .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
+        bool useSystemEnv = options.ProcessEnv == null;
+        IDictionary<string, string> processEnv =
+            options.ProcessEnv ??
+            new Dictionary<string, string>(Environment
+                .GetEnvironmentVariables()
+                .Cast<DictionaryEntry>()
+                .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
 
         // ignore
         List<string> ignore = options.Ignore ?? [];
 
         // strict
-        bool strict = options.Strict;
+        bool strict = options.Strict ?? false;
 
         // envKeysFile
         string envKeysFile = options.EnvKeysFile ?? string.Empty;
 
         try
         {
-            List<EnvItem> envs = Helpers.Helpers.BuildEnvs(options);
+            EnvItem[] envs = BuildEnvs(options);
 
-            RunResult runResult = RunFactory(envs, options.Overload, options.ProcessEnv, envKeysFile).Execute();
+            RunResult runResult = Run.Factory(envs, options.Overload ?? false, processEnv, envKeysFile).Execute();
+
+            bool opsOn = options.OpsOff != true;
+            if (opsOn)
+            {
+                try
+                {
+                    Ops.Factory(logger).Observe(new OpsPayload
+                    {
+                        BeforeEnv = runResult.BeforeEnv,
+                        ProcessedEnvs = runResult.ProcessedEnvs,
+                        AfterEnv = runResult.AfterEnv
+                    });
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
 
             Exception? lastError = null;
-            IDictionary<string, string> parsedAll = new Dictionary<string, string>();
+            Dictionary<string, string> parsedAll = new();
 
-            foreach (ProcessedEnv processedEnv in runResult.ProcessedEnvs)
+            foreach (RunProcessedEnv processedEnv in runResult.ProcessedEnvs)
             {
+                if (processedEnv.Type == EnvType.EnvFile)
+                {
+                    logger?.Verbose(
+                        $"loading env from {processedEnv.FilePath} ({Path.GetFullPath(processedEnv.FilePath)})");
+                }
+
                 foreach (Exception error in processedEnv.Errors)
                 {
                     string errorCode = error is DotenvxException dotenvxError ? dotenvxError.Code : "GENERIC_ERROR";
@@ -52,6 +80,7 @@ public static class Main
                     bool isIgnored = ignore.Any(ignoreCode => errorCode.Contains(ignoreCode));
                     if (isIgnored)
                     {
+                        logger?.Verbose($"ignored: {error.Message}");
                         continue;
                     }
 
@@ -64,24 +93,61 @@ public static class Main
 
                     if (errorCode == "MISSING_ENV_FILE")
                     {
-                        if (string.IsNullOrEmpty(options.Convention))
+                        if (!string.IsNullOrEmpty(options.Convention))
                         {
-                            // Logger.Error(errorMessage);
+                            continue;
+                        }
+
+                        logger?.Error(error.Message);
+                        if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
+                        {
+                            logger?.Error(ex.Help);
                         }
                     }
-                    // Logger.Error(errorMessage);
+                    else
+                    {
+                        logger?.Error(error.Message);
+                        if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
+                        {
+                            logger?.Error(ex.Help);
+                        }
+                    }
                 }
+
+                // debug parsed
+                logger?.Debug($"parsed: {JsonSerializer.Serialize(processedEnv.Parsed)}");
 
                 foreach (KeyValuePair<string, string> entry in processedEnv.Injected)
                 {
                     parsedAll[entry.Key] = entry.Value;
+
+                    // verbose/debug injected key/value
+                    logger?.Verbose($"{entry.Key} set");
+                    logger?.Debug($"{entry.Key} set to {entry.Value}");
+
+                    // Inject into System Environment
+                    if (useSystemEnv)
+                    {
+                        Environment.SetEnvironmentVariable(entry.Key, entry.Value);
+                    }
                 }
 
                 foreach (KeyValuePair<string, string> entry in processedEnv.PreExisted)
                 {
                     parsedAll[entry.Key] = entry.Value;
+                    // verbose/debug preExisted key/value
+                    logger?.Verbose($"{entry.Key} pre-exists (protip: use --overload to override)");
+                    logger?.Debug($"{entry.Key} pre-exists as {entry.Value} (protip: use --overload to override)");
                 }
             }
+
+            string msg = $"injecting env ({runResult.UniqueInjectedKeys.Length})";
+            if (runResult.ReadableFilePaths.Length > 0)
+            {
+                msg += $" from {string.Join(", ", runResult.ReadableFilePaths)}";
+            }
+
+            logger?.SuccessV(msg);
 
             return lastError != null
                 ? new ConfigResult { Parsed = parsedAll, Error = lastError }
@@ -94,34 +160,214 @@ public static class Main
                 throw; // re-throw if strict
             }
 
+            logger?.Error(error.Message);
+            if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
+            {
+                logger?.Error(ex.Help);
+            }
+
             return new ConfigResult { Parsed = new Dictionary<string, string>(), Error = error };
         }
     }
 
-    public static IDictionary<string, string> Parse(string? src, ParseOptions? options = null)
+    private static void SetLogLevel(IDotenvxLogger? logger, ConfigOptions options)
     {
-        IDictionary<string, string> processEnv = Environment.GetEnvironmentVariables()
-            .Cast<DictionaryEntry>()
-            .ToDictionary(entry => (string)entry.Key, entry => (string?)entry.Value ?? string.Empty);
-
-        if (options?.ProcessEnv != null)
+        if (logger == null)
         {
-            processEnv = options.ProcessEnv;
+            return;
         }
 
+        DotenvxLogLevel logLevel = DotenvxLogLevel.Info; // default
+        if (options.Debug == true)
+        {
+            logLevel = DotenvxLogLevel.Debug;
+        }
+        else if (options.Verbose == true)
+        {
+            logLevel = DotenvxLogLevel.Verbose;
+        }
+        else if (options.Quiet == true)
+        {
+            logLevel = DotenvxLogLevel.Error;
+        }
+        else if (!string.IsNullOrEmpty(options.LogLevel))
+        {
+            logLevel = DotenvxLogLevelExtensions.FromString(options.LogLevel);
+        }
+
+        logger.SetLevel(logLevel);
+        // Only log which level it's setting if it's not set to quiet mode
+        if (options.Quiet != true || (options.Quiet == true && logLevel != DotenvxLogLevel.Error))
+        {
+            logger.Debug($"Setting log level to {logLevel.ToString().ToLower()}");
+        }
+    }
+
+    public static object? Get(string? key, GetOptions? options = null)
+    {
+        options ??= new GetOptions();
+        EnvItem[] envs = BuildEnvs(options);
+        GetResult result = Services.Get
+            .Factory(key, envs, options.Overload ?? false, options.All ?? false, options.EnvKeysFile)
+            .Run();
+
+        // handle errors
+        List<string> ignore = options.Ignore ?? [];
+        foreach (Exception error in result.Errors)
+        {
+            string errorCode = error is DotenvxException dotenvxError ? dotenvxError.Code : "GENERIC_ERROR";
+            if (ignore.Contains(errorCode))
+            {
+                continue;
+            }
+
+            if (options.Strict == true)
+            {
+                throw error;
+            }
+
+            options.Logger?.Error(error.Message);
+            if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
+            {
+                options.Logger?.Error(ex.Help);
+            }
+        }
+
+        if (key != null)
+        {
+            return result.Parsed.GetValueOrDefault(key);
+        }
+
+        // If Format is specified, return a formatted string
+        if (!string.IsNullOrEmpty(options.Format))
+        {
+            return options.Format.ToLower() switch
+            {
+                "eval" => string.Join('\n', result.Parsed.Select(kv => $"{kv.Key}={kv.Value}")) + '\n',
+                "shell" => string.Join(' ', result.Parsed.Select(kv => $"{kv.Key}={kv.Value}")) + ' ',
+                _ => result.Parsed
+            };
+        }
+
+        // Otherwise return the dictionary
+        return result.Parsed;
+    }
+
+    public static string[] Ls(string directory = "./", string[]? envFile = null, string[]? excludeEnvFile = null)
+    {
+        return Services.Ls.Factory(directory, envFile, excludeEnvFile).Run();
+    }
+
+    public static IReadOnlyDictionary<string, string> KeyPair(string envFile = ".env", string? key = null,
+        string? envKeysFile = null)
+    {
+        Dictionary<string, string?> keypairs = Services.KeyPair.Factory(envFile, envKeysFile).Run();
+        return !string.IsNullOrEmpty(key)
+            ? new Dictionary<string, string> { { key, keypairs.GetValueOrDefault(key) ?? "" } }
+            : keypairs.ToDictionary(kv => kv.Key, kv => kv.Value ?? "");
+    }
+
+    public static IReadOnlyDictionary<string, string> Parse(string? src, ParseOptions? options = null)
+    {
+        options ??= new ParseOptions();
+        IDotenvxLogger? logger = options.Logger;
+        IDictionary<string, string> processEnv =
+            options.ProcessEnv?.ToDictionary() ??
+            Environment.GetEnvironmentVariables()
+                .Cast<DictionaryEntry>()
+                .ToDictionary(entry => (string)entry.Key, entry => (string?)entry.Value ?? string.Empty);
+
         // private decryption key
-        string? privateKey = options?.PrivateKey ?? null;
+        string? privateKey = options.PrivateKey ?? null;
 
         // overload
-        bool overload = options?.Overload ?? false;
+        bool overload = options.Overload ?? false;
 
-        ParseResult response =
-            ParseFactory(src, privateKey, processEnv ?? new Dictionary<string, string>(), overload, null)
-                .Execute();
+        ParseResult response = Helpers.Parse.Factory(src, privateKey, processEnv, overload, null).Execute();
 
         // display any errors
-        // TODO: Need to log errors
+        foreach (Exception error in response.Errors)
+        {
+            logger?.Error(error.Message);
+            if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
+            {
+                logger?.Error(ex.Help);
+            }
+        }
 
         return response.Parsed;
+    }
+
+    public static SetsResult Set(string key, string value, SetsOptions? options = null)
+    {
+        // encrypt
+        bool encrypt = !(options?.Plain == true || options?.Encrypt == false);
+        string withEncryption = encrypt ? " with encryption" : "";
+
+        EnvItem[] envs = BuildEnvs(options ?? new SetsOptions());
+        string? envKeysFilepath = options?.EnvKeysFile;
+
+        SetsResult result = Sets.Factory(key, value, envs, encrypt, envKeysFilepath).Run();
+
+        foreach (ProcessedSet processedEnv in result.ProcessedEnvs)
+        {
+            if (processedEnv.Error == null)
+            {
+                Fsx.WriteFileX(processedEnv.FilePath, processedEnv.EnvSrc);
+            }
+
+            if (processedEnv.Error == null)
+            {
+                options?.Logger?.Verbose($"setting for {processedEnv.EnvFilePath}");
+                if (!processedEnv.Changed)
+                {
+                    continue;
+                }
+
+                options?.Logger?.Verbose($"{key} set{withEncryption} ({processedEnv.EnvFilePath})");
+                options?.Logger?.Debug(
+                    $"{key} set{withEncryption} to {processedEnv.Value} ({processedEnv.EnvFilePath})");
+            }
+            else
+            {
+                if (processedEnv.Error.Message.Contains("MISSING_ENV_FILE"))
+                {
+                    options?.Logger?.Warn(processedEnv.Error.Message);
+                    options?.Logger?.Help("? add one with [echo \"HELLO=World\" > .env] and re-run [dotenvx set]");
+                }
+                else
+                {
+                    options?.Logger?.Warn(processedEnv.Error.Message);
+                    if (processedEnv.Error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
+                    {
+                        options?.Logger?.Help(ex.Help);
+                    }
+                }
+            }
+        }
+
+        if (result.ChangedFilePaths.Length > 0)
+        {
+            options?.Logger?.Success($"✔ set {key}{withEncryption} ({string.Join(',', result.ChangedFilePaths)})");
+        }
+        else if (result.UnchangedFilePaths.Length > 0)
+        {
+            options?.Logger?.Info($"no changes ({string.Join(',', result.UnchangedFilePaths)})");
+        }
+
+        foreach (ProcessedSet processedEnv in result.ProcessedEnvs)
+        {
+            if (!processedEnv.PrivateKeyAdded)
+            {
+                continue;
+            }
+
+            options?.Logger?.Success($"✔ key added to {processedEnv.EnvKeysFilePath} ({processedEnv.PrivateKeyName})");
+            options?.Logger?.Help("⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
+            options?.Logger?.Help(
+                $"⮕  next run [{processedEnv.PrivateKeyName}='{processedEnv.PrivateKey}' dotenvx get {key}] to test decryption locally");
+        }
+
+        return result;
     }
 }

@@ -1,14 +1,15 @@
 using System.Text;
 
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Types;
 
 using Org.BouncyCastle.Crypto;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/decryptKeyValue.js</remarks>
 public static partial class Helpers
 {
-    public static string? DecryptKeyValue(string key, string value, string privateKeyName, string? privateKey)
+    public static string DecryptKeyValue(string key, string value, string privateKeyName, string? privateKey)
     {
         if (!value.StartsWith(Prefix))
         {
@@ -28,7 +29,7 @@ public static partial class Helpers
             throw new MissingPrivateKeyException(key, privateKeyName, privateKey ?? string.Empty);
         }
 
-        string? decryptedValue = null;
+        string decryptedValue = string.Empty;
         Exception? decryptionError = null;
 
         string[] privateKeys = privateKey.Split(',');
@@ -45,7 +46,7 @@ public static partial class Helpers
             {
                 decryptionError = ex.ParamName switch
                 {
-                    nameof(privateKeyName) => new InvalidPrivateKeyException(key, privateKeyName, privateKey),
+                    nameof(privateKey) => new InvalidPrivateKeyException(key, privateKeyName, privateKey),
                     _ => new MalformedEncryptedDataException(key)
                 };
             }

@@ -1,10 +1,11 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/guessPrivateKeyName.js</remarks>
 public static partial class Helpers
 {
-    internal static string GuessPrivateKeyName(string envFilepath)
+    public static string GuessPrivateKeyName(string envFilePath)
     {
-        string filename = Path.GetFileName(envFilepath).ToLower();
+        string filename = Path.GetFileName(envFilePath).ToLower();
 
         // .env
         if (filename == ".env")
@@ -13,7 +14,7 @@ public static partial class Helpers
         }
 
         // .env.ENVIRONMENT
-        string environment = GuessEnvironment(envFilepath);
+        string environment = GuessEnvironment(envFilePath);
 
         return $"DOTENV_PRIVATE_KEY_{environment.ToUpper()}";
     }

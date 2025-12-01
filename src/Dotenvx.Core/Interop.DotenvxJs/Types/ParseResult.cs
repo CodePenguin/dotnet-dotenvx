@@ -1,10 +1,10 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Types;
+namespace Dotenvx.Interop.DotenvxJs.Types;
 
 public class ParseResult
 {
-    public required IDictionary<string, string> Parsed { get; init; }
-    public required IDictionary<string, string> ProcessEnv { get; init; }
-    public required IDictionary<string, string> Injected { get; init; }
-    public required IDictionary<string, string> PreExisted { get; init; }
-    public required IList<Exception> Errors { get; init; }
+    public required IReadOnlyDictionary<string, string> Parsed { get; init; }
+    public required IReadOnlyDictionary<string, string> ProcessEnv { get; init; }
+    public required IReadOnlyDictionary<string, string> Injected { get; init; }
+    public required IReadOnlyDictionary<string, string> PreExisted { get; init; }
+    public required Exception[] Errors { get; init; }
 }

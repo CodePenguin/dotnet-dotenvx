@@ -1,13 +1,14 @@
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Types;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/buildEnvs.js</remarks>
 public static partial class Helpers
 {
-    internal static List<EnvItem> BuildEnvs(ConfigOptions options)
+    internal static EnvItem[] BuildEnvs(ConfigOptions options)
     {
-        List<string> optionPaths = DotenvOptionPaths(options);
-        List<EnvItem> envs = new();
+        string[] optionPaths = DotenvOptionPaths(options);
+        List<EnvItem> envs = [];
 
         if (!string.IsNullOrEmpty(options.Convention))
         {
@@ -19,6 +20,6 @@ public static partial class Helpers
             envs.Add(new EnvItem { Type = EnvType.EnvFile, Value = optionPath });
         }
 
-        return envs;
+        return envs.ToArray();
     }
 }

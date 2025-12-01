@@ -1,4 +1,4 @@
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Types;
 
 using Microsoft.Extensions.Configuration;
 

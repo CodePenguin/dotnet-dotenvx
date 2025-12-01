@@ -1,10 +1,11 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
-public static class DotenvPrivateKeyNames
+/// <remarks>Reference source: dotenvx/src/lib/helpers/dotenvPrivateKeyNames.js</remarks>
+public static partial class Helpers
 {
-    public static List<string> Execute(IDictionary<string, string> processEnv)
+    public static string[] DotenvPrivateKeyNames(IDictionary<string, string> processEnv)
     {
-        // TODO: Translate logic from dotenvPrivateKeyNames.js
-        return []; // Return empty list for now
+        const string PrivateKeyNameSchema = "DOTENV_PRIVATE_KEY";
+        return processEnv.Keys.Where(key => key.StartsWith(PrivateKeyNameSchema)).ToArray();
     }
 }

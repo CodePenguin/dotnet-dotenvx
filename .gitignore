@@ -482,3 +482,18 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# for test purposes
+!tests/.env
+!tests/.env.expand
+!tests/.env.export
+!tests/.env.eval
+!tests/.env.local
+!tests/.env.multiline
+!tests/.env.vault
+!tests/.env.utf16le
+!tests/.env.latin1
+!tests/monorepo/**/.env*
+spec/tmp/*
+!spec/tmp/.gitkeep
+llms.txt

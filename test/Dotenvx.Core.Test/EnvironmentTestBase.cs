@@ -1,6 +1,5 @@
-using Dotenvx.Core.Interop.DotenvxJs;
-using Dotenvx.Core.Interop.DotenvxJs.Helpers;
-using Dotenvx.Core.Interop.DotenvxJs.Services;
+using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Interop.DotenvxJs.Services;
 
 namespace Dotenvx.Core.Test;
 
@@ -17,9 +16,11 @@ public class EnvironmentTestBase : IDisposable
         Environment.GetEnvironmentVariables().Keys.OfType<string>().ToList();
 
     private readonly string _originalDirectory = Environment.CurrentDirectory;
+    protected MockLogger MockLogger { get; } = new();
 
     public void Dispose()
     {
+        TearDown();
         if (Environment.CurrentDirectory != _originalDirectory)
         {
             Environment.CurrentDirectory = _originalDirectory;
@@ -32,16 +33,36 @@ public class EnvironmentTestBase : IDisposable
             .ForEach(key => Environment.SetEnvironmentVariable(key, null));
 
         // Reset Mock Factories
-        Main.RunFactory = (envs, overload, envKeysFile, processEnv)
-            => new Run(envs, overload, envKeysFile, processEnv);
-        Main.ParseFactory = (src, privateKey, processEnv, overload, privateKeyName)
-            => new Parse(src, privateKey, processEnv, overload, privateKeyName);
+        Get.ResetFactory();
+        KeyPair.ResetFactory();
+        Ls.ResetFactory();
+        Ops.ResetFactory();
+        Parse.ResetFactory();
+        Run.ResetFactory();
+        Sets.ResetFactory();
 
+        Fsx.ResetToDefaults();
+
+        File.Delete(".env");
+        File.Delete(".env.keys");
         GC.SuppressFinalize(this);
     }
 
     protected void ClearEnvironment()
     {
-        _existingEnvironmentKeys.ForEach(key => Environment.SetEnvironmentVariable(key, null));
+        _existingEnvironmentKeys
+            .ForEach(key => Environment.SetEnvironmentVariable(key, null));
+    }
+
+    protected void ClearEnvironmentExceptPath()
+    {
+        _existingEnvironmentKeys
+            .FindAll(key => !key.Equals("PATH", StringComparison.InvariantCultureIgnoreCase))
+            .ForEach(key => Environment.SetEnvironmentVariable(key, null));
+    }
+
+    protected virtual void TearDown()
+    {
+        // override in descendents
     }
 }

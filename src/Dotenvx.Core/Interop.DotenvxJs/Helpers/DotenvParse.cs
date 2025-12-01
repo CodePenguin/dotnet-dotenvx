@@ -1,7 +1,8 @@
 using System.Text.RegularExpressions;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/dotenvParse.js</remarks>
 public static partial class Helpers
 {
     private static readonly Regex LineRegex = DotenvParseRegex();
@@ -35,7 +36,7 @@ public static partial class Helpers
             char maybeQuote = value.Length > 0 ? value[0] : '\0';
 
             // Remove surrounding quotes
-            value = Regex.Replace(value, @"^(['""`])([\s\S]*)\1$", "$2");
+            value = SurroundingQuotesRegex().Replace(value, "$2");
 
             // Expand newlines if double quoted
             if (maybeQuote == '"' && !skipExpandForDoubleQuotes)
@@ -48,12 +49,7 @@ public static partial class Helpers
             if (collectAllValues)
             {
                 // handle scenario where user mistakenly includes plaintext duplicate in .env
-                if (!obj.ContainsKey(key))
-                {
-                    obj[key] = new List<string>();
-                }
-
-                ((List<string>)obj[key]).Add(value);
+                obj.TryAdd(key, value);
             }
             else
             {
@@ -72,4 +68,7 @@ public static partial class Helpers
 
     [GeneratedRegex(@"\r\n?")]
     private static partial Regex NormalizeNewLinesRegex();
+
+    [GeneratedRegex(@"^(['""`])([\s\S]*)\1$")]
+    private static partial Regex SurroundingQuotesRegex();
 }

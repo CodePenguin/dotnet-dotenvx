@@ -1,8 +1,11 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Shared;
+
+namespace Dotenvx.Interop.DotenvxJs.Types;
 
 public class ParseOptions
 {
-    public string? PrivateKey { get; set; } = null;
-    public IDictionary<string, string>? ProcessEnv { get; set; } = null;
-    public bool Overload { get; set; } = false;
+    public IDotenvxLogger? Logger { get; set; }
+    public string? PrivateKey { get; set; }
+    public IReadOnlyDictionary<string, string>? ProcessEnv { get; set; }
+    public bool? Overload { get; set; } = false;
 }

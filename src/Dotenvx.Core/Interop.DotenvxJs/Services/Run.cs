@@ -1,33 +1,58 @@
-using System.Text;
+using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Interop.DotenvxJs.Types;
 
-using Dotenvx.Core.Helpers;
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Services;
+namespace Dotenvx.Interop.DotenvxJs.Services;
 
+/// <remarks>Reference source: dotenvx/src/lib/services/run.js</remarks>
+// ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class Run
 {
+    private static readonly Func<EnvItem[], bool, IDictionary<string, string>?, string?, Run> DefaultFactory =
+        (envs, overload, processEnv, envKeysFilePath) => new Run(envs, overload, processEnv, envKeysFilePath);
+
     private readonly IDictionary<string, string> _beforeEnv;
-    private readonly string? _envKeysFilepath;
-    private readonly List<EnvItem> _envs;
+    private readonly string? _envKeysFilePath;
+    private readonly EnvItem[] _envs;
+    private readonly bool _opsOn;
     private readonly bool _overload;
 
-    private readonly List<ProcessedEnv> _processedEnvs = [];
+    private readonly List<RunProcessedEnv> _processedEnvs = [];
     private readonly IDictionary<string, string> _processEnv;
-    private readonly HashSet<string> _readableFilepaths = [];
+    private readonly HashSet<string> _readableFilePaths = [];
     private readonly HashSet<string> _readableStrings = [];
     private readonly HashSet<string> _uniqueInjectedKeys = [];
     private readonly bool _useSystemEnv;
 
-    public Run(List<EnvItem>? envs = null, bool overload = false,
-        IDictionary<string, string>? processEnv = null, string? envKeysFilepath = null, bool opsOn = true)
+    protected Run()
+    {
+        // For unit tests
+        _beforeEnv = new Dictionary<string, string>();
+        _envs = [];
+        _processedEnvs = [];
+        _processEnv = new Dictionary<string, string>();
+    }
+
+    public Run(EnvItem[]? envs = null, bool overload = false,
+        IDictionary<string, string>? processEnv = null, string? envKeysFilePath = null, bool opsOn = true)
     {
         _useSystemEnv = processEnv == null;
         _processEnv = processEnv ?? EnvironmentHelper.GetEnvironmentVariablesAsDictionary();
         _beforeEnv = new Dictionary<string, string>(_processEnv);
-        _envs = Helpers.Helpers.DetermineEnvs(envs ?? [], _processEnv);
+        _envs = DetermineEnvs(envs ?? [], _processEnv);
+        _opsOn = opsOn;
         _overload = overload;
-        _envKeysFilepath = envKeysFilepath;
+        _envKeysFilePath = envKeysFilePath;
+    }
+
+    public static Func<EnvItem[], bool, IDictionary<string, string>?, string?, Run>
+        Factory { get; internal set; } = DefaultFactory;
+
+    internal static void ResetFactory()
+    {
+        Factory = DefaultFactory;
     }
 
     public virtual RunResult Execute()
@@ -49,32 +74,33 @@ public class Run
 
         return new RunResult
         {
-            ProcessedEnvs = _processedEnvs,
-            ReadableStrings = _readableStrings.ToList(),
-            ReadableFilePaths = _readableFilepaths.ToList(),
-            UniqueInjectedKeys = _uniqueInjectedKeys.ToList(),
-            BeforeEnv = _beforeEnv,
+            ProcessedEnvs = _processedEnvs.ToArray(),
+            ReadableStrings = _readableStrings.ToArray(),
+            ReadableFilePaths = _readableFilePaths.ToArray(),
+            UniqueInjectedKeys = _uniqueInjectedKeys.ToArray(),
+            BeforeEnv = _beforeEnv.ToDictionary(),
             AfterEnv = new Dictionary<string, string>(_processEnv)
         };
     }
 
     private void InjectEnv(string env)
     {
-        ProcessedEnv row = new() { Type = EnvType.Env, String = env };
+        RunProcessedEnv row = new() { Type = EnvType.Env, String = env };
 
         try
         {
-            ParseResult parseResult = Main.ParseFactory(env, null, _processEnv, _overload, null).Execute();
+            ParseResult parseResult = Parse.Factory(env, null, _processEnv, _overload, null).Execute();
             row.Parsed = parseResult.Parsed;
             row.Errors = parseResult.Errors;
             row.Injected = parseResult.Injected;
             row.PreExisted = parseResult.PreExisted;
 
             Inject(row.Parsed);
+
             _readableStrings.Add(env);
             foreach (string key in row.Injected.Keys)
             {
-                _uniqueInjectedKeys.Add(key);
+                _uniqueInjectedKeys.Add(key); // track uniqueInjectedKeys across multiple files
             }
         }
         catch (Exception e)
@@ -85,7 +111,7 @@ public class Run
         _processedEnvs.Add(row);
     }
 
-    private void Inject(IDictionary<string, string> parsed)
+    private void Inject(IReadOnlyDictionary<string, string> parsed)
     {
         foreach ((string key, string value) in parsed)
         {
@@ -97,28 +123,23 @@ public class Run
         }
     }
 
-    private void InjectEnvFile(string envFilepath)
+    private void InjectEnvFile(string envFilePath)
     {
-        ProcessedEnv row = new() { Type = EnvType.EnvFile, FilePath = envFilepath };
+        RunProcessedEnv row = new() { Type = EnvType.EnvFile, FilePath = envFilePath };
 
-        string filepath = Path.GetFullPath(envFilepath);
+        string filepath = Path.GetFullPath(envFilePath);
 
         try
         {
-            if (!File.Exists(filepath))
-            {
-                throw new MissingEnvFileException(envFilepath, filepath);
-            }
+            string encoding = DetectEncoding(filepath);
+            string src = Fsx.ReadFileX(filepath, encoding);
+            _readableFilePaths.Add(envFilePath);
 
-            Encoding encoding = DetectEncoding.Execute(filepath);
-            string src = File.ReadAllText(filepath, encoding);
-            _readableFilepaths.Add(envFilepath);
+            string? privateKey = FindPrivateKey(envFilePath, _envKeysFilePath, _opsOn);
+            string privateKeyName = GuessPrivateKeyName(envFilePath);
 
-            string? privateKey = Helpers.Helpers.FindPrivateKey(envFilepath, _envKeysFilepath);
-            string privateKeyName = Helpers.Helpers.GuessPrivateKeyName(envFilepath);
+            ParseResult parseResult = Parse.Factory(src, privateKey, _processEnv, _overload, privateKeyName).Execute();
 
-            ParseResult parseResult =
-                Main.ParseFactory(src, privateKey, _processEnv, _overload, privateKeyName).Execute();
             row.PrivateKeyName = privateKeyName;
             row.PrivateKey = privateKey;
             row.Src = src;
@@ -127,7 +148,8 @@ public class Run
             row.Injected = parseResult.Injected;
             row.PreExisted = parseResult.PreExisted;
 
-            Inject(row.Parsed);
+            Inject(row.Parsed.ToDictionary());
+
             foreach (string key in row.Injected.Keys)
             {
                 _uniqueInjectedKeys.Add(key);
@@ -135,7 +157,11 @@ public class Run
         }
         catch (Exception e)
         {
-            row.Errors.Add(e);
+            Exception error = e is FileNotFoundException ||
+                              (e is UnauthorizedAccessException && Directory.Exists(filepath))
+                ? new MissingEnvFileException(envFilePath, filepath)
+                : e;
+            row.Errors.Add(error);
         }
 
         _processedEnvs.Add(row);

@@ -1,9 +1,13 @@
 using System.Text.RegularExpressions;
 
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Types;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
+
+/// <remarks>Reference source: dotenvx/src/lib/parse.js</remarks>
+// ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public partial class Parse(
     string? src,
     string? privateKey = null,
@@ -11,6 +15,10 @@ public partial class Parse(
     bool overload = false,
     string? privateKeyName = null)
 {
+    private static readonly Func<string?, string?, IDictionary<string, string>?, bool, string?, Parse> DefaultFactory =
+        (src, privateKey, processEnv, overload, privateKeyName) =>
+            new Parse(src, privateKey, processEnv, overload, privateKeyName);
+
     private readonly List<Exception> _errors = [];
     private readonly IDictionary<string, string> _injected = new Dictionary<string, string>();
     private readonly Dictionary<string, string> _literals = new();
@@ -19,6 +27,14 @@ public partial class Parse(
     private readonly string _privateKeyName = privateKeyName ?? string.Empty;
     private readonly IDictionary<string, string> _processEnv = processEnv ?? new Dictionary<string, string>();
     private readonly Dictionary<string, string> _runningParsed = new();
+
+    public static Func<string?, string?, IDictionary<string, string>?, bool, string?, Parse>
+        Factory { get; internal set; } = DefaultFactory;
+
+    internal static void ResetFactory()
+    {
+        Factory = DefaultFactory;
+    }
 
     public virtual ParseResult Execute()
     {
@@ -72,7 +88,7 @@ public partial class Parse(
             // expand empty, double, or backticks
             if (!evaled && quote != '\'' && (!_processEnv.ContainsKey(key) || overload))
             {
-                _parsed[key] = Helpers.ResolveEscapeSequences(Expand(_parsed[key]));
+                _parsed[key] = ResolveEscapeSequences(Expand(_parsed[key]));
             }
 
             if (quote == '\'')
@@ -96,10 +112,10 @@ public partial class Parse(
         return new ParseResult
         {
             Parsed = _parsed,
-            ProcessEnv = _processEnv,
-            Injected = _injected,
+            ProcessEnv = _processEnv.ToDictionary(),
+            Injected = _injected.ToDictionary(),
             PreExisted = _preExisted,
-            Errors = _errors
+            Errors = _errors.ToArray()
         };
     }
 
@@ -144,12 +160,12 @@ public partial class Parse(
 
     private string Decrypt(string key, string value)
     {
-        return Helpers.DecryptKeyValue(key, value, _privateKeyName, privateKey) ?? string.Empty;
+        return DecryptKeyValue(key, value, _privateKeyName, privateKey);
     }
 
     private string Eval(string key, string value)
     {
-        return Helpers.EvalKeyValue(key, value, _processEnv, _runningParsed);
+        return EvalKeyValue(key, value, _processEnv, _runningParsed);
     }
 
     private string Expand(string value)

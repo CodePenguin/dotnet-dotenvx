@@ -1,7 +1,8 @@
-using Dotenvx.Core.Interop.EciesJs;
+using Dotenvx.Interop.EciesJs;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/keyPair.js</remarks>
 public static partial class Helpers
 {
     public static (string PublicKey, string PrivateKey) KeyPair(string? existingPrivateKey = null)

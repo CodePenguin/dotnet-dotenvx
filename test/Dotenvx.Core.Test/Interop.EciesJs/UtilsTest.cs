@@ -1,4 +1,4 @@
-using Dotenvx.Core.Interop.EciesJs;
+using Dotenvx.Interop.EciesJs;
 
 using Org.BouncyCastle.Security;
 

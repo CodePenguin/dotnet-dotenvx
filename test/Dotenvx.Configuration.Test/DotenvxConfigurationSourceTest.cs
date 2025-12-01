@@ -1,4 +1,4 @@
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Types;
 
 using Microsoft.Extensions.Configuration;
 
@@ -9,7 +9,7 @@ namespace Dotenvx.Configuration.Test;
 public class DotenvxConfigurationSourceTest
 {
     [Fact]
-    public void Build_ReturnsDotenvxConfigurationProvider()
+    public void TestBuildReturnsDotenvxConfigurationProvider()
     {
         DotenvxConfigurationSource source = new();
         ConfigurationBuilder builder = new();
@@ -20,7 +20,7 @@ public class DotenvxConfigurationSourceTest
     }
 
     [Fact]
-    public void Options_Property_StoresAction()
+    public void TestOptionsPropertyStoresAction()
     {
         bool actionCalled = false;
         DotenvxConfigurationSource source = new(_ => actionCalled = true);
@@ -32,7 +32,7 @@ public class DotenvxConfigurationSourceTest
     }
 
     [Fact]
-    public void Constructor_WithNullOptions_SetsOptionsToNull()
+    public void TestConstructorWithNullOptionsSetsOptionsToNull()
     {
         DotenvxConfigurationSource source = new();
 

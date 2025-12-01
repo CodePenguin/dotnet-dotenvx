@@ -1,4 +1,4 @@
-namespace Dotenvx.Core.Interop.DotenvxJs.Types;
+namespace Dotenvx.Interop.DotenvxJs.Types;
 
 public enum EnvType
 {

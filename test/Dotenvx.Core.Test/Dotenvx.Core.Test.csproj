@@ -15,7 +15,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
 
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1"/>
         <PackageReference Include="Moq" Version="4.20.69"/>
         <PackageReference Include="Shouldly" Version="4.3.0"/>
         <PackageReference Include="xunit" Version="2.9.3"/>
@@ -126,12 +126,15 @@
         </Content>
         <Content Include="..\..\dotenvx\tests\monorepo\apps\multiple\.env">
             <Link>tests\monorepo\apps\multiple\.env</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\..\dotenvx\tests\monorepo\apps\multiple\.env.keys">
             <Link>tests\monorepo\apps\multiple\.env.keys</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\..\dotenvx\tests\monorepo\apps\multiple\.env.production">
             <Link>tests\monorepo\apps\multiple\.env.production</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="..\..\dotenvx\tests\monorepo\apps\shebang\.env">
             <Link>tests\monorepo\apps\shebang\.env</Link>
@@ -148,7 +151,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Interop.Dotenvx\Services\"/>
+        <Folder Include="Interop.DotenvxJs\Services\"/>
     </ItemGroup>
 
 </Project>

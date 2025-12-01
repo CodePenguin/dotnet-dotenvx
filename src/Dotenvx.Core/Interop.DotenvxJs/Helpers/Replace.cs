@@ -1,7 +1,8 @@
 using System.Text.RegularExpressions;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/replace.js</remarks>
 public static partial class Helpers
 {
     public static string Replace(string src, string key, string replaceValue)

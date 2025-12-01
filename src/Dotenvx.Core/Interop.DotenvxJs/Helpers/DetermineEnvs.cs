@@ -1,18 +1,19 @@
-using Dotenvx.Core.Interop.DotenvxJs.Types;
+using Dotenvx.Interop.DotenvxJs.Types;
 
-namespace Dotenvx.Core.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
+/// <remarks>Reference source: dotenvx/src/lib/helpers/determineEnvs.js</remarks>
 public static partial class Helpers
 {
-    private static readonly List<EnvItem> DefaultEnvs = [new() { Type = EnvType.EnvFile, Value = ".env" }];
+    private static readonly EnvItem[] DefaultEnvs = [new() { Type = EnvType.EnvFile, Value = ".env" }];
 
-    public static List<EnvItem> DetermineEnvs(List<EnvItem>? envs, IDictionary<string, string> processEnv)
+    public static EnvItem[] DetermineEnvs(EnvItem[]? envs, IDictionary<string, string> processEnv)
     {
-        List<string> privateKeyNames = DotenvPrivateKeyNames.Execute(processEnv);
+        string[] privateKeyNames = DotenvPrivateKeyNames(processEnv);
 
-        if (envs == null || envs.Count == 0)
+        if (envs == null || envs.Length == 0)
         {
-            return privateKeyNames.Count != 0
+            return privateKeyNames.Length != 0
                 ? DetermineEnvsFromDotenvPrivateKey(privateKeyNames)
                 : [..DefaultEnvs];
         }
@@ -26,18 +27,18 @@ public static partial class Helpers
 
         List<EnvItem> combinedEnvs = new(DefaultEnvs);
         combinedEnvs.AddRange(envs);
-        return combinedEnvs;
+        return combinedEnvs.ToArray();
     }
 
-    private static List<EnvItem> DetermineEnvsFromDotenvPrivateKey(List<string> privateKeyNames)
+    private static EnvItem[] DetermineEnvsFromDotenvPrivateKey(string[] privateKeyNames)
     {
-        List<EnvItem> envs = new();
+        List<EnvItem> envs = [];
         foreach (string privateKeyName in privateKeyNames)
         {
             string filename = GuessPrivateKeyFilename(privateKeyName);
             envs.Add(new EnvItem { Type = EnvType.EnvFile, Value = filename });
         }
 
-        return envs;
+        return envs.ToArray();
     }
 }
