@@ -13,7 +13,7 @@ namespace Dotenvx.Interop.DotenvxJs;
 /// <remarks>Reference source: dotenvx/src/lib/main.js</remarks>
 public static class Main
 {
-    public static ConfigResult Config(ConfigOptions? options)
+    public static ConfigResult Config(ConfigOptions? options = null)
     {
         options ??= new ConfigOptions();
         IDotenvxLogger? logger = options.Logger;

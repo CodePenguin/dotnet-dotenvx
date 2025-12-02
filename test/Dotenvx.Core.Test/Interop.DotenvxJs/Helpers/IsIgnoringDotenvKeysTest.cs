@@ -1,3 +1,5 @@
+using Dotenvx.Interop.DotenvxJs.Helpers;
+
 using Shouldly;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
@@ -7,14 +9,11 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 /// <remarks>Reference source: dotenvx/tests/lib/helpers/is-ignoring-dotenv-keys.test.js</remarks>
 public class IsIgnoringDotenvKeysTest : EnvironmentTestBase
 {
-    protected override void TearDown()
-    {
-        File.Delete(".gitignore");
-    }
-
     [Fact]
     public void TestIsIgnoringDotenvKeysNoGitignoreFile()
     {
+        Fsx.ExistsSync = _ => false;
+
         bool result = IsIgnoringDotenvKeys();
         result.ShouldBe(false);
     }
@@ -22,7 +21,8 @@ public class IsIgnoringDotenvKeysTest : EnvironmentTestBase
     [Fact]
     public void TestIsIgnoringDotenvKeysEmptyGitignoreFile()
     {
-        File.WriteAllText(".gitignore", "");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (_, _) => "";
 
         bool result = IsIgnoringDotenvKeys();
         result.ShouldBe(false);
@@ -31,7 +31,8 @@ public class IsIgnoringDotenvKeysTest : EnvironmentTestBase
     [Fact]
     public void TestIsIgnoringDotenvKeysGitignoreFileIgnoresEnvStar()
     {
-        File.WriteAllText(".gitignore", ".env*");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (_, _) => ".env*";
 
         bool result = IsIgnoringDotenvKeys();
         result.ShouldBe(true);
