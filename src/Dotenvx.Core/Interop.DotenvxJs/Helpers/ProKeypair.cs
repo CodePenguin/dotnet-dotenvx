@@ -11,6 +11,6 @@ public class ProKeyPair(string envFilePath)
         string publicKeyName = GuessPublicKeyName(envFilePath);
 
         // match format of dotenvx-pro
-        return new Dictionary<string, string?> { [privateKeyName] = null, [publicKeyName] = null };
+        return new Dictionary<string, string?> { [publicKeyName] = null, [privateKeyName] = null };
     }
 }

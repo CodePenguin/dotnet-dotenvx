@@ -16,7 +16,7 @@ public static partial class Helpers
             string newPart = $"{key}={quote}{replaceValue}{quote}";
 
             string originalValue = (string)value;
-            string escapedOriginalValue = Regex.Escape(originalValue);
+            string escapedOriginalValue = EscapeForRegex(originalValue);
 
             string enforceEndOfLine = "";
             if (string.IsNullOrEmpty(escapedOriginalValue))
@@ -68,7 +68,7 @@ public static partial class Helpers
         }
     }
 
-    private static Dictionary<string, string> GetQuotes(string src)
+    public static Dictionary<string, string> GetQuotes(string src)
     {
         Dictionary<string, string> obj = new();
         string lines = Regex.Replace(src, "\r\n?", "\n");
@@ -96,7 +96,7 @@ public static partial class Helpers
         return obj;
     }
 
-    private static string EscapeDollarSigns(string value)
+    public static string EscapeDollarSigns(string value)
     {
         return value.Replace("$", "$$");
     }

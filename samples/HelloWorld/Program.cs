@@ -3,4 +3,4 @@
  * Run with .NET dotenvx: dotnet dotenvx run
  */
 
-Console.WriteLine($"Hello, {Environment.GetEnvironmentVariable("HELLO") ?? "[Not Set]"}");
+Console.WriteLine($"Hello, {Environment.GetEnvironmentVariable("HELLO") ?? "[Not Set]"}!");

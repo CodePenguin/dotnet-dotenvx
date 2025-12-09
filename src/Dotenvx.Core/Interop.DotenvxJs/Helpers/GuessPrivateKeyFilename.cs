@@ -3,7 +3,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// <remarks>Reference source: dotenvx/src/lib/helpers/guessPrivateKeyFilename.js</remarks>
 public static partial class Helpers
 {
-    private static string GuessPrivateKeyFilename(string privateKeyName)
+    internal static string GuessPrivateKeyFilename(string privateKeyName)
     {
         const string prefix = "DOTENV_PRIVATE_KEY";
 
