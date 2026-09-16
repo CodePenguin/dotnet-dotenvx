@@ -44,6 +44,7 @@ public class EncryptAction : Command
     public EncryptAction(IDotenvxLogger logger) : base("encrypt",
         "convert .env file(s) to encrypted .env file(s)")
     {
+        Aliases.Add("enc"); // shorthand
         _logger = logger;
         Add(_envFileOption);
         Add(_envKeysFileOption);

@@ -47,6 +47,18 @@ public class EncryptActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain($"no changes .env ({Path.GetFullPath(".env")})");
     }
 
+    /// <remarks>Refer to "enc" shorthand alias for "encrypt" (v2.21.0)</remarks>
+    [Fact]
+    public void TestEncAliasRunsEncrypt()
+    {
+        File.WriteAllText(".env", "");
+        ParseResult parseResult = RootCommand.Parse(["enc"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
+    }
+
     /// <remarks>Refer to "encrypt - .env but no changes"</remarks>
     [Fact]
     public void TestEncryptEnvButNoChanges()

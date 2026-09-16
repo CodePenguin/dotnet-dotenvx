@@ -44,6 +44,7 @@ public class DecryptAction : Command
     public DecryptAction(IDotenvxLogger logger) : base("decrypt",
         "convert encrypted .env file(s) to plain .env file(s)")
     {
+        Aliases.Add("dec"); // shorthand
         _logger = logger;
         Add(_envFileOption);
         Add(_envKeysFileOption);

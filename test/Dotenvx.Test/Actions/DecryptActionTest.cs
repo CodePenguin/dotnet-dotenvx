@@ -48,6 +48,18 @@ public class DecryptActionTest : EnvironmentTestBase
         MockLogger.InfoMessages.ShouldContain("no changes (.env)");
     }
 
+    /// <remarks>Refer to "dec" shorthand alias for "decrypt" (v2.21.0)</remarks>
+    [Fact]
+    public void TestDecAliasRunsDecrypt()
+    {
+        File.WriteAllText(".env", "");
+        ParseResult parseResult = RootCommand.Parse(["dec"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        MockLogger.VerboseMessages.ShouldContain($"decrypting .env ({Path.GetFullPath(".env")})");
+    }
+
     /// <remarks>Refer to "decrypt - .env but no changes"</remarks>
     [Fact]
     public void TestDecryptEnvButNoChanges()
