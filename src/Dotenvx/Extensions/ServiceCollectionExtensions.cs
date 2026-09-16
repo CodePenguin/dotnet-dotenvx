@@ -13,6 +13,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddTransient<DotenvxRootCommand>();
         services.AddTransient<DecryptAction>();
+        services.AddTransient<DelAction>();
         services.AddTransient<EncryptAction>();
         services.AddTransient<GetAction>();
         services.AddTransient<KeyPairAction>();

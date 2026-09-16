@@ -14,6 +14,7 @@ public class DotenvxRootCommand : LoggingRootCommand
 {
     public DotenvxRootCommand(
         DecryptAction decryptAction,
+        DelAction delAction,
         EncryptAction encryptAction,
         GetAction getAction,
         KeyPairAction keyPairAction,
@@ -27,6 +28,7 @@ public class DotenvxRootCommand : LoggingRootCommand
 
         // Add Actions
         Subcommands.Add(decryptAction);
+        Subcommands.Add(delAction);
         Subcommands.Add(encryptAction);
         Subcommands.Add(getAction);
         Subcommands.Add(keyPairAction);

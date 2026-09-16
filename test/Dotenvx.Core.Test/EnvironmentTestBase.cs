@@ -54,6 +54,7 @@ public class EnvironmentTestBase : IDisposable
         }
 
         // Reset Mock Factories
+        Del.ResetFactory();
         Get.ResetFactory();
         KeyPair.ResetFactory();
         Ls.ResetFactory();
