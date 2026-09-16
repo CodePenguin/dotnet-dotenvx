@@ -54,9 +54,6 @@ public class RunAction : Command
 
     private readonly IDotenvxLogger _logger;
 
-    private readonly Option<bool> _opsOffOption =
-        new("--ops-off") { Description = "disable dotenvx-ops features (default: false)" };
-
     private readonly Option<bool> _overloadOption =
         new("--overload", "-o")
         {
@@ -79,7 +76,6 @@ public class RunAction : Command
         Add(_strictOption);
         Add(_conventionOption);
         Add(_ignoreOption);
-        Add(_opsOffOption);
         Add(_args);
         SetAction(async pr => await Execute(pr));
     }
@@ -94,10 +90,6 @@ public class RunAction : Command
         string? convention = parseResult.GetValue(_conventionOption);
         string[] ignoreList = parseResult.GetValue(_ignoreOption) ?? [];
         string[] commandArgs = parseResult.GetValue(_args) ?? [];
-        bool opsOff = parseResult.GetValue(_opsOffOption);
-
-        // dotenvx-ops related
-        bool opsOn = !opsOff;
 
         _logger.Debug($"process command [{string.Join(' ', commandArgs)}]");
 
@@ -108,8 +100,7 @@ public class RunAction : Command
             overload,
             strict,
             convention,
-            ignoreList,
-            opsOff
+            ignoreList
         };
         _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
 
@@ -160,23 +151,6 @@ public class RunAction : Command
             IList<string> readableStrings = result.ReadableStrings;
             IList<string> readableFilePaths = result.ReadableFilePaths;
             IList<string> uniqueInjectedKeys = result.UniqueInjectedKeys;
-
-            if (opsOn)
-            {
-                try
-                {
-                    Ops.Factory(_logger).Observe(new OpsPayload
-                    {
-                        BeforeEnv = result.BeforeEnv,
-                        ProcessedEnvs = result.ProcessedEnvs,
-                        AfterEnv = result.AfterEnv
-                    });
-                }
-                catch
-                {
-                    // ignore
-                }
-            }
 
             foreach (RunProcessedEnv processedEnv in processedEnvs)
             {

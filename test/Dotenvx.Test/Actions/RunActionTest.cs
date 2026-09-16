@@ -685,43 +685,4 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.InfoMessages.ShouldContain("injecting env (0) from .env");
     }
 
-    /// <remarks>Refer to "run - ops.observe throws error but run continues to work"</remarks>
-    [Fact]
-    public void TestRunOpsObserveThrowsErrorButRunContinuesToWork()
-    {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
-        {
-            ProcessedEnvs =
-            [
-                new RunProcessedEnv
-                {
-                    Type = EnvType.EnvFile,
-                    FilePath = ".env",
-                    Parsed = new Dictionary<string, string> { { "HELLO", "World" } },
-                    Injected = new Dictionary<string, string> { { "HELLO", "World" } },
-                    PreExisted = new Dictionary<string, string>()
-                }
-            ],
-            ReadableStrings = [],
-            ReadableFilePaths = [".env"],
-            UniqueInjectedKeys = ["HELLO"],
-            BeforeEnv = new Dictionary<string, string>(),
-            AfterEnv = new Dictionary<string, string> { { "HELLO", "World" } }
-        });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
-
-        Mock<Ops> mockOps = new();
-        mockOps.Setup(o => o.Observe(It.IsAny<OpsPayload>())).Throws(new Exception("Ops service unavailable"));
-        Ops.Factory = _ => mockOps.Object;
-
-        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
-        int exitCode = parseResult.Invoke();
-
-        exitCode.ShouldBe(0);
-        MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
-        MockLogger.VerboseMessages.ShouldContain("HELLO set");
-        MockLogger.DebugMessages.ShouldContain("HELLO set to World");
-        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env");
-    }
 }

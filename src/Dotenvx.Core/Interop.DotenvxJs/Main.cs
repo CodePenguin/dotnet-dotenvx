@@ -43,24 +43,6 @@ public static class Main
 
             RunResult runResult = Run.Factory(envs, options.Overload ?? false, processEnv, envKeysFile).Execute();
 
-            bool opsOn = options.OpsOff != true;
-            if (opsOn)
-            {
-                try
-                {
-                    Ops.Factory(logger).Observe(new OpsPayload
-                    {
-                        BeforeEnv = runResult.BeforeEnv,
-                        ProcessedEnvs = runResult.ProcessedEnvs,
-                        AfterEnv = runResult.AfterEnv
-                    });
-                }
-                catch
-                {
-                    // ignore
-                }
-            }
-
             Exception? lastError = null;
             Dictionary<string, string> parsedAll = new();
 

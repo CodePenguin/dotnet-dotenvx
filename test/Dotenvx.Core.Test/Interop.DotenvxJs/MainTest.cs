@@ -334,29 +334,6 @@ public class MainTest : EnvironmentTestBase
         result.ShouldNotBeNull();
     }
 
-    /// <remarks>Refer to "config - ops.observe throws error but config continues to work"</remarks>
-    [Fact]
-    public void TestConfigOpsObserveThrowsErrorButConfigContinuesToWork()
-    {
-        Mock<Run> mockRun = new(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
-        {
-            ProcessedEnvs = [],
-            ReadableStrings = [],
-            ReadableFilePaths = [],
-            UniqueInjectedKeys = [],
-            BeforeEnv = new Dictionary<string, string>(),
-            AfterEnv = new Dictionary<string, string>()
-        });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
-
-        ConfigResult result = Main.Config(new ConfigOptions());
-
-        mockRun.Verify(r => r.Execute(), Times.Once);
-        result.ShouldNotBeNull();
-        result.Error.ShouldBeNull();
-    }
-
     /// <remarks>Refer to "config with Run.run processedEnv with undefined processedEnv.errors"</remarks>
     [Fact]
     public void TestConfigWithRunRunProcessedEnvWithUndefinedProcessedEnvErrors()

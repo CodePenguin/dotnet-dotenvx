@@ -57,7 +57,6 @@ public class EnvironmentTestBase : IDisposable
         Get.ResetFactory();
         KeyPair.ResetFactory();
         Ls.ResetFactory();
-        Ops.ResetFactory();
         Parse.ResetFactory();
         Run.ResetFactory();
         Sets.ResetFactory();

@@ -13,7 +13,6 @@ public class ConfigOptions
     public string? EnvKeysFile { get; set; }
 
     public string? Convention { get; set; }
-    public bool? OpsOff { get; set; }
     public bool? Debug { get; set; }
     public bool? Quiet { get; set; }
     public bool? Verbose { get; set; }
