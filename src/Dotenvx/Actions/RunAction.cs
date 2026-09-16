@@ -91,6 +91,14 @@ public class RunAction : Command
         string[] ignoreList = parseResult.GetValue(_ignoreOption) ?? [];
         string[] commandArgs = parseResult.GetValue(_args) ?? [];
 
+        ConfigOptions normalizedOptions =
+            NormalizeDotenvConfigIgnore(NormalizeDotenvConfigConvention(new ConfigOptions
+            {
+                Convention = convention, Ignore = ignoreList.ToList()
+            }));
+        convention = normalizedOptions.Convention;
+        ignoreList = normalizedOptions.Ignore?.ToArray() ?? [];
+
         _logger.Debug($"process command [{string.Join(' ', commandArgs)}]");
 
         var options = new
@@ -127,6 +135,17 @@ public class RunAction : Command
 
         try
         {
+            List<EnvItem> explicitEnvItems = [];
+            if (envs != null)
+            {
+                explicitEnvItems.AddRange(envs.Select(e => new EnvItem { Type = EnvType.Env, Value = e }));
+            }
+
+            if (envFile != null)
+            {
+                explicitEnvItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
+            }
+
             List<EnvItem> envItems = [];
             // handle shorthand conventions - like --convention=nextjs
             if (!string.IsNullOrEmpty(convention))
@@ -134,15 +153,7 @@ public class RunAction : Command
                 envItems.AddRange(Conventions(convention));
             }
 
-            if (envs != null)
-            {
-                envItems.AddRange(envs.Select(e => new EnvItem { Type = EnvType.Env, Value = e }));
-            }
-
-            if (envFile != null)
-            {
-                envItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
-            }
+            envItems.AddRange(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()));
 
             Run runService = Run.Factory(envItems.ToArray(), overload, processEnv, envKeysFile?.FirstOrDefault());
             RunResult result = runService.Execute();

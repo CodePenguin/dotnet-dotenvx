@@ -1,6 +1,8 @@
 using System.CommandLine;
 using System.Linq;
 
+using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+
 namespace Dotenvx;
 
 public class LoggingRootCommand : RootCommand
@@ -42,7 +44,15 @@ public class LoggingRootCommand : RootCommand
         return
             parseResult.GetValue(_logLevel)
             ?? LogLevelFlagsToLogLevel(parseResult)
+            ?? EnvQuietToLogLevel()
             ?? "info";
+    }
+
+    private static string? EnvQuietToLogLevel()
+    {
+        return NormalizeDotenvConfigQuiet(new Interop.DotenvxJs.Types.ConfigOptions()).Quiet == true
+            ? "error"
+            : null;
     }
 
     public bool IsVerboseMode(ParseResult parseResult)

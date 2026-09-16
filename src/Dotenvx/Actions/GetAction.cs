@@ -104,6 +104,15 @@ public class GetAction : Command
         bool strict = parseResult.GetValue(_strictOption);
         string? convention = parseResult.GetValue(_conventionOption);
         string[] ignoreList = parseResult.GetValue(_ignoreOption) ?? [];
+
+        ConfigOptions normalizedOptions =
+            NormalizeDotenvConfigIgnore(NormalizeDotenvConfigConvention(new ConfigOptions
+            {
+                Convention = convention, Ignore = ignoreList.ToList()
+            }));
+        convention = normalizedOptions.Convention;
+        ignoreList = normalizedOptions.Ignore?.ToArray() ?? [];
+
         bool all = parseResult.GetValue(_allOption);
         string? formatValue = parseResult.GetValue(_formatOption);
         string format = formatValue ?? "json";
@@ -129,6 +138,17 @@ public class GetAction : Command
         };
         _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
 
+        List<EnvItem> explicitEnvItems = [];
+        if (envs != null)
+        {
+            explicitEnvItems.AddRange(envs.Select(e => new EnvItem { Type = EnvType.Env, Value = e }));
+        }
+
+        if (envFile != null)
+        {
+            explicitEnvItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
+        }
+
         List<EnvItem> envItems = [];
         // handle shorthand conventions - like --convention=nextjs
         if (!string.IsNullOrEmpty(convention))
@@ -136,21 +156,14 @@ public class GetAction : Command
             envItems.AddRange(Conventions(convention));
         }
 
-        if (envs != null)
-        {
-            envItems.AddRange(envs.Select(e => new EnvItem { Type = EnvType.Env, Value = e }));
-        }
-
-        if (envFile != null)
-        {
-            envItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
-        }
+        envItems.AddRange(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()));
 
         try
         {
             Get getService = Get.Factory(key, envItems.ToArray(), overload, all, envKeysFile?.FirstOrDefault());
             GetResult result = getService.Run();
 
+            int errorCount = 0;
             foreach (Exception error in result.Errors)
             {
                 DotenvxException? dotenvError = error as DotenvxException;
@@ -165,6 +178,7 @@ public class GetAction : Command
                     continue;
                 }
 
+                errorCount++;
                 _logger.Error(error.Message);
                 if (!string.IsNullOrEmpty(dotenvError?.Help))
                 {
@@ -204,7 +218,7 @@ public class GetAction : Command
                 }
             }
 
-            return 0;
+            return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {

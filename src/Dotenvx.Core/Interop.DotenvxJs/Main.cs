@@ -16,6 +16,10 @@ public static class Main
     public static ConfigResult Config(ConfigOptions? options = null)
     {
         options ??= new ConfigOptions();
+        options = NormalizeDotenvConfigQuiet(options);
+        options = NormalizeDotenvConfigConvention(options);
+        options = NormalizeDotenvConfigIgnore(options);
+
         IDotenvxLogger? logger = options.Logger;
         SetLogLevel(logger, options);
 
@@ -39,7 +43,7 @@ public static class Main
 
         try
         {
-            EnvItem[] envs = BuildEnvs(options);
+            EnvItem[] envs = NormalizeDotenvConfigPath(BuildEnvs(options));
 
             RunResult runResult = Run.Factory(envs, options.Overload ?? false, processEnv, envKeysFile).Execute();
 

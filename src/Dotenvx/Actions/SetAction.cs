@@ -36,7 +36,7 @@ public class SetAction : Command
     private readonly IDotenvxLogger _logger;
 
     private readonly Option<bool> _plainOption =
-        new("--plain", "-p") { Description = "store value as plain text (default: false)" };
+        new("--plain") { Description = "store value as plain text (default: false)" };
 
     private readonly Argument<string> _valueArgument =
         new("value") { Description = "value" };

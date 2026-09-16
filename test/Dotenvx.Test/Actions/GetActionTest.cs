@@ -139,7 +139,10 @@ public class GetActionTest : EnvironmentTestBase
         ParseResult parseResult = RootCommand.Parse(["get", "HELLO", "--convention", "nextjs"]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(0);
+        // Real dotenvx also exits 1 here: the nextjs convention's missing .env.development.local,
+        // .env.local, and .env.development files are each a non-ignored MISSING_ENV_FILE error,
+        // even though HELLO is still found in the plain .env file that does exist.
+        exitCode.ShouldBe(1);
         string output = _consoleOutput.ToString();
         output.ShouldBe("World\n");
     }
@@ -153,7 +156,8 @@ public class GetActionTest : EnvironmentTestBase
         ParseResult parseResult = RootCommand.Parse(["get", "NOTFOUND"]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(0);
+        // Real dotenvx exits 1 for a non-ignored, non-strict error too.
+        exitCode.ShouldBe(1);
         string output = _consoleOutput.ToString();
         output.ShouldBe("\n");
         MockLogger.ErrorMessages.ShouldContain("[MISSING_KEY] missing NOTFOUND key");
