@@ -7,7 +7,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Types;
 
-using Moq;
+using NSubstitute;
 
 using Shouldly;
 
@@ -33,8 +33,8 @@ public class DelActionTest : EnvironmentTestBase
     [Fact]
     public void TestDelNoChange()
     {
-        Mock<Del> mockDel = new();
-        mockDel.Setup(d => d.Run()).Returns(new DelResult
+        Del mockDel = Substitute.For<Del>();
+        mockDel.Run().Returns(new DelResult
         {
             ProcessedEnvs =
             [
@@ -47,13 +47,13 @@ public class DelActionTest : EnvironmentTestBase
             ChangedFilePaths = [],
             UnchangedFilePaths = [".env"]
         });
-        Del.Factory = (_, _) => mockDel.Object;
+        Del.Factory = (_, _) => mockDel;
 
         ParseResult parseResult = RootCommand.Parse(["del", "NOTFOUND"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockDel.Verify(d => d.Run(), Times.Once);
+        mockDel.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
     }
 
@@ -62,8 +62,8 @@ public class DelActionTest : EnvironmentTestBase
     public void TestDelChanges()
     {
         Fsx.WriteFileX = (_, _) => { };
-        Mock<Del> mockDel = new();
-        mockDel.Setup(d => d.Run()).Returns(new DelResult
+        Del mockDel = Substitute.For<Del>();
+        mockDel.Run().Returns(new DelResult
         {
             ProcessedEnvs =
             [
@@ -76,13 +76,13 @@ public class DelActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Del.Factory = (_, _) => mockDel.Object;
+        Del.Factory = (_, _) => mockDel;
 
         ParseResult parseResult = RootCommand.Parse(["del", "HELLO"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockDel.Verify(d => d.Run(), Times.Once);
+        mockDel.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("◇ removed HELLO (.env)");
     }
 
@@ -90,8 +90,8 @@ public class DelActionTest : EnvironmentTestBase
     [Fact]
     public void TestDelMissingEnvFile()
     {
-        Mock<Del> mockDel = new();
-        mockDel.Setup(d => d.Run()).Returns(new DelResult
+        Del mockDel = Substitute.For<Del>();
+        mockDel.Run().Returns(new DelResult
         {
             ProcessedEnvs =
             [
@@ -104,7 +104,7 @@ public class DelActionTest : EnvironmentTestBase
             ChangedFilePaths = [],
             UnchangedFilePaths = []
         });
-        Del.Factory = (_, _) => mockDel.Object;
+        Del.Factory = (_, _) => mockDel;
 
         ParseResult parseResult = RootCommand.Parse(["del", "HELLO"]);
         int exitCode = parseResult.Invoke();

@@ -2,7 +2,7 @@ using Dotenvx.Interop.DotenvxJs;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 
-using Moq;
+using NSubstitute;
 
 using Shouldly;
 
@@ -254,36 +254,33 @@ public class ConfigTest : EnvironmentTestBase
     [Fact]
     public void TestTakesOptionForPathAlongWithHomeDirectoryChar()
     {
-        Mock<IFsxMock> mockFsx = new();
-        mockFsx.Setup(x => x.ReadFileX(It.IsAny<string>(), "utf8"))
-            .Returns("BASIC=basic");
-        Fsx.ReadFileX = mockFsx.Object.ReadFileX;
+        IFsxMock mockFsx = Substitute.For<IFsxMock>();
+        mockFsx.ReadFileX(Arg.Any<string>(), "utf8").Returns("BASIC=basic");
+        Fsx.ReadFileX = mockFsx.ReadFileX;
         Fsx.ReadFileSync = _ => "BASIC=basic"u8.ToArray(); // for encoding check
 
         ConfigResult result = Main.Config(new ConfigOptions { Path = ["~/.env"] });
 
         result.Parsed["BASIC"].ShouldBe("basic");
-        mockFsx.Verify(x => x.ReadFileX("~/.env", "utf8"), Times.Never);
-        mockFsx.Verify(x => x.ReadFileX(It.IsNotIn("~/.env"), "utf8"), Times.Once);
+        mockFsx.DidNotReceive().ReadFileX("~/.env", "utf8");
+        mockFsx.Received(1).ReadFileX(Arg.Is<string>(s => s != "~/.env"), "utf8");
     }
 
     /// <remarks>Refer to "reads path with encoding, parsing output to process.env"</remarks>
     [Fact]
     public void TestReadsPathWithEncodingParsingOutputToProcessEnv()
     {
-        Mock<IFsxMock> mockFsx = new();
-        mockFsx.Setup(x => x.ReadFileX(It.IsAny<string>(), "utf8"))
-            .Returns("BASIC=basic");
-        mockFsx.Setup(x => x.ReadFileSync(It.IsAny<string>()))
-            .Returns("test=foo"u8.ToArray()); // for purpose of encoding check
-        Fsx.ReadFileX = mockFsx.Object.ReadFileX;
-        Fsx.ReadFileSync = mockFsx.Object.ReadFileSync;
+        IFsxMock mockFsx = Substitute.For<IFsxMock>();
+        mockFsx.ReadFileX(Arg.Any<string>(), "utf8").Returns("BASIC=basic");
+        mockFsx.ReadFileSync(Arg.Any<string>()).Returns("test=foo"u8.ToArray()); // for purpose of encoding check
+        Fsx.ReadFileX = mockFsx.ReadFileX;
+        Fsx.ReadFileSync = mockFsx.ReadFileSync;
 
         ConfigResult result = Main.Config(new ConfigOptions { Path = [] });
 
         result.Parsed["BASIC"].ShouldBe("basic");
         Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
-        mockFsx.Verify(x => x.ReadFileX(It.IsAny<string>(), "utf8"), Times.Once);
-        mockFsx.Verify(x => x.ReadFileSync(It.IsAny<string>()), Times.Once);
+        mockFsx.Received(1).ReadFileX(Arg.Any<string>(), "utf8");
+        mockFsx.Received(1).ReadFileSync(Arg.Any<string>());
     }
 }

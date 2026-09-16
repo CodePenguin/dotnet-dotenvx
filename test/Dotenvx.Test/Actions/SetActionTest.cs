@@ -7,7 +7,8 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Types;
 
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Shouldly;
 
@@ -42,8 +43,8 @@ public class SetActionTest : EnvironmentTestBase
             HELLO="encrypted:BJU61uy0qwXlfUDntOFnsRsA9YmP2s4QURmfyFiJv9PhiBtsYPq09LIBEIBFqEUxS0XEyOO0N3k2n5pn8+GWCX3Gi9bid5I1dKLMQOy9g8qicJQT5bWmfNu5+Eyiq53+zhPrXDkd"
             """;
 
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
@@ -60,13 +61,13 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [],
             UnchangedFilePaths = [".env"]
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("no changes (.env)");
     }
 
@@ -75,8 +76,8 @@ public class SetActionTest : EnvironmentTestBase
     public void TestSetChanges()
     {
         Fsx.WriteFileX = (_, _) => { };
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
@@ -94,13 +95,13 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
     }
 
@@ -108,35 +109,35 @@ public class SetActionTest : EnvironmentTestBase
     [Fact]
     public void TestSetNoChangesAndNoUnchanged()
     {
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
     }
 
     /// <remarks>Refer to "set - MISSING_ENV_FILE"</remarks>
     [Fact]
     public void TestSetMissingEnvFile()
     {
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Throws(new DotenvxException("MISSING_ENV_FILE",
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Throws(new DotenvxException("MISSING_ENV_FILE",
             $"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})",
             "? add one with [echo \"HELLO=value\" > .env] and re-run [dotenvx set]"));
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.ErrorMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
         MockLogger.InfoMessages.ShouldContain("? add one with [echo \"HELLO=value\" > .env] and re-run [dotenvx set]");
     }
@@ -146,8 +147,8 @@ public class SetActionTest : EnvironmentTestBase
     public void TestSetOtherError()
     {
         Fsx.WriteFileX = (_, _) => { };
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
@@ -165,13 +166,13 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [],
             UnchangedFilePaths = [".env"]
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("no changes (.env)");
         MockLogger.WarningMessages.ShouldContain("Mock Error");
         MockLogger.InfoMessages.ShouldContain("some help");
@@ -181,8 +182,8 @@ public class SetActionTest : EnvironmentTestBase
     [Fact]
     public void TestSetChangesPlain()
     {
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
@@ -199,13 +200,13 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World", "--plain"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("✔ set HELLO (.env)");
     }
 
@@ -214,8 +215,8 @@ public class SetActionTest : EnvironmentTestBase
     public void TestSetPrivateKeyAdded()
     {
         Fsx.WriteFileX = (_, _) => { };
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
@@ -236,13 +237,13 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
         MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
         MockLogger.InfoMessages.ShouldContain(
@@ -255,8 +256,8 @@ public class SetActionTest : EnvironmentTestBase
     {
         // Assuming the default mock environment doesn't have .env.keys ignored.
         Fsx.WriteFileX = (_, _) => { };
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
@@ -277,13 +278,13 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
         MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
         MockLogger.InfoMessages.ShouldContain(
@@ -296,15 +297,15 @@ public class SetActionTest : EnvironmentTestBase
     [Fact]
     public void TestSetCatchError()
     {
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Throws(new DotenvxException("500", "Mock Error", "Mock Help"));
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Throws(new DotenvxException("500", "Mock Error", "Mock Help"));
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.ErrorMessages.ShouldContain("Mock Error");
         MockLogger.InfoMessages.ShouldContain("Mock Help");
         MockLogger.DebugMessages.ShouldContain("ERROR_CODE: 500");

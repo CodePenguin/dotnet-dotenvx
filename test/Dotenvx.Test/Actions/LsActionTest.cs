@@ -5,7 +5,7 @@ using Dotenvx.Actions;
 using Dotenvx.Core.Test;
 using Dotenvx.Interop.DotenvxJs.Services;
 
-using Moq;
+using NSubstitute;
 
 using Shouldly;
 
@@ -36,9 +36,9 @@ public class LsActionTest : EnvironmentTestBase
     [Fact]
     public void TestLsCallsMainLs()
     {
-        Mock<Ls> mockLs = new();
-        mockLs.Setup(l => l.Run()).Returns([".env"]);
-        Ls.Factory = (_, _, _) => mockLs.Object;
+        Ls mockLs = Substitute.For<Ls>();
+        mockLs.Run().Returns([".env"]);
+        Ls.Factory = (_, _, _) => mockLs;
 
         ParseResult parseResult = RootCommand.Parse(["ls"]);
         int exitCode = parseResult.Invoke();

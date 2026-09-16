@@ -6,7 +6,7 @@ using Dotenvx.Actions;
 using Dotenvx.Core.Test;
 using Dotenvx.Interop.DotenvxJs.Services;
 
-using Moq;
+using NSubstitute;
 
 using Shouldly;
 
@@ -41,12 +41,12 @@ public class KeyPairActionTest : EnvironmentTestBase
     [Fact]
     public void TestKeypair()
     {
-        Mock<KeyPair> mockKeyPair = new();
-        mockKeyPair.Setup(k => k.Run()).Returns(new Dictionary<string, string?>
+        KeyPair mockKeyPair = Substitute.For<KeyPair>();
+        mockKeyPair.Run().Returns(new Dictionary<string, string?>
         {
             { "DOTENV_PUBLIC_KEY", "<PublicKey>" }, { "DOTENV_PRIVATE_KEY", "<PrivateKey>" }
         });
-        KeyPair.Factory = (_, _) => mockKeyPair.Object;
+        KeyPair.Factory = (_, _) => mockKeyPair;
 
         ParseResult parseResult = RootCommand.Parse(["keypair"]);
         int exitCode = parseResult.Invoke();
@@ -61,9 +61,9 @@ public class KeyPairActionTest : EnvironmentTestBase
     [Fact]
     public void TestKeypairKey()
     {
-        Mock<KeyPair> mockKeyPair = new();
-        mockKeyPair.Setup(k => k.Run()).Returns(new Dictionary<string, string?> { { "DOTENV_PUBLIC_KEY", PublicKey } });
-        KeyPair.Factory = (_, _) => mockKeyPair.Object;
+        KeyPair mockKeyPair = Substitute.For<KeyPair>();
+        mockKeyPair.Run().Returns(new Dictionary<string, string?> { { "DOTENV_PUBLIC_KEY", PublicKey } });
+        KeyPair.Factory = (_, _) => mockKeyPair;
 
         ParseResult parseResult = RootCommand.Parse(["keypair", "DOTENV_PUBLIC_KEY"]);
         int exitCode = parseResult.Invoke();
@@ -78,12 +78,12 @@ public class KeyPairActionTest : EnvironmentTestBase
     [Fact]
     public void TestKeypairFormatShell()
     {
-        Mock<KeyPair> mockKeyPair = new();
-        mockKeyPair.Setup(k => k.Run()).Returns(new Dictionary<string, string?>
+        KeyPair mockKeyPair = Substitute.For<KeyPair>();
+        mockKeyPair.Run().Returns(new Dictionary<string, string?>
         {
             { "DOTENV_PUBLIC_KEY", PublicKey }, { "DOTENV_PRIVATE_KEY", PrivateKey }
         });
-        KeyPair.Factory = (_, _) => mockKeyPair.Object;
+        KeyPair.Factory = (_, _) => mockKeyPair;
 
         ParseResult parseResult = RootCommand.Parse(["keypair", "--format", "shell"]);
         int exitCode = parseResult.Invoke();
@@ -97,12 +97,12 @@ public class KeyPairActionTest : EnvironmentTestBase
     [Fact]
     public void TestKeypairFormatShellWithNullValue()
     {
-        Mock<KeyPair> mockKeyPair = new();
-        mockKeyPair.Setup(k => k.Run()).Returns(new Dictionary<string, string?>
+        KeyPair mockKeyPair = Substitute.For<KeyPair>();
+        mockKeyPair.Run().Returns(new Dictionary<string, string?>
         {
             { "DOTENV_PUBLIC_KEY", PublicKey }, { "DOTENV_PRIVATE_KEY", "" }
         });
-        KeyPair.Factory = (_, _) => mockKeyPair.Object;
+        KeyPair.Factory = (_, _) => mockKeyPair;
 
         ParseResult parseResult = RootCommand.Parse(["keypair", "--format", "shell"]);
         int exitCode = parseResult.Invoke();
@@ -116,12 +116,12 @@ public class KeyPairActionTest : EnvironmentTestBase
     [Fact]
     public void TestKeypairPrettyPrint()
     {
-        Mock<KeyPair> mockKeyPair = new();
-        mockKeyPair.Setup(k => k.Run()).Returns(new Dictionary<string, string?>
+        KeyPair mockKeyPair = Substitute.For<KeyPair>();
+        mockKeyPair.Run().Returns(new Dictionary<string, string?>
         {
             { "DOTENV_PUBLIC_KEY", PublicKey }, { "DOTENV_PRIVATE_KEY", PrivateKey }
         });
-        KeyPair.Factory = (_, _) => mockKeyPair.Object;
+        KeyPair.Factory = (_, _) => mockKeyPair;
 
         ParseResult parseResult = RootCommand.Parse(["keypair", "--pretty-print"]);
         int exitCode = parseResult.Invoke();
@@ -136,9 +136,9 @@ public class KeyPairActionTest : EnvironmentTestBase
     [Fact]
     public void TestKeypairKeyNotFound()
     {
-        Mock<KeyPair> mockKeyPair = new();
-        mockKeyPair.Setup(k => k.Run()).Returns(new Dictionary<string, string?>());
-        KeyPair.Factory = (_, _) => mockKeyPair.Object;
+        KeyPair mockKeyPair = Substitute.For<KeyPair>();
+        mockKeyPair.Run().Returns(new Dictionary<string, string?>());
+        KeyPair.Factory = (_, _) => mockKeyPair;
 
         ParseResult parseResult = RootCommand.Parse(["keypair", "NOTFOUND"]);
         int exitCode = parseResult.Invoke();

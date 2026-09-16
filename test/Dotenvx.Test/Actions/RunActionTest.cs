@@ -6,7 +6,7 @@ using Dotenvx.Core.Test;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Types;
 
-using Moq;
+using NSubstitute;
 
 using Shouldly;
 
@@ -30,8 +30,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRun()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
@@ -40,13 +40,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
@@ -54,8 +54,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunConventionNextjs()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
@@ -64,13 +64,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--convention", "nextjs", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
@@ -78,8 +78,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunConventionFlow()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
@@ -88,13 +88,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--convention", "flow", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.InfoMessages.ShouldContain("injecting env (0)");
     }
 
@@ -102,8 +102,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunEnv()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -122,13 +122,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "World" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "-e", "HELLO=World", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
@@ -139,8 +139,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunEnvFileWithErrors()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -164,13 +164,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "encrypted:1234" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
@@ -184,8 +184,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunEnvFile()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -204,13 +204,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "World" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
@@ -221,8 +221,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunEnvFileAndEnv()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -249,13 +249,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "World" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "-e", "HELLO=World", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
@@ -266,8 +266,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunEnvFileAndTwoEnvs()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -302,7 +302,7 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "World" }, { "HOLA", "amigo" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse([
             "run", "-e", "HELLO=World", "-e", "HELLO=World", "-e", "HOLA=amigo", "--", "echo", ""
@@ -310,7 +310,7 @@ public class RunActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HOLA=amigo)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
@@ -324,8 +324,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunEnvTwoStrings()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -352,13 +352,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "World" }, { "HEY", "there" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "-e", "HELLO=World", "-e", "HEY=there", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HEY=there)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
@@ -370,8 +370,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunMissingEnvFile()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -396,13 +396,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain(
             $"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain("Mock Error");
@@ -415,8 +415,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunMissingEnvFileStrictFlag()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -441,13 +441,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--strict", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain("Mock Error");
         MockLogger.ErrorMessages.ShouldContain("[MISSING_ENV_FILE] ? add one with [echo \"HELLO=World\" > .env]");
@@ -458,8 +458,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunMissingEnvFileIgnoreFlag()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -483,7 +483,7 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse([
             "run", "--ignore", "MISSING_ENV_FILE", "--", "echo", ""
@@ -491,7 +491,7 @@ public class RunActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain(
             $"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain(
@@ -504,8 +504,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunMissingEnvFileStrictFlagIgnoreFlag()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -530,7 +530,7 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse([
             "run", "--strict", "--ignore", "MISSING_ENV_FILE", "--", "echo", ""
@@ -538,7 +538,7 @@ public class RunActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain(
             $"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain(
@@ -551,8 +551,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunOtherError()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -585,13 +585,13 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain("Mock Error");
         MockLogger.InfoMessages.ShouldContain("injecting env (0)");
@@ -657,8 +657,8 @@ public class RunActionTest : EnvironmentTestBase
     public void TestRunEnvFileMissingParsedInjectedPreExistedDoesNotChoke()
     {
         // Mock Run to return incomplete processedEnvs data
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -675,7 +675,7 @@ public class RunActionTest : EnvironmentTestBase
             AfterEnv = new Dictionary<string, string>()
         });
         Run.Factory =
-            (_, _, _, _) => mockRun.Object;
+            (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
 

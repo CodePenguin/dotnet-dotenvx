@@ -3,7 +3,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Types;
 
-using Moq;
+using NSubstitute;
 
 using Shouldly;
 
@@ -26,8 +26,8 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigCallsRunRun()
     {
-        Mock<Run> mockRun = new(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
@@ -36,11 +36,11 @@ public class MainTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ConfigResult result = Main.Config(new ConfigOptions());
 
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         result.ShouldNotBeNull();
         result.Error.ShouldBeNull();
     }
@@ -49,8 +49,8 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigWithConventionCallsRunRunWithProperEnvs()
     {
-        Mock<Run> mockRun = new(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
@@ -59,11 +59,11 @@ public class MainTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ConfigResult result = Main.Config(new ConfigOptions { Convention = "nextjs" });
 
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         result.ShouldNotBeNull();
         result.Error.ShouldBeNull();
     }
@@ -72,8 +72,8 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigWithConventionFlowCallsRunRunWithProperEnvs()
     {
-        Mock<Run> mockRun = new(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
@@ -82,11 +82,11 @@ public class MainTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ConfigResult result = Main.Config(new ConfigOptions { Convention = "flow" });
 
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         result.ShouldNotBeNull();
         result.Error.ShouldBeNull();
     }
@@ -96,8 +96,8 @@ public class MainTest : EnvironmentTestBase
     public void TestConfigWithRunRunErrors()
     {
         DotenvxException error = new("SOME_ERROR", "some error", "some help");
-        Mock<Run> mockRun = new(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
                 [new RunProcessedEnv { Errors = [error] }],
@@ -107,11 +107,11 @@ public class MainTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ConfigResult result = Main.Config(new ConfigOptions { Logger = MockLogger });
 
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.ErrorMessages.ShouldContain("some error");
         MockLogger.ErrorMessages.ShouldContain("some help");
         result.ShouldNotBeNull();
@@ -122,8 +122,8 @@ public class MainTest : EnvironmentTestBase
     public void TestConfigWithRunRunErrorsAndIgnore()
     {
         DotenvxException error = new("SOME_ERROR", "some error", "some help");
-        Mock<Run> mockRun = new(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
                 [new RunProcessedEnv { Errors = [error] }],
@@ -133,11 +133,11 @@ public class MainTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ConfigResult result = Main.Config(new ConfigOptions { Ignore = ["SOME_ERROR"] });
 
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.ErrorMessages.ShouldBeEmpty();
         result.ShouldNotBeNull();
     }
@@ -307,8 +307,8 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontendStrictButErrorAlsoIgnored()
     {
-        Mock<Run> mockRun = new(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
@@ -317,7 +317,7 @@ public class MainTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         Dictionary<string, string> processEnv = new();
         ConfigOptions options = new()
@@ -330,7 +330,7 @@ public class MainTest : EnvironmentTestBase
 
         ConfigResult result = Main.Config(options);
 
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         result.ShouldNotBeNull();
     }
 
@@ -338,8 +338,8 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigWithRunRunProcessedEnvWithUndefinedProcessedEnvErrors()
     {
-        Mock<Run> mockRun = new(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [new RunProcessedEnv()],
             ReadableStrings = [],
@@ -348,11 +348,11 @@ public class MainTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ConfigResult result = Main.Config(new ConfigOptions());
 
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         result.ShouldNotBeNull();
         result.Error.ShouldBeNull();
     }
@@ -361,13 +361,13 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestLsCallsLsRun()
     {
-        Mock<Ls> mockLs = new("./", null!, null!);
-        mockLs.Setup(l => l.Run()).Returns([]);
-        Ls.Factory = (_, _, _) => mockLs.Object;
+        Ls mockLs = Substitute.For<Ls>("./", null!, null!);
+        mockLs.Run().Returns([]);
+        Ls.Factory = (_, _, _) => mockLs;
 
         string[] result = Main.Ls();
 
-        mockLs.Verify(l => l.Run(), Times.Once);
+        mockLs.Received(1).Run();
         result.ShouldBeOfType<string[]>();
     }
 
@@ -375,13 +375,13 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestKeyPairCallsKeyPairRun()
     {
-        Mock<KeyPair> mockKeyPair = new(".env", null!);
-        mockKeyPair.Setup(k => k.Run()).Returns(new Dictionary<string, string?>());
-        KeyPair.Factory = (_, _) => mockKeyPair.Object;
+        KeyPair mockKeyPair = Substitute.For<KeyPair>(".env", null!);
+        mockKeyPair.Run().Returns(new Dictionary<string, string?>());
+        KeyPair.Factory = (_, _) => mockKeyPair;
 
         IReadOnlyDictionary<string, string> result = Main.KeyPair();
 
-        mockKeyPair.Verify(k => k.Run(), Times.Once);
+        mockKeyPair.Received(1).Run();
         result.ShouldNotBeNull();
     }
 
@@ -389,13 +389,13 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestKeyPairCallsKeyPairRunWithKeySpecified()
     {
-        Mock<KeyPair> mockKeyPair = new(".env", null!);
-        mockKeyPair.Setup(k => k.Run()).Returns(new Dictionary<string, string?> { ["KEY"] = "value" });
-        KeyPair.Factory = (_, _) => mockKeyPair.Object;
+        KeyPair mockKeyPair = Substitute.For<KeyPair>(".env", null!);
+        mockKeyPair.Run().Returns(new Dictionary<string, string?> { ["KEY"] = "value" });
+        KeyPair.Factory = (_, _) => mockKeyPair;
 
         IReadOnlyDictionary<string, string> result = Main.KeyPair(".env", "KEY");
 
-        mockKeyPair.Verify(k => k.Run(), Times.Once);
+        mockKeyPair.Received(1).Run();
         result.ShouldBeOfType<Dictionary<string, string>>();
         result["KEY"].ShouldBe("value");
     }
@@ -404,14 +404,14 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRun()
     {
-        Mock<Sets> mockSets = new("KEY", "value", Array.Empty<EnvItem>(), true, null!);
-        mockSets.Setup(s => s.Run())
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        mockSets.Run()
             .Returns(new SetsResult { ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = [] });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         SetsResult result = Main.Set("KEY", "value");
 
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         result.ShouldNotBeNull();
     }
 
@@ -419,20 +419,20 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunWithEncryptFalse()
     {
-        Mock<Sets> mockSets = new("KEY", "value", Array.Empty<EnvItem>(), true, null!);
-        mockSets.Setup(s => s.Run())
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        mockSets.Run()
             .Returns(new SetsResult { ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = [] });
         Sets.Factory = (_, _, _, encrypt, _) =>
         {
             encrypt.ShouldBeFalse();
-            return mockSets.Object;
+            return mockSets;
         };
 
         SetsOptions options = new() { Encrypt = false };
 
         SetsResult result = Main.Set("KEY", "value", options);
 
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         result.ShouldNotBeNull();
     }
 
@@ -440,20 +440,20 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunWithPlainTrue()
     {
-        Mock<Sets> mockSets = new("KEY", "value", Array.Empty<EnvItem>(), true, null!);
-        mockSets.Setup(s => s.Run())
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        mockSets.Run()
             .Returns(new SetsResult { ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = [] });
         Sets.Factory = (_, _, _, encrypt, _) =>
         {
             encrypt.ShouldBeFalse();
-            return mockSets.Object;
+            return mockSets;
         };
 
         SetsOptions options = new() { Plain = true };
 
         SetsResult result = Main.Set("KEY", "value", options);
 
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         result.ShouldNotBeNull();
     }
 
@@ -461,20 +461,20 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunWithCustomEnvKeysFile()
     {
-        Mock<Sets> mockSets = new("KEY", "value", Array.Empty<EnvItem>(), true, null!);
-        mockSets.Setup(s => s.Run())
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        mockSets.Run()
             .Returns(new SetsResult { ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = [] });
         Sets.Factory = (_, _, _, _, envKeysFile) =>
         {
             envKeysFile.ShouldBe("path/to/.env.keys");
-            return mockSets.Object;
+            return mockSets;
         };
 
         SetsOptions options = new() { EnvKeysFile = "path/to/.env.keys" };
 
         SetsResult result = Main.Set("KEY", "value", options);
 
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         result.ShouldNotBeNull();
     }
 
@@ -482,7 +482,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunNoChanges()
     {
-        Mock<Sets> mockSets = new("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
         ProcessedSet[] processedEnvs =
         [
             new()
@@ -496,20 +496,20 @@ public class MainTest : EnvironmentTestBase
                 Error = null
             }
         ];
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs = processedEnvs,
             ChangedFilePaths = [],
             UnchangedFilePaths =
                 [".env"]
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
         SetsResult result = Main.Set("HELLO", "World", options);
 
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("no changes (.env)");
         result.ShouldNotBeNull();
     }
@@ -518,7 +518,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunChanges()
     {
-        Mock<Sets> mockSets = new("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
         ProcessedSet[] processedEnvs =
         [
             new()
@@ -532,7 +532,7 @@ public class MainTest : EnvironmentTestBase
                 Error = null
             }
         ];
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs = processedEnvs,
             ChangedFilePaths =
@@ -541,13 +541,13 @@ public class MainTest : EnvironmentTestBase
             ],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
         SetsResult result = Main.Set("HELLO", "World", options);
 
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
         result.ShouldNotBeNull();
     }
@@ -556,7 +556,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunMissingEnvFile()
     {
-        Mock<Sets> mockSets = new("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
         Exception error = new("MISSING_ENV_FILE");
         ProcessedSet[] processedEnvs =
         [
@@ -571,17 +571,17 @@ public class MainTest : EnvironmentTestBase
                 Error = error
             }
         ];
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs = processedEnvs, ChangedFilePaths = [], UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
         SetsResult result = Main.Set("HELLO", "World", options);
 
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.WarningMessages.ShouldContain("MISSING_ENV_FILE");
         MockLogger.InfoMessages.ShouldContain("? add one with [echo \"HELLO=World\" > .env] and re-run [dotenvx set]");
         result.ShouldNotBeNull();
@@ -591,7 +591,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunOtherError()
     {
-        Mock<Sets> mockSets = new("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
         DotenvxException error = new("OTHER_ERROR", "some error", "some help");
         ProcessedSet[] processedEnvs =
         [
@@ -606,17 +606,17 @@ public class MainTest : EnvironmentTestBase
                 Error = error
             }
         ];
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs = processedEnvs, ChangedFilePaths = [], UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
         SetsResult result = Main.Set("HELLO", "World", options);
 
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.WarningMessages.ShouldContain("some error");
         MockLogger.InfoMessages.ShouldContain("some help");
         result.ShouldNotBeNull();
@@ -626,7 +626,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunChangesWithLogger()
     {
-        Mock<Sets> mockSets = new("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
         ProcessedSet[] processedEnvs =
         [
             new()
@@ -640,7 +640,7 @@ public class MainTest : EnvironmentTestBase
                 Error = null
             }
         ];
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs = processedEnvs,
             ChangedFilePaths =
@@ -649,13 +649,13 @@ public class MainTest : EnvironmentTestBase
             ],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
         SetsResult result = Main.Set("HELLO", "World", options);
 
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
         result.ShouldNotBeNull();
     }
@@ -664,7 +664,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunPrivateKeyAddedAndNotIgnoringDotenvKeys()
     {
-        Mock<Sets> mockSets = new("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
         ProcessedSet[] processedEnvs =
         [
             new()
@@ -682,7 +682,7 @@ public class MainTest : EnvironmentTestBase
                 PrivateKey = "1234"
             }
         ];
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs = processedEnvs,
             ChangedFilePaths =
@@ -691,13 +691,13 @@ public class MainTest : EnvironmentTestBase
             ],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
         SetsResult result = Main.Set("HELLO", "World", options);
 
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
         MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
         MockLogger.InfoMessages.ShouldContain(
@@ -711,14 +711,14 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestGetCallsGetRun()
     {
-        Mock<Get> mockGet = new("KEY", Array.Empty<EnvItem>(), false, false, null!);
-        mockGet.Setup(g => g.Run())
+        Get mockGet = Substitute.For<Get>("KEY", Array.Empty<EnvItem>(), false, false, null!);
+        mockGet.Run()
             .Returns(new GetResult { Parsed = new Dictionary<string, string> { ["KEY"] = "value" }, Errors = [] });
-        Get.Factory = (_, _, _, _, _) => mockGet.Object;
+        Get.Factory = (_, _, _, _, _) => mockGet;
 
         object? result = Main.Get("KEY");
 
-        mockGet.Verify(g => g.Run(), Times.Once);
+        mockGet.Received(1).Run();
         result.ShouldBe("value");
     }
 
@@ -726,13 +726,13 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestGetCallsGetRunUndefined()
     {
-        Mock<Get> mockGet = new("KEY", Array.Empty<EnvItem>(), false, false, null!);
-        mockGet.Setup(g => g.Run()).Returns(new GetResult { Parsed = new Dictionary<string, string>(), Errors = [] });
-        Get.Factory = (_, _, _, _, _) => mockGet.Object;
+        Get mockGet = Substitute.For<Get>("KEY", Array.Empty<EnvItem>(), false, false, null!);
+        mockGet.Run().Returns(new GetResult { Parsed = new Dictionary<string, string>(), Errors = [] });
+        Get.Factory = (_, _, _, _, _) => mockGet;
 
         object? result = Main.Get("KEY");
 
-        mockGet.Verify(g => g.Run(), Times.Once);
+        mockGet.Received(1).Run();
         result.ShouldBeNull();
     }
 
@@ -740,14 +740,14 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestGetCallsGetRunWithNoKey()
     {
-        Mock<Get> mockGet = new(null!, Array.Empty<EnvItem>(), false, false, null!);
-        mockGet.Setup(g => g.Run())
+        Get mockGet = Substitute.For<Get>(null!, Array.Empty<EnvItem>(), false, false, null!);
+        mockGet.Run()
             .Returns(new GetResult { Parsed = new Dictionary<string, string> { ["KEY"] = "value" }, Errors = [] });
-        Get.Factory = (_, _, _, _, _) => mockGet.Object;
+        Get.Factory = (_, _, _, _, _) => mockGet;
 
         object? result = Main.Get(null);
 
-        mockGet.Verify(g => g.Run(), Times.Once);
+        mockGet.Received(1).Run();
         ((IReadOnlyDictionary<string, string>)result!)["KEY"].ShouldBe("value");
     }
 
@@ -755,16 +755,16 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestGetCallsGetRunFormatEval()
     {
-        Mock<Get> mockGet = new(null!, Array.Empty<EnvItem>(), false, false, null!);
-        mockGet.Setup(g => g.Run())
+        Get mockGet = Substitute.For<Get>(null!, Array.Empty<EnvItem>(), false, false, null!);
+        mockGet.Run()
             .Returns(new GetResult { Parsed = new Dictionary<string, string> { ["KEY"] = "value" }, Errors = [] });
-        Get.Factory = (_, _, _, _, _) => mockGet.Object;
+        Get.Factory = (_, _, _, _, _) => mockGet;
 
         GetOptions options = new() { Format = "eval" };
 
         object? result = Main.Get(null, options);
 
-        mockGet.Verify(g => g.Run(), Times.Once);
+        mockGet.Received(1).Run();
         result.ShouldBe("KEY=value\n");
     }
 
@@ -772,16 +772,16 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestGetCallsGetRunFormatShell()
     {
-        Mock<Get> mockGet = new(null!, Array.Empty<EnvItem>(), false, false, null!);
-        mockGet.Setup(g => g.Run())
+        Get mockGet = Substitute.For<Get>(null!, Array.Empty<EnvItem>(), false, false, null!);
+        mockGet.Run()
             .Returns(new GetResult { Parsed = new Dictionary<string, string> { ["KEY"] = "value" }, Errors = [] });
-        Get.Factory = (_, _, _, _, _) => mockGet.Object;
+        Get.Factory = (_, _, _, _, _) => mockGet;
 
         GetOptions options = new() { Format = "shell" };
 
         object? result = Main.Get(null, options);
 
-        mockGet.Verify(g => g.Run(), Times.Once);
+        mockGet.Received(1).Run();
         result.ShouldBe("KEY=value ");
     }
 
@@ -803,19 +803,19 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestGetWithGetRunErrors()
     {
-        Mock<Get> mockGet = new("KEY", Array.Empty<EnvItem>(), false, false, null!);
+        Get mockGet = Substitute.For<Get>("KEY", Array.Empty<EnvItem>(), false, false, null!);
         Exception error = new("some error");
-        mockGet.Setup(g => g.Run()).Returns(new GetResult
+        mockGet.Run().Returns(new GetResult
         {
             Parsed = new Dictionary<string, string> { ["KEY"] = "value" }, Errors = [error]
         });
-        Get.Factory = (_, _, _, _, _) => mockGet.Object;
+        Get.Factory = (_, _, _, _, _) => mockGet;
 
         GetOptions options = new() { Logger = MockLogger };
 
         _ = Main.Get("KEY", options);
 
-        mockGet.Verify(g => g.Run(), Times.Once);
+        mockGet.Received(1).Run();
         MockLogger.ErrorMessages.ShouldContain("some error");
     }
 
@@ -823,16 +823,16 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestGetWithGetRunUndefinedErrors()
     {
-        Mock<Get> mockGet = new("KEY", Array.Empty<EnvItem>(), false, false, null!);
-        mockGet.Setup(g => g.Run())
+        Get mockGet = Substitute.For<Get>("KEY", Array.Empty<EnvItem>(), false, false, null!);
+        mockGet.Run()
             .Returns(new GetResult { Parsed = new Dictionary<string, string> { ["KEY"] = "value" }, Errors = [] });
-        Get.Factory = (_, _, _, _, _) => mockGet.Object;
+        Get.Factory = (_, _, _, _, _) => mockGet;
 
         GetOptions options = new() { Logger = MockLogger };
 
         _ = Main.Get("KEY", options);
 
-        mockGet.Verify(g => g.Run(), Times.Once);
+        mockGet.Received(1).Run();
         MockLogger.ErrorMessages.ShouldBeEmpty();
     }
 
@@ -840,19 +840,19 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestGetWithGetRunErrorsAndIgnore()
     {
-        Mock<Get> mockGet = new("KEY", Array.Empty<EnvItem>(), false, false, null!);
+        Get mockGet = Substitute.For<Get>("KEY", Array.Empty<EnvItem>(), false, false, null!);
         DotenvxException error = new("SOME_ERROR", "some error");
-        mockGet.Setup(g => g.Run()).Returns(new GetResult
+        mockGet.Run().Returns(new GetResult
         {
             Parsed = new Dictionary<string, string> { ["KEY"] = "value" }, Errors = [error]
         });
-        Get.Factory = (_, _, _, _, _) => mockGet.Object;
+        Get.Factory = (_, _, _, _, _) => mockGet;
 
         GetOptions options = new() { Logger = MockLogger, Ignore = ["SOME_ERROR"] };
 
         _ = Main.Get("KEY", options);
 
-        mockGet.Verify(g => g.Run(), Times.Once);
+        mockGet.Received(1).Run();
         MockLogger.ErrorMessages.ShouldBeEmpty();
     }
 }

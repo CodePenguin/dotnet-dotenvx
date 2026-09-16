@@ -7,7 +7,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Types;
 
-using Moq;
+using NSubstitute;
 
 using Shouldly;
 
@@ -41,12 +41,12 @@ public class RotateActionTest : EnvironmentTestBase
     [Fact]
     public void TestRotateNothing()
     {
-        Mock<Rotate> mockRotate = new();
-        mockRotate.Setup(r => r.Run()).Returns(new RotateResult
+        Rotate mockRotate = Substitute.For<Rotate>();
+        mockRotate.Run().Returns(new RotateResult
         {
             ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = []
         });
-        Rotate.Factory = (_, _, _, _) => mockRotate.Object;
+        Rotate.Factory = (_, _, _, _) => mockRotate;
 
         ParseResult parseResult = RootCommand.Parse(["rotate"]);
         int exitCode = parseResult.Invoke();
@@ -58,8 +58,8 @@ public class RotateActionTest : EnvironmentTestBase
     [Fact]
     public void TestRotateStdout()
     {
-        Mock<Rotate> mockRotate = new();
-        mockRotate.Setup(r => r.Run()).Returns(new RotateResult
+        Rotate mockRotate = Substitute.For<Rotate>();
+        mockRotate.Run().Returns(new RotateResult
         {
             ProcessedEnvs =
             [
@@ -81,7 +81,7 @@ public class RotateActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Rotate.Factory = (_, _, _, _) => mockRotate.Object;
+        Rotate.Factory = (_, _, _, _) => mockRotate;
 
         ParseResult parseResult = RootCommand.Parse(["rotate", "--stdout"]);
         int exitCode = parseResult.Invoke();
@@ -96,8 +96,8 @@ public class RotateActionTest : EnvironmentTestBase
     [Fact]
     public void TestRotateEnvWithChanges()
     {
-        Mock<Rotate> mockRotate = new();
-        mockRotate.Setup(r => r.Run()).Returns(new RotateResult
+        Rotate mockRotate = Substitute.For<Rotate>();
+        mockRotate.Run().Returns(new RotateResult
         {
             ProcessedEnvs =
             [
@@ -119,7 +119,7 @@ public class RotateActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Rotate.Factory = (_, _, _, _) => mockRotate.Object;
+        Rotate.Factory = (_, _, _, _) => mockRotate;
 
         ParseResult parseResult = RootCommand.Parse(["rotate"]);
         int exitCode = parseResult.Invoke();
@@ -133,8 +133,8 @@ public class RotateActionTest : EnvironmentTestBase
     [Fact]
     public void TestRotateEnvWithChangesAndPrivateKeyAddedButNotIgnoringEnvKeys()
     {
-        Mock<Rotate> mockRotate = new();
-        mockRotate.Setup(r => r.Run()).Returns(new RotateResult
+        Rotate mockRotate = Substitute.For<Rotate>();
+        mockRotate.Run().Returns(new RotateResult
         {
             ProcessedEnvs =
             [
@@ -156,7 +156,7 @@ public class RotateActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Rotate.Factory = (_, _, _, _) => mockRotate.Object;
+        Rotate.Factory = (_, _, _, _) => mockRotate;
 
         ParseResult parseResult = RootCommand.Parse(["rotate"]);
         int exitCode = parseResult.Invoke();
@@ -172,8 +172,8 @@ public class RotateActionTest : EnvironmentTestBase
     [Fact]
     public void TestRotateMissingEnvFile()
     {
-        Mock<Rotate> mockRotate = new();
-        mockRotate.Setup(r => r.Run()).Returns(new RotateResult
+        Rotate mockRotate = Substitute.For<Rotate>();
+        mockRotate.Run().Returns(new RotateResult
         {
             ProcessedEnvs =
             [
@@ -194,7 +194,7 @@ public class RotateActionTest : EnvironmentTestBase
             ChangedFilePaths = [],
             UnchangedFilePaths = []
         });
-        Rotate.Factory = (_, _, _, _) => mockRotate.Object;
+        Rotate.Factory = (_, _, _, _) => mockRotate;
 
         ParseResult parseResult = RootCommand.Parse(["rotate"]);
         int exitCode = parseResult.Invoke();
@@ -207,9 +207,9 @@ public class RotateActionTest : EnvironmentTestBase
     [Fact]
     public void TestRotateOtherError()
     {
-        Mock<Rotate> mockRotate = new();
+        Rotate mockRotate = Substitute.For<Rotate>();
         DotenvxException error = new("OTHER_ERROR", "Mock Error", "some help");
-        mockRotate.Setup(r => r.Run()).Returns(new RotateResult
+        mockRotate.Run().Returns(new RotateResult
         {
             ProcessedEnvs =
             [
@@ -230,7 +230,7 @@ public class RotateActionTest : EnvironmentTestBase
             ChangedFilePaths = [],
             UnchangedFilePaths = []
         });
-        Rotate.Factory = (_, _, _, _) => mockRotate.Object;
+        Rotate.Factory = (_, _, _, _) => mockRotate;
 
         ParseResult parseResult = RootCommand.Parse(["rotate"]);
         int exitCode = parseResult.Invoke();
