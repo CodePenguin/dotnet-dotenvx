@@ -54,7 +54,7 @@ public static partial class Helpers
 
         try
         {
-            // Ensure the first command is expanded
+            // Expand only the executable; child arguments and separators pass through unchanged.
             try
             {
                 string? foundPath = WhichSync(commandArgs[0]);
@@ -67,34 +67,6 @@ public static partial class Helpers
             catch
             {
                 logger.Debug($"could not expand process command. using [{string.Join(' ', commandArgs)}]");
-            }
-
-            // Expand any other commands that follow a --
-            bool expandNext = false;
-            for (int i = 0; i < commandArgs.Length; i++)
-            {
-                if (commandArgs[i] == "--")
-                {
-                    expandNext = true;
-                }
-                else if (expandNext)
-                {
-                    try
-                    {
-                        string? foundPath = WhichSync(commandArgs[i]);
-                        if (foundPath != null)
-                        {
-                            commandArgs[i] = Path.GetFullPath(foundPath);
-                            logger.Debug($"expanding process command to [{string.Join(' ', commandArgs)}]");
-                        }
-                    }
-                    catch
-                    {
-                        logger.Debug($"could not expand process command. using [{string.Join(' ', commandArgs)}]");
-                    }
-
-                    expandNext = false;
-                }
             }
 
             child = new Process
