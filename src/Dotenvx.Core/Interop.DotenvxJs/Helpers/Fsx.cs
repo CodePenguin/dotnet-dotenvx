@@ -9,6 +9,9 @@ public static class Fsx
 {
     private const string Encoding = "utf8";
 
+    // Node's fs.writeFileSync/appendFileSync never emit a BOM for utf8; System.Text.Encoding.UTF8 does.
+    private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+
     public static Action<string, string> AppendFileSync { get; internal set; } = DefaultAppendFileSync;
     public static Func<string, bool> ExistsSync { get; internal set; } = DefaultExistsSync;
     public static Func<string, string[]> ReadDirSync { get; internal set; } = DefaultReadDirSync;
@@ -19,7 +22,7 @@ public static class Fsx
 
     private static void DefaultAppendFileSync(string path, string data)
     {
-        File.AppendAllText(path, data, System.Text.Encoding.UTF8);
+        File.AppendAllText(path, data, Utf8NoBom);
     }
 
     private static bool DefaultExistsSync(string path)
@@ -63,7 +66,7 @@ public static class Fsx
 
     private static void DefaultWriteFileX(string filepath, string str)
     {
-        File.WriteAllText(filepath, str, System.Text.Encoding.UTF8);
+        File.WriteAllText(filepath, str, Utf8NoBom);
     }
 
     // Method to reset to defaults for tests
