@@ -18,7 +18,7 @@ public class KeyPairActionTest : EnvironmentTestBase
     private const string PublicKey = "03eaf2142ab3d55bdf108962334e06696db798e7412cfc51d75e74b4f87f299bba";
     private const string PrivateKey = "ec9e80073d7ace817d35acb8b7293cbf8e5981b4d2f5708ee5be405122993cd1";
     private readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
-    private readonly StringWriter _consoleOutput = new();
+    private readonly StringWriter _consoleOutput = new() { NewLine = "\n" };
     private readonly TextWriter _originalOut = Console.Out;
     private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true };
 

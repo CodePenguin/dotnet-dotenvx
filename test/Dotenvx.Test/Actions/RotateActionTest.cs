@@ -18,7 +18,7 @@ namespace dotnet_dotenvx.Test.Actions;
 /// <remarks>Reference source: dotenvx/tests/cli/actions/rotate.test.js</remarks>
 public class RotateActionTest : EnvironmentTestBase
 {
-    private readonly StringWriter _consoleOutput = new();
+    private readonly StringWriter _consoleOutput = new() { NewLine = "\n" };
     private readonly TextWriter _originalOut = Console.Out;
 
     public RotateActionTest()

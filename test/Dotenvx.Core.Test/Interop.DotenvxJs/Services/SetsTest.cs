@@ -361,7 +361,7 @@ public class SetsTest : EnvironmentTestBase
     [Fact]
     public void TestRunFindsEnvAndEnvKeysFileButTheyAreBlankWithEncrypt()
     {
-        const string envKeysFilePath = "tests/monorepo/apps/encrypted/.env.keys";
+        string envKeysFilePath = Path.Combine("tests", "monorepo", "apps", "encrypted", ".env.keys");
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         Fsx.ReadFileX = (_, _) => "";
         Fsx.ReadFileSync = _ => [];
@@ -405,7 +405,7 @@ public class SetsTest : EnvironmentTestBase
     {
         Fsx.ReadFileX = (filepath, _) => filepath.Contains(".env.keys") ? "" : "## hi";
 
-        const string envKeysFilePath = "tests/monorepo/apps/encrypted/.env.keys";
+        string envKeysFilePath = Path.Combine("tests", "monorepo", "apps", "encrypted", ".env.keys");
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -445,7 +445,7 @@ public class SetsTest : EnvironmentTestBase
     [Fact]
     public void TestRunFindsEnvWithAShebangWithEncrypt()
     {
-        const string envKeysFilePath = "tests/monorepo/apps/shebang/.env.keys";
+        string envKeysFilePath = Path.Combine("tests", "monorepo", "apps", "shebang", ".env.keys");
         const string envFile = "tests/monorepo/apps/shebang/.env";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -544,7 +544,7 @@ public class SetsTest : EnvironmentTestBase
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\" # -fk ../../.env.keys",
+            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\" # -fk {Path.Combine("..", "..", ".env.keys")}",
             "",
             "# .env",
             "# for testing purposes only",
@@ -583,7 +583,7 @@ public class SetsTest : EnvironmentTestBase
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY_PRODUCTION=\"{row.PublicKey}\" # -fk ../../.env.keys",
+            $"DOTENV_PUBLIC_KEY_PRODUCTION=\"{row.PublicKey}\" # -fk {Path.Combine("..", "..", ".env.keys")}",
             "",
             "# .env.production",
             "# for testing purposes only",

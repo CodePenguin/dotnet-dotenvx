@@ -9,6 +9,11 @@ namespace Dotenvx.Configuration.Test;
 
 public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
 {
+    public ConfigurationBuilderExtensionsTest()
+    {
+        ClearEnvironmentExceptPath();
+    }
+
     [Fact]
     public void TestUseDotenvxAddsDotenvxConfigurationSourceToList()
     {

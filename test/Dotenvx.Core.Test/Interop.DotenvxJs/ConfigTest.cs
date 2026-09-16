@@ -69,10 +69,12 @@ public class ConfigTest : EnvironmentTestBase
         ConfigResult result = Main.Config(new ConfigOptions { Path = [EnvFileName] });
 
         /*
-        Node.js behavior is to not override blank values but .NET 8.0 removes the environment variables when set to blank
-        Expected behavior changes after .NET 9.0 https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/9.0/empty-env-variable
+        Node.js behavior is to not override blank values, but .NET 8.0 removed the environment variable when set
+        to blank, making it appear unset and therefore overridden. Since .NET 9.0 (and net10.0, targeted here),
+        the blank value is kept, matching Node.js semantics.
+        https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/9.0/empty-env-variable
         */
-        const string expected = "basic"; // Will be string.Empty in .NET 9.0
+        const string expected = "";
         result.Parsed["BASIC"].ShouldBe(expected);
         Environment.GetEnvironmentVariable("BASIC").ShouldBe(expected);
     }

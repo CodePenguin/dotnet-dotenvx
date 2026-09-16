@@ -6,17 +6,29 @@ namespace Dotenvx.Core.Test;
 public class EnvironmentTestBase : IDisposable
 {
     /*
-    .NET 8.0 removes the environment variables when set to blank.
-    Expected behavior changes after .NET 9.0 https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/9.0/empty-env-variable
+    .NET 8.0 removed environment variables when set to blank; since .NET 9.0 they are kept as "".
+    https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/9.0/empty-env-variable
+    Now that the solution targets net10.0, this reflects current (.NET 9+) behavior.
     */
-    protected const string? EmptyEnvironmentVariableValue = null;
+    protected const string EmptyEnvironmentVariableValue = "";
 
-    // Store existing environment keys
-    private readonly List<string> _existingEnvironmentKeys =
-        Environment.GetEnvironmentVariables().Keys.OfType<string>().ToList();
+    // Snapshot of the environment as it existed before this test, so it can be fully restored afterward
+    // (ClearEnvironment/ClearEnvironmentExceptPath remove variables for the rest of the process otherwise,
+    // since nothing else in this class puts their original values back).
+    private readonly Dictionary<string, string?> _originalEnvironmentVariables = Environment
+        .GetEnvironmentVariables()
+        .Cast<System.Collections.DictionaryEntry>()
+        .ToDictionary(entry => (string)entry.Key, entry => (string?)entry.Value);
+
+    private readonly List<string> _existingEnvironmentKeys;
 
     private readonly string _originalDirectory = Environment.CurrentDirectory;
     protected MockLogger MockLogger { get; } = new();
+
+    protected EnvironmentTestBase()
+    {
+        _existingEnvironmentKeys = _originalEnvironmentVariables.Keys.ToList();
+    }
 
     public void Dispose()
     {
@@ -28,9 +40,18 @@ public class EnvironmentTestBase : IDisposable
 
         // Remove any keys that were not in the original environment
         Environment.GetEnvironmentVariables().Keys.OfType<string>()
-            .Where(key => !_existingEnvironmentKeys.Contains(key))
+            .Where(key => !_originalEnvironmentVariables.ContainsKey(key))
             .ToList()
             .ForEach(key => Environment.SetEnvironmentVariable(key, null));
+
+        // Restore original values for keys that were cleared or modified during the test
+        foreach (KeyValuePair<string, string?> kv in _originalEnvironmentVariables)
+        {
+            if (Environment.GetEnvironmentVariable(kv.Key) != kv.Value)
+            {
+                Environment.SetEnvironmentVariable(kv.Key, kv.Value);
+            }
+        }
 
         // Reset Mock Factories
         Get.ResetFactory();
