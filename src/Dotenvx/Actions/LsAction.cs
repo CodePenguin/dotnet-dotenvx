@@ -21,7 +21,7 @@ public class LsAction : Command
         };
 
     private readonly Option<string[]?> _envFileOption =
-        new("--env-file", "-f")
+        new("--file", "--env-file", "-f")
         {
             Description = "path(s) to your env file(s) (default: \".env*\")", HelpName = "filenames..."
         };

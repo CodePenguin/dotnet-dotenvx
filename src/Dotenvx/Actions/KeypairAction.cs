@@ -17,7 +17,7 @@ public class KeyPairAction : Command
     private readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
 
     private readonly Option<string?> _envFileOption =
-        new("--env-file", "-f") { Description = "path(s) to your env file(s)", HelpName = "paths..." };
+        new("--file", "--env-file", "-f") { Description = "path(s) to your env file(s)", HelpName = "paths..." };
 
     private readonly Option<string?> _envKeysFileOption =
         new("--env-keys-file", "-fk") { Description = "path to your .env.keys file  (default: [])", HelpName = "path" };

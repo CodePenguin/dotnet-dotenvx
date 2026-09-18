@@ -18,7 +18,12 @@ public static partial class Helpers
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => (string?)entry.Value);
 
-        processEnv.TryGetValue("DOTENV_PATH", out string? configuredEnvFiles);
+        processEnv.TryGetValue("DOTENV_FILE", out string? configuredEnvFiles);
+        if (string.IsNullOrEmpty(configuredEnvFiles))
+        {
+            processEnv.TryGetValue("DOTENV_PATH", out configuredEnvFiles);
+        }
+
         if (string.IsNullOrEmpty(configuredEnvFiles))
         {
             processEnv.TryGetValue("DOTENV_F", out configuredEnvFiles);
