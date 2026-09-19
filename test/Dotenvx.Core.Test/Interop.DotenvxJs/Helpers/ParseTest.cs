@@ -1,4 +1,6 @@
 using Dotenvx.Interop.DotenvxJs;
+using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Interop.DotenvxJs.Types;
 
 using Shouldly;
 
@@ -171,5 +173,19 @@ EXPAND_SELF=$EXPAND_SELF
     {
         IReadOnlyDictionary<string, string> parsed = Main.Parse(Src);
         parsed["DONT_EXPAND_SQUOTED"].ShouldBe("dontexpand\\nnewlines");
+    }
+
+    /// <remarks>
+    /// A failing $() command substitution is silently left unresolved with no reported error,
+    /// unlike other parse-time failures (e.g. decryption). Verified against the real dotenvx CLI:
+    /// @dotenvx/primitives' parse() swallows COMMAND_SUBSTITUTION_FAILED specifically.
+    /// </remarks>
+    [Fact]
+    public void TestEvalFailureIsSilentlyLeftUnresolvedWithNoError()
+    {
+        ParseResult result = Parse.Factory("BAD=\"$(exit 1)\"", null, null, false, null).Execute();
+
+        result.Errors.ShouldBeEmpty();
+        result.Parsed["BAD"].ShouldBe("$(exit 1)");
     }
 }

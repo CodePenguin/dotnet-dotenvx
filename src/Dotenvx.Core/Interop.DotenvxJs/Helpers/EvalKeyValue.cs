@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 using Dotenvx.Interop.DotenvxJs.Types;
@@ -21,16 +23,14 @@ public static partial class Helpers
 
             try
             {
-                // Combine environment variables
-                // ReSharper disable once CollectionNeverQueried.Local (Remove once Eval is implemented)
+                // Combine environment variables (including runningParsed)
                 Dictionary<string, string> envVars = new(processEnv);
                 foreach (KeyValuePair<string, string> kvp in runningParsed)
                 {
                     envVars[kvp.Key] = kvp.Value;
                 }
 
-                // TODO: Implement EvalKeyValue command execution.
-                throw new NotSupportedException("Command Substitution is not supported.");
+                result = ExecSync(command, envVars);
             }
             catch (Exception ex) when (ex is not DotenvxException)
             {
@@ -38,11 +38,43 @@ public static partial class Helpers
             }
 
             // Chomp the result and replace match with result
-#pragma warning disable CS0162 // Remove once Eval is implemented
             result = result.TrimEnd('\n', '\r');
             return newValue.Replace(match.Value, result);
-#pragma warning restore CS0162 // Remove once Eval is implemented
         });
+    }
+
+    private static string ExecSync(string command, IDictionary<string, string> env)
+    {
+        bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        ProcessStartInfo psi = new()
+        {
+            FileName = isWindows ? "cmd.exe" : "/bin/sh",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        psi.ArgumentList.Add(isWindows ? "/c" : "-c");
+        psi.ArgumentList.Add(command);
+
+        foreach (KeyValuePair<string, string> kvp in env)
+        {
+            psi.EnvironmentVariables[kvp.Key] = kvp.Value;
+        }
+
+        using Process process = Process.Start(psi)!;
+        string stdout = process.StandardOutput.ReadToEnd();
+        string stderr = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            throw new Exception(string.IsNullOrWhiteSpace(stderr)
+                ? $"Command failed with exit code {process.ExitCode}: {command}"
+                : stderr.Trim());
+        }
+
+        return stdout;
     }
 
     [GeneratedRegex(@"\$\(([^)]+(?:\)[^(]*)*)\)")]

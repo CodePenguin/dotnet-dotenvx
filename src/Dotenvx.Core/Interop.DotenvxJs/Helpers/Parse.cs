@@ -74,9 +74,11 @@ public partial class Parse(
                 {
                     _parsed[key] = Eval(key, priorEvaled);
                 }
-                catch (Exception e)
+                catch (CommandSubstitutionFailed)
                 {
-                    _errors.Add(e);
+                    // Silently leave the value unresolved - matches current dotenvx behavior
+                    // (@dotenvx/primitives' parse() swallows this specific error rather than
+                    // surfacing it, unlike other parse-time errors such as decryption failures).
                 }
 
                 if (priorEvaled != _parsed[key])
