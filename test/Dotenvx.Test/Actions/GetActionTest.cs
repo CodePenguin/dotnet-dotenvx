@@ -98,7 +98,7 @@ public class GetActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         string output = _consoleOutput.ToString();
-        output.ShouldBe($"HELLO={JsonSerializer.Serialize("f'bar")}\n");
+        output.ShouldBe("HELLO='f'\\''bar'\n");
         // Assert Get.Run() called
     }
 
@@ -113,7 +113,7 @@ public class GetActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         string output = _consoleOutput.ToString();
-        output.ShouldBe($"HELLO={JsonSerializer.Serialize("World")}\nHELLO2={JsonSerializer.Serialize("World2")}\n");
+        output.ShouldBe("HELLO='World'\nHELLO2='World2'\n");
     }
 
     /// <remarks>Refer to "get --pretty-print"</remarks>

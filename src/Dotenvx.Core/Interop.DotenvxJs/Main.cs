@@ -227,10 +227,12 @@ public static class Main
         // If Format is specified, return a formatted string
         if (!string.IsNullOrEmpty(options.Format))
         {
-            return options.Format.ToLower() switch
+            return options.Format switch
             {
-                "eval" => string.Join('\n', result.Parsed.Select(kv => $"{kv.Key}={kv.Value}")) + '\n',
-                "shell" => string.Join(' ', result.Parsed.Select(kv => $"{kv.Key}={kv.Value}")) + ' ',
+                "eval" or "eval-export" => string.Join('\n', result.Parsed.Select(kv =>
+                    $"{(options.Format == "eval-export" ? "export " : "")}{kv.Key}={Escape(kv.Value)}")),
+                "shell" => string.Join(' ', result.Parsed.Select(kv => $"{kv.Key}={kv.Value}")),
+                "colon" => string.Join(' ', result.Parsed.Select(kv => $"{kv.Key}:{kv.Value}")),
                 _ => result.Parsed
             };
         }

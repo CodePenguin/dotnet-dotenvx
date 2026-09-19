@@ -765,7 +765,7 @@ public class MainTest : EnvironmentTestBase
         object? result = Main.Get(null, options);
 
         mockGet.Received(1).Run();
-        result.ShouldBe("KEY=value\n");
+        result.ShouldBe("KEY='value'");
     }
 
     /// <remarks>Refer to "get calls Get.run format shell"</remarks>
@@ -782,7 +782,7 @@ public class MainTest : EnvironmentTestBase
         object? result = Main.Get(null, options);
 
         mockGet.Received(1).Run();
-        result.ShouldBe("KEY=value ");
+        result.ShouldBe("KEY=value");
     }
 
     /// <remarks>Refer to "get monorepo/apps/backend/.env AND attempt on directory frontend --strict it throws"</remarks>

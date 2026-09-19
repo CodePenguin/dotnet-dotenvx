@@ -47,7 +47,8 @@ public class GetAction : Command
     private readonly Option<string> _formatOption =
         new("--format")
         {
-            Description = "format of the output (json, shell, eval) (default: \"json\")", HelpName = "type"
+            Description = "format of the output (json, shell, colon, eval, eval-export) (default: \"json\")",
+            HelpName = "type"
         };
 
     private readonly Option<string[]?> _ignoreOption =
@@ -196,15 +197,23 @@ public class GetAction : Command
                 switch (format)
                 {
                     case "eval":
+                    case "eval-export":
                         {
+                            string prefix = format == "eval-export" ? "export " : "";
                             string inline = string.Join('\n',
-                                result.Parsed.Select(kvp => $"{kvp.Key}={JsonSerializer.Serialize(kvp.Value)}"));
+                                result.Parsed.Select(kvp => $"{prefix}{kvp.Key}={Escape(kvp.Value)}"));
                             Console.WriteLine(inline);
                             break;
                         }
                     case "shell":
                         {
                             string inline = string.Join(' ', result.Parsed.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                            Console.WriteLine(inline);
+                            break;
+                        }
+                    case "colon":
+                        {
+                            string inline = string.Join(' ', result.Parsed.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
                             Console.WriteLine(inline);
                             break;
                         }

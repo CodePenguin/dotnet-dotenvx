@@ -22,6 +22,11 @@ catch (IOException)
     // No console attached (e.g. some non-interactive hosts) - fall back to the default encoding.
 }
 
+// Node.js always writes "\n" regardless of OS; Console.Out/Error default to Environment.NewLine,
+// which is "\r\n" on Windows. Match Node so scripts piping our output don't see stray "\r".
+Console.Out.NewLine = "\n";
+Console.Error.NewLine = "\n";
+
 DotenvxLoggerOptions loggerOptions = DotenvxRootCommand.GetDotenvxLoggerConfiguration(args);
 
 IHost host = Host.CreateDefaultBuilder(args)

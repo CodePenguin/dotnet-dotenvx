@@ -11,33 +11,33 @@ public class DotenvxLogger(ILogger<DotenvxLogger> logger, DotenvxLoggerOptions o
 
     public void Error(string message)
     {
-        logger.LogError("{Message}", Shared.Bold(Shared.GetColor("red")(message)));
+        logger.LogError(DotenvxLogEvents.Error, "{Message}", Shared.Bold(Shared.GetColor("red")(message)));
     }
 
     public void Warn(string message)
     {
-        logger.LogWarning("{Message}", Shared.GetColor("orangered")(message));
+        logger.LogWarning(DotenvxLogEvents.Warn, "{Message}", Shared.GetColor("orangered")(message));
     }
 
     public void Success(string message)
     {
-        logger.LogInformation("{Message}", Shared.GetColor("green")(message));
+        logger.LogInformation(DotenvxLogEvents.Success, "{Message}", Shared.GetColor("green")(message));
     }
 
     public void SuccessV(string message)
     {
         string formatted = $"[dotenvx@{Version}] {message}";
-        logger.LogInformation("{Message}", Shared.GetColor("olive")(formatted));
+        logger.LogInformation(DotenvxLogEvents.Success, "{Message}", Shared.GetColor("olive")(formatted));
     }
 
     public void Info(string message)
     {
-        logger.LogInformation("{Message}", message);
+        logger.LogInformation(DotenvxLogEvents.Info, "{Message}", message);
     }
 
     public void Help(string message)
     {
-        logger.LogInformation("{Message}", Shared.GetColor("dodgerblue")(message));
+        logger.LogInformation(DotenvxLogEvents.Help, "{Message}", Shared.GetColor("dodgerblue")(message));
     }
 
     public void Verbose(string message)
@@ -47,7 +47,7 @@ public class DotenvxLogger(ILogger<DotenvxLogger> logger, DotenvxLoggerOptions o
             return;
         }
 
-        logger.LogDebug("{Message}", Shared.GetColor("plum")(message));
+        logger.LogDebug(DotenvxLogEvents.Verbose, "{Message}", Shared.GetColor("plum")(message));
     }
 
     public void Debug(string message)
@@ -57,7 +57,7 @@ public class DotenvxLogger(ILogger<DotenvxLogger> logger, DotenvxLoggerOptions o
             return;
         }
 
-        logger.LogDebug("{Message}", Shared.GetColor("plum")(message));
+        logger.LogDebug(DotenvxLogEvents.Debug, "{Message}", Shared.GetColor("plum")(message));
     }
 
     public void SetLevel(DotenvxLogLevel level)
