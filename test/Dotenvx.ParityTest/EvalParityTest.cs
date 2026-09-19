@@ -54,4 +54,49 @@ public class EvalParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.ExitCode.ShouldBe(0);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
+
+    /// <remarks>
+    /// Cross-implementation coverage: one CLI's `set --plain` writes the literal `$(...)` syntax
+    /// to disk (set never evaluates it, only stores it verbatim), the other CLI's `get` performs
+    /// the actual command substitution at read time - proving both the writer and the evaluator
+    /// agree on this syntax, not just the evaluator alone (the earlier tests in this file only
+    /// exercise one CLI's evaluator against a fixture neither CLI wrote).
+    /// </remarks>
+    [Fact]
+    public async Task NodeSetsCommandSubstitutionValueThatDotnetEvaluates()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        WriteFile(".env", "HELLO=World\n");
+        CliResult set = await Fixture.RunNodeAsync(WorkDir, null, "set", "GREETING", "$(echo hi)", "--plain");
+        set.ExitCode.ShouldBe(0);
+        ReadFile(".env").ShouldContain("GREETING=\"$(echo hi)\"");
+
+        CliResult get = await Fixture.RunDotnetAsync(WorkDir, null, "get", "GREETING");
+
+        get.ExitCode.ShouldBe(0);
+        get.StandardOutput.Trim().ShouldBe("hi");
+    }
+
+    [Fact]
+    public async Task DotnetSetsCommandSubstitutionValueThatNodeEvaluates()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        WriteFile(".env", "HELLO=World\n");
+        CliResult set = await Fixture.RunDotnetAsync(WorkDir, null, "set", "GREETING", "$(echo hi)", "--plain");
+        set.ExitCode.ShouldBe(0);
+        ReadFile(".env").ShouldContain("GREETING=\"$(echo hi)\"");
+
+        CliResult get = await Fixture.RunNodeAsync(WorkDir, null, "get", "GREETING");
+
+        get.ExitCode.ShouldBe(0);
+        get.StandardOutput.Trim().ShouldBe("hi");
+    }
 }

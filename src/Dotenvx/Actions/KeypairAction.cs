@@ -30,7 +30,9 @@ public class KeyPairAction : Command
 
     private readonly IDotenvxLogger _logger;
 
-    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true };
+    // NewLine = "\n" matches Node's JSON.stringify (always "\n"); WriteIndented alone defaults to
+    // Environment.NewLine ("\r\n" on Windows).
+    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true, NewLine = "\n" };
 
     private readonly Option<bool> _prettyPrintOption =
         new("--pretty-print") { Description = "pretty print output" };

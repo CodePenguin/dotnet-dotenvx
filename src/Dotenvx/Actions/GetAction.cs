@@ -69,7 +69,10 @@ public class GetAction : Command
                 "override existing env variables (by default, existing env vars take precedence over .env files)"
         };
 
-    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true };
+    // NewLine = "\n" matches Node's JSON.stringify (always "\n"); WriteIndented alone defaults to
+    // Environment.NewLine ("\r\n" on Windows) - see NodeParityTest's ls --json bug for the sibling
+    // case this pattern was found from.
+    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true, NewLine = "\n" };
 
     private readonly Option<bool> _prettyPrintOption =
         new("--pretty-print", "-pp") { Description = "pretty print output" };

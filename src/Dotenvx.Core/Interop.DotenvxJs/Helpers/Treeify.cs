@@ -10,6 +10,15 @@ public static partial class Helpers
     /// </summary>
     public static string Treeify(Dictionary<string, object> tree, string prefix = "")
     {
+        // Only the outermost call should strip the trailing newline - recursive calls append
+        // their subtree directly into the parent's StringBuilder and must keep it.
+        bool isRoot = prefix.Length == 0;
+        string result = TreeifyInner(tree, prefix);
+        return isRoot ? result.TrimEnd('\n') : result;
+    }
+
+    private static string TreeifyInner(Dictionary<string, object> tree, string prefix)
+    {
         StringBuilder sb = new();
 
         List<KeyValuePair<string, object>> items = tree.ToList();
@@ -30,7 +39,7 @@ public static partial class Helpers
             }
 
             string newPrefix = prefix + (last ? "   " : "│  ");
-            sb.Append(Treeify(subTree, newPrefix));
+            sb.Append(TreeifyInner(subTree, newPrefix));
         }
 
         return sb.ToString();

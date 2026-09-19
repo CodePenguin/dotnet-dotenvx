@@ -69,6 +69,26 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
 
+    /// <remarks>
+    /// Found a real bug here: JsonSerializerOptions.WriteIndented defaults to Environment.NewLine
+    /// ("\r\n" on Windows) for its line breaks, while Node's JSON.stringify always emits "\n" -
+    /// fixed by setting NewLine = "\n" explicitly (see GetAction.cs, KeypairAction.cs, LsAction.cs).
+    /// </remarks>
+    [Fact]
+    public async Task PrettyPrintFormatMatchesExactly()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=World\nFOO=bar\n"), null, "get", "--pretty-print");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
     [Fact]
     public async Task GetMissingKeyWithIgnoreFlagExitsZero()
     {

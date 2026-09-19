@@ -15,7 +15,7 @@ public class GetActionTest : EnvironmentTestBase
     private readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
     private readonly StringWriter _consoleOutput = new() { NewLine = "\n" };
     private readonly TextWriter _originalOut = Console.Out;
-    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true };
+    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true, NewLine = "\n" };
 
     public GetActionTest()
     {

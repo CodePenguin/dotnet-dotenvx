@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
 
 using Dotenvx.Interop.DotenvxJs.Services;
@@ -33,6 +36,9 @@ public class LsAction : Command
             HelpName = "excludeFilenames..."
         };
 
+    private readonly Option<bool> _jsonOption =
+        new("--json") { Description = "output a JSON array of absolute filepaths" };
+
     private readonly IDotenvxLogger _logger;
 
     public LsAction(IDotenvxLogger logger) : base("ls",
@@ -42,6 +48,7 @@ public class LsAction : Command
         Add(_directoryArgument);
         Add(_envFileOption);
         Add(_excludeEnvFileOption);
+        Add(_jsonOption);
         SetAction(Execute);
     }
 
@@ -50,6 +57,7 @@ public class LsAction : Command
         string directory = parseResult.GetValue(_directoryArgument) ?? "./";
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? excludeEnvFile = parseResult.GetValue(_excludeEnvFileOption);
+        bool json = parseResult.GetValue(_jsonOption);
 
         // debug args
         _logger.Debug($"directory: {directory}");
@@ -60,6 +68,21 @@ public class LsAction : Command
         Ls lsService = Ls.Factory(directory, envFile, excludeEnvFile);
         string[] filepaths = lsService.Run();
         _logger.Debug($"filepaths: {JsonSerializer.Serialize(filepaths)}");
+
+        if (json)
+        {
+            string cwd = Path.GetFullPath(directory);
+            string[] absoluteFilepaths = filepaths.Select(filepath => Path.GetFullPath(Path.Combine(cwd, filepath)))
+                .ToArray();
+            // JsonSerializerOptions.WriteIndented defaults to Environment.NewLine ("\r\n" on
+            // Windows) for indentation breaks; Node's JSON.stringify always emits "\n" - explicit
+            // NewLine keeps this byte-for-byte with the reference CLI (see NodeParityTest).
+            Console.WriteLine(JsonSerializer.Serialize(absoluteFilepaths, new JsonSerializerOptions
+            {
+                WriteIndented = true, NewLine = "\n"
+            }));
+            return 0;
+        }
 
         Dictionary<string, object> tree = ArrayToTree(filepaths);
         _logger.Debug($"tree: {JsonSerializer.Serialize(tree)}");

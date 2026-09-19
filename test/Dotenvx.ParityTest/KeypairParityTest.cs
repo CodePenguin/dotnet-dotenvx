@@ -10,22 +10,10 @@ namespace Dotenvx.ParityTest;
 /// </remarks>
 public class KeypairParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 {
-    private const string PrivateKey = "1fc1cafa954a7a2bf0a6fbff46189c9e03e3a66b4d1133108ab9fcdb9e154b70";
-    private const string PublicKey = "02b106c30579baf896ae1fddf077cbcb4fef5e7d457932974878dcb51f42b45498";
-
-    private const string EncryptedEnv =
-        "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/\n" +
-        "#/            public-key encryption for .env files          /\n" +
-        "#/       [how it works](https://dotenvx.com/encryption)     /\n" +
-        "#/----------------------------------------------------------/\n" +
-        $"DOTENV_PUBLIC_KEY=\"{PublicKey}\"\n\n" +
-        "# .env\n" +
-        "HELLO=encrypted:BGftYDEUfycZeomeqB4m8HxtfNH3Pe8TxCNAodAJ2Q7t1x8J4iFFY0TjDu1MNIzJKl3DLDT33oDTCVWOBZe1ZvC/RWZy5F92dj6qPPvhA9e7kuifQwrinrEirS9XJINSqHOyyeIP\n";
-
     private void WriteFixedEncryptedFixture()
     {
-        WriteFile(".env", EncryptedEnv);
-        WriteFile(".env.keys", $"DOTENV_PRIVATE_KEY={PrivateKey}\n");
+        WriteFile(".env", FixedKeypairFixture.EncryptedEnv);
+        WriteFile(".env.keys", FixedKeypairFixture.PrivateKeyFile);
     }
 
     [Fact]
@@ -54,6 +42,25 @@ public class KeypairParityTest(NodeParityFixture fixture) : ParityTestBase(fixtu
 
         (CliResult node, CliResult dotnet) =
             await RunBothAsync(WriteFixedEncryptedFixture, null, "keypair", "DOTENV_PUBLIC_KEY");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
+    /// <remarks>
+    /// Same JsonSerializerOptions.WriteIndented/Environment.NewLine bug as GetParityTest's
+    /// PrettyPrintFormatMatchesExactly - fixed in KeypairAction.cs.
+    /// </remarks>
+    [Fact]
+    public async Task KeypairPrettyPrintMatchesExactly()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) =
+            await RunBothAsync(WriteFixedEncryptedFixture, null, "keypair", "--pretty-print");
 
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
