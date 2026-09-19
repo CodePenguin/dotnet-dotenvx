@@ -1,0 +1,177 @@
+using System.Diagnostics;
+
+namespace Dotenvx.ParityTest;
+
+/// <remarks>
+/// Runs the real Node dotenvx CLI (from the dotenvx/ submodule) and our built .NET CLI as real
+/// subprocesses so parity tests compare the actual shipped artifacts, not in-process internals.
+/// Shared once per test run via [CollectionDefinition] below. If Node/npm aren't available, or the
+/// submodule isn't checked out, tests skip themselves via IsAvailable rather than failing the build -
+/// this suite is opt-in/manual-first, not a hard requirement to develop in this repo.
+/// </remarks>
+public sealed class NodeParityFixture : IAsyncLifetime
+{
+    public string RepoRoot { get; }
+    public string DotenvxJsPath { get; }
+    public string DotenvxDllPath { get; }
+    public bool IsAvailable { get; private set; }
+    public string UnavailableReason { get; private set; } = "";
+
+    private string _nodePath = "node";
+    private string _dotnetPath = "dotnet";
+
+    public NodeParityFixture()
+    {
+        RepoRoot = FindRepoRoot();
+        DotenvxJsPath = Path.Combine(RepoRoot, "dotenvx", "src", "cli", "dotenvx.js");
+        DotenvxDllPath = Path.Combine(AppContext.BaseDirectory, "dotenvx.dll");
+    }
+
+    public async Task InitializeAsync()
+    {
+        if (!File.Exists(DotenvxJsPath))
+        {
+            UnavailableReason =
+                $"dotenvx submodule not checked out ({DotenvxJsPath} not found) - run: git submodule update --init --recursive";
+            return;
+        }
+
+        if (!File.Exists(DotenvxDllPath))
+        {
+            UnavailableReason = $"built CLI not found at {DotenvxDllPath} - build src/Dotenvx first";
+            return;
+        }
+
+        string? nodePath = FindOnPath("node");
+        if (nodePath == null)
+        {
+            UnavailableReason = "node not found on PATH";
+            return;
+        }
+
+        _nodePath = nodePath;
+
+        string? npmPath = FindOnPath("npm");
+        if (npmPath == null)
+        {
+            UnavailableReason = "npm not found on PATH";
+            return;
+        }
+
+        string? dotnetPath = FindOnPath("dotnet");
+        if (dotnetPath != null)
+        {
+            _dotnetPath = dotnetPath;
+        }
+
+        string dotenvxDir = Path.Combine(RepoRoot, "dotenvx");
+        if (!Directory.Exists(Path.Combine(dotenvxDir, "node_modules")))
+        {
+            Console.WriteLine("[NodeParityFixture] Installing dotenvx submodule npm dependencies...");
+            CliResult install = await RunProcessAsync(npmPath, ["install", "--no-audit", "--no-fund", "--omit=dev"],
+                dotenvxDir);
+            if (install.ExitCode != 0)
+            {
+                UnavailableReason = $"npm install failed (exit {install.ExitCode}): {install.StandardError}";
+                return;
+            }
+        }
+
+        IsAvailable = true;
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
+    public Task<CliResult> RunNodeAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env,
+        params string[] args)
+    {
+        return RunProcessAsync(_nodePath, [DotenvxJsPath, ..args], workingDirectory, env);
+    }
+
+    public Task<CliResult> RunDotnetAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env,
+        params string[] args)
+    {
+        return RunProcessAsync(_dotnetPath, [DotenvxDllPath, ..args], workingDirectory, env);
+    }
+
+    private static async Task<CliResult> RunProcessAsync(string fileName, IReadOnlyList<string> args,
+        string workingDirectory, IReadOnlyDictionary<string, string>? env = null)
+    {
+        ProcessStartInfo psi = new()
+        {
+            FileName = fileName,
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        foreach (string arg in args)
+        {
+            psi.ArgumentList.Add(arg);
+        }
+
+        if (env != null)
+        {
+            foreach (KeyValuePair<string, string> kvp in env)
+            {
+                psi.EnvironmentVariables[kvp.Key] = kvp.Value;
+            }
+        }
+
+        using Process process = Process.Start(psi)!;
+        Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> stderrTask = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        string stdout = await stdoutTask;
+        string stderr = await stderrTask;
+
+        return new CliResult(process.ExitCode, stdout, stderr);
+    }
+
+    private static string FindRepoRoot()
+    {
+        DirectoryInfo? dir = new(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "Dotenvx.sln")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ??
+               throw new InvalidOperationException(
+                   "Could not locate repo root (no Dotenvx.sln found in any ancestor of AppContext.BaseDirectory)");
+    }
+
+    private static string? FindOnPath(string command)
+    {
+        string? pathVar = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrEmpty(pathVar))
+        {
+            return null;
+        }
+
+        string[] extensions = OperatingSystem.IsWindows() ? [".exe", ".cmd", ".bat"] : [""];
+        foreach (string path in pathVar.Split(Path.PathSeparator))
+        {
+            foreach (string ext in extensions)
+            {
+                string candidate = Path.Combine(path, command + ext);
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+}
+
+public sealed record CliResult(int ExitCode, string StandardOutput, string StandardError);
+
+[CollectionDefinition(Name)]
+public sealed class NodeParityCollection : ICollectionFixture<NodeParityFixture>
+{
+    public const string Name = "NodeParity";
+}
