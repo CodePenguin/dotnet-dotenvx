@@ -77,6 +77,53 @@ public class EncryptDecryptParityTest(NodeParityFixture fixture) : ParityTestBas
         dotnet.ExitCode.ShouldBe(node.ExitCode);
     }
 
+    /// <remarks>
+    /// The genuine bidirectional "create with one, use with the other" round trip the fixed-
+    /// ciphertext tests above can't cover on their own: fresh ciphertext, generated live by one
+    /// CLI's `set` on THIS run, decrypted live by the other CLI's `get`. This works reliably
+    /// (unlike a bare "encrypt into an empty .env") because it starts from the fixed fixture's
+    /// EXISTING keypair - `set`'s "reuse the existing key" path is deterministic on both sides;
+    /// it's only fresh key GENERATION (no existing public key yet) that isn't, per the class
+    /// remarks above.
+    /// </remarks>
+    [Fact]
+    public async Task NodeCreatesFreshCiphertextThatDotnetDecrypts()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        WriteFixedEncryptedFixture();
+        CliResult set = await Fixture.RunNodeAsync(WorkDir, null, "set", "FRESHKEY", "freshvalue");
+        set.ExitCode.ShouldBe(0);
+        ReadFile(".env").ShouldContain("FRESHKEY=");
+
+        CliResult get = await Fixture.RunDotnetAsync(WorkDir, null, "get", "FRESHKEY");
+
+        get.ExitCode.ShouldBe(0);
+        get.StandardOutput.Trim().ShouldBe("freshvalue");
+    }
+
+    [Fact]
+    public async Task DotnetCreatesFreshCiphertextThatNodeDecrypts()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        WriteFixedEncryptedFixture();
+        CliResult set = await Fixture.RunDotnetAsync(WorkDir, null, "set", "FRESHKEY", "freshvalue");
+        set.ExitCode.ShouldBe(0);
+        ReadFile(".env").ShouldContain("FRESHKEY=");
+
+        CliResult get = await Fixture.RunNodeAsync(WorkDir, null, "get", "FRESHKEY");
+
+        get.ExitCode.ShouldBe(0);
+        get.StandardOutput.Trim().ShouldBe("freshvalue");
+    }
+
     [Fact]
     public async Task EncryptOutputStructureMatchesIgnoringFreshKeyMaterial()
     {
