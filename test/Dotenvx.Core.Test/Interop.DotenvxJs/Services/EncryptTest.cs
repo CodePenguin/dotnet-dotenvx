@@ -23,12 +23,36 @@ public class EncryptTest : EnvironmentTestBase
         base.TearDown();
     }
 
-    /// <remarks>Refer to "#run (no arguments)"</remarks>
+    /// <remarks>
+    /// Refer to "#run (no arguments)". Verified against the real Node CLI: a missing .env file is
+    /// NOT an error by default - it gets replaced with the sample kit (HELLO="World") and
+    /// encrypted, per dotenvx/src/lib/transforms/encrypt.js's `if (!fileExists &amp;&amp; !noCreate)`
+    /// branch. The original MISSING_ENV_FILE-error assertion moved to
+    /// <see cref="TestRunNoArgumentsWithNoCreate"/>, which passes noCreate: true to reproduce it.
+    /// </remarks>
     [Fact]
     public void TestRunNoArguments()
     {
         EncryptResult result = new Encrypt([], null, null, null).Run();
 
+        result.ProcessedEnvs.ShouldHaveSingleItem();
+        EncryptProcessedEnv p = result.ProcessedEnvs[0];
+        p.Keys.ShouldBe(["HELLO"]);
+        p.Type.ShouldBe(EnvType.EnvFile);
+        p.FilePath.ShouldBe(Path.GetFullPath(".env"));
+        p.EnvFilePath.ShouldBe(".env");
+        p.Error.ShouldBeNull();
+
+        result.ChangedFilePaths.ShouldBe([".env"]);
+        result.UnchangedFilePaths.ShouldBeEmpty();
+    }
+
+    /// <remarks>Refer to "#run (no arguments)", noCreate variant - see remarks on <see cref="TestRunNoArguments"/>.</remarks>
+    [Fact]
+    public void TestRunNoArgumentsWithNoCreate()
+    {
+        EncryptResult result = new Encrypt([], null, null, null, noCreate: true).Run();
+
         MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
@@ -43,11 +67,11 @@ public class EncryptTest : EnvironmentTestBase
         result.UnchangedFilePaths.ShouldBeEmpty();
     }
 
-    /// <remarks>Refer to "#run (no env file)"</remarks>
+    /// <remarks>Refer to "#run (no env file)" - noCreate variant, see remarks on <see cref="TestRunNoArguments"/>.</remarks>
     [Fact]
     public void TestRunNoEnvFile()
     {
-        EncryptResult result = new Encrypt([], null, null, null).Run();
+        EncryptResult result = new Encrypt([], null, null, null, noCreate: true).Run();
 
         MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
 
@@ -63,14 +87,18 @@ public class EncryptTest : EnvironmentTestBase
         result.UnchangedFilePaths.ShouldBeEmpty();
     }
 
-    /// <remarks>Refer to "#run (no arguments and some other error)"</remarks>
+    /// <remarks>
+    /// Refer to "#run (no arguments and some other error)". noCreate: true so the missing-file
+    /// short-circuit doesn't bypass the mocked Fsx.ReadFileX before it gets a chance to throw -
+    /// see remarks on <see cref="TestRunNoArguments"/>.
+    /// </remarks>
     [Fact]
     public void TestRunNoArgumentsAndSomeOtherError()
     {
         Fsx.ReadFileX = (_, _) => throw new Exception("Mock Error");
         Fsx.ReadFileSync = _ => []; // Default to utf8 for DetectEncoding
 
-        EncryptResult result = new Encrypt([], null, null, null).Run();
+        EncryptResult result = new Encrypt([], null, null, null, noCreate: true).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         EncryptProcessedEnv p = result.ProcessedEnvs[0];

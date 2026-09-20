@@ -9,8 +9,11 @@ using static Dotenvx.Interop.PicomatchJs.IndexJs;
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
 /// <remarks>Reference source: dotenvx/src/lib/services/encrypt.js</remarks>
-public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath)
+public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath,
+    bool noCreate = false)
 {
+    private const string SampleEnvKit = "HELLO=\"World\"\n";
+
     private readonly HashSet<string> _changedFilePaths = [];
 
     private readonly EnvItem[] _envs = DetermineEnvs(envs, Environment.GetEnvironmentVariables()
@@ -55,8 +58,24 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
         try
         {
-            string encoding = DetectEncoding(filepath);
-            string envSrc = Fsx.ReadFileX(filepath, encoding);
+            string envSrc;
+            if (!Fsx.ExistsSync(filepath) && !noCreate)
+            {
+                envSrc = SampleEnvKit;
+                row.Changed = true;
+            }
+            else
+            {
+                string encoding = DetectEncoding(filepath);
+                envSrc = Fsx.ReadFileX(filepath, encoding);
+            }
+
+            if (envSrc.Trim().Length == 0)
+            {
+                envSrc = SampleEnvKit;
+                row.Changed = true;
+            }
+
             Dictionary<string, object> envParsed = DotenvParse(envSrc);
 
             string? publicKey;

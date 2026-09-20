@@ -9,6 +9,7 @@ using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 using ParseResult = System.CommandLine.ParseResult;
 
@@ -44,6 +45,12 @@ public class GetAction : Command
             HelpName = "strings..."
         };
 
+    private readonly Option<string[]?> _excludeKeyOption =
+        new("--exclude-key", "-ek")
+        {
+            Description = "keys(s) to exclude from output (default: none)", HelpName = "excludeKeys..."
+        };
+
     private readonly Option<string> _formatOption =
         new("--format")
         {
@@ -55,6 +62,12 @@ public class GetAction : Command
         new("--ignore")
         {
             Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes..."
+        };
+
+    private readonly Option<string[]?> _includeKeyOption =
+        new("--include-key", "-ik")
+        {
+            Description = "keys(s) to include in output (default: all)", HelpName = "includeKeys..."
         };
 
     private readonly Argument<string?> _keyArgument =
@@ -93,9 +106,23 @@ public class GetAction : Command
         Add(_conventionOption);
         Add(_ignoreOption);
         Add(_allOption);
+        Add(_includeKeyOption);
+        Add(_excludeKeyOption);
         Add(_prettyPrintOption);
         Add(_formatOption);
         SetAction(Execute);
+    }
+
+    private static IReadOnlyDictionary<string, string> FilterKeys(
+        IReadOnlyDictionary<string, string> parsed, string[]? includeKeys, string[]? excludeKeys)
+    {
+        Func<string, bool> include = Picomatch(includeKeys);
+        Func<string, bool> exclude = Picomatch(excludeKeys);
+
+        return parsed.Where(kvp =>
+                !(includeKeys?.Length > 0 && !include(kvp.Key)) &&
+                !(excludeKeys?.Length > 0 && exclude(kvp.Key)))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }
 
     private int Execute(ParseResult parseResult)
@@ -108,6 +135,8 @@ public class GetAction : Command
         bool strict = parseResult.GetValue(_strictOption);
         string? convention = parseResult.GetValue(_conventionOption);
         string[] ignoreList = parseResult.GetValue(_ignoreOption) ?? [];
+        string[]? includeKey = parseResult.GetValue(_includeKeyOption);
+        string[]? excludeKey = parseResult.GetValue(_excludeKeyOption);
 
         ConfigOptions normalizedOptions =
             NormalizeDotenvConfigIgnore(NormalizeDotenvConfigConvention(new ConfigOptions
@@ -166,6 +195,7 @@ public class GetAction : Command
         {
             Get getService = Get.Factory(key, envItems.ToArray(), overload, all, envKeysFile?.FirstOrDefault());
             GetResult result = getService.Run();
+            IReadOnlyDictionary<string, string> parsed = FilterKeys(result.Parsed, includeKey, excludeKey);
 
             int errorCount = 0;
             foreach (Exception error in result.Errors)
@@ -192,7 +222,7 @@ public class GetAction : Command
 
             if (key != null)
             {
-                string? single = result.Parsed.TryGetValue(key, out string? val) ? val : null;
+                string? single = parsed.TryGetValue(key, out string? val) ? val : null;
                 Console.WriteLine(single ?? "");
             }
             else
@@ -204,19 +234,19 @@ public class GetAction : Command
                         {
                             string prefix = format == "eval-export" ? "export " : "";
                             string inline = string.Join('\n',
-                                result.Parsed.Select(kvp => $"{prefix}{kvp.Key}={Escape(kvp.Value)}"));
+                                parsed.Select(kvp => $"{prefix}{kvp.Key}={Escape(kvp.Value)}"));
                             Console.WriteLine(inline);
                             break;
                         }
                     case "shell":
                         {
-                            string inline = string.Join(' ', result.Parsed.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                            string inline = string.Join(' ', parsed.Select(kvp => $"{kvp.Key}={kvp.Value}"));
                             Console.WriteLine(inline);
                             break;
                         }
                     case "colon":
                         {
-                            string inline = string.Join(' ', result.Parsed.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+                            string inline = string.Join(' ', parsed.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
                             Console.WriteLine(inline);
                             break;
                         }
@@ -224,7 +254,7 @@ public class GetAction : Command
                         {
                             JsonSerializerOptions jsonOptions =
                                 prettyPrint ? _prettyPrintJsonOptions : _compactJsonOptions;
-                            Console.WriteLine(JsonSerializer.Serialize(result.Parsed, jsonOptions));
+                            Console.WriteLine(JsonSerializer.Serialize(parsed, jsonOptions));
                             break;
                         }
                 }

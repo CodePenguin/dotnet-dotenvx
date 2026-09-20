@@ -38,6 +38,9 @@ public class EncryptAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _noCreateOption =
+        new("--no-create") { Description = "do not create .env file(s) when missing" };
+
     private readonly Option<bool> _stdoutOption =
         new("--stdout") { Description = "send to stdout" };
 
@@ -51,6 +54,7 @@ public class EncryptAction : Command
         Add(_keyOption);
         Add(_excludeKeyOption);
         Add(_stdoutOption);
+        Add(_noCreateOption);
         SetAction(Execute);
     }
 
@@ -61,6 +65,7 @@ public class EncryptAction : Command
         string[]? key = parseResult.GetValue(_keyOption);
         string[]? excludeKey = parseResult.GetValue(_excludeKeyOption);
         bool stdout = parseResult.GetValue(_stdoutOption);
+        bool noCreate = parseResult.GetValue(_noCreateOption);
 
         var options = new
         {
@@ -68,7 +73,8 @@ public class EncryptAction : Command
             envKeysFile,
             key,
             excludeKey,
-            stdout
+            stdout,
+            noCreate
         };
         _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
 
@@ -84,31 +90,42 @@ public class EncryptAction : Command
         // stdout - should not have a try so that exit codes can surface to stdout
         if (stdout)
         {
-            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath);
+            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate);
             EncryptResult result = encryptService.Run();
 
+            int stdoutErrorCount = 0;
             foreach (EncryptProcessedEnv processedEnv in result.ProcessedEnvs)
             {
-                Console.WriteLine(processedEnv.EnvSrc);
+                if (processedEnv.Error != null)
+                {
+                    stdoutErrorCount++;
+                    _logger.Error(processedEnv.Error.Message);
+                }
+                else if (!string.IsNullOrEmpty(processedEnv.EnvSrc))
+                {
+                    Console.WriteLine(processedEnv.EnvSrc);
+                }
             }
 
-            return 0; // exit early
+            return stdoutErrorCount > 0 ? 1 : 0; // exit early
         }
 
         try
         {
-            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath);
+            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate);
             EncryptResult result = encryptService.Run();
 
             IList<EncryptProcessedEnv> processedEnvs = result.ProcessedEnvs;
             IList<string> changedFilePaths = result.ChangedFilePaths;
             IList<string> unchangedFilePaths = result.UnchangedFilePaths;
+            int errorCount = 0;
 
             foreach (EncryptProcessedEnv processedEnv in processedEnvs)
             {
                 _logger.Verbose($"encrypting {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                 if (processedEnv.Error != null)
                 {
+                    errorCount++;
                     Exception? error = processedEnv.Error;
                     string code = (error as DotenvxException)?.Code ?? "UNKNOWN";
                     _logger.Warn(error.Message);
@@ -167,7 +184,7 @@ public class EncryptAction : Command
                     $"⮕  next run [{processedEnv.PrivateKeyName}='{processedEnv.PrivateKey}' dotenvx run -- yourcommand] to test decryption locally");
             }
 
-            return 0;
+            return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {

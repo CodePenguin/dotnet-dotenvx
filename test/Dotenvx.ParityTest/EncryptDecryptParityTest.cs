@@ -198,4 +198,115 @@ public class EncryptDecryptParityTest(NodeParityFixture fixture) : ParityTestBas
         // is compared - the actual key/ciphertext bytes are expected to differ (see class remarks).
         dotnetEnvFile.ShouldBe(nodeEnvFile);
     }
+
+    /// <remarks>
+    /// Implements encrypt's default "create a sample .env when missing" behavior, previously
+    /// entirely unimplemented (a real gap: .NET used to always error MISSING_ENV_FILE here, even
+    /// though that's not what Node actually does by default - see Encrypt.cs's SampleEnvKit).
+    /// Redacted structural comparison, not byte-for-byte, since fresh key material differs.
+    /// </remarks>
+    [Fact]
+    public async Task EncryptOnMissingEnvFileCreatesSampleAndEncrypts()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        CliResult node = await Fixture.RunNodeAsync(WorkDir, null, "encrypt");
+        node.ExitCode.ShouldBe(0);
+        string nodeEnvFile = RedactKeyMaterial(ReadFile(".env"));
+        File.Delete(Path.Combine(WorkDir, ".env"));
+        File.Delete(Path.Combine(WorkDir, ".env.keys"));
+
+        CliResult dotnet = await Fixture.RunDotnetAsync(WorkDir, null, "encrypt");
+        dotnet.ExitCode.ShouldBe(0);
+        string dotnetEnvFile = RedactKeyMaterial(ReadFile(".env"));
+
+        dotnetEnvFile.ShouldBe(nodeEnvFile);
+        dotnetEnvFile.ShouldContain("encrypted:REDACTED");
+    }
+
+    /// <remarks>Reverse of <see cref="EncryptOnMissingEnvFileCreatesSampleAndEncrypts"/>: --no-create disables that default, matching the old (still correct, just now opt-in) MISSING_ENV_FILE error behavior.</remarks>
+    [Fact]
+    public async Task EncryptOnMissingEnvFileWithNoCreateFlagErrorsIdentically()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => { }, null, "encrypt", "--no-create");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.ExitCode.ShouldNotBe(0);
+        File.Exists(Path.Combine(WorkDir, ".env")).ShouldBeFalse();
+    }
+
+    /// <remarks>
+    /// -k/--key already worked (Encrypt.cs's _include), just lacked parity coverage - confirms only
+    /// the named key(s) get encrypted while the rest stay plaintext, identically on both sides.
+    /// </remarks>
+    [Fact]
+    public async Task KeyOptionEncryptsOnlyTheNamedKey()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        void Setup()
+        {
+            WriteFile(".env", "HELLO=World\nFOO=bar\n");
+            WriteFile(".env.keys", FixedKeypairFixture.PrivateKeyFile);
+        }
+
+        Setup();
+        await Fixture.RunNodeAsync(WorkDir, null, "encrypt", "--key", "HELLO");
+        string nodeEnvFile = RedactKeyMaterial(ReadFile(".env"));
+
+        Setup();
+        await Fixture.RunDotnetAsync(WorkDir, null, "encrypt", "--key", "HELLO");
+        string dotnetEnvFile = RedactKeyMaterial(ReadFile(".env"));
+
+        dotnetEnvFile.ShouldBe(nodeEnvFile);
+        dotnetEnvFile.ShouldContain("encrypted:REDACTED");
+        dotnetEnvFile.ShouldContain("FOO=bar");
+    }
+
+    /// <remarks>
+    /// --stdout already worked, just lacked parity coverage. Also locks in a real bug found and
+    /// fixed alongside --no-create: EncryptAction's --stdout branch never checked processedEnv.Error
+    /// and always returned exit 0, unlike upstream which logs the error and exits 1 - see
+    /// EncryptAction.cs.
+    /// </remarks>
+    [Fact]
+    public async Task StdoutFlagPrintsWithoutWritingTheFile()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        void Setup()
+        {
+            WriteFile(".env", "HELLO=World\n");
+            WriteFile(".env.keys", FixedKeypairFixture.PrivateKeyFile);
+        }
+
+        Setup();
+        CliResult node = await Fixture.RunNodeAsync(WorkDir, null, "encrypt", "--stdout");
+        string nodeOutput = RedactKeyMaterial(node.StandardOutput);
+        string envFileAfterNode = ReadFile(".env");
+
+        Setup();
+        CliResult dotnet = await Fixture.RunDotnetAsync(WorkDir, null, "encrypt", "--stdout");
+        string dotnetOutput = RedactKeyMaterial(dotnet.StandardOutput);
+        string envFileAfterDotnet = ReadFile(".env");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnetOutput.ShouldBe(nodeOutput);
+        envFileAfterNode.ShouldBe("HELLO=World\n");
+        envFileAfterDotnet.ShouldBe("HELLO=World\n");
+    }
 }
