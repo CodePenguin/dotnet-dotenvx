@@ -15,7 +15,14 @@ public class SetsTest : EnvironmentTestBase
         Fsx.WriteFileX = (_, _) => { };
     }
 
-    /// <remarks>Refer to "#run (no arguments)"</remarks>
+    /// <remarks>
+    /// Refer to "#run (no arguments)". Verified against the real Node CLI: a missing .env file is
+    /// NOT an error by default for `set` either - it starts from an empty string (not encrypt's
+    /// sample kit, since `set` is about to insert its own key/value pair) per
+    /// dotenvx/src/lib/transforms/set.js's `if (!fileExists &amp;&amp; !noCreate)` branch. The
+    /// original MISSING_ENV_FILE-error assertion moved to
+    /// <see cref="TestRunNoArgumentsWithNoCreate"/>, which passes noCreate: true to reproduce it.
+    /// </remarks>
     [Fact]
     public void TestRunNoArguments()
     {
@@ -29,16 +36,15 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(".env"));
         row.EnvFilePath.ShouldBe(".env");
         row.Changed.ShouldBeFalse();
-        row.Error.ShouldBeOfType<MissingEnvFileException>();
-        ((MissingEnvFileException)row.Error).Code.ShouldBe("MISSING_ENV_FILE");
+        row.Error.ShouldBeNull();
         result.ChangedFilePaths.ShouldBeEmpty();
     }
 
-    /// <remarks>Refer to "#run (no env file)"</remarks>
+    /// <remarks>Refer to "#run (no arguments)", noCreate variant - see remarks on <see cref="TestRunNoArguments"/>.</remarks>
     [Fact]
-    public void TestRunNoEnvFile()
+    public void TestRunNoArgumentsWithNoCreate()
     {
-        SetsResult result = new Sets(null, null, [], false).Run();
+        SetsResult result = new Sets(null, null, [], false, noCreate: true).Run();
 
         result.ProcessedEnvs.Length.ShouldBe(1);
         ProcessedSet row = result.ProcessedEnvs[0];
@@ -53,14 +59,37 @@ public class SetsTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBeEmpty();
     }
 
-    /// <remarks>Refer to "#run (no arguments and some other error)"</remarks>
+    /// <remarks>Refer to "#run (no env file)" - noCreate variant, see remarks on <see cref="TestRunNoArguments"/>.</remarks>
+    [Fact]
+    public void TestRunNoEnvFile()
+    {
+        SetsResult result = new Sets(null, null, [], false, noCreate: true).Run();
+
+        result.ProcessedEnvs.Length.ShouldBe(1);
+        ProcessedSet row = result.ProcessedEnvs[0];
+        row.Key.ShouldBeNull();
+        row.Value.ShouldBeNull();
+        row.Type.ShouldBe(EnvType.EnvFile);
+        row.FilePath.ShouldBe(Path.GetFullPath(".env"));
+        row.EnvFilePath.ShouldBe(".env");
+        row.Changed.ShouldBeFalse();
+        row.Error.ShouldBeOfType<MissingEnvFileException>();
+        ((MissingEnvFileException)row.Error).Code.ShouldBe("MISSING_ENV_FILE");
+        result.ChangedFilePaths.ShouldBeEmpty();
+    }
+
+    /// <remarks>
+    /// Refer to "#run (no arguments and some other error)". noCreate: true so the missing-file
+    /// short-circuit doesn't bypass the mocked Fsx.ReadFileX before it gets a chance to throw -
+    /// see remarks on <see cref="TestRunNoArguments"/>.
+    /// </remarks>
     [Fact]
     public void TestRunNoArgumentsAndSomeOtherError()
     {
         Fsx.ReadFileX = (_, _) => throw new Exception("Mock Error");
         Fsx.ReadFileSync = _ => []; // Default to utf8 for DetectEncoding
 
-        SetsResult result = new Sets(null, null, [], false).Run();
+        SetsResult result = new Sets(null, null, [], false, noCreate: true).Run();
 
         result.ProcessedEnvs.Length.ShouldBe(1);
         ProcessedSet row = result.ProcessedEnvs[0];

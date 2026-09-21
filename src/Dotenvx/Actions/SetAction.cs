@@ -38,6 +38,9 @@ public class SetAction : Command
     private readonly Option<bool> _plainOption =
         new("--plain") { Description = "store value as plain text (default: false)" };
 
+    private readonly Option<bool> _noCreateOption =
+        new("--no-create") { Description = "do not create env file if missing (default: false)" };
+
     private readonly Argument<string> _valueArgument =
         new("value") { Description = "value" };
 
@@ -49,8 +52,9 @@ public class SetAction : Command
         Add(_envFileOption);
         Add(_envKeysFileOption);
         Add(_keyArgument);
+        Add(_noCreateOption);
         Add(_plainOption);
-        Add(_valueArgument);
+                Add(_valueArgument);
         SetAction(Execute);
     }
 
@@ -62,6 +66,7 @@ public class SetAction : Command
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         bool encrypt = parseResult.GetValue(_encryptOption);
         bool plain = parseResult.GetValue(_plainOption);
+        bool noCreate = parseResult.GetValue(_noCreateOption);
 
         _logger.Debug($"key: {key}");
         _logger.Debug($"value: {value}");
@@ -82,7 +87,7 @@ public class SetAction : Command
 
             string? envKeysFilePath = envKeysFile?.FirstOrDefault();
 
-            Sets setsService = Sets.Factory(key, value, envItems.ToArray(), encrypt, envKeysFilePath);
+            Sets setsService = Sets.Factory(key, value, envItems.ToArray(), encrypt, envKeysFilePath, noCreate);
             SetsResult result = setsService.Run();
 
             IList<ProcessedSet> processedEnvs = result.ProcessedEnvs;
@@ -91,12 +96,15 @@ public class SetAction : Command
 
             string withEncryption = encrypt ? " with encryption" : "";
 
+            int errorCount = 0;
+
             foreach (ProcessedSet processedEnv in processedEnvs)
             {
                 _logger.Verbose($"setting for {processedEnv.EnvFilePath}");
 
                 if (processedEnv.Error != null)
                 {
+                    errorCount++;
                     Exception? error = processedEnv.Error;
                     string code = (error as DotenvxException)?.Code ?? "UNKNOWN";
                     _logger.Warn(error.Message);
@@ -151,7 +159,7 @@ public class SetAction : Command
                     $"⮕  next run [{processedEnv.PrivateKeyName}='{processedEnv.PrivateKey}' dotenvx get {key}] to test decryption locally");
             }
 
-            return 0;
+            return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {

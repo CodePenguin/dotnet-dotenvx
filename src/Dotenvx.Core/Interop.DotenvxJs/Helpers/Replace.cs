@@ -53,6 +53,12 @@ public static partial class Helpers
         }
         else
         {
+            if (src.Trim().Length == 0)
+            {
+                // matches Node's upsert on empty src: `KEY="value"\n` (no leading newline)
+                return $"{key}=\"{replaceValue}\"\n";
+            }
+
             string newPart = $"{key}=\"{replaceValue}\"";
 
             if (src.EndsWith("\n"))

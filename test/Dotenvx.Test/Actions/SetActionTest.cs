@@ -61,7 +61,7 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [],
             UnchangedFilePaths = [".env"]
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
@@ -95,7 +95,7 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
@@ -114,7 +114,7 @@ public class SetActionTest : EnvironmentTestBase
         {
             ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
@@ -131,7 +131,7 @@ public class SetActionTest : EnvironmentTestBase
         mockSets.Run().Throws(new DotenvxException("MISSING_ENV_FILE",
             $"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})",
             "? add one with [echo \"HELLO=value\" > .env] and re-run [dotenvx set]"));
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
@@ -142,7 +142,12 @@ public class SetActionTest : EnvironmentTestBase
         MockLogger.InfoMessages.ShouldContain("? add one with [echo \"HELLO=value\" > .env] and re-run [dotenvx set]");
     }
 
-    /// <remarks>Refer to "set - OTHER_ERROR"</remarks>
+    /// <remarks>
+    /// Refer to "set - OTHER_ERROR". Verified against the real Node CLI (a generic per-file
+    /// error, e.g. EISDIR, exits 1) that SetAction's errorCount fix (Task D) is correct here -
+    /// this test previously locked in the same unconditional-exit-0 bug found and fixed in
+    /// EncryptAction/DecryptAction.
+    /// </remarks>
     [Fact]
     public void TestSetOtherError()
     {
@@ -166,12 +171,12 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [],
             UnchangedFilePaths = [".env"]
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(0);
+        exitCode.ShouldBe(1);
         mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("no changes (.env)");
         MockLogger.WarningMessages.ShouldContain("Mock Error");
@@ -200,7 +205,7 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World", "--plain"]);
         int exitCode = parseResult.Invoke();
@@ -237,7 +242,7 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
@@ -278,7 +283,7 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
@@ -299,7 +304,7 @@ public class SetActionTest : EnvironmentTestBase
     {
         Sets mockSets = Substitute.For<Sets>();
         mockSets.Run().Throws(new DotenvxException("500", "Mock Error", "Mock Help"));
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();

@@ -328,4 +328,57 @@ public class EncryptDecryptParityTest(NodeParityFixture fixture) : ParityTestBas
         envFileAfterNode.ShouldBe("HELLO=World\n");
         envFileAfterDotnet.ShouldBe("HELLO=World\n");
     }
+
+    /// <remarks>Task E - decrypt --stdout --mask (bare, showChar default 6): identical masked
+    /// stdout on both CLIs - values are masked (HELLO=World -> HELLO=******) identically.</remarks>
+    [Fact]
+    public async Task DecryptStdoutWithBareMaskMatchesExactly()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(WriteFixedEncryptedFixture, null, "decrypt", "--stdout", "--mask");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+        dotnet.StandardOutput.ShouldContain("*");
+        dotnet.StandardOutput.ShouldNotContain("HELLO=World");
+    }
+
+    /// <remarks>Task E - decrypt --stdout --mask 2 (custom showChar): identical masked stdout.
+    /// showChar=2 -> HELLO=World shows first 2 visible chars then * to the same length.</remarks>
+    [Fact]
+    public async Task DecryptStdoutWithCustomMaskCharsMatchesExactly()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(WriteFixedEncryptedFixture, null, "decrypt", "--stdout", "--mask", "2");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
+    /// <remarks>Task E regression guard - decrypt --stdout WITHOUT --mask is unaffected: masked
+    /// output must never leak into plain --stdout output on either CLI.</remarks>
+    [Fact]
+    public async Task DecryptStdoutWithoutMaskIsUnaffected()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(WriteFixedEncryptedFixture, null, "decrypt", "--stdout");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+        dotnet.StandardOutput.ShouldNotContain("*");
+        node.StandardOutput.ShouldNotContain("*");
+    }
+
 }

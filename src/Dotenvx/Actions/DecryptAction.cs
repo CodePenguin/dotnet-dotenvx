@@ -41,6 +41,14 @@ public class DecryptAction : Command
     private readonly Option<bool> _stdoutOption =
         new("--stdout") { Description = "send to stdout" };
 
+    private readonly Option<string?> _maskOption =
+        new("--mask")
+        {
+            Arity = ArgumentArity.ZeroOrOne,
+            Description = "mask stdout values, optionally setting visible characters",
+            HelpName = "characters"
+        };
+
     public DecryptAction(IDotenvxLogger logger) : base("decrypt",
         "convert encrypted .env file(s) to plain .env file(s)")
     {
@@ -51,6 +59,7 @@ public class DecryptAction : Command
         Add(_excludeKeyOption);
         Add(_keysOption);
         Add(_stdoutOption);
+        Add(_maskOption);
         SetAction(Execute);
     }
 
@@ -97,7 +106,20 @@ public class DecryptAction : Command
                 }
                 else
                 {
-                    Console.WriteLine(processedEnv.EnvSrc);
+                    string envSrc = processedEnv.EnvSrc;
+                    System.CommandLine.Parsing.OptionResult? maskResult = parseResult.GetResult(_maskOption);
+                    if (maskResult != null)
+                    {
+                        object? showChar = parseResult.GetValue(_maskOption);
+                        if (showChar is null)
+                        {
+                            showChar = 6;
+                        }
+
+                        envSrc = MaskEnvSrc(envSrc, showChar);
+                    }
+
+                    Console.WriteLine(envSrc);
                 }
             }
 

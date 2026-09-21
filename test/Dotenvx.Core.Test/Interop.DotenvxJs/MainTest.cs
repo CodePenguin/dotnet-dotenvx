@@ -404,10 +404,10 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRun()
     {
-        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
         mockSets.Run()
             .Returns(new SetsResult { ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = [] });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         SetsResult result = Main.Set("KEY", "value");
 
@@ -419,10 +419,10 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunWithEncryptFalse()
     {
-        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
         mockSets.Run()
             .Returns(new SetsResult { ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = [] });
-        Sets.Factory = (_, _, _, encrypt, _) =>
+        Sets.Factory = (_, _, _, encrypt, _, _) =>
         {
             encrypt.ShouldBeFalse();
             return mockSets;
@@ -440,10 +440,10 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunWithPlainTrue()
     {
-        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
         mockSets.Run()
             .Returns(new SetsResult { ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = [] });
-        Sets.Factory = (_, _, _, encrypt, _) =>
+        Sets.Factory = (_, _, _, encrypt, _, _) =>
         {
             encrypt.ShouldBeFalse();
             return mockSets;
@@ -461,10 +461,10 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunWithCustomEnvKeysFile()
     {
-        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
         mockSets.Run()
             .Returns(new SetsResult { ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = [] });
-        Sets.Factory = (_, _, _, _, envKeysFile) =>
+        Sets.Factory = (_, _, _, _, envKeysFile, _) =>
         {
             envKeysFile.ShouldBe("path/to/.env.keys");
             return mockSets;
@@ -478,11 +478,31 @@ public class MainTest : EnvironmentTestBase
         result.ShouldNotBeNull();
     }
 
+    [Fact]
+    public void TestSetCallsSetsRunWithNoCreateFromOptions()
+    {
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
+        mockSets.Run()
+            .Returns(new SetsResult { ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = [] });
+        Sets.Factory = (_, _, _, _, _, noCreate) =>
+        {
+            noCreate.ShouldBeTrue();
+            return mockSets;
+        };
+
+        SetsOptions options = new() { NoCreate = true };
+
+        SetsResult result = Main.Set("KEY", "value", options);
+
+        mockSets.Received(1).Run();
+        result.ShouldNotBeNull();
+    }
+
     /// <remarks>Refer to "set calls Sets.run - no changes"</remarks>
     [Fact]
     public void TestSetCallsSetsRunNoChanges()
     {
-        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
         ProcessedSet[] processedEnvs =
         [
             new()
@@ -503,7 +523,7 @@ public class MainTest : EnvironmentTestBase
             UnchangedFilePaths =
                 [".env"]
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
@@ -518,7 +538,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunChanges()
     {
-        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
         ProcessedSet[] processedEnvs =
         [
             new()
@@ -541,7 +561,7 @@ public class MainTest : EnvironmentTestBase
             ],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
@@ -556,7 +576,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunMissingEnvFile()
     {
-        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
         Exception error = new("MISSING_ENV_FILE");
         ProcessedSet[] processedEnvs =
         [
@@ -575,7 +595,7 @@ public class MainTest : EnvironmentTestBase
         {
             ProcessedEnvs = processedEnvs, ChangedFilePaths = [], UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
@@ -591,7 +611,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunOtherError()
     {
-        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
         DotenvxException error = new("OTHER_ERROR", "some error", "some help");
         ProcessedSet[] processedEnvs =
         [
@@ -610,7 +630,7 @@ public class MainTest : EnvironmentTestBase
         {
             ProcessedEnvs = processedEnvs, ChangedFilePaths = [], UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
@@ -626,7 +646,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunChangesWithLogger()
     {
-        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
         ProcessedSet[] processedEnvs =
         [
             new()
@@ -649,7 +669,7 @@ public class MainTest : EnvironmentTestBase
             ],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 
@@ -664,7 +684,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestSetCallsSetsRunPrivateKeyAddedAndNotIgnoringDotenvKeys()
     {
-        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!);
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
         ProcessedSet[] processedEnvs =
         [
             new()
@@ -691,7 +711,7 @@ public class MainTest : EnvironmentTestBase
             ],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         SetsOptions options = new() { Logger = MockLogger };
 

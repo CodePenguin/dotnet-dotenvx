@@ -11,8 +11,9 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class Sets
 {
-    private static readonly Func<string?, string?, EnvItem[], bool, string?, Sets> DefaultFactory =
-        (key, value, envs, encrypt, envKeysFile) => new Sets(key, value, envs, encrypt, envKeysFile);
+    private static readonly Func<string?, string?, EnvItem[], bool, string?, bool, Sets> DefaultFactory =
+        (key, value, envs, encrypt, envKeysFile, noCreate) =>
+            new Sets(key, value, envs, encrypt, envKeysFile, noCreate);
 
     private readonly HashSet<string> _changedFilePaths = [];
     private readonly bool _encrypt;
@@ -20,16 +21,19 @@ public class Sets
     private readonly EnvItem[] _envs;
     private readonly string? _key;
 
+    private readonly bool _noCreate;
     private readonly List<ProcessedSet> _processedEnvs = [];
     private readonly HashSet<string> _unchangedFilePaths = [];
     private readonly string? _value;
 
-    public Sets(string? key, string? value, EnvItem[] envs, bool encrypt = true, string? envKeysFilePath = null)
+    public Sets(string? key, string? value, EnvItem[] envs, bool encrypt = true, string? envKeysFilePath = null,
+        bool noCreate = false)
     {
         _key = key;
         _value = value;
         _encrypt = encrypt;
         _envKeysFilePath = envKeysFilePath;
+        _noCreate = noCreate;
 
         Dictionary<string, string> processEnv = new(Environment.GetEnvironmentVariables()
             .Cast<DictionaryEntry>()
@@ -42,7 +46,7 @@ public class Sets
         // For unit tests
     }
 
-    public static Func<string?, string?, EnvItem[], bool, string?, Sets>
+    public static Func<string?, string?, EnvItem[], bool, string?, bool, Sets>
         Factory { get; internal set; } = DefaultFactory;
 
     internal static void ResetFactory()
@@ -80,8 +84,22 @@ public class Sets
 
         try
         {
-            string encoding = DetectEncoding(filePath);
-            string envSrc = Fsx.ReadFileX(filePath, encoding);
+            string envSrc;
+            if (!Fsx.ExistsSync(filePath) && !_noCreate)
+            {
+                envSrc = "";
+            }
+            else
+            {
+                string encoding = DetectEncoding(filePath);
+                envSrc = Fsx.ReadFileX(filePath, encoding);
+            }
+
+            if (envSrc.Trim().Length == 0)
+            {
+                envSrc = "";
+            }
+
             Dictionary<string, object> envParsed = DotenvParse(envSrc);
             row.OriginalValue = (string?)envParsed.GetValueOrDefault(_key ?? "");
             bool wasPlainText = !IsEncrypted(row.OriginalValue ?? "");

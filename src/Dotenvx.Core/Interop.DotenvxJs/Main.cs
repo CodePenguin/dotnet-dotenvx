@@ -290,12 +290,13 @@ public static class Main
     {
         // encrypt
         bool encrypt = !(options?.Plain == true || options?.Encrypt == false);
+        bool noCreate = options?.NoCreate == true;
         string withEncryption = encrypt ? " with encryption" : "";
 
         EnvItem[] envs = BuildEnvs(options ?? new SetsOptions());
         string? envKeysFilepath = options?.EnvKeysFile;
 
-        SetsResult result = Sets.Factory(key, value, envs, encrypt, envKeysFilepath).Run();
+        SetsResult result = Sets.Factory(key, value, envs, encrypt, envKeysFilepath, noCreate).Run();
 
         foreach (ProcessedSet processedEnv in result.ProcessedEnvs)
         {
