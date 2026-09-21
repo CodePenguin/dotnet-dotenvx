@@ -75,6 +75,14 @@ public class GetAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<string?> _maskOption =
+        new("--mask")
+        {
+            Arity = ArgumentArity.ZeroOrOne,
+            Description = "mask values, optionally setting visible characters",
+            HelpName = "characters"
+        };
+
     private readonly Option<bool> _overloadOption =
         new("--overload", "-o")
         {
@@ -108,6 +116,7 @@ public class GetAction : Command
         Add(_allOption);
         Add(_includeKeyOption);
         Add(_excludeKeyOption);
+        Add(_maskOption);
         Add(_prettyPrintOption);
         Add(_formatOption);
         SetAction(Execute);
@@ -196,6 +205,18 @@ public class GetAction : Command
             Get getService = Get.Factory(key, envItems.ToArray(), overload, all, envKeysFile?.FirstOrDefault());
             GetResult result = getService.Run();
             IReadOnlyDictionary<string, string> parsed = FilterKeys(result.Parsed, includeKey, excludeKey);
+
+            System.CommandLine.Parsing.OptionResult? maskResult = parseResult.GetResult(_maskOption);
+            if (maskResult != null)
+            {
+                object? showChar = parseResult.GetValue(_maskOption);
+                if (showChar is null)
+                {
+                    showChar = 6;
+                }
+
+                parsed = parsed.ToDictionary(kvp => kvp.Key, kvp => Mask(kvp.Value, showChar));
+            }
 
             int errorCount = 0;
             foreach (Exception error in result.Errors)

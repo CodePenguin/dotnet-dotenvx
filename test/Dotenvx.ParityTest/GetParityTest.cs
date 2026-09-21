@@ -261,6 +261,78 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.StandardOutput.Trim().ShouldBe("inline-value");
     }
 
+    /// <remarks>
+    /// Implements get's --mask flag (optional-value): default 6 visible chars when no value given.
+    /// </remarks>
+    [Fact]
+    public async Task MaskFlagWithDefaultVisibleCharsMatchesExactly()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=SuperSecretValue\nFOO=bar\n"), null, "get", "--mask");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
+    [Fact]
+    public async Task MaskFlagWithCustomVisibleCharsMatchesExactly()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=SuperSecretValue\nFOO=bar\n"), null, "get", "--mask", "3");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
+    /// <remarks>
+    /// Single-key lookup path (not the JSON-object path): confirmed live that `get KEY --mask`
+    /// prints the masked single value, so masking must run before the key != null branch.
+    /// </remarks>
+    [Fact]
+    public async Task MaskFlagWithSingleKeyLookupMatchesExactly()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=SuperSecretValue\nFOO=bar\n"), null, "get", "HELLO", "--mask");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
+    /// <remarks>
+    /// filterKeys runs before mask (upstream get.js order), so --include-key narrows first, then
+    /// the surviving keys get masked.
+    /// </remarks>
+    [Fact]
+    public async Task MaskFlagCombinedWithIncludeKeyMatchesExactly()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=SuperSecretValue\nFOO=bar\nBAZ=qux\n"), null,
+            "get", "--include-key", "HELLO", "--mask");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
     // --file and DOTENV_FILE (commit 5a28c859) were forward-ported ahead of our v2.24.1 pin - the
     // pinned Node CLI genuinely doesn't support them yet ("error: unknown option '--file'"), so
     // there's no valid parity comparison for them until the pin advances past that commit. See
