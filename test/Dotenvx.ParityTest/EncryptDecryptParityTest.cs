@@ -75,6 +75,25 @@ public class EncryptDecryptParityTest(NodeParityFixture fixture) : ParityTestBas
     }
 
     /// <remarks>
+    /// Found a real bug here: DecryptAction's main branch tracked errorCount per-file but never
+    /// checked it before returning - always returned 0 regardless of errors, unlike its own
+    /// --stdout branch (which already had the check) and encrypt's equivalent bug fixed earlier.
+    /// </remarks>
+    [Fact]
+    public async Task DecryptOnMissingEnvFileExitsNonZeroIdentically()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => { }, null, "decrypt");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.ExitCode.ShouldNotBe(0);
+    }
+
+    /// <remarks>
     /// The genuine bidirectional "create with one, use with the other" round trip the fixed-
     /// ciphertext tests above can't cover on their own: fresh ciphertext, generated live by one
     /// CLI's `set` on THIS run, decrypted live by the other CLI's `get`. This works reliably

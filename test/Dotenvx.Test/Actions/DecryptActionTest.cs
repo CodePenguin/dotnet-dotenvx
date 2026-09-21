@@ -120,20 +120,27 @@ public class DecryptActionTest : EnvironmentTestBase
         MockLogger.InfoMessages.ShouldContain("✔ decrypted (.env)");
     }
 
-    /// <remarks>Refer to "decrypt - MISSING_ENV_FILE"</remarks>
+    /// <remarks>
+    /// Refer to "decrypt - MISSING_ENV_FILE". Verified against the real Node CLI: a per-file
+    /// MISSING_ENV_FILE error exits 1, matching decrypt.js's errorCount tracking - DecryptAction
+    /// previously never checked errorCount in its main branch and always returned 0 (a real,
+    /// independent, pre-existing bug, same shape as EncryptAction's - see .claude/plan.md).
+    /// </remarks>
     [Fact]
     public void TestDecryptMissingEnvFile()
     {
         ParseResult parseResult = RootCommand.Parse(["decrypt"]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(0);
+        exitCode.ShouldBe(1);
         MockLogger.ErrorMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
         MockLogger.InfoMessages.ShouldContain(
             "? add one with [echo \"HELLO=World\" > .env] and re-run [Dotenvx decrypt]");
     }
 
-    /// <remarks>Refer to "decrypt - OTHER_ERROR"</remarks>
+    /// <remarks>
+    /// Refer to "decrypt - OTHER_ERROR". Same bug/fix as TestDecryptMissingEnvFile above.
+    /// </remarks>
     [Fact]
     public void TestDecryptOtherError()
     {
@@ -144,7 +151,7 @@ public class DecryptActionTest : EnvironmentTestBase
         ParseResult parseResult = RootCommand.Parse(["decrypt"]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(0);
+        exitCode.ShouldBe(1);
 
         MockLogger.VerboseMessages.ShouldContain($"decrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain(s => s.StartsWith("The process cannot access the file"));

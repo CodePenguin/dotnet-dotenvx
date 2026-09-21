@@ -24,7 +24,7 @@ public class DecryptAction : Command
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
         {
-            Description = "path to your .env.keys file (default: all keys in file)", HelpName = "path"
+            Description = "path(s) to your .env.keys file(s) (default: same path as your env file)", HelpName = "path"
         };
 
     private readonly Option<string[]?> _excludeKeyOption =
@@ -157,7 +157,7 @@ public class DecryptAction : Command
                 _logger.Info($"no changes ({string.Join(',', unchangedFilePaths)})");
             }
 
-            return 0;
+            return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {

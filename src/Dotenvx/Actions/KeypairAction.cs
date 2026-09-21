@@ -20,10 +20,17 @@ public class KeyPairAction : Command
         new("--file", "--env-file", "-f") { Description = "path(s) to your env file(s)", HelpName = "paths..." };
 
     private readonly Option<string?> _envKeysFileOption =
-        new("--env-keys-file", "-fk") { Description = "path to your .env.keys file  (default: [])", HelpName = "path" };
+        new("--env-keys-file", "-fk")
+        {
+            Description = "path(s) to your .env.keys file(s) (default: same path as your env file)",
+            HelpName = "path"
+        };
 
     private readonly Option<string> _formatOption =
-        new("--format") { Description = "output format (json, shell) (default: \"json\")", HelpName = "type" };
+        new("--format")
+        {
+            Description = "format of the output (json, shell, colon) (default: \"json\")", HelpName = "type"
+        };
 
     private readonly Argument<string?> _keyArgument =
         new("key") { Arity = ArgumentArity.ZeroOrOne, Description = "environment variable key name", HelpName = "KEY" };
@@ -35,7 +42,7 @@ public class KeyPairAction : Command
     private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true, NewLine = "\n" };
 
     private readonly Option<bool> _prettyPrintOption =
-        new("--pretty-print") { Description = "pretty print output" };
+        new("--pretty-print", "-pp", "--pp") { Description = "pretty print output" };
 
     public KeyPairAction(IDotenvxLogger logger) : base("keypair",
         "print public/private keys for .env file(s)")
@@ -85,6 +92,11 @@ public class KeyPairAction : Command
             if (format == "shell")
             {
                 string inline = string.Join(' ', results.Select(kvp => $"{kvp.Key}={kvp.Value ?? ""}"));
+                Console.WriteLine(inline);
+            }
+            else if (format == "colon")
+            {
+                string inline = string.Join(' ', results.Select(kvp => $"{kvp.Key}:{kvp.Value ?? ""}"));
                 Console.WriteLine(inline);
             }
             else

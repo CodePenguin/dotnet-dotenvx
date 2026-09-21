@@ -65,4 +65,36 @@ public class KeypairParityTest(NodeParityFixture fixture) : ParityTestBase(fixtu
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
+
+    /// <remarks>--format colon was entirely unimplemented (a real gap, only shell/json worked).</remarks>
+    [Fact]
+    public async Task KeypairColonFormatMatchesExactly()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) =
+            await RunBothAsync(WriteFixedEncryptedFixture, null, "keypair", "--format", "colon");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
+    /// <remarks>--pp is a separate alias for --pretty-print upstream; was entirely missing.</remarks>
+    [Fact]
+    public async Task KeypairPpAliasMatchesPrettyPrint()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) =
+            await RunBothAsync(WriteFixedEncryptedFixture, null, "keypair", "--pp");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
 }
