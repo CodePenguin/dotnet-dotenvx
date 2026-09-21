@@ -26,27 +26,12 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
-
-  parity:
-    # Runs the real Node dotenvx CLI (from the submodule) side by side with our built .NET CLI and
-    # diffs output, to catch behavioral drift from the reference implementation. Separate from the
-    # main build job (and continue-on-error) since it's new/unproven and has a hard Node/npm
-    # dependency that the main job doesn't - shouldn't block merges on day one. Revisit once it's
-    # been stable for a while. See CLAUDE.md's "Node parity test suite" section.
-    runs-on: ubuntu-latest
-    continue-on-error: true
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: true
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 10.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Run parity suite
-      run: dotnet test test/Dotenvx.ParityTest/Dotenvx.ParityTest.csproj --no-build --verbosity normal
+      # This includes Dotenvx.ParityTest (it's part of Dotenvx.sln), which shells out to the real
+      # Node CLI in the dotenvx/ submodule (checked out above) and diffs output against our built
+      # .NET CLI to catch behavioral drift - see CLAUDE.md's "Node parity test suite" section.
+      # Node/npm are preinstalled on ubuntu-latest; NodeParityFixture handles `npm install` in
+      # dotenvx/ itself on first run. A prior version of this file also ran a separate
+      # continue-on-error `parity` job under the mistaken assumption that kept parity failures
+      # from blocking merges - it didn't: this step already runs (and blocks on) the same tests
+      # as part of the solution-wide `dotnet test` above, so that job was purely redundant.
+      # Removed once the suite proved stable across many repeated runs.
