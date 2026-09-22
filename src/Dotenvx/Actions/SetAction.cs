@@ -106,21 +106,7 @@ public class SetAction : Command
                 {
                     errorCount++;
                     Exception? error = processedEnv.Error;
-                    string code = (error as DotenvxException)?.Code ?? "UNKNOWN";
-                    _logger.Warn(error.Message);
-                    if (code == "MISSING_ENV_FILE")
-                    {
-                        _logger.Help(
-                            $"? add one with [echo \"{key}=value\" > {processedEnv.EnvFilePath}] and re-run [dotenvx set]");
-                    }
-                    else
-                    {
-                        string? help = (error as DotenvxException)?.Help;
-                        if (!string.IsNullOrEmpty(help))
-                        {
-                            _logger.Help(help);
-                        }
-                    }
+                    _logger.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
                 }
                 else
                 {

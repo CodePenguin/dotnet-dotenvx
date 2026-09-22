@@ -106,7 +106,7 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
         }
         catch (Exception e)
         {
-            row.Error = e is FileNotFoundException ? new MissingEnvFileException(envFilePath, filePath) : e;
+            row.Error = e is FileNotFoundException ? new MissingEnvFileException(envFilePath) : e;
         }
 
         _processedEnvs.Add(row);

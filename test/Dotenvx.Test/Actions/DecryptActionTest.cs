@@ -133,9 +133,8 @@ public class DecryptActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-        MockLogger.ErrorMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain(
-            "? add one with [echo \"HELLO=World\" > .env] and re-run [Dotenvx decrypt]");
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_ENV_FILE] missing file (.env). fix: [https://github.com/dotenvx/dotenvx/issues/484]");
     }
 
     /// <remarks>
@@ -174,8 +173,7 @@ public class DecryptActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-        MockLogger.ErrorMessages.ShouldContain("Mock Error");
-        MockLogger.InfoMessages.ShouldContain("Mock Help");
+        MockLogger.ErrorMessages.ShouldContain("Mock Error. Mock Help");
         MockLogger.DebugMessages.ShouldContain("ERROR_CODE: 500");
     }
 }

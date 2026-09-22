@@ -156,7 +156,7 @@ public class Rotate(
         }
         catch (FileNotFoundException)
         {
-            row.Error = new MissingEnvFileException(envFilepath, row.FilePath);
+            row.Error = new MissingEnvFileException(envFilepath);
         }
         catch (Exception e)
         {

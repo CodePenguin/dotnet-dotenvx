@@ -181,9 +181,8 @@ public class EncryptActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(1);
         MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
-        MockLogger.WarningMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain(
-            "? add one with [echo \"HELLO=World\" > .env] and re-run [dotenvx encrypt]");
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_ENV_FILE] missing file (.env). fix: [https://github.com/dotenvx/dotenvx/issues/484]");
     }
 
     /// <remarks>
@@ -204,7 +203,7 @@ public class EncryptActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(1);
         MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
-        MockLogger.WarningMessages.ShouldContain(s => s.StartsWith("The process cannot access the file"));
+        MockLogger.ErrorMessages.ShouldContain(s => s.StartsWith("The process cannot access the file"));
     }
 
     /// <remarks>Refer to "encrypt - catch error"</remarks>
@@ -224,8 +223,7 @@ public class EncryptActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-        MockLogger.ErrorMessages.ShouldContain("Mock Error");
-        MockLogger.InfoMessages.ShouldContain("Mock Help");
+        MockLogger.ErrorMessages.ShouldContain("Mock Error. Mock Help");
         MockLogger.DebugMessages.ShouldContain("ERROR_CODE: 500");
     }
 }

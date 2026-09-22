@@ -159,7 +159,7 @@ public class Run
         {
             Exception error = e is FileNotFoundException ||
                               (e is UnauthorizedAccessException && Directory.Exists(filepath))
-                ? new MissingEnvFileException(envFilePath, filepath)
+                ? new MissingEnvFileException(envFilePath)
                 : e;
             row.Errors.Add(error);
         }

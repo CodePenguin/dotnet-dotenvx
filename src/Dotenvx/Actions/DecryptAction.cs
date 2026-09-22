@@ -102,7 +102,7 @@ public class DecryptAction : Command
                 if (processedEnv.Error is not null)
                 {
                     errorCount += 1;
-                    _logger.Error(processedEnv.Error.Message);
+                    _logger.Error((processedEnv.Error as DotenvxException)?.MessageWithHelp ?? processedEnv.Error.Message);
                 }
                 else
                 {
@@ -142,21 +142,7 @@ public class DecryptAction : Command
                 {
                     errorCount += 1;
                     Exception? error = processedEnv.Error;
-                    string code = (error as DotenvxException)?.Code ?? "UNKNOWN";
-                    _logger.Error(error.Message);
-                    if (code == "MISSING_ENV_FILE")
-                    {
-                        _logger.Help(
-                            $"? add one with [echo \"HELLO=World\" > {processedEnv.EnvFilePath}] and re-run [Dotenvx decrypt]");
-                    }
-                    else
-                    {
-                        string? help = (error as DotenvxException)?.Help;
-                        if (!string.IsNullOrEmpty(help))
-                        {
-                            _logger.Error(help);
-                        }
-                    }
+                    _logger.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
                 }
                 else if (processedEnv.Changed)
                 {

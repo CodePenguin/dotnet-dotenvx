@@ -64,12 +64,7 @@ public class DelAction : Command
                 if (processedEnv.Error != null)
                 {
                     errorCount++;
-                    _logger.Error(processedEnv.Error.Message);
-                    string? help = (processedEnv.Error as DotenvxException)?.Help;
-                    if (!string.IsNullOrEmpty(help))
-                    {
-                        _logger.Error(help);
-                    }
+                    _logger.Error((processedEnv.Error as DotenvxException)?.MessageWithHelp ?? processedEnv.Error.Message);
                 }
                 else if (processedEnv.Changed)
                 {

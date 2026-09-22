@@ -123,14 +123,18 @@ public class SetActionTest : EnvironmentTestBase
         mockSets.Received(1).Run();
     }
 
-    /// <remarks>Refer to "set - MISSING_ENV_FILE"</remarks>
+    /// <remarks>
+    /// Refer to "set - MISSING_ENV_FILE". Rewritten to throw the real MissingEnvFileException
+    /// type (previously a hand-rolled DotenvxException with invented help text matching a
+    /// per-code special case that no longer exists in SetAction.cs - it now uses the same
+    /// universal MessageWithHelp pattern for every error code, matching set.js's
+    /// `logger.error(processedEnv.error.messageWithHelp || processedEnv.error.message)`).
+    /// </remarks>
     [Fact]
     public void TestSetMissingEnvFile()
     {
         Sets mockSets = Substitute.For<Sets>();
-        mockSets.Run().Throws(new DotenvxException("MISSING_ENV_FILE",
-            $"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})",
-            "? add one with [echo \"HELLO=value\" > .env] and re-run [dotenvx set]"));
+        mockSets.Run().Throws(new MissingEnvFileException(".env"));
         Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
@@ -138,8 +142,8 @@ public class SetActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(1);
         mockSets.Received(1).Run();
-        MockLogger.ErrorMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("? add one with [echo \"HELLO=value\" > .env] and re-run [dotenvx set]");
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_ENV_FILE] missing file (.env). fix: [https://github.com/dotenvx/dotenvx/issues/484]");
     }
 
     /// <remarks>
@@ -179,8 +183,7 @@ public class SetActionTest : EnvironmentTestBase
         exitCode.ShouldBe(1);
         mockSets.Received(1).Run();
         MockLogger.InfoMessages.ShouldContain("no changes (.env)");
-        MockLogger.WarningMessages.ShouldContain("Mock Error");
-        MockLogger.InfoMessages.ShouldContain("some help");
+        MockLogger.ErrorMessages.ShouldContain("Mock Error. some help");
     }
 
     /// <remarks>Refer to "set - changes --plain"</remarks>
@@ -311,8 +314,7 @@ public class SetActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(1);
         mockSets.Received(1).Run();
-        MockLogger.ErrorMessages.ShouldContain("Mock Error");
-        MockLogger.InfoMessages.ShouldContain("Mock Help");
+        MockLogger.ErrorMessages.ShouldContain("Mock Error. Mock Help");
         MockLogger.DebugMessages.ShouldContain("ERROR_CODE: 500");
     }
 }

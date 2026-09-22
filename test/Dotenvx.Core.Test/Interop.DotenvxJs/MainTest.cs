@@ -815,8 +815,7 @@ public class MainTest : EnvironmentTestBase
 
         DotenvxException exception = Should.Throw<DotenvxException>(() => Main.Get("HELLO", options));
 
-        exception.Message.ShouldContain(
-            $"[MISSING_ENV_FILE] missing tests/monorepo/apps/frontend file ({Path.GetFullPath(FrontendPath)})");
+        exception.Message.ShouldContain($"[MISSING_ENV_FILE] missing file ({FrontendPath})");
     }
 
     /// <remarks>Refer to "get with Get.run errors"</remarks>

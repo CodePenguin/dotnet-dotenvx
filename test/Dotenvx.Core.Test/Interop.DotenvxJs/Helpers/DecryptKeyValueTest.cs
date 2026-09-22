@@ -33,7 +33,7 @@ public class DecryptKeyValueTest
         ex.Code.ShouldBe("MISSING_PRIVATE_KEY");
         ex.Message.ShouldBe(
             "[MISSING_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY_PRODUCTION='");
-        ex.Help.ShouldBe("[MISSING_PRIVATE_KEY] https://github.com/dotenvx/dotenvx/issues/464");
+        ex.Help.ShouldBe("fix: [https://github.com/dotenvx/dotenvx/issues/464]");
     }
 
     /// <remarks>Refer to "#decryptKeyValue with non-encrypted value"</remarks>
@@ -52,7 +52,7 @@ public class DecryptKeyValueTest
             DecryptKeyValue("KEY", "encrypted:1234", "DOTENV_PRIVATE_KEY", PrivateKey));
 
         ex.Code.ShouldBe("DECRYPTION_FAILED");
-        ex.Message.ShouldBe("second arg must be public key");
+        ex.Message.ShouldBe("[DECRYPTION_FAILED] second arg must be public key");
     }
 
     /// <remarks>Refer to "#decryptKeyValue with malformed encrypted value"</remarks>
@@ -77,7 +77,7 @@ public class DecryptKeyValueTest
             DecryptKeyValue("KEY", "encrypted:", "DOTENV_PRIVATE_KEY", PrivateKey));
 
         ex.Code.ShouldBe("DECRYPTION_FAILED");
-        ex.Message.ShouldBe("second arg must be public key");
+        ex.Message.ShouldBe("[DECRYPTION_FAILED] second arg must be public key");
     }
 
     /// <remarks>Refer to "#decryptKeyValue with invalid private key"</remarks>
@@ -105,7 +105,7 @@ public class DecryptKeyValueTest
 
         ex.Code.ShouldBe("MISSING_PRIVATE_KEY");
         ex.Message.ShouldBe("[MISSING_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY='");
-        ex.Help.ShouldBe("[MISSING_PRIVATE_KEY] https://github.com/dotenvx/dotenvx/issues/464");
+        ex.Help.ShouldBe("fix: [https://github.com/dotenvx/dotenvx/issues/464]");
     }
 
     /// <remarks>Refer to "#decryptKeyValue with wrong private key"</remarks>

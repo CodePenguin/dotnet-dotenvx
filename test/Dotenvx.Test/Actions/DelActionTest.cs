@@ -98,7 +98,7 @@ public class DelActionTest : EnvironmentTestBase
                 new ProcessedDel
                 {
                     Key = "HELLO", Type = EnvType.EnvFile, FilePath = ".env", EnvFilePath = ".env",
-                    Error = new MissingEnvFileException(".env", ".env")
+                    Error = new MissingEnvFileException(".env")
                 }
             ],
             ChangedFilePaths = [],

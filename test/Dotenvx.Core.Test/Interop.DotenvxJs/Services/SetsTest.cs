@@ -335,8 +335,8 @@ public class SetsTest : EnvironmentTestBase
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeFalse();
         row.OriginalValue.ShouldBe("encrypted");
-        row.Error.ShouldBeOfType<InvalidDotenvPrivateKeyException>();
-        ((InvalidDotenvPrivateKeyException)row.Error).Code.ShouldBe("INVALID_DOTENV_PRIVATE_KEY");
+        row.Error.ShouldBeOfType<MispairedPrivateKeyException>();
+        ((MispairedPrivateKeyException)row.Error).Code.ShouldBe("MISPAIRED_PRIVATE_KEY");
     }
 
     /// <remarks>Refer to "#run (finds .env file only) with --encrypt"</remarks>

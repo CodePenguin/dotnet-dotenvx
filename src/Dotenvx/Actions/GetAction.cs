@@ -234,11 +234,7 @@ public class GetAction : Command
                 }
 
                 errorCount++;
-                _logger.Error(error.Message);
-                if (!string.IsNullOrEmpty(dotenvError?.Help))
-                {
-                    _logger.Error(dotenvError.Help);
-                }
+                _logger.Error(dotenvError?.MessageWithHelp ?? error.Message);
             }
 
             if (key != null)

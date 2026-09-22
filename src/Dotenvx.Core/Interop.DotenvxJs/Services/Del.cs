@@ -82,7 +82,7 @@ public class Del
             catch (Exception e)
             {
                 row.Error = e is FileNotFoundException or DirectoryNotFoundException
-                    ? new MissingEnvFileException(envFilePath, filePath)
+                    ? new MissingEnvFileException(envFilePath)
                     : e;
             }
 

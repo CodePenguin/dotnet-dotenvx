@@ -53,7 +53,7 @@ public class EncryptTest : EnvironmentTestBase
     {
         EncryptResult result = new Encrypt([], null, null, null, noCreate: true).Run();
 
-        MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
+        MissingEnvFileException exampleError = new(".env");
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         EncryptProcessedEnv p = result.ProcessedEnvs[0];
@@ -73,7 +73,7 @@ public class EncryptTest : EnvironmentTestBase
     {
         EncryptResult result = new Encrypt([], null, null, null, noCreate: true).Run();
 
-        MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
+        MissingEnvFileException exampleError = new(".env");
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         EncryptProcessedEnv p = result.ProcessedEnvs[0];
@@ -391,7 +391,7 @@ public class EncryptTest : EnvironmentTestBase
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         EncryptProcessedEnv p = result.ProcessedEnvs[0];
-        p.Error.ShouldBeOfType<InvalidDotenvPrivateKeyException>();
+        p.Error.ShouldBeOfType<MispairedPrivateKeyException>();
     }
 
     /// <remarks>Refer to "#run (finds .env file only)"</remarks>

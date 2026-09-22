@@ -102,12 +102,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
                 if (!string.IsNullOrEmpty(existingPublicKey) && existingPublicKey != publicKey)
                 {
-                    throw new InvalidDotenvPrivateKeyException(
-                        publicKeyName,
-                        publicKey,
-                        existingPublicKey,
-                        privateKeyName,
-                        existingPrivateKey);
+                    throw new MispairedPrivateKeyException(publicKey, existingPublicKey);
                 }
 
                 if (string.IsNullOrEmpty(existingPublicKey))
@@ -206,7 +201,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
         }
         catch (Exception e)
         {
-            row.Error = e is FileNotFoundException ? new MissingEnvFileException(envFilePath, filepath) : e;
+            row.Error = e is FileNotFoundException ? new MissingEnvFileException(envFilePath) : e;
         }
 
         _processedEnvs.Add(row);

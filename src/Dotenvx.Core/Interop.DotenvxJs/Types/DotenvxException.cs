@@ -2,57 +2,69 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
 namespace Dotenvx.Interop.DotenvxJs.Types;
 
+/// <remarks>
+/// Reference source: dotenvx/src/lib/helpers/errors.js. Every upstream error factory sets
+/// `e.messageWithHelp = \`${message}. ${help}\`` and every CLI action prints
+/// `logger.error(error.messageWithHelp || error.message)` - a single combined line, never
+/// message and help as two separate log calls (found to be wrong here via a Node-vs-C# unit
+/// test coverage audit, 2026-09-22 - every action's error-printing loop previously
+/// re-implemented this inconsistently, several with entirely invented help text).
+/// </remarks>
 public class DotenvxException(string code, string message, string? help = null) : Exception(message)
 {
     public string Code { get; private set; } = code;
     public string? Help { get; private set; } = help;
+
+    public string MessageWithHelp => string.IsNullOrEmpty(Help) ? Message : $"{Message}. {Help}";
 }
 
 public class CommandSubstitutionFailed(string key, string command, string message) : DotenvxException(
     "COMMAND_SUBSTITUTION_FAILED",
     $"[COMMAND_SUBSTITUTION_FAILED] could not eval {key} containing command '{command}': {message}",
-    "[COMMAND_SUBSTITUTION_FAILED] https://github.com/dotenvx/dotenvx/issues/532");
+    "fix: [https://github.com/dotenvx/dotenvx/issues/532]");
 
 public class DecryptionFailedException(string message) : DotenvxException(
     "DECRYPTION_FAILED",
-    message,
-    "[DECRYPTION_FAILED] Run with debug flag [dotenvx run --debug -- yourcommand] or manually run [echo $DOTENV_KEY] to compare it to the one in .env.keys.");
+    $"[DECRYPTION_FAILED] {message}",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/757]");
 
 public class InvalidPrivateKeyException(string key, string privateKeyName, string privateKey) : DotenvxException(
     "INVALID_PRIVATE_KEY",
     $"[INVALID_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'",
-    "[INVALID_PRIVATE_KEY] https://github.com/dotenvx/dotenvx/issues/465");
+    "fix: [https://github.com/dotenvx/dotenvx/issues/465]");
 
 public class MalformedEncryptedDataException(string key) : DotenvxException(
     "MALFORMED_ENCRYPTED_DATA",
     $"[MALFORMED_ENCRYPTED_DATA] could not decrypt {key} because encrypted data appears malformed",
-    "[MALFORMED_ENCRYPTED_DATA] https://github.com/dotenvx/dotenvx/issues/467");
+    "fix: [https://github.com/dotenvx/dotenvx/issues/467]");
 
-public class MissingEnvFileException(string envFilePath, string filepath) : DotenvxException(
+public class MissingEnvFileException(string envFilePath) : DotenvxException(
     "MISSING_ENV_FILE",
-    $"[MISSING_ENV_FILE] missing {envFilePath} file ({filepath})",
-    "[MISSING_ENV_FILE] https://github.com/dotenvx/dotenvx/issues/484");
+    $"[MISSING_ENV_FILE] missing file ({envFilePath})",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/484]");
 
 public class MissingPrivateKeyException(string key, string privateKeyName, string privateKey) : DotenvxException(
     "MISSING_PRIVATE_KEY",
     $"[MISSING_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'",
-    "[MISSING_PRIVATE_KEY] https://github.com/dotenvx/dotenvx/issues/464");
+    "fix: [https://github.com/dotenvx/dotenvx/issues/464]");
 
 public class WrongPrivateKeyException(string key, string privateKeyName, string privateKey) : DotenvxException(
     "WRONG_PRIVATE_KEY",
     $"[WRONG_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'",
-    "[WRONG_PRIVATE_KEY] https://github.com/dotenvx/dotenvx/issues/466");
+    "fix: [https://github.com/dotenvx/dotenvx/issues/466]");
 
 public class MissingKeyException(string key) : DotenvxException(
     "MISSING_KEY",
-    $"[MISSING_KEY] missing {key} key");
+    $"[MISSING_KEY] missing key ({key})",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/759]");
 
-public class InvalidDotenvPrivateKeyException(
-    string publicKeyName,
-    string publicKey,
-    string existingPublicKey,
-    string privateKeyName,
-    string existingPrivateKey) : DotenvxException(
-    "INVALID_DOTENV_PRIVATE_KEY",
-    $"derived public key ({Truncate(publicKey)}) does not match the existing public key ({Truncate(existingPublicKey)})",
-    $"debug info: {privateKeyName}={Truncate(existingPrivateKey)} (derived {publicKeyName}={Truncate(publicKey)} vs existing {publicKeyName}={Truncate(existingPublicKey)})");
+/// <remarks>
+/// Was "InvalidDotenvPrivateKeyException" with code "INVALID_DOTENV_PRIVATE_KEY" - neither the
+/// class name nor the code exist upstream. The real upstream scenario/code is
+/// errors.js's mispairedPrivateKey() / MISPAIRED_PRIVATE_KEY (a derived public key not matching
+/// an existing one), which only needs publicKey/publicKeyExisting - found via the same audit.
+/// </remarks>
+public class MispairedPrivateKeyException(string publicKey, string publicKeyExisting) : DotenvxException(
+    "MISPAIRED_PRIVATE_KEY",
+    $"[MISPAIRED_PRIVATE_KEY] private key's derived public key ({Truncate(publicKey)}) does not match the existing public key ({Truncate(publicKeyExisting)})",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/752]");

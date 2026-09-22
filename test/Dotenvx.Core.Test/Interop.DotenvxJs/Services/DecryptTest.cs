@@ -21,7 +21,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         DecryptResult result = new Decrypt([], null, null, null).Run();
 
-        MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
+        MissingEnvFileException exampleError = new(".env");
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -41,7 +41,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         DecryptResult result = new Decrypt([], null, null, null).Run();
 
-        MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
+        MissingEnvFileException exampleError = new(".env");
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];

@@ -22,7 +22,7 @@ public class RotateTest : EnvironmentTestBase
     {
         RotateResult result = new Rotate([]).Run();
 
-        MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
+        MissingEnvFileException exampleError = new(".env");
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         RotateProcessedEnv p = result.ProcessedEnvs[0];
@@ -42,7 +42,7 @@ public class RotateTest : EnvironmentTestBase
     {
         RotateResult result = new Rotate([]).Run();
 
-        MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
+        MissingEnvFileException exampleError = new(".env");
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         RotateProcessedEnv p = result.ProcessedEnvs[0];

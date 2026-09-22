@@ -193,27 +193,13 @@ public class RunAction : Command
                         throw error; // throw if strict and not ignored
                     }
 
-                    if (code == "MISSING_ENV_FILE")
+                    if (code == "MISSING_ENV_FILE" && !string.IsNullOrEmpty(convention))
                     {
-                        if (!string.IsNullOrEmpty(convention)) // do not output error for conventions (too noisy)
-                        {
-                            continue;
-                        }
-
-                        _logger.Error(error.Message);
-                        if (!string.IsNullOrEmpty(dotenvError?.Help))
-                        {
-                            _logger.Error(
-                                $"{dotenvError.Help} and re-run [dotenvx run -- {string.Join(' ', commandArgs)}]");
-                        }
+                        // do not output error for conventions (too noisy)
                     }
                     else
                     {
-                        _logger.Error(error.Message);
-                        if (!string.IsNullOrEmpty(dotenvError?.Help))
-                        {
-                            _logger.Error(dotenvError.Help);
-                        }
+                        _logger.Error(dotenvError?.MessageWithHelp ?? error.Message);
                     }
                 }
 
@@ -260,12 +246,7 @@ public class RunAction : Command
         }
         catch (Exception error)
         {
-            _logger.Error(error.Message);
-            if (error is DotenvxException dotenvxException && !string.IsNullOrEmpty(dotenvxException.Help))
-            {
-                _logger.Error(dotenvxException.Help);
-            }
-
+            CatchAndLog(_logger, error);
             return 1;
         }
 

@@ -99,7 +99,7 @@ public class EncryptAction : Command
                 if (processedEnv.Error != null)
                 {
                     stdoutErrorCount++;
-                    _logger.Error(processedEnv.Error.Message);
+                    _logger.Error((processedEnv.Error as DotenvxException)?.MessageWithHelp ?? processedEnv.Error.Message);
                 }
                 else if (!string.IsNullOrEmpty(processedEnv.EnvSrc))
                 {
@@ -127,21 +127,7 @@ public class EncryptAction : Command
                 {
                     errorCount++;
                     Exception? error = processedEnv.Error;
-                    string code = (error as DotenvxException)?.Code ?? "UNKNOWN";
-                    _logger.Warn(error.Message);
-                    if (code == "MISSING_ENV_FILE")
-                    {
-                        _logger.Help(
-                            $"? add one with [echo \"HELLO=World\" > {processedEnv.EnvFilePath}] and re-run [dotenvx encrypt]");
-                    }
-                    else
-                    {
-                        string? help = (error as DotenvxException)?.Help;
-                        if (!string.IsNullOrEmpty(help))
-                        {
-                            _logger.Help(help);
-                        }
-                    }
+                    _logger.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
                 }
                 else if (processedEnv.Changed)
                 {

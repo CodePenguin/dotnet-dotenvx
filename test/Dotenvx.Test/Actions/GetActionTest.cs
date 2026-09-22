@@ -160,7 +160,7 @@ public class GetActionTest : EnvironmentTestBase
         exitCode.ShouldBe(1);
         string output = _consoleOutput.ToString();
         output.ShouldBe("\n");
-        MockLogger.ErrorMessages.ShouldContain("[MISSING_KEY] missing NOTFOUND key");
+        MockLogger.ErrorMessages.ShouldContain("[MISSING_KEY] missing key (NOTFOUND). fix: [https://github.com/dotenvx/dotenvx/issues/759]");
     }
 
     /// <remarks>Refer to "get - key with format dotenv multiline encrypted"</remarks>
@@ -175,7 +175,7 @@ public class GetActionTest : EnvironmentTestBase
         exitCode.ShouldBe(1);
         string output = _consoleOutput.ToString();
         output.ShouldBe("");
-        MockLogger.ErrorMessages.ShouldContain("[MISSING_KEY] missing NOTFOUND key");
+        MockLogger.ErrorMessages.ShouldContain("[MISSING_KEY] missing key (NOTFOUND). fix: [https://github.com/dotenvx/dotenvx/issues/759]");
     }
 
     /// <remarks>Refer to "get KEY (not found) --ignore"</remarks>
