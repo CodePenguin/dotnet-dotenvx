@@ -85,7 +85,14 @@ public class KeyPairAction : Command
                 return 1;
             }
 
-            Console.WriteLine(single);
+            if (format == "colon")
+            {
+                Console.WriteLine($"{key}:{single}");
+            }
+            else
+            {
+                Console.WriteLine(single);
+            }
         }
         else
         {

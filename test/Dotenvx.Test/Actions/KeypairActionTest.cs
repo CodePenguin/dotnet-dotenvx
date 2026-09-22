@@ -112,6 +112,68 @@ public class KeyPairActionTest : EnvironmentTestBase
         output.ShouldBe($"DOTENV_PUBLIC_KEY={PublicKey} DOTENV_PRIVATE_KEY=\n");
     }
 
+    /// <remarks>Refer to "keypair --format colon"</remarks>
+    [Fact]
+    public void TestKeypairFormatColon()
+    {
+        KeyPair mockKeyPair = Substitute.For<KeyPair>();
+        mockKeyPair.Run().Returns(new Dictionary<string, string?>
+        {
+            { "DOTENV_PUBLIC_KEY", PublicKey }, { "DOTENV_PRIVATE_KEY", PrivateKey }
+        });
+        KeyPair.Factory = (_, _) => mockKeyPair;
+
+        ParseResult parseResult = RootCommand.Parse(["keypair", "--format", "colon"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        string output = _consoleOutput.ToString();
+        output.ShouldBe($"DOTENV_PUBLIC_KEY:{PublicKey} DOTENV_PRIVATE_KEY:{PrivateKey}\n");
+    }
+
+    /// <remarks>Refer to "keypair --format colon (when null value should be empty string for colon format)"</remarks>
+    [Fact]
+    public void TestKeypairFormatColonWithNullValue()
+    {
+        KeyPair mockKeyPair = Substitute.For<KeyPair>();
+        mockKeyPair.Run().Returns(new Dictionary<string, string?>
+        {
+            { "DOTENV_PUBLIC_KEY", PublicKey }, { "DOTENV_PRIVATE_KEY", null }
+        });
+        KeyPair.Factory = (_, _) => mockKeyPair;
+
+        ParseResult parseResult = RootCommand.Parse(["keypair", "--format", "colon"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        string output = _consoleOutput.ToString();
+        output.ShouldBe($"DOTENV_PUBLIC_KEY:{PublicKey} DOTENV_PRIVATE_KEY:\n");
+    }
+
+    /// <remarks>
+    /// Refer to "keypair KEY --format colon". Found via this test (opencode delegation,
+    /// 2026-09-22) that KeyPairAction.cs's single-key branch printed only the bare value
+    /// regardless of --format, when keypair.js prints `${key}:${results}` specifically for
+    /// key+colon - confirmed against the real JS source and fixed in KeyPairAction.cs.
+    /// </remarks>
+    [Fact]
+    public void TestKeypairKeyFormatColon()
+    {
+        KeyPair mockKeyPair = Substitute.For<KeyPair>();
+        mockKeyPair.Run().Returns(new Dictionary<string, string?>
+        {
+            { "DOTENV_PRIVATE_KEY", PrivateKey }
+        });
+        KeyPair.Factory = (_, _) => mockKeyPair;
+
+        ParseResult parseResult = RootCommand.Parse(["keypair", "DOTENV_PRIVATE_KEY", "--format", "colon"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        string output = _consoleOutput.ToString();
+        output.ShouldBe($"DOTENV_PRIVATE_KEY:{PrivateKey}\n");
+    }
+
     /// <remarks>Refer to "keypair --pretty-print"</remarks>
     [Fact]
     public void TestKeypairPrettyPrint()
