@@ -15,6 +15,13 @@ public class DotenvxException(string code, string message, string? help = null) 
     public string Code { get; private set; } = code;
     public string? Help { get; private set; } = help;
 
+    // Matches errors.js's `Errors` constructor's `options.debug` - set on the rare error that
+    // carries extra diagnostic detail beyond the user-facing message. No current call site in this
+    // port sets it (upstream's own `debug` option isn't passed by any current call site either -
+    // confirmed via grep of `.custom()` callers), but catchAndLog.js checks it unconditionally, so
+    // CatchAndLog.cs needs somewhere to read it from.
+    public string? Debug { get; init; }
+
     public string MessageWithHelp => string.IsNullOrEmpty(Help) ? Message : $"{Message}. {Help}";
 }
 

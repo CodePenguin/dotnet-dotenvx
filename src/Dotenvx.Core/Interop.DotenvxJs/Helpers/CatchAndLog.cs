@@ -14,6 +14,11 @@ public static partial class Helpers
             logger.Error(msg);
         }
 
+        if (error is DotenvxException { Debug: { Length: > 0 } debug })
+        {
+            logger.Debug(debug);
+        }
+
         if (error is DotenvxException ex)
         {
             logger.Debug($"ERROR_CODE: {ex.Code}");

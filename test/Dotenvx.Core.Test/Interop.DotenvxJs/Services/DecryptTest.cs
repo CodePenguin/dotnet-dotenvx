@@ -247,6 +247,48 @@ public class DecryptTest : EnvironmentTestBase
         (parsed["HELLO3"] as string).ShouldBe("three");
     }
 
+    /// <remarks>
+    /// Refer to "#decrypt - partially decrypts when another encrypted value is bad" - from
+    /// dotenvx/tests/e2e/decrypt.test.js, not this file's usual lib/services/decrypt.test.js (that
+    /// upstream file has no equivalent scenario). Verified live against the real Node CLI, 2026-09-22:
+    /// found and fixed two real bugs while porting this - Decrypt.cs's per-key loop had no try/catch,
+    /// so one malformed value aborted decryption of every other (successfully-decryptable) key in the
+    /// same file, and DecryptAction.cs's `else if (Changed)` made Error/Changed mutually exclusive,
+    /// silently dropping the partially-decrypted output whenever any key failed. Also: the specific
+    /// underlying failure reason (malformed data, wrong key, missing key) is NOT surfaced here - it's
+    /// unconditionally the generic "could not decrypt {key}", confirmed by calling
+    /// @dotenvx/primitives' parsearrays() (used only by the `decrypt` command) directly with a
+    /// missing key, a wrong-but-validly-shaped key, and malformed ciphertext - all three produced the
+    /// exact same generic message. This is different from run/get/set, which use primitives' singular
+    /// parse() and DO surface the specific WRONG_PRIVATE_KEY/MISSING_PRIVATE_KEY cause (see
+    /// RunActionTest.cs's TestRunWrongPrivateKey/TestRunMissingPrivateKey).
+    /// </remarks>
+    [Fact]
+    public void TestRunPartiallyDecryptsWhenAnotherEncryptedValueIsBad()
+    {
+        File.Copy("tests/monorepo/apps/encrypted/.env.keys", ".env.keys");
+        File.Copy("tests/monorepo/apps/encrypted/.env", ".env");
+        File.AppendAllText(".env", "FAKE=\"encrypted:fake123345343434\"\n");
+
+        EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = ".env" }];
+        DecryptResult result = new Decrypt(envs, null, null, null).Run();
+
+        result.ProcessedEnvs.ShouldHaveSingleItem();
+        ProcessedDecrypt p = result.ProcessedEnvs[0];
+        p.Keys.ShouldBe(["HELLO"]);
+        p.Changed.ShouldBeTrue();
+        p.Error.ShouldNotBeNull();
+        p.Error.ShouldBeOfType<DecryptionFailedException>();
+        ((DotenvxException)p.Error).MessageWithHelp.ShouldBe(
+            "[DECRYPTION_FAILED] could not decrypt FAKE. fix: [https://github.com/dotenvx/dotenvx/issues/757]");
+
+        result.ChangedFilePaths.ShouldBe([".env"]);
+        result.UnchangedFilePaths.ShouldBeEmpty();
+
+        p.EnvSrc.ShouldContain("HELLO=\"encrypted\"");
+        p.EnvSrc.ShouldContain("FAKE=\"encrypted:fake123345343434\"");
+    }
+
     /// <remarks>Refer to "#run (finds .env file with excluded key glob string)"</remarks>
     [Fact]
     public void TestRunFindsEnvFileWithExcludedKeyGlobString()

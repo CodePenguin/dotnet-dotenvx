@@ -121,6 +121,32 @@ public class DecryptActionTest : EnvironmentTestBase
     }
 
     /// <remarks>
+    /// Refer to "#decrypt - partially decrypts when another encrypted value is bad" - from
+    /// dotenvx/tests/e2e/decrypt.test.js. See DecryptTest.cs's
+    /// TestRunPartiallyDecryptsWhenAnotherEncryptedValueIsBad for the full writeup of the two real
+    /// bugs (Decrypt.cs's per-key loop aborting the whole file; DecryptAction.cs's Error/Changed
+    /// mutual exclusivity) found and fixed while porting this - this test locks in the CLI-level
+    /// exit code and log lines on top of that, verified live against the real Node CLI.
+    /// </remarks>
+    [Fact]
+    public void TestDecryptPartiallyDecryptsWhenAnotherEncryptedValueIsBad()
+    {
+        File.Copy("tests/monorepo/apps/encrypted/.env.keys", ".env.keys");
+        File.Copy("tests/monorepo/apps/encrypted/.env", ".env");
+        File.AppendAllText(".env", "FAKE=\"encrypted:fake123345343434\"\n");
+
+        ParseResult parseResult = RootCommand.Parse(["decrypt"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(1);
+        MockLogger.ErrorMessages.ShouldContain(
+            "[DECRYPTION_FAILED] could not decrypt FAKE. fix: [https://github.com/dotenvx/dotenvx/issues/757]");
+        MockLogger.InfoMessages.ShouldContain("✔ decrypted (.env)");
+        File.ReadAllText(".env").ShouldContain("HELLO=\"encrypted\"");
+        File.ReadAllText(".env").ShouldContain("FAKE=\"encrypted:fake123345343434\"");
+    }
+
+    /// <remarks>
     /// Refer to "decrypt - MISSING_ENV_FILE". Verified against the real Node CLI: a per-file
     /// MISSING_ENV_FILE error exits 1, matching decrypt.js's errorCount tracking - DecryptAction
     /// previously never checked errorCount in its main branch and always returned 0 (a real,

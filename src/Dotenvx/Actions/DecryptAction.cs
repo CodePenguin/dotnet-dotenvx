@@ -138,13 +138,19 @@ public class DecryptAction : Command
             foreach (ProcessedDecrypt processedEnv in processedEnvs)
             {
                 _logger.Verbose($"decrypting {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
+
+                // Error and Changed are independent, not mutually exclusive: a per-key decryption
+                // failure doesn't stop the file's other successfully-decrypted keys from being
+                // written (matches decrypt.js exactly - confirmed live, this used to be an
+                // `else if` that silently dropped partially-decrypted output on any error).
                 if (processedEnv.Error != null)
                 {
                     errorCount += 1;
-                    Exception? error = processedEnv.Error;
+                    Exception error = processedEnv.Error;
                     _logger.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
                 }
-                else if (processedEnv.Changed)
+
+                if (processedEnv.Changed)
                 {
                     Fsx.WriteFileX(processedEnv.FilePath, processedEnv.EnvSrc);
 

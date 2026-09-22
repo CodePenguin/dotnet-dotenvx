@@ -85,13 +85,22 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                     continue;
                 }
 
-                row.Keys.Add(envKey);
-
-                string decryptedValue = DecryptKeyValue(envKey, value, privateKeyName, privateKey);
-
-                envSrc = Replace(envSrc, envKey, decryptedValue);
-
-                row.Changed = true;
+                try
+                {
+                    string decryptedValue = DecryptKeyValue(envKey, value, privateKeyName, privateKey);
+                    envSrc = Replace(envSrc, envKey, decryptedValue);
+                    row.Keys.Add(envKey);
+                    row.Changed = true;
+                }
+                catch (Exception)
+                {
+                    // Matches @dotenvx/primitives' parsearrays() (used only by the `decrypt` command,
+                    // confirmed via live oracle - unlike run/get/set's singular parse(), which surfaces
+                    // the specific WRONG_PRIVATE_KEY/MISSING_PRIVATE_KEY/etc. cause): one key's
+                    // decryption failure doesn't abort the rest of the file, and the specific
+                    // underlying cause is collapsed into a single generic message per failed key.
+                    row.Error ??= new DecryptionFailedException($"could not decrypt {envKey}");
+                }
             }
 
             row.EnvSrc = envSrc;
