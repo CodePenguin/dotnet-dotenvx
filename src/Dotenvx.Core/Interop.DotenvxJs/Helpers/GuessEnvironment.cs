@@ -5,7 +5,7 @@ public static partial class Helpers
 {
     public static string GuessEnvironment(string filepath)
     {
-        string filename = Path.GetFileName(filepath);
+        string filename = CanonicalEnvFilename(filepath);
 
         string[] parts = filename.Split('.');
         string[] possibleEnvironmentList = parts.Skip(2).ToArray();

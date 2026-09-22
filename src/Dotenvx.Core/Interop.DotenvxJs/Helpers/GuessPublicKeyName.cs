@@ -5,7 +5,7 @@ public static partial class Helpers
 {
     public static string GuessPublicKeyName(string filepath)
     {
-        string filename = Path.GetFileName(filepath).ToLower();
+        string filename = CanonicalEnvFilename(filepath);
 
         // .env
         if (filename == ".env")
