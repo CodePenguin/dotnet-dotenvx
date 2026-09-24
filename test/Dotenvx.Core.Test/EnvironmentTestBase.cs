@@ -68,6 +68,7 @@ public class EnvironmentTestBase : IDisposable
 
         Fsx.ResetToDefaults();
         GitHelper.ResetToDefaults();
+        GitleaksHelper.ResetToDefaults();
 
         File.Delete(".env");
         File.Delete(".env.keys");

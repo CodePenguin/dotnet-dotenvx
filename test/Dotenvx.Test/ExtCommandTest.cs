@@ -1,4 +1,6 @@
 using System.CommandLine;
+using System.CommandLine.Parsing;
+using System.Collections.Generic;
 
 using Dotenvx;
 using Dotenvx.Actions;
@@ -36,7 +38,7 @@ public class ExtCommandTest : EnvironmentTestBase
             new EncryptAction(MockLogger),
             new ExtCommand(
                 new GenexampleAction(MockLogger), new GitignoreAction(MockLogger), new LsAction(MockLogger),
-                new PrebuildAction(MockLogger), new PrecommitAction(MockLogger)),
+                new PrebuildAction(MockLogger), new PrecommitAction(MockLogger), new ScanAction(MockLogger)),
             new GenexampleAction(MockLogger),
             new GetAction(MockLogger),
             new GitignoreAction(MockLogger),
@@ -89,5 +91,18 @@ public class ExtCommandTest : EnvironmentTestBase
         string output = _consoleOutput.ToString();
         output.ShouldContain("extensions");
         output.ShouldContain("ls");
+        output.ShouldContain("scan");
+    }
+
+    /// <remarks>
+    /// Confirms scan's registration asymmetry vs every other ext subcommand - it's ext-only,
+    /// no top-level `dotenvx scan` alias exists upstream, so parsing the bare top-level form
+    /// must fail while `ext scan` succeeds.
+    /// </remarks>
+    [Fact]
+    public void TestScanIsExtOnlyNotTopLevel()
+    {
+        IReadOnlyList<ParseError> topLevelErrors = RootCommand.Parse(["scan"]).Errors;
+        topLevelErrors.ShouldNotBeEmpty();
     }
 }
