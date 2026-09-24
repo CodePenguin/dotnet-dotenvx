@@ -1,6 +1,8 @@
 using System.Linq;
 using System.Text;
 
+using Dotenvx.Interop.DotenvxJs.Types;
+
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 public delegate string ReadFileXDelegate(string filepath, string? encoding = null);
@@ -89,7 +91,21 @@ public static class Fsx
 
     private static void DefaultWriteFileX(string filepath, string str)
     {
-        File.WriteAllText(filepath, str, Utf8NoBom);
+        // Matches fsx.js's writeFileX/writeFileXSync: catches EACCES/EPERM specifically and
+        // translates to FILE_NOT_WRITABLE - confirmed reachable live (a brand-new file in a
+        // directory that denies file creation, via `set`), not the broader "any write failure"
+        // this might first appear to cover. .NET surfaces this as UnauthorizedAccessException
+        // (confirmed via a live probe) - a file-locked-by-another-handle sharing violation is a
+        // separate IOException, deliberately NOT translated here, matching upstream's own
+        // narrower EACCES/EPERM-only check.
+        try
+        {
+            File.WriteAllText(filepath, str, Utf8NoBom);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw new FileNotWritableException(filepath);
+        }
     }
 
     // Method to reset to defaults for tests

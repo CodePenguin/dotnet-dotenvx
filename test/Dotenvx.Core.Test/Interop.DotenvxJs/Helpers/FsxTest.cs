@@ -1,4 +1,5 @@
 using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Interop.DotenvxJs.Types;
 
 using Shouldly;
 
@@ -13,17 +14,20 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 /// convention in CLAUDE.md), so these tests exercise the real default implementations against
 /// real temp files instead of mocking `System.IO` calls.
 ///
-/// The `FILE_NOT_WRITABLE` translation is intentionally NOT ported here - confirmed via live
-/// testing against the real Node CLI (2026-09-22, using icacls to deny write access to a file,
-/// matching a genuine EPERM on Windows) that `dotenvx set` does NOT surface the translated
-/// message even though `fsx.writeFileX`'s try/catch should apply on that exact code path
-/// (`src/cli/actions/set.js` calls `fsx.writeFileX` directly) - it leaks the raw
-/// `EPERM: operation not permitted, open '...'` message instead, matching what this port already
-/// does (see TestSetOtherError/TestEncryptOtherError/TestDecryptOtherError in the corresponding
-/// *ActionTest.cs files). Whether this is a latent upstream bug, a Windows-specific quirk, or
-/// something about this pin's specific EPERM shape not matching what fsx.js's catch expects,
-/// wasn't fully run to ground - flagged as a "needs a decision" item in .claude/plan.md rather
-/// than guessing at a fix that would newly diverge from confirmed-live-correct current behavior.
+/// UPDATE 2026-09-24: `FILE_NOT_WRITABLE` translation was initially left unported here after an
+/// earlier live test (icacls-denying WRITE on an EXISTING file) showed `dotenvx set` leaking the
+/// raw EPERM message instead. That test was misleading, not evidence of unreachability - denying
+/// write on an existing file also denies READ on Windows, so `setTransform`'s own read-phase catch
+/// (`src/lib/transforms/set.js`) swallows the raw error before the later, correctly-translating
+/// write call ever runs. A DIFFERENT live test (a brand-new file in a directory that denies file
+/// CREATION specifically - icacls `/deny (WD,AD)`, or `chmod` removing write on the directory on
+/// Linux - no read is ever attempted) confirmed the translation genuinely IS reachable and DOES
+/// fire correctly on the real Node CLI. Ported here as `FileNotWritableException`, thrown from
+/// `Fsx.WriteFileX`'s default implementation on `UnauthorizedAccessException` specifically (the
+/// exception type confirmed live for this OS-level condition) - deliberately NOT
+/// `IOException` (a locked-file sharing violation is a different condition upstream doesn't
+/// translate either, and this port's own `TestSetOtherError`/`TestEncryptOtherError`/
+/// `TestDecryptOtherError` tests already correctly lock in the raw-message behavior for that case).
 /// </remarks>
 public class FsxTest : EnvironmentTestBase
 {
@@ -88,5 +92,31 @@ public class FsxTest : EnvironmentTestBase
 
         Fsx.ExistsSync("tests_fsx_somefile.txt").ShouldBeTrue();
         Fsx.ExistsSync("tests_fsx_missing.txt").ShouldBeFalse();
+    }
+
+    /// <remarks>
+    /// Refer to "#writeFileXSync translates permission errors" / "#writeFileX translates permission
+    /// errors". Uses a path that's actually an existing directory to portably trigger
+    /// UnauthorizedAccessException on both Windows and Linux (CI) without OS-specific ACL/chmod
+    /// setup - confirmed via a live probe that this reliably throws the same exception type as the
+    /// real permission-denied scenario this translation targets.
+    /// </remarks>
+    [Fact]
+    public void TestWriteFileXTranslatesPermissionErrors()
+    {
+        Directory.CreateDirectory("tests_fsx_a_directory");
+
+        try
+        {
+            FileNotWritableException error = Should.Throw<FileNotWritableException>(() =>
+                Fsx.WriteFileX("tests_fsx_a_directory", "hello"));
+
+            error.MessageWithHelp.ShouldBe(
+                "[FILE_NOT_WRITABLE] cannot write to file (tests_fsx_a_directory). fix: [https://github.com/dotenvx/dotenvx/issues/890]");
+        }
+        finally
+        {
+            Directory.Delete("tests_fsx_a_directory");
+        }
     }
 }

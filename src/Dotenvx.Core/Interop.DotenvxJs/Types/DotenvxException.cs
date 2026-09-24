@@ -70,6 +70,21 @@ public class MissingDirectoryException(string directory) : DotenvxException(
     $"[MISSING_DIRECTORY] missing directory ({directory})",
     "fix: [https://github.com/dotenvx/dotenvx/issues/758]");
 
+/// <remarks>
+/// Confirmed reachable live, 2026-09-24 (revisiting an earlier "needs a decision" item that had
+/// concluded this was unreachable) - a genuinely NEW file (no read ever attempted) in a directory
+/// that denies file creation specifically (Windows: icacls /deny (WD,AD), distinct from denying
+/// write on an EXISTING file's content) triggers this via `set`. The earlier "unreachable"
+/// finding was based on testing an EXISTING write-denied file instead, where Windows denies the
+/// READ too, so `setTransform`'s own read-phase catch swallows the raw error before the later
+/// translated write call ever runs - a real, narrower reachability story than either "always
+/// reachable" or "never reachable" would suggest.
+/// </remarks>
+public class FileNotWritableException(string filepath) : DotenvxException(
+    "FILE_NOT_WRITABLE",
+    $"[FILE_NOT_WRITABLE] cannot write to file ({filepath})",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/890]");
+
 public class MissingEnvFilesException() : DotenvxException(
     "MISSING_ENV_FILES",
     "[MISSING_ENV_FILES] no .env* files found",
