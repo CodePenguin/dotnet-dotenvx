@@ -90,6 +90,16 @@ public class MissingEnvFilesException() : DotenvxException(
     "[MISSING_ENV_FILES] no .env* files found",
     "fix: [https://github.com/dotenvx/dotenvx/issues/760]");
 
+public class MissingEnvExampleException() : DotenvxException(
+    "MISSING_ENV_EXAMPLE",
+    "[MISSING_ENV_EXAMPLE] missing .env.example file",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/905]");
+
+public class ValidationFailedException(string message) : DotenvxException(
+    "VALIDATION_FAILED",
+    $"[VALIDATION_FAILED] {message}",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/907]");
+
 /// <remarks>
 /// Mirrors errors.js's `.custom({message, help})` - used by prebuild.js/precommit.js for their
 /// ad-hoc "not encrypted/dockerignored"-style messages, which never pass a `code` (confirmed by

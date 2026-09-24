@@ -48,7 +48,8 @@ public class ExtCommandTest : EnvironmentTestBase
             new PrecommitAction(MockLogger),
             new RotateAction(MockLogger),
             new RunAction(MockLogger),
-            new SetAction(MockLogger));
+            new SetAction(MockLogger),
+            new ValidateAction(MockLogger));
     }
 
     private DotenvxRootCommand RootCommand { get; }

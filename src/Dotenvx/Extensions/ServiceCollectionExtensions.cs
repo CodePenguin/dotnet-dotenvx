@@ -22,6 +22,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<PrebuildAction>();
         services.AddTransient<PrecommitAction>();
         services.AddTransient<ScanAction>();
+        services.AddTransient<ValidateAction>();
         services.AddTransient<KeyPairAction>();
         services.AddTransient<LsAction>();
         services.AddTransient<RotateAction>();

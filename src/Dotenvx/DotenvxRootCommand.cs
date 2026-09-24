@@ -27,7 +27,8 @@ public class DotenvxRootCommand : LoggingRootCommand
         PrecommitAction precommitAction,
         RotateAction rotateAction,
         RunAction runAction,
-        SetAction setAction
+        SetAction setAction,
+        ValidateAction validateAction
     ) : base("a secure dotenv–from the creator of `dotenv`")
     {
         UpdateBuiltInCommands(extCommand);
@@ -45,6 +46,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(precommitAction);
         Subcommands.Add(rotateAction);
         Subcommands.Add(runAction);
+        Subcommands.Add(validateAction);
         Subcommands.Add(setAction);
         Subcommands.Add(extCommand);
     }
