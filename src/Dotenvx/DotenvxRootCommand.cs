@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.Help;
+using System.CommandLine.Invocation;
 using System.IO;
 
 using Dotenvx.Actions;
@@ -16,6 +17,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         DecryptAction decryptAction,
         DelAction delAction,
         EncryptAction encryptAction,
+        ExtCommand extCommand,
         GetAction getAction,
         KeyPairAction keyPairAction,
         LsAction lsAction,
@@ -24,7 +26,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         SetAction setAction
     ) : base("a secure dotenv–from the creator of `dotenv`")
     {
-        UpdateBuiltInCommands();
+        UpdateBuiltInCommands(extCommand);
 
         // Add Actions
         Subcommands.Add(decryptAction);
@@ -36,6 +38,44 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(rotateAction);
         Subcommands.Add(runAction);
         Subcommands.Add(setAction);
+        Subcommands.Add(extCommand);
+    }
+
+    /// <remarks>
+    /// dotenvx.js's program.helpInformation override strips any line containing "🔌 extensions"
+    /// from `dotenvx --help`'s command list, while `dotenvx ext --help` on its own still shows
+    /// normally. System.CommandLine 2.0.0's Command.Hidden can't reproduce this directly - it's a
+    /// single flag on the Command object itself, checked BOTH by a parent's subcommand-listing
+    /// filter AND by HelpBuilder.Write's own "if (context.Command.Hidden) return;" early exit -
+    /// so marking extCommand.Hidden permanently true hides it from the root's listing but also
+    /// makes `dotenvx ext --help` render nothing at all (confirmed empirically). This wrapper
+    /// toggles Hidden only for the single Invoke() call where the root itself is the help target,
+    /// restoring it immediately after - `dotenvx ext --help`'s own CommandResult.Command is
+    /// extCommand, not the root, so it's untouched.
+    /// </remarks>
+    private sealed class FilteringHelpAction(SynchronousCommandLineAction inner, Command root, Command hideFromRootOnly)
+        : SynchronousCommandLineAction
+    {
+        public override int Invoke(ParseResult parseResult)
+        {
+            bool isRootHelp = parseResult.CommandResult.Command == root;
+            if (isRootHelp)
+            {
+                hideFromRootOnly.Hidden = true;
+            }
+
+            try
+            {
+                return inner.Invoke(parseResult);
+            }
+            finally
+            {
+                if (isRootHelp)
+                {
+                    hideFromRootOnly.Hidden = false;
+                }
+            }
+        }
     }
 
     public static DotenvxLoggerOptions GetDotenvxLoggerConfiguration(string[] args)
@@ -54,15 +94,20 @@ public class DotenvxRootCommand : LoggingRootCommand
         return new DotenvxLoggerOptions { LogLevel = DotenvxLogLevelExtensions.FromString(logLevel) };
     }
 
-    private void UpdateBuiltInCommands()
+    private void UpdateBuiltInCommands(ExtCommand extCommand)
     {
         // Add alias for Version
         foreach (Option option in Options)
         {
             switch (option)
             {
-                case HelpOption:
+                case HelpOption help:
                     option.Description = "display help for command";
+                    if (help.Action is SynchronousCommandLineAction defaultHelpAction)
+                    {
+                        help.Action = new FilteringHelpAction(defaultHelpAction, this, extCommand);
+                    }
+
                     break;
                 case VersionOption:
                     option.Aliases.Add("-V");
