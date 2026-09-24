@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<GetAction>();
         services.AddTransient<GitignoreAction>();
         services.AddTransient<PrebuildAction>();
+        services.AddTransient<PrecommitAction>();
         services.AddTransient<KeyPairAction>();
         services.AddTransient<LsAction>();
         services.AddTransient<RotateAction>();

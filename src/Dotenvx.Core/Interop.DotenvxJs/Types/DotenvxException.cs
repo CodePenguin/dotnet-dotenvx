@@ -86,6 +86,11 @@ public class CustomException(string message, string help) : DotenvxException(
     message,
     help);
 
+public class PrecommitHookModifyFailedException(string originalMessage) : DotenvxException(
+    "PRECOMMIT_HOOK_MODIFY_FAILED",
+    $"[PRECOMMIT_HOOK_MODIFY_FAILED] failed to modify pre-commit hook: {originalMessage}",
+    "fix: [try again or report error]");
+
 /// <remarks>
 /// Was "InvalidDotenvPrivateKeyException" with code "INVALID_DOTENV_PRIVATE_KEY" - neither the
 /// class name nor the code exist upstream. The real upstream scenario/code is

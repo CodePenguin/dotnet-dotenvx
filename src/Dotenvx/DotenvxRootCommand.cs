@@ -24,6 +24,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         KeyPairAction keyPairAction,
         LsAction lsAction,
         PrebuildAction prebuildAction,
+        PrecommitAction precommitAction,
         RotateAction rotateAction,
         RunAction runAction,
         SetAction setAction
@@ -41,6 +42,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(keyPairAction);
         Subcommands.Add(lsAction);
         Subcommands.Add(prebuildAction);
+        Subcommands.Add(precommitAction);
         Subcommands.Add(rotateAction);
         Subcommands.Add(runAction);
         Subcommands.Add(setAction);

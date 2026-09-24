@@ -14,6 +14,7 @@ public static class Fsx
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
     public static Action<string, string> AppendFileSync { get; internal set; } = DefaultAppendFileSync;
+    public static Action<string, string> ChmodSync { get; internal set; } = DefaultChmodSync;
     public static Func<string, bool> ExistsSync { get; internal set; } = DefaultExistsSync;
     public static Func<string, string[]> ReadDirSync { get; internal set; } = DefaultReadDirSync;
     public static ReadFileXDelegate ReadFileX { get; internal set; } = DefaultReadFileX;
@@ -24,6 +25,23 @@ public static class Fsx
     private static void DefaultAppendFileSync(string path, string data)
     {
         File.AppendAllText(path, data, Utf8NoBom);
+    }
+
+    private static void DefaultChmodSync(string path, string octalMode)
+    {
+        // .NET's File.SetUnixFileMode throws PlatformNotSupportedException on Windows (no exec-bit
+        // concept there) - best-effort like ExecuteCommand.cs's own defensive style. CI runs on
+        // ubuntu-latest, so this is real, verifiable behavior there, not just a no-op everywhere.
+        try
+        {
+            UnixFileMode mode = (UnixFileMode)Convert.ToInt32(octalMode, 8);
+#pragma warning disable CA1416 // guarded by the catch below, not an OperatingSystem.IsWindows() check
+            File.SetUnixFileMode(path, mode);
+#pragma warning restore CA1416
+        }
+        catch (PlatformNotSupportedException)
+        {
+        }
     }
 
     private static bool DefaultExistsSync(string path)
@@ -78,6 +96,7 @@ public static class Fsx
     internal static void ResetToDefaults()
     {
         AppendFileSync = DefaultAppendFileSync;
+        ChmodSync = DefaultChmodSync;
         ExistsSync = DefaultExistsSync;
         ReadDirSync = DefaultReadDirSync;
         ReadFileX = DefaultReadFileX;

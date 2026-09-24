@@ -36,13 +36,14 @@ public class ExtCommandTest : EnvironmentTestBase
             new EncryptAction(MockLogger),
             new ExtCommand(
                 new GenexampleAction(MockLogger), new GitignoreAction(MockLogger), new LsAction(MockLogger),
-                new PrebuildAction(MockLogger)),
+                new PrebuildAction(MockLogger), new PrecommitAction(MockLogger)),
             new GenexampleAction(MockLogger),
             new GetAction(MockLogger),
             new GitignoreAction(MockLogger),
             new KeyPairAction(MockLogger),
             new LsAction(MockLogger),
             new PrebuildAction(MockLogger),
+            new PrecommitAction(MockLogger),
             new RotateAction(MockLogger),
             new RunAction(MockLogger),
             new SetAction(MockLogger));

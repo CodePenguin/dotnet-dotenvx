@@ -20,12 +20,13 @@ public class ExtCommand : Command
 {
     public ExtCommand(
         GenexampleAction genexampleAction, GitignoreAction gitignoreAction, LsAction lsAction,
-        PrebuildAction prebuildAction)
+        PrebuildAction prebuildAction, PrecommitAction precommitAction)
         : base("ext", "🔌 extensions")
     {
         Subcommands.Add(lsAction);
         Subcommands.Add(gitignoreAction);
         Subcommands.Add(genexampleAction);
         Subcommands.Add(prebuildAction);
+        Subcommands.Add(precommitAction);
     }
 }

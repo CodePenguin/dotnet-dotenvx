@@ -62,10 +62,12 @@ public class EnvironmentTestBase : IDisposable
         Ls.ResetFactory();
         Parse.ResetFactory();
         Prebuild.ResetFactory();
+        Precommit.ResetFactory();
         Run.ResetFactory();
         Sets.ResetFactory();
 
         Fsx.ResetToDefaults();
+        GitHelper.ResetToDefaults();
 
         File.Delete(".env");
         File.Delete(".env.keys");
