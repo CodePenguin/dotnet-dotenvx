@@ -19,6 +19,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         EncryptAction encryptAction,
         ExtCommand extCommand,
         GetAction getAction,
+        GitignoreAction gitignoreAction,
         KeyPairAction keyPairAction,
         LsAction lsAction,
         RotateAction rotateAction,
@@ -33,6 +34,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(delAction);
         Subcommands.Add(encryptAction);
         Subcommands.Add(getAction);
+        Subcommands.Add(gitignoreAction);
         Subcommands.Add(keyPairAction);
         Subcommands.Add(lsAction);
         Subcommands.Add(rotateAction);

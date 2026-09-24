@@ -18,8 +18,9 @@ namespace Dotenvx;
 /// </remarks>
 public class ExtCommand : Command
 {
-    public ExtCommand(LsAction lsAction) : base("ext", "🔌 extensions")
+    public ExtCommand(GitignoreAction gitignoreAction, LsAction lsAction) : base("ext", "🔌 extensions")
     {
         Subcommands.Add(lsAction);
+        Subcommands.Add(gitignoreAction);
     }
 }
