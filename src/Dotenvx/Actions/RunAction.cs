@@ -146,16 +146,9 @@ public class RunAction : Command
                 explicitEnvItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
             }
 
-            List<EnvItem> envItems = [];
-            // handle shorthand conventions - like --convention=nextjs
-            if (!string.IsNullOrEmpty(convention))
-            {
-                envItems.AddRange(Conventions(convention));
-            }
+            EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
 
-            envItems.AddRange(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()));
-
-            Run runService = Run.Factory(envItems.ToArray(), overload, processEnv, envKeysFile?.FirstOrDefault());
+            Run runService = Run.Factory(envItems, overload, processEnv, envKeysFile?.FirstOrDefault());
             RunResult result = runService.Execute();
 
             IList<RunProcessedEnv> processedEnvs = result.ProcessedEnvs;

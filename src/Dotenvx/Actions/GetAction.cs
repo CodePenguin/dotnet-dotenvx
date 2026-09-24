@@ -191,18 +191,11 @@ public class GetAction : Command
             explicitEnvItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
         }
 
-        List<EnvItem> envItems = [];
-        // handle shorthand conventions - like --convention=nextjs
-        if (!string.IsNullOrEmpty(convention))
-        {
-            envItems.AddRange(Conventions(convention));
-        }
-
-        envItems.AddRange(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()));
+        EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
 
         try
         {
-            Get getService = Get.Factory(key, envItems.ToArray(), overload, all, envKeysFile?.FirstOrDefault());
+            Get getService = Get.Factory(key, envItems, overload, all, envKeysFile?.FirstOrDefault());
             GetResult result = getService.Run();
             IReadOnlyDictionary<string, string> parsed = FilterKeys(result.Parsed, includeKey, excludeKey);
 

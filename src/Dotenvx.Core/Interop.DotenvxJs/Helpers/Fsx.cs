@@ -18,6 +18,7 @@ public static class Fsx
     public static Action<string, string> AppendFileSync { get; internal set; } = DefaultAppendFileSync;
     public static Action<string, string> ChmodSync { get; internal set; } = DefaultChmodSync;
     public static Func<string, bool> ExistsSync { get; internal set; } = DefaultExistsSync;
+    public static Func<string, bool> IsDirectorySync { get; internal set; } = DefaultIsDirectorySync;
     public static Func<string, string[]> ReadDirSync { get; internal set; } = DefaultReadDirSync;
     public static ReadFileXDelegate ReadFileX { get; internal set; } = DefaultReadFileX;
     public static Func<string, byte[]> ReadFileSync { get; internal set; } = DefaultReadFileSync;
@@ -49,6 +50,15 @@ public static class Fsx
     private static bool DefaultExistsSync(string path)
     {
         return File.Exists(path) || Directory.Exists(path);
+    }
+
+    private static bool DefaultIsDirectorySync(string path)
+    {
+        // Matches fs.statSync(filepath).isDirectory() wrapped in a try/catch that swallows any
+        // error (missing path, permission denied) and returns false - Directory.Exists already
+        // has exactly that "false unless it's really there and really a directory" semantic, no
+        // explicit try/catch needed.
+        return Directory.Exists(path);
     }
 
     private static string[] DefaultReadDirSync(string path)
@@ -114,6 +124,7 @@ public static class Fsx
         AppendFileSync = DefaultAppendFileSync;
         ChmodSync = DefaultChmodSync;
         ExistsSync = DefaultExistsSync;
+        IsDirectorySync = DefaultIsDirectorySync;
         ReadDirSync = DefaultReadDirSync;
         ReadFileX = DefaultReadFileX;
         ReadFileSync = DefaultReadFileSync;

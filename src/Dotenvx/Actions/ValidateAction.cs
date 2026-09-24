@@ -16,14 +16,15 @@ using ParseResult = System.CommandLine.ParseResult;
 namespace Dotenvx.Actions;
 
 /// <remarks>
-/// Reference source: dotenvx/src/cli/actions/validate.js. Env resolution mirrors RunAction.cs's
-/// established (simpler) convention-handling pattern rather than upstream's current
-/// buildCommandEnvs.js/resolveDirectoryFilepath.js (directory-argument-to-convention-files
-/// resolution) - RunAction.cs itself doesn't implement that newer behavior either yet, confirmed
-/// 2026-09-24 while scoping this command; fixing it is a separate, larger item affecting both
-/// commands together, not chased down here to avoid scope creep on an already-large addition.
-/// Unlike run, validate does NOT special-case MISSING_ENV_FILE-with-convention as "too noisy to
-/// show" - confirmed by reading validate.js's error loop, which has no such branch.
+/// Reference source: dotenvx/src/cli/actions/validate.js. Unlike run, validate does NOT special-
+/// case MISSING_ENV_FILE-with-convention as "too noisy to show" - confirmed by reading validate.js's
+/// error loop, which has no such branch. Also unlike run.js/get.js, validate.js builds its env list
+/// via plain `buildCommandEnvs(this.envs, options.convention)` - NOT wrapped in
+/// normalizeDotenvConfigPath first - so, deliberately reproduced here, `validate` does not fall
+/// back to DOTENV_FILE/DOTENV_PATH/DOTENV_F when no -f/--env is given, while run/get do. Confirmed
+/// by direct comparison of all three action files at this pin, 2026-09-24 - not "fixed" toward
+/// consistency, since the project's standing convention is to faithfully reproduce upstream's own
+/// asymmetries rather than smooth them over.
 /// </remarks>
 public class ValidateAction : Command
 {
@@ -109,15 +110,9 @@ public class ValidateAction : Command
                 explicitEnvItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
             }
 
-            List<EnvItem> envItems = [];
-            if (!string.IsNullOrEmpty(convention))
-            {
-                envItems.AddRange(Conventions(convention));
-            }
+            EnvItem[] envItems = BuildCommandEnvs(explicitEnvItems.ToArray(), convention);
 
-            envItems.AddRange(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()));
-
-            Run runService = Run.Factory(envItems.ToArray(), overload, validateEnv, envKeysFile?.FirstOrDefault());
+            Run runService = Run.Factory(envItems, overload, validateEnv, envKeysFile?.FirstOrDefault());
             RunResult result = runService.Execute();
 
             int errorCount = 0;
