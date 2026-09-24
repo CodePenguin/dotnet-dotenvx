@@ -2,7 +2,11 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-/// <remarks>Reference source: dotenvx/src/lib/services/keypair.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/lib/resolvers/keypair.js (moved there from
+/// src/lib/services/keypair.js, which no longer exists at this pin - confirmed 2026-09-24, part of
+/// the same custodian/keyring reorg CLAUDE.md already documents elsewhere).
+/// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class KeyPair(string envFile = ".env", string? envKeysFilePath = null)
 {

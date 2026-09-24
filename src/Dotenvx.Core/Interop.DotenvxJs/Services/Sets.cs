@@ -7,7 +7,14 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-/// <remarks>Reference source: dotenvx/src/lib/services/sets.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/lib/transforms/set.js (moved there from
+/// src/lib/services/sets.js, which no longer exists at this pin - confirmed 2026-09-24, part of
+/// the same custodian/keyring reorg CLAUDE.md already documents elsewhere). Already the file
+/// actually read/verified against during this session's error-message-system fix work (including
+/// the MispairedPrivateKeyException argument-order bug fix) - this comment was just stale, not the
+/// logic.
+/// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class Sets
 {

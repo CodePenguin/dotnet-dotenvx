@@ -8,7 +8,13 @@ using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-/// <remarks>Reference source: dotenvx/src/lib/services/encrypt.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/lib/transforms/encrypt.js (moved there from
+/// src/lib/services/encrypt.js, which no longer exists at this pin - confirmed 2026-09-24, part of
+/// the same custodian/keyring reorg CLAUDE.md already documents elsewhere). Already the file
+/// actually read/verified against during this session's error-message-system fix work - this
+/// comment was just stale, not the logic.
+/// </remarks>
 public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath,
     bool noCreate = false)
 {

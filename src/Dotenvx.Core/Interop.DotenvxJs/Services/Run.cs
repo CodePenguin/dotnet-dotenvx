@@ -6,7 +6,16 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-/// <remarks>Reference source: dotenvx/src/lib/services/run.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/lib/resolvers/envs.js (moved there from src/lib/services/run.js -
+/// confirmed 2026-09-24 that services/run.js no longer exists at all at this pin, part of the same
+/// custodian/keyring reorg CLAUDE.md already documents for ls.js/keynames.js/environment.js). The
+/// current resolver adds 1Password/Bitwarden secret-reference resolution and Armor provider/
+/// decryptor support, both confirmed out of scope for this port - the core parse/inject/error-
+/// handling logic this class implements (including ENOENT/EISDIR -&gt; MissingEnvFileException,
+/// matched here via UnauthorizedAccessException + Directory.Exists) was cross-checked against the
+/// current file and remains accurate.
+/// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class Run
 {

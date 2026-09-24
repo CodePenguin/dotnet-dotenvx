@@ -8,7 +8,14 @@ using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-/// <remarks>Reference source: dotenvx/src/lib/services/rotate.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/lib/services/rotate.js - this file (and the `rotate` CLI command
+/// itself) does NOT exist anywhere in the submodule at this v2.24.1 pin at all (confirmed
+/// 2026-09-24, no `rotate` registration in dotenvx.js) - `rotate` is a feature this port added
+/// ahead of the pin, not a line-for-line port of pinned upstream source, unlike every other
+/// service in this directory. There is deliberately no current upstream file this comment could
+/// point to instead.
+/// </remarks>
 public class Rotate(
     EnvItem[]? envs = null,
     string[]? key = null,
