@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<DecryptAction>();
         services.AddTransient<DelAction>();
         services.AddTransient<EncryptAction>();
+        services.AddTransient<GenexampleAction>();
         services.AddTransient<GetAction>();
         services.AddTransient<GitignoreAction>();
         services.AddTransient<KeyPairAction>();

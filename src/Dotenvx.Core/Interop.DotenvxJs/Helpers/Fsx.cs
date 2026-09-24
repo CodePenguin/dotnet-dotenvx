@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
@@ -32,7 +33,11 @@ public static class Fsx
 
     private static string[] DefaultReadDirSync(string path)
     {
-        return Directory.GetFileSystemEntries(path);
+        // Node's fs.readdirSync returns bare entry names, not full paths - Directory
+        // .GetFileSystemEntries returns full paths, which would silently break any caller
+        // matching against a bare filename (e.g. FindEnvFiles's `file.StartsWith(".env")`).
+        // Unused anywhere before this fix (confirmed via grep), so this was latent, not live.
+        return Directory.GetFileSystemEntries(path).Select(Path.GetFileName).ToArray()!;
     }
 
     private static string DefaultReadFileX(string filepath, string? encoding = null)

@@ -65,6 +65,16 @@ public class MissingKeyException(string key) : DotenvxException(
     $"[MISSING_KEY] missing key ({key})",
     "fix: [https://github.com/dotenvx/dotenvx/issues/759]");
 
+public class MissingDirectoryException(string directory) : DotenvxException(
+    "MISSING_DIRECTORY",
+    $"[MISSING_DIRECTORY] missing directory ({directory})",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/758]");
+
+public class MissingEnvFilesException() : DotenvxException(
+    "MISSING_ENV_FILES",
+    "[MISSING_ENV_FILES] no .env* files found",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/760]");
+
 /// <remarks>
 /// Was "InvalidDotenvPrivateKeyException" with code "INVALID_DOTENV_PRIVATE_KEY" - neither the
 /// class name nor the code exist upstream. The real upstream scenario/code is
