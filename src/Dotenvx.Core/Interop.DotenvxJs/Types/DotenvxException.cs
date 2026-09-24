@@ -76,6 +76,17 @@ public class MissingEnvFilesException() : DotenvxException(
     "fix: [https://github.com/dotenvx/dotenvx/issues/760]");
 
 /// <remarks>
+/// Mirrors errors.js's `.custom({message, help})` - used by prebuild.js/precommit.js for their
+/// ad-hoc "not encrypted/dockerignored"-style messages, which never pass a `code` (confirmed by
+/// reading every `.custom()` call site in both files). CatchAndLog.cs only logs an `ERROR_CODE:`
+/// debug line when Code is non-empty, matching catchAndLog.js's `if (error.code)` check.
+/// </remarks>
+public class CustomException(string message, string help) : DotenvxException(
+    "",
+    message,
+    help);
+
+/// <remarks>
 /// Was "InvalidDotenvPrivateKeyException" with code "INVALID_DOTENV_PRIVATE_KEY" - neither the
 /// class name nor the code exist upstream. The real upstream scenario/code is
 /// errors.js's mispairedPrivateKey() / MISPAIRED_PRIVATE_KEY (a derived public key not matching

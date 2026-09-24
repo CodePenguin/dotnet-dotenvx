@@ -23,6 +23,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         GitignoreAction gitignoreAction,
         KeyPairAction keyPairAction,
         LsAction lsAction,
+        PrebuildAction prebuildAction,
         RotateAction rotateAction,
         RunAction runAction,
         SetAction setAction
@@ -39,6 +40,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(gitignoreAction);
         Subcommands.Add(keyPairAction);
         Subcommands.Add(lsAction);
+        Subcommands.Add(prebuildAction);
         Subcommands.Add(rotateAction);
         Subcommands.Add(runAction);
         Subcommands.Add(setAction);

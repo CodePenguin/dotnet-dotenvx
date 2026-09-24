@@ -19,7 +19,7 @@ public static partial class Helpers
             logger.Debug(debug);
         }
 
-        if (error is DotenvxException ex)
+        if (error is DotenvxException { Code.Length: > 0 } ex)
         {
             logger.Debug($"ERROR_CODE: {ex.Code}");
         }
