@@ -214,7 +214,7 @@ public class RunAction : Command
                 }
             }
 
-            string msg = $"injecting env ({uniqueInjectedKeys.Count})";
+            string msg = $"injected env ({uniqueInjectedKeys.Count})";
             switch (readableFilePaths.Count)
             {
                 case > 0 when readableStrings.Count > 0:
@@ -235,7 +235,7 @@ public class RunAction : Command
                     }
             }
 
-            _logger.SuccessV(msg);
+            _logger.Success($"⟐ {msg}");
         }
         catch (Exception error)
         {

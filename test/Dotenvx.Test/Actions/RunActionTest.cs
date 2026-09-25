@@ -48,7 +48,7 @@ public class RunActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         mockRun.Received(1).Execute();
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run --convention"</remarks>
@@ -72,7 +72,7 @@ public class RunActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         mockRun.Received(1).Execute();
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run --convention"</remarks>
@@ -96,7 +96,7 @@ public class RunActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         mockRun.Received(1).Execute();
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run - env"</remarks>
@@ -133,7 +133,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
-        MockLogger.InfoMessages.ShouldContain("injecting env (1) from --env flag");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from --env flag");
     }
 
     /// <remarks>Refer to "run - envFile (with errors)"</remarks>
@@ -180,7 +180,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
         MockLogger.ErrorMessages.ShouldContain(
             "[DECRYPTION_FAILED] could not decrypt HELLO using private key d607fff…. fix: [https://github.com/dotenvx/dotenvx/issues/757]");
-        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env");
     }
 
     /// <remarks>Refer to "run - envFile"</remarks>
@@ -217,7 +217,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
-        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env");
     }
 
     /// <remarks>Refer to "run - envFile AND env"</remarks>
@@ -262,7 +262,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
-        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env, and --env flag");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env, and --env flag");
     }
 
     /// <remarks>Refer to "run - envFile AND two envs"</remarks>
@@ -320,7 +320,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain("HOLA set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
         MockLogger.DebugMessages.ShouldContain("HOLA set to amigo");
-        MockLogger.InfoMessages.ShouldContain("injecting env (2) from .env, and --env flags");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (2) from .env, and --env flags");
     }
 
     /// <remarks>Refer to "run - env (two strings)"</remarks>
@@ -366,7 +366,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HEY=there)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.VerboseMessages.ShouldContain("HEY set");
-        MockLogger.InfoMessages.ShouldContain("injecting env (2) from --env flags");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (2) from --env flags");
     }
 
     /// <remarks>Refer to "run - MISSING_ENV_FILE"</remarks>
@@ -411,7 +411,7 @@ public class RunActionTest : EnvironmentTestBase
             $"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain(
             "[MISSING_ENV_FILE] missing file (.env). fix: [echo \"HELLO=World\" > .env]");
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>
@@ -496,7 +496,7 @@ public class RunActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         mockRun.Received(1).Execute();
         MockLogger.ErrorMessages.ShouldNotContain(s => s.Contains("MISSING_ENV_FILE"));
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run - MISSING_ENV_FILE --strict flag"</remarks>
@@ -589,7 +589,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain(
             "ignored: Mock Error");
         MockLogger.ErrorMessages.ShouldBeEmpty();
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run - MISSING_ENV_FILE --strict flag and MISSING_ENV_FILE --ignore flag"</remarks>
@@ -636,7 +636,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain(
             "ignored: Mock Error");
         MockLogger.ErrorMessages.ShouldBeEmpty();
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run - OTHER_ERROR"</remarks>
@@ -686,7 +686,7 @@ public class RunActionTest : EnvironmentTestBase
         mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain("Mock Error");
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>
@@ -736,7 +736,7 @@ public class RunActionTest : EnvironmentTestBase
         mockRun.Received(1).Execute();
         MockLogger.ErrorMessages.ShouldContain(
             "[WRONG_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=199bdd6…'. fix: [https://github.com/dotenvx/dotenvx/issues/466]");
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run - MISSING_PRIVATE_KEY"</remarks>
@@ -773,7 +773,7 @@ public class RunActionTest : EnvironmentTestBase
         mockRun.Received(1).Execute();
         MockLogger.ErrorMessages.ShouldContain(
             "[MISSING_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY='. fix: [https://github.com/dotenvx/dotenvx/issues/464]");
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>
@@ -855,7 +855,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain("HELLO pre-exists (protip: use --overload to override)");
         MockLogger.DebugMessages.ShouldContain("HELLO pre-exists as World (protip: use --overload to override)");
-        MockLogger.InfoMessages.ShouldContain("injecting env (0) from .env");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0) from .env");
     }
 
     /// <remarks>
@@ -1037,7 +1037,7 @@ public class RunActionTest : EnvironmentTestBase
         parseResult.Invoke();
 
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("injecting env (0) from .env");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0) from .env");
     }
 
 }

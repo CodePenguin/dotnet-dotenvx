@@ -127,13 +127,13 @@ public static class Main
                 }
             }
 
-            string msg = $"injecting env ({runResult.UniqueInjectedKeys.Length})";
+            string msg = $"injected env ({runResult.UniqueInjectedKeys.Length})";
             if (runResult.ReadableFilePaths.Length > 0)
             {
                 msg += $" from {string.Join(", ", runResult.ReadableFilePaths)}";
             }
 
-            logger?.SuccessV(msg);
+            logger?.Success($"⟐ {msg}");
 
             return lastError != null
                 ? new ConfigResult { Parsed = parsedAll, Error = lastError }

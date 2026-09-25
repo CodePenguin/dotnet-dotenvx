@@ -1,5 +1,6 @@
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
+using Dotenvx.Interop.DotenvxJs.Shared;
 
 namespace Dotenvx.Core.Test;
 
@@ -69,6 +70,7 @@ public class EnvironmentTestBase : IDisposable
         Fsx.ResetToDefaults();
         GitHelper.ResetToDefaults();
         GitleaksHelper.ResetToDefaults();
+        ConsoleTty.ResetToDefaults();
 
         File.Delete(".env");
         File.Delete(".env.keys");

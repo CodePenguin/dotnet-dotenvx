@@ -39,12 +39,6 @@ public class MockLogger : IDotenvxLogger
         _infoMessages.Add(message);
     }
 
-    public void SuccessV(string message)
-    {
-        BeforeLog?.Invoke(message);
-        _infoMessages.Add(message);
-    }
-
     public void Info(string message)
     {
         BeforeLog?.Invoke(message);
