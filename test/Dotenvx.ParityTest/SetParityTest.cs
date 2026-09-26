@@ -172,4 +172,27 @@ public class SetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.ExitCode.ShouldNotBe(0);
         dotnetEnvFile.ShouldBe(nodeEnvFile);
     }
+
+    /// <remarks>
+    /// Regression test for a 2026-09-26 bug: `set.js` registers `-c`/`--encrypt` as a bare
+    /// commander boolean defaulting to true with no `--no-encrypt` negation - `--plain` is the
+    /// ONLY thing that can ever turn encryption off, so it wins even when `-c` is ALSO explicitly
+    /// passed. This port's `encrypt = encrypt || !plain` gave the explicit `-c` priority instead,
+    /// silently encrypting when Node stores plain text.
+    /// </remarks>
+    [Fact]
+    public async Task PlainFlagWinsOverExplicitEncryptFlagWhenBothGiven()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=World\n"), null, "set", "FOO", "bar", "--plain", "-c");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardError.ShouldBe(node.StandardError);
+        ReadFile(".env").ShouldContain("FOO=\"bar\"");
+    }
 }

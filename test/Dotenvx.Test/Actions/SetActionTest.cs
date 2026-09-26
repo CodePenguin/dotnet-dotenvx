@@ -218,6 +218,50 @@ public class SetActionTest : EnvironmentTestBase
         MockLogger.InfoMessages.ShouldContain("◇ set HELLO (.env)");
     }
 
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-26 bug. `set.js` registers `-c`/
+    /// `--encrypt` as a bare boolean commander flag defaulting to true with no `--no-encrypt`
+    /// negation - `options.plain` is the ONLY thing that can ever turn encryption off, so
+    /// `--plain` always wins even when `-c`/`--encrypt` is ALSO explicitly passed. This port's
+    /// `encrypt = encrypt || !plain` gave `-c`'s explicit `true` priority over `--plain` instead,
+    /// silently encrypting when it should have stored plain text - confirmed live against Node.
+    /// </remarks>
+    [Fact]
+    public void TestSetPlainWinsOverExplicitEncryptFlag()
+    {
+        bool? capturedEncrypt = null;
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
+        {
+            ProcessedEnvs =
+            [
+                new ProcessedSet
+                {
+                    Key = "HELLO",
+                    Value = "World",
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    EnvSrc = "HELLO=World",
+                    Changed = true
+                }
+            ],
+            ChangedFilePaths = [".env"],
+            UnchangedFilePaths = []
+        });
+        Sets.Factory = (_, _, _, encrypt, _, _) =>
+        {
+            capturedEncrypt = encrypt;
+            return mockSets;
+        };
+
+        ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World", "--plain", "-c"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        capturedEncrypt.ShouldBe(false);
+        MockLogger.InfoMessages.ShouldContain("◇ set HELLO (.env)");
+    }
+
     /// <remarks>Refer to "set - catch error"</remarks>
     [Fact]
     public void TestSetCatchError()

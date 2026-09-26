@@ -27,7 +27,10 @@ namespace Dotenvx.Actions;
 public class SetAction : Command
 {
     private readonly Option<bool> _encryptOption =
-        new("--encrypt", "-c") { Description = "encrypt value (default: true)" };
+        new("--encrypt", "-c")
+        {
+            Description = "encrypt value (default: true)", DefaultValueFactory = _ => true
+        };
 
     private readonly Option<string[]?> _envFileOption =
         new("--file", "--env-file", "-f") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
@@ -79,10 +82,13 @@ public class SetAction : Command
         _logger.Debug($"key: {key}");
         _logger.Debug($"value: {value}");
 
-        var options = new { envFile, envKeysFile, plain };
+        var options = new { envFile, envKeysFile, encrypt, plain };
         _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
 
-        encrypt = encrypt || !plain;
+        // `-c`/`--encrypt` has no real "off" state upstream (commander registers it as a bare
+        // boolean flag defaulting to true, with no --no-encrypt negation) - `--plain` is the only
+        // thing that can ever turn encryption off, regardless of whether -c was explicitly passed.
+        encrypt = !plain;
 
         try
         {
