@@ -13,8 +13,15 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// itself) does NOT exist anywhere in the submodule at this v2.24.1 pin at all (confirmed
 /// 2026-09-24, no `rotate` registration in dotenvx.js) - `rotate` is a feature this port added
 /// ahead of the pin, not a line-for-line port of pinned upstream source, unlike every other
-/// service in this directory. There is deliberately no current upstream file this comment could
-/// point to instead.
+/// service in this directory.
+///
+/// Correction, 2026-09-26: a real historical version of this exact file DOES exist in the
+/// submodule's own git history, at commit f1ffd157 (2026-06-29) - the last revision before it was
+/// deleted in 8af55792 ("remove rotate for 2.0. to return in more complete fashion for 2.1"). Used
+/// that to fix several real bugs in RotateAction.cs (see its own class remarks) - this SERVICE
+/// class's own algorithm has NOT yet been re-audited line-by-line against that historical source
+/// (only the CLI action's message-printing/control-flow layer was, since that's where today's
+/// bug-hunting sweep was focused); worth a dedicated pass later if `rotate` needs closer scrutiny.
 /// </remarks>
 public class Rotate(
     EnvItem[]? envs = null,

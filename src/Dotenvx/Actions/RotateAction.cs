@@ -15,7 +15,28 @@ using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
 
-/// <remarks>Reference source: dotenvx/src/cli/actions/rotate.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/cli/actions/rotate.js AT COMMIT f1ffd157 (2026-06-29), the last
+/// revision before it was deleted in 8af55792 ("remove rotate for 2.0. to return in more complete
+/// fashion for 2.1") - `rotate` doesn't exist at all at this port's v2.24.1 pin (confirmed via
+/// `grep rotate dotenvx.js` - no hits), and Rotate.cs's own doc comment previously said "there is
+/// deliberately no current upstream file this comment could point to" - true for the PIN, but a
+/// real historical version does exist in the submodule's own git history, found 2026-09-26.
+///
+/// Fixed against that historical source, several real bugs this action had presumably always had
+/// (this file was likely modeled on encrypt.js/set.js's shape rather than rotate.js's own, before
+/// this historical file was known to exist): the success symbol was "✔ rotated" instead of the
+/// real "⟳ rotated"; "no changes" instead of "○ no change" (both the per-file Verbose line and the
+/// summary Info line); two entirely fabricated "✔ key added to .env.keys"/"⮕  next run..." hint
+/// lines with no basis in the historical source either; a fabricated custom
+/// "? add one with [echo ...] and re-run [dotenvx rotate]" MISSING_ENV_FILE help override (the
+/// historical source just does `logger.warn(processedEnv.error.messageWithHelp)`, one combined
+/// call, matching this session's earlier systemic error-printing fix - this action was evidently
+/// never updated when that fix landed elsewhere); and the `--stdout` branch unconditionally printed
+/// the blank line + `.env.keys` content for every file, when the historical source only does that
+/// `if (processedEnv.localPrivateKeyAdded)` - same conditional now applied to the non-stdout
+/// branch's `.env.keys` write, which was also unconditional before.
+/// </remarks>
 public class RotateAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
@@ -90,8 +111,11 @@ public class RotateAction : Command
             foreach (RotateProcessedEnv processedEnv in result.ProcessedEnvs)
             {
                 Console.WriteLine(processedEnv.EnvSrc);
-                Console.WriteLine("");
-                Console.WriteLine(processedEnv.EnvKeysSrc);
+                if (processedEnv.PrivateKeyAdded)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine(processedEnv.EnvKeysSrc);
+                }
             }
         }
         else
@@ -106,60 +130,32 @@ public class RotateAction : Command
                     _logger.Verbose($"rotating {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                     if (processedEnv.Error != null)
                     {
-                        if (processedEnv.Error is DotenvxException { Code: "MISSING_ENV_FILE" })
-                        {
-                            _logger.Warn(processedEnv.Error.Message);
-                            _logger.Help(
-                                $"? add one with [echo \"HELLO=World\" > {processedEnv.EnvFilePath}] and re-run [dotenvx rotate]");
-                        }
-                        else
-                        {
-                            _logger.Warn(processedEnv.Error.Message);
-                            if (processedEnv.Error is DotenvxException dotenvxException &&
-                                !string.IsNullOrEmpty(dotenvxException.Help))
-                            {
-                                _logger.Help(dotenvxException.Help);
-                            }
-                        }
+                        Exception error = processedEnv.Error;
+                        _logger.Warn((error as DotenvxException)?.MessageWithHelp ?? error.Message);
                     }
                     else if (processedEnv.Changed)
                     {
                         Fsx.WriteFileX(processedEnv.FilePath, processedEnv.EnvSrc);
-                        Fsx.WriteFileX(processedEnv.EnvKeysFilePath, processedEnv.EnvKeysSrc);
+                        if (processedEnv.PrivateKeyAdded)
+                        {
+                            Fsx.WriteFileX(processedEnv.EnvKeysFilePath, processedEnv.EnvKeysSrc);
+                        }
 
                         _logger.Verbose($"rotated {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                     }
                     else
                     {
-                        _logger.Verbose($"no changes {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
+                        _logger.Verbose($"no change {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                     }
                 }
 
                 if (result.ChangedFilePaths.Length > 0)
                 {
-                    _logger.Success($"✔ rotated ({string.Join(',', result.ChangedFilePaths)})");
+                    _logger.Success($"⟳ rotated ({string.Join(',', result.ChangedFilePaths)})");
                 }
                 else if (result.UnchangedFilePaths.Length > 0)
                 {
-                    _logger.Info($"no changes ({string.Join(',', result.UnchangedFilePaths)})");
-                }
-
-                foreach (RotateProcessedEnv processedEnv in result.ProcessedEnvs)
-                {
-                    if (!processedEnv.PrivateKeyAdded)
-                    {
-                        continue;
-                    }
-
-                    _logger.Success($"✔ key added to .env.keys ({processedEnv.PrivateKeyName})");
-
-                    if (!IsIgnoringDotenvKeys())
-                    {
-                        _logger.Help("⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
-                    }
-
-                    _logger.Help(
-                        $"⮕  next run [{processedEnv.PrivateKeyName}='{processedEnv.PrivateKey}' dotenvx get] to test decryption locally");
+                    _logger.Info($"○ no change ({string.Join(',', result.UnchangedFilePaths)})");
                 }
             }
             catch (Exception error)

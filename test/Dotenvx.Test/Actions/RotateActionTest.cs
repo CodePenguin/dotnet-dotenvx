@@ -92,6 +92,46 @@ public class RotateActionTest : EnvironmentTestBase
         output.ShouldContain("DOTENV_PRIVATE_KEY=");
     }
 
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-26 fix against the historical rotate.js
+    /// (see RotateAction.cs's class remarks): the --stdout branch only prints the blank line +
+    /// .env.keys content `if (processedEnv.localPrivateKeyAdded)` - this port previously printed
+    /// both unconditionally for every file.
+    /// </remarks>
+    [Fact]
+    public void TestRotateStdoutOmitsEnvKeysWhenNoPrivateKeyAdded()
+    {
+        Rotate mockRotate = Substitute.For<Rotate>();
+        mockRotate.Run().Returns(new RotateResult
+        {
+            ProcessedEnvs =
+            [
+                new RotateProcessedEnv
+                {
+                    Keys = [],
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    EnvFilePath = ".env",
+                    EnvSrc = "HELLO=\"encrypted:1234\"",
+                    EnvKeysSrc = "",
+                    EnvKeysFilePath = "",
+                    Changed = true,
+                    PrivateKeyAdded = false
+                }
+            ],
+            ChangedFilePaths = [".env"],
+            UnchangedFilePaths = []
+        });
+        Rotate.Factory = (_, _, _, _) => mockRotate;
+
+        ParseResult parseResult = RootCommand.Parse(["rotate", "--stdout"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        string output = _consoleOutput.ToString();
+        output.ShouldBe("HELLO=\"encrypted:1234\"\n");
+    }
+
     /// <remarks>Refer to "rotate - .env with changes"</remarks>
     [Fact]
     public void TestRotateEnvWithChanges()
@@ -125,47 +165,7 @@ public class RotateActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        MockLogger.InfoMessages.ShouldContain("✔ rotated (.env)");
-        MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
-    }
-
-    /// <remarks>Refer to "rotate - .env with changes and privateKeyAdded but not ignoring .env.keys"</remarks>
-    [Fact]
-    public void TestRotateEnvWithChangesAndPrivateKeyAddedButNotIgnoringEnvKeys()
-    {
-        Rotate mockRotate = Substitute.For<Rotate>();
-        mockRotate.Run().Returns(new RotateResult
-        {
-            ProcessedEnvs =
-            [
-                new RotateProcessedEnv
-                {
-                    Keys = [],
-                    Type = EnvType.EnvFile,
-                    FilePath = ".env",
-                    EnvFilePath = ".env",
-                    EnvSrc = "HELLO=\"encrypted:1234\"",
-                    EnvKeysSrc = "DOTENV_PRIVATE_KEY=previous,newPrivateKey",
-                    EnvKeysFilePath = "",
-                    Changed = true,
-                    PrivateKeyAdded = true,
-                    PrivateKey = "newPrivateKey",
-                    PrivateKeyName = "DOTENV_PRIVATE_KEY"
-                }
-            ],
-            ChangedFilePaths = [".env"],
-            UnchangedFilePaths = []
-        });
-        Rotate.Factory = (_, _, _, _) => mockRotate;
-
-        ParseResult parseResult = RootCommand.Parse(["rotate"]);
-        int exitCode = parseResult.Invoke();
-
-        exitCode.ShouldBe(0);
-        MockLogger.InfoMessages.ShouldContain("✔ rotated (.env)");
-        MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
-        MockLogger.InfoMessages.ShouldContain(
-            "⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
+        MockLogger.InfoMessages.ShouldContain("⟳ rotated (.env)");
     }
 
     /// <remarks>Refer to "rotate - MISSING_ENV_FILE"</remarks>
@@ -236,7 +236,6 @@ public class RotateActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        MockLogger.WarningMessages.ShouldContain(s => s.Contains("Mock Error"));
-        MockLogger.InfoMessages.ShouldContain("some help");
+        MockLogger.WarningMessages.ShouldContain("Mock Error. some help");
     }
 }
