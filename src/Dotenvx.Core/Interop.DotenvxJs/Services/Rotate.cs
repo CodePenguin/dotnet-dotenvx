@@ -95,8 +95,28 @@ public class Rotate(
             EnvKeysFilePath = ""
         };
 
+        string localEnvKeysFilePath = Path.Combine(Path.GetDirectoryName(row.FilePath)!, ".env.keys");
+        if (!string.IsNullOrEmpty(envKeysFilePath))
+        {
+            localEnvKeysFilePath = Path.GetFullPath(envKeysFilePath);
+        }
+
         try
         {
+            // The historical service distinguishes a missing .env from a missing .env.keys by
+            // comparing the ENOENT error's own path against the expected .env.keys path - .NET has
+            // no equivalent structured way to recover that from Fsx.ReadFileX's exception, so this
+            // checks existence explicitly instead (confirmed live 2026-09-26: without this, a
+            // missing .env.keys wrongly reported "missing file (.env)" even though .env existed).
+            // Uses internal marker exceptions rather than throwing the real DotenvxException
+            // directly, so row.Error always holds a freshly-constructed (never-thrown) instance -
+            // existing tests compare it structurally via ShouldBeEquivalentTo, which is sensitive to
+            // a thrown exception's populated TargetSite/StackTrace.
+            if (!Fsx.ExistsSync(row.FilePath))
+            {
+                throw new MissingEnvFileSignal();
+            }
+
             string encoding = DetectEncoding(row.FilePath);
             string envSrc = Fsx.ReadFileX(row.FilePath, encoding);
             Dictionary<string, object> envParsedObj = DotenvParse(envSrc);
@@ -106,15 +126,14 @@ public class Rotate(
             string privateKeyName = GuessPrivateKeyName(envFilepath);
             string? existingPrivateKey = FindPrivateKey(envFilepath, envKeysFilePath);
 
-            string localEnvKeysFilePath = Path.Combine(Path.GetDirectoryName(row.FilePath)!, ".env.keys");
-            if (!string.IsNullOrEmpty(envKeysFilePath))
-            {
-                localEnvKeysFilePath = Path.GetFullPath(envKeysFilePath);
-            }
-
             row.EnvKeysFilePath = localEnvKeysFilePath;
             if (!_envKeysSources.TryGetValue(localEnvKeysFilePath, out string? value))
             {
+                if (!Fsx.ExistsSync(localEnvKeysFilePath))
+                {
+                    throw new MissingEnvKeysFileSignal();
+                }
+
                 string keysEncoding = DetectEncoding(localEnvKeysFilePath);
                 value = Fsx.ReadFileX(localEnvKeysFilePath, keysEncoding);
                 _envKeysSources[localEnvKeysFilePath] = value;
@@ -140,7 +159,16 @@ public class Rotate(
                     continue;
                 }
 
-                if (!_include(k))
+                // Matches the historical service's `if (this.keys.length > 0 && !this.include(key))
+                // continue` exactly - the include-filter only applies when --key was actually given.
+                // Without this guard, Picomatch(null, someNonEmptyExcludeList) does NOT hit its own
+                // "no globs and no ignore list -> match everything" special case (the ignore list
+                // isn't empty), so it falls through to "empty include list -> matches nothing",
+                // silently skipping re-encryption of EVERY key whenever --exclude-key is given
+                // without --key - confirmed live: rotate --exclude-key FOO changed DOTENV_PUBLIC_KEY
+                // but left every value (including HELLO, which was never excluded) encrypted under
+                // the OLD key, defeating the entire point of rotation without any visible error.
+                if (key is { Length: > 0 } && !_include(k))
                 {
                     continue;
                 }
@@ -168,6 +196,14 @@ public class Rotate(
             _envKeysSources[localEnvKeysFilePath] = envKeysSrc;
             row.EnvKeysSrc = envKeysSrc;
         }
+        catch (MissingEnvFileSignal)
+        {
+            row.Error = new MissingEnvFileException(envFilepath);
+        }
+        catch (MissingEnvKeysFileSignal)
+        {
+            row.Error = new MissingEnvKeysFileException(localEnvKeysFilePath);
+        }
         catch (FileNotFoundException)
         {
             row.Error = new MissingEnvFileException(envFilepath);
@@ -188,4 +224,8 @@ public class Rotate(
             _unchangedFilePaths.Add(envFilepath);
         }
     }
+
+    private sealed class MissingEnvFileSignal : Exception;
+
+    private sealed class MissingEnvKeysFileSignal : Exception;
 }

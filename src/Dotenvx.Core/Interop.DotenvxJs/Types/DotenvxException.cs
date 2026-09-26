@@ -71,6 +71,18 @@ public class MissingEnvFileException(string envFilePath) : DotenvxException(
     $"[MISSING_ENV_FILE] missing file ({envFilePath})",
     "fix: [https://github.com/dotenvx/dotenvx/issues/484]");
 
+/// <remarks>
+/// Reference source: dotenvx/src/lib/helpers/errors.js's missingEnvKeysFile() - this one DOES
+/// still exist at the current pin (unlike most of rotate's own reference source, which only
+/// exists historically - see RotateAction.cs/Rotate.cs). Used by Rotate.cs to distinguish a
+/// missing .env from a missing .env.keys, which this port previously collapsed into a single
+/// (and for the .env.keys case, actively misleading) MissingEnvFileException.
+/// </remarks>
+public class MissingEnvKeysFileException(string envKeysFilePath) : DotenvxException(
+    "MISSING_ENV_KEYS_FILE",
+    $"[MISSING_ENV_KEYS_FILE] missing file ({envKeysFilePath})",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/775]");
+
 public class MissingPrivateKeyException : DotenvxException
 {
     public MissingPrivateKeyException(string key, string privateKeyName, string privateKey) : base(
