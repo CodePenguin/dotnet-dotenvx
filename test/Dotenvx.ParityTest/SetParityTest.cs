@@ -2,6 +2,20 @@ using Shouldly;
 
 namespace Dotenvx.ParityTest;
 
+/// <remarks>
+/// Any scenario below that calls `set` with encryption enabled (the default - i.e. no `--plain`)
+/// against a `.env` with no pre-existing `DOTENV_PUBLIC_KEY` hits fresh key GENERATION, which by
+/// default routes Node's CLI through the native OS credential store (see
+/// EncryptDecryptParityTest.cs's class remarks for the full explanation) - flaky/non-deterministic
+/// on this machine, confirmed 2026-09-26 by several of these tests intermittently failing with
+/// "failed to save private key to Windows Credential Manager" or a structurally-wrong .env (Node
+/// silently skipped writing .env.keys because it went to the native store instead). Fixed the same
+/// way as `EncryptDecryptParityTest`'s own fresh-key tests: pass `--no-native --no-armor` to
+/// Node's call ONLY (this port's `set` has no such flags at all - passing them errors "Unrecognized
+/// command or argument" and exits 1, confirmed live - so these can never be shared args in a
+/// `RunBothAsync` call for these scenarios; each such scenario below calls `RunNodeAsync`/
+/// `RunDotnetAsync` separately instead).
+/// </remarks>
 public class SetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 {
     [Fact]
@@ -38,8 +52,16 @@ public class SetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             return;
         }
 
-        (CliResult node, CliResult dotnet) = await RunBothAsync(
-            () => WriteFile(".env", "HELLO=World\n"), null, "set", "FOO", "bar");
+        void Setup()
+        {
+            WriteFile(".env", "HELLO=World\n");
+        }
+
+        Setup();
+        CliResult node = await Fixture.RunNodeAsync(WorkDir, null, "set", "FOO", "bar", "--no-native", "--no-armor");
+
+        Setup();
+        CliResult dotnet = await Fixture.RunDotnetAsync(WorkDir, null, "set", "FOO", "bar");
 
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         RedactKeyMaterial(dotnet.StandardOutput).ShouldBe(RedactKeyMaterial(node.StandardOutput));
@@ -59,7 +81,7 @@ public class SetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         }
 
         Setup();
-        await Fixture.RunNodeAsync(WorkDir, null, "set", "FOO", "bar");
+        await Fixture.RunNodeAsync(WorkDir, null, "set", "FOO", "bar", "--no-native", "--no-armor");
         string nodeEnvFile = RedactKeyMaterial(ReadFile(".env"));
 
         Setup();
@@ -77,8 +99,9 @@ public class SetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             return;
         }
 
-        (CliResult node, CliResult dotnet) =
-            await RunBothAsync(() => { }, null, "set", "FOO", "bar", "-f", "nonexistent.env");
+        CliResult node = await Fixture.RunNodeAsync(WorkDir, null,
+            "set", "FOO", "bar", "-f", "nonexistent.env", "--no-native", "--no-armor");
+        CliResult dotnet = await Fixture.RunDotnetAsync(WorkDir, null, "set", "FOO", "bar", "-f", "nonexistent.env");
 
         dotnet.ExitCode.ShouldBe(node.ExitCode);
     }

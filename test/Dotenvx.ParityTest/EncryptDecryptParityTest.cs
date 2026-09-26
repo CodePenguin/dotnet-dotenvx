@@ -22,6 +22,19 @@ namespace Dotenvx.ParityTest;
 /// empirically), so .NET has no private key to decrypt with - that's the specific failure this
 /// forces around. .NET's encrypt has no native/armor concept (out of scope for this port) so it
 /// always plain-file-generates already and needs no equivalent flag.
+///
+/// Fixed 2026-09-26: several OTHER tests below - not just the two "fresh key" ones - ALSO
+/// incidentally trigger this exact same fresh-key/native-store path as a side effect (encrypting a
+/// `.env` with no pre-existing `DOTENV_PUBLIC_KEY`, regardless of whether `.env.keys` already has a
+/// private key sitting in it - `resolvers/keypair.js` looks for the public key in the `.env` file's
+/// own content first, so an unrelated `.env.keys` file doesn't help), even though none of them are
+/// actually testing native/armor behavior - confirmed by intermittent "failed to save private key
+/// to Windows Credential Manager" failures and structurally-wrong `.env` files (Node silently
+/// skipping the `.env.keys` write because it went to the native store instead). Added
+/// `--no-native --no-armor` to each affected test's Node call - never to `RunBothAsync`'s shared
+/// args, since this port's `set`/`encrypt` have no such flags at all and error out immediately if
+/// given them (confirmed live: "Unrecognized command or argument", exit 1) - each such scenario
+/// calls `RunNodeAsync`/`RunDotnetAsync` separately instead.
 /// </remarks>
 public class EncryptDecryptParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 {
@@ -206,7 +219,7 @@ public class EncryptDecryptParityTest(NodeParityFixture fixture) : ParityTestBas
         }
 
         Setup();
-        await Fixture.RunNodeAsync(WorkDir, null, "encrypt");
+        await Fixture.RunNodeAsync(WorkDir, null, "encrypt", "--no-native", "--no-armor");
         string nodeEnvFile = RedactKeyMaterial(ReadFile(".env"));
 
         Setup();
@@ -232,7 +245,7 @@ public class EncryptDecryptParityTest(NodeParityFixture fixture) : ParityTestBas
             return;
         }
 
-        CliResult node = await Fixture.RunNodeAsync(WorkDir, null, "encrypt");
+        CliResult node = await Fixture.RunNodeAsync(WorkDir, null, "encrypt", "--no-native", "--no-armor");
         node.ExitCode.ShouldBe(0);
         string nodeEnvFile = RedactKeyMaterial(ReadFile(".env"));
         File.Delete(Path.Combine(WorkDir, ".env"));
@@ -281,7 +294,7 @@ public class EncryptDecryptParityTest(NodeParityFixture fixture) : ParityTestBas
         }
 
         Setup();
-        await Fixture.RunNodeAsync(WorkDir, null, "encrypt", "--key", "HELLO");
+        await Fixture.RunNodeAsync(WorkDir, null, "encrypt", "--key", "HELLO", "--no-native", "--no-armor");
         string nodeEnvFile = RedactKeyMaterial(ReadFile(".env"));
 
         Setup();
@@ -314,7 +327,7 @@ public class EncryptDecryptParityTest(NodeParityFixture fixture) : ParityTestBas
         }
 
         Setup();
-        CliResult node = await Fixture.RunNodeAsync(WorkDir, null, "encrypt", "--stdout");
+        CliResult node = await Fixture.RunNodeAsync(WorkDir, null, "encrypt", "--stdout", "--no-native", "--no-armor");
         string nodeOutput = RedactKeyMaterial(node.StandardOutput);
         string envFileAfterNode = ReadFile(".env");
 
