@@ -87,11 +87,8 @@ public class EncryptAction : Command
         _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
 
         List<EnvItem> envItems = [];
-
-        if (envFile != null)
-        {
-            envItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
-        }
+        envItems.AddRange(
+            SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
 
         string? envKeysFilePath = envKeysFile?.FirstOrDefault();
 

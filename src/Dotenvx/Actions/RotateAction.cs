@@ -94,9 +94,10 @@ public class RotateAction : Command
 
         // Build envs like in GetAction
         List<EnvItem> envItems = [];
-        if (envFiles != null)
+        string[] splitEnvFiles = SplitCommaSeparatedEnvFiles(envFiles);
+        if (splitEnvFiles.Length > 0)
         {
-            envItems.AddRange(envFiles.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
+            envItems.AddRange(splitEnvFiles.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
         }
         else
         {

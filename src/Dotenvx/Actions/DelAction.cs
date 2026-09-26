@@ -48,10 +48,8 @@ public class DelAction : Command
         try
         {
             List<EnvItem> envItems = [];
-            if (envFile != null)
-            {
-                envItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
-            }
+            envItems.AddRange(
+                SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
 
             Del delService = Del.Factory(key, envItems.ToArray());
             DelResult result = delService.Run();
