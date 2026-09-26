@@ -15,7 +15,13 @@ using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
 
-/// <remarks>Reference source: dotenvx/src/cli/actions/decrypt.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/cli/actions/decrypt.js. Fixed 2026-09-25: the success message
+/// used "✔ decrypted"/"no changes" instead of the real "◇ decrypted"/"○ no change", and the
+/// per-file "no change" line was logged at Info level instead of Verbose (decrypt.js's own
+/// `logger.verbose('no change ...')`) - so it printed unconditionally on every decrypt, not just
+/// with --verbose.
+/// </remarks>
 public class DecryptAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
@@ -158,17 +164,17 @@ public class DecryptAction : Command
                 }
                 else
                 {
-                    _logger.Info($"no changes {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
+                    _logger.Verbose($"no change {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                 }
             }
 
             if (changedFilePaths.Count > 0)
             {
-                _logger.Success($"✔ decrypted ({string.Join(',', changedFilePaths)})");
+                _logger.Success($"◇ decrypted ({string.Join(',', changedFilePaths)})");
             }
             else if (unchangedFilePaths.Count > 0)
             {
-                _logger.Info($"no changes ({string.Join(',', unchangedFilePaths)})");
+                _logger.Info($"○ no change ({string.Join(',', unchangedFilePaths)})");
             }
 
             return errorCount > 0 ? 1 : 0;

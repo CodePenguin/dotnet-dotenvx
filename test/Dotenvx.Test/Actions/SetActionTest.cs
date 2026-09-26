@@ -68,7 +68,7 @@ public class SetActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("no changes (.env)");
+        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
     }
 
     /// <remarks>Refer to "set - changes"</remarks>
@@ -102,7 +102,7 @@ public class SetActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
+        MockLogger.InfoMessages.ShouldContain("◈ encrypted HELLO (.env)");
     }
 
     /// <remarks>Refer to "set - no changes and no unchanged"</remarks>
@@ -182,7 +182,7 @@ public class SetActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(1);
         mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("no changes (.env)");
+        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
         MockLogger.ErrorMessages.ShouldContain("Mock Error. some help");
     }
 
@@ -215,90 +215,7 @@ public class SetActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO (.env)");
-    }
-
-    /// <remarks>Refer to "set - privateKeyAdded"</remarks>
-    [Fact]
-    public void TestSetPrivateKeyAdded()
-    {
-        Fsx.WriteFileX = (_, _) => { };
-        Sets mockSets = Substitute.For<Sets>();
-        mockSets.Run().Returns(new SetsResult
-        {
-            ProcessedEnvs =
-            [
-                new ProcessedSet
-                {
-                    Type = EnvType.EnvFile,
-                    Key = "HELLO",
-                    Value = "World",
-                    FilePath = ".env",
-                    EnvFilePath = ".env",
-                    EnvKeysFilePath = ".env.keys",
-                    EnvSrc = "HELLO=World",
-                    PrivateKeyAdded = true,
-                    PrivateKeyName = "DOTENV_PRIVATE_KEY",
-                    PrivateKey = "1234"
-                }
-            ],
-            ChangedFilePaths = [".env"],
-            UnchangedFilePaths = []
-        });
-        Sets.Factory = (_, _, _, _, _, _) => mockSets;
-
-        ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
-        int exitCode = parseResult.Invoke();
-
-        exitCode.ShouldBe(0);
-        mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
-        MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
-        MockLogger.InfoMessages.ShouldContain(
-            @"⮕  next run [DOTENV_PRIVATE_KEY='1234' dotenvx get HELLO] to test decryption locally");
-    }
-
-    /// <remarks>Refer to "set - privateKeyAdded and not ignoring .env.keys"</remarks>
-    [Fact]
-    public void TestSetPrivateKeyAddedAndNotIgnoringDotenvKeys()
-    {
-        // Assuming the default mock environment doesn't have .env.keys ignored.
-        Fsx.WriteFileX = (_, _) => { };
-        Sets mockSets = Substitute.For<Sets>();
-        mockSets.Run().Returns(new SetsResult
-        {
-            ProcessedEnvs =
-            [
-                new ProcessedSet
-                {
-                    Type = EnvType.EnvFile,
-                    Key = "HELLO",
-                    Value = "World",
-                    FilePath = ".env",
-                    EnvFilePath = ".env",
-                    EnvKeysFilePath = ".env.keys",
-                    EnvSrc = "HELLO=World",
-                    PrivateKeyAdded = true,
-                    PrivateKeyName = "DOTENV_PRIVATE_KEY",
-                    PrivateKey = "1234"
-                }
-            ],
-            ChangedFilePaths = [".env"],
-            UnchangedFilePaths = []
-        });
-        Sets.Factory = (_, _, _, _, _, _) => mockSets;
-
-        ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
-        int exitCode = parseResult.Invoke();
-
-        exitCode.ShouldBe(0);
-        mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
-        MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
-        MockLogger.InfoMessages.ShouldContain(
-            "⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
-        MockLogger.InfoMessages.ShouldContain(
-            @"⮕  next run [DOTENV_PRIVATE_KEY='1234' dotenvx get HELLO] to test decryption locally");
+        MockLogger.InfoMessages.ShouldContain("◇ set HELLO (.env)");
     }
 
     /// <remarks>Refer to "set - catch error"</remarks>

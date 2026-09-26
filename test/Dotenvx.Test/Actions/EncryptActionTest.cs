@@ -50,7 +50,7 @@ public class EncryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain($"encrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("✔ encrypted (.env)");
+        MockLogger.InfoMessages.ShouldContain("◈ encrypted (.env)");
     }
 
     /// <remarks>Refer to "enc" shorthand alias for "encrypt" (v2.21.0)</remarks>
@@ -76,7 +76,7 @@ public class EncryptActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        MockLogger.InfoMessages.ShouldContain("no changes (.env)");
+        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
     }
 
     /// <remarks>Refer to "encrypt - --stdout"</remarks>
@@ -108,12 +108,18 @@ public class EncryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain($"encrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("✔ encrypted (.env)");
+        MockLogger.InfoMessages.ShouldContain("◈ encrypted (.env)");
     }
 
-    /// <remarks>Refer to "encrypt - .env with changes and privateKeyAdded"</remarks>
+    /// <remarks>
+    /// No longer a distinct current upstream scenario - historical coverage from a
+    /// "privateKeyAdded" hint-printing feature that doesn't exist in current encrypt.js (removed
+    /// 2026-09-25, see EncryptAction.cs's own class remarks). Kept because the underlying scenario
+    /// (encrypting a fresh .env with no pre-existing .env.keys, so a brand-new key gets generated)
+    /// is still valid coverage, distinct from TestEncryptEnvWithChanges's reused-existing-key path.
+    /// </remarks>
     [Fact]
-    public void TestEncryptEnvWithChangesAndPrivateKeyAdded()
+    public void TestEncryptEnvWithChangesGeneratesFreshKeyWhenNoneExists()
     {
         File.WriteAllText(".env", "HELLO=World");
 
@@ -123,33 +129,7 @@ public class EncryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain($"encrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("✔ encrypted (.env)");
-        MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
-        MockLogger.InfoMessages.ShouldContain(s =>
-            s.StartsWith("⮕  next run [DOTENV_PRIVATE_KEY='") &&
-            s.EndsWith("' dotenvx run -- yourcommand] to test decryption locally"));
-    }
-
-    /// <remarks>Refer to "encrypt - .env with changes and privateKeyAdded but not ignoring .env.keys"</remarks>
-    [Fact]
-    public void TestEncryptEnvWithChangesAndPrivateKeyAddedButNotIgnoringEnvKeys()
-    {
-        File.Delete(".gitignore");
-        File.WriteAllText(".env", "HELLO=World");
-
-        ParseResult parseResult = RootCommand.Parse(["encrypt"]);
-        int exitCode = parseResult.Invoke();
-
-        exitCode.ShouldBe(0);
-        MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
-        MockLogger.VerboseMessages.ShouldContain($"encrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("✔ encrypted (.env)");
-        MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
-        MockLogger.InfoMessages.ShouldContain(s =>
-            s.StartsWith("⮕  next run [DOTENV_PRIVATE_KEY='") &&
-            s.EndsWith("' dotenvx run -- yourcommand] to test decryption locally"));
-        MockLogger.InfoMessages.ShouldContain(
-            "⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
+        MockLogger.InfoMessages.ShouldContain("◈ encrypted (.env)");
     }
 
     /// <remarks>
@@ -168,7 +148,7 @@ public class EncryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain($"encrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("✔ encrypted (.env)");
+        MockLogger.InfoMessages.ShouldContain("◈ encrypted (.env)");
         File.ReadAllText(".env").ShouldContain("encrypted:");
     }
 

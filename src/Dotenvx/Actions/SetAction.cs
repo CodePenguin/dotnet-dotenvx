@@ -15,7 +15,15 @@ using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
 
-/// <remarks>Reference source: dotenvx/src/cli/actions/set.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/cli/actions/set.js. Fixed 2026-09-25: the success message used
+/// "✔ set {key} with encryption"/"no changes" instead of the real "◈ encrypted {key}"/"◇ set
+/// {key}"/"○ no change", and printed two entirely fabricated "✔ key added to .env.keys"/"⮕ next
+/// run..." hint lines that don't exist anywhere in current OR older visible upstream source (not a
+/// deprecated feature - never existed here at all). Also fixed the per-file loop to check
+/// processedEnv.Changed (previously always treated a non-error result as "changed", skipping the
+/// "no change" verbose line and unconditionally rewriting the file even when nothing changed).
+/// </remarks>
 public class SetAction : Command
 {
     private readonly Option<bool> _encryptOption =
@@ -108,7 +116,7 @@ public class SetAction : Command
                     Exception? error = processedEnv.Error;
                     _logger.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
                 }
-                else
+                else if (processedEnv.Changed)
                 {
                     Fsx.WriteFileX(processedEnv.FilePath, processedEnv.EnvSrc);
 
@@ -116,33 +124,22 @@ public class SetAction : Command
                     _logger.Debug(
                         $"{processedEnv.Key} set{withEncryption} to {processedEnv.Value} ({processedEnv.EnvFilePath})");
                 }
+                else
+                {
+                    _logger.Verbose($"no change {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
+                }
             }
 
             if (changedFilePaths.Count > 0)
             {
-                _logger.Success($"✔ set {key}{withEncryption} ({string.Join(',', changedFilePaths)})");
+                string msg = encrypt
+                    ? $"◈ encrypted {key} ({string.Join(',', changedFilePaths)})"
+                    : $"◇ set {key} ({string.Join(',', changedFilePaths)})";
+                _logger.Success(msg);
             }
             else if (unchangedFilePaths.Count > 0)
             {
-                _logger.Info($"no changes ({string.Join(',', unchangedFilePaths)})");
-            }
-
-            foreach (ProcessedSet processedEnv in processedEnvs)
-            {
-                if (!processedEnv.PrivateKeyAdded)
-                {
-                    continue;
-                }
-
-                _logger.Success($"✔ key added to {processedEnv.EnvKeysFilePath} ({processedEnv.PrivateKeyName})");
-
-                if (!IsIgnoringDotenvKeys())
-                {
-                    _logger.Help("⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
-                }
-
-                _logger.Help(
-                    $"⮕  next run [{processedEnv.PrivateKeyName}='{processedEnv.PrivateKey}' dotenvx get {key}] to test decryption locally");
+                _logger.Info($"○ no change ({string.Join(',', unchangedFilePaths)})");
             }
 
             return errorCount > 0 ? 1 : 0;

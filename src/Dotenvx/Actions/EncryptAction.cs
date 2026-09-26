@@ -15,7 +15,15 @@ using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
 
-/// <remarks>Reference source: dotenvx/src/cli/actions/encrypt.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/cli/actions/encrypt.js. Fixed 2026-09-25: the success message
+/// used "✔ encrypted"/"no changes" instead of the real "◈ encrypted"/"○ no change", and printed
+/// two entirely fabricated "✔ key added to .env.keys"/"⮕ next run..." hint lines - current
+/// encrypt.js has ONLY commented-out (`// logger.success(...)`) code for an "· armored" suffix, no
+/// separate hint lines at all, confirming these were never real. Also fixed the per-file loop's
+/// "no change" branch to be unconditional verbose logging (matching `} else { logger.verbose(...)
+/// }` exactly), not gated on an unrelated `unchangedFilepaths.Count > 0` check.
+/// </remarks>
 public class EncryptAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
@@ -135,39 +143,19 @@ public class EncryptAction : Command
 
                     _logger.Verbose($"encrypted {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                 }
-                else if (unchangedFilePaths.Count > 0)
+                else
                 {
-                    _logger.Verbose($"no changes {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
+                    _logger.Verbose($"no change {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                 }
-                // do nothing - scenario when no .env files found
             }
 
             if (changedFilePaths.Count > 0)
             {
-                _logger.Success($"✔ encrypted ({string.Join(',', changedFilePaths)})");
+                _logger.Success($"◈ encrypted ({string.Join(',', changedFilePaths)})");
             }
             else if (unchangedFilePaths.Count > 0)
             {
-                _logger.Info($"no changes ({string.Join(',', unchangedFilePaths)})");
-            }
-
-            // do nothing - scenario when no .env files found
-            foreach (EncryptProcessedEnv processedEnv in processedEnvs)
-            {
-                if (!processedEnv.PrivateKeyAdded)
-                {
-                    continue;
-                }
-
-                _logger.Success($"✔ key added to .env.keys ({processedEnv.PrivateKeyName})");
-
-                if (!IsIgnoringDotenvKeys())
-                {
-                    _logger.Help("⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
-                }
-
-                _logger.Help(
-                    $"⮕  next run [{processedEnv.PrivateKeyName}='{processedEnv.PrivateKey}' dotenvx run -- yourcommand] to test decryption locally");
+                _logger.Info($"○ no change ({string.Join(',', unchangedFilePaths)})");
             }
 
             return errorCount > 0 ? 1 : 0;
