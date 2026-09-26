@@ -102,4 +102,49 @@ public class RunParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         run.ExitCode.ShouldBe(0);
         run.StandardOutput.Trim().ShouldBe("hello-from-dotnet");
     }
+
+    /// <remarks>
+    /// Locks in the `--redact` fix (found via a flag-combination sweep, 2026-09-26 - see CLAUDE.md
+    /// trap #31): the child process's OWN stdout must have the injected value replaced with
+    /// [REDACTED], on both sides identically, while the process still exits 0 (the child genuinely
+    /// received the real value in its environment - only what it PRINTS gets filtered).
+    /// </remarks>
+    [Fact]
+    public async Task RedactHidesInjectedValueFromChildProcessOutputIdentically()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=World\n"), null,
+            "run", "--redact", "--", "node", "-e", "console.log('value: ' + process.env.HELLO)");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+        dotnet.StandardOutput.ShouldContain("[REDACTED]");
+        dotnet.StandardOutput.ShouldNotContain("World");
+    }
+
+    /// <remarks>
+    /// Refer to `dotenvx/src/lib/helpers/cryptography/isPlainKey.js`'s `_PLAIN` exemption -
+    /// `redactedValues.js` skips any key ending in `_PLAIN` when building the sensitive-value set.
+    /// </remarks>
+    [Fact]
+    public async Task RedactDoesNotHidePlainSuffixedKeyValueIdentically()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO_PLAIN=NotSecret\n"), null,
+            "run", "--redact", "--", "node", "-e", "console.log(process.env.HELLO_PLAIN)");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+        dotnet.StandardOutput.ShouldContain("NotSecret");
+    }
 }

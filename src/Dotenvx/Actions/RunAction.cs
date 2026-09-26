@@ -61,8 +61,22 @@ public class RunAction : Command
                 "override existing env variables (by default, existing env vars take precedence over .env files)"
         };
 
+    private readonly Option<bool> _redactOption =
+        new("--redact") { Description = "redact injected values except keys ending in _PLAIN (default: false)" };
+
     private readonly Option<bool> _strictOption =
         new("--strict") { Description = "process.exit(1) on any errors (default: false)" };
+
+    private readonly Option<bool> _validateOption =
+        new("--validate") { Description = "validate against .env.example (default: false)" };
+
+    private readonly Option<string?> _maskOption =
+        new("--mask")
+        {
+            Arity = ArgumentArity.ZeroOrOne,
+            Description = "inject masked values, optionally setting visible characters",
+            HelpName = "characters"
+        };
 
     public RunAction(IDotenvxLogger logger) : base("run",
         "inject env at runtime [dotenvx run -- yourcommand]")
@@ -72,10 +86,13 @@ public class RunAction : Command
         Add(_envOption);
         Add(_envFileOption);
         Add(_envKeysFileOption);
+        Add(_redactOption);
         Add(_overloadOption);
+        Add(_validateOption);
         Add(_strictOption);
         Add(_conventionOption);
         Add(_ignoreOption);
+        Add(_maskOption);
         Add(_args);
         SetAction(async pr => await Execute(pr));
     }
@@ -90,6 +107,16 @@ public class RunAction : Command
         string? convention = parseResult.GetValue(_conventionOption);
         string[] ignoreList = parseResult.GetValue(_ignoreOption) ?? [];
         string[] commandArgs = parseResult.GetValue(_args) ?? [];
+        bool redactEnabled = parseResult.GetValue(_redactOption);
+        bool validateEnabled = parseResult.GetValue(_validateOption);
+
+        System.CommandLine.Parsing.OptionResult? maskResult = parseResult.GetResult(_maskOption);
+        bool maskEnabled = maskResult != null;
+        object showChar = 6;
+        if (maskEnabled)
+        {
+            showChar = parseResult.GetValue(_maskOption) ?? (object)6;
+        }
 
         ConfigOptions normalizedOptions =
             NormalizeDotenvConfigIgnore(NormalizeDotenvConfigConvention(new ConfigOptions
@@ -103,7 +130,7 @@ public class RunAction : Command
 
         var options = new
         {
-            envs,
+            envs = maskEnabled ? envs?.Select(e => MaskEnvSrc(e, showChar)).ToArray() : envs,
             envFile,
             overload,
             strict,
@@ -132,6 +159,8 @@ public class RunAction : Command
         }
 
         IDictionary<string, string> processEnv = EnvironmentHelper.GetEnvironmentVariablesAsDictionary();
+        IDictionary<string, string> commandEnv = processEnv;
+        string[] sensitiveValues = [];
 
         try
         {
@@ -153,6 +182,46 @@ public class RunAction : Command
             IList<string> readableStrings = result.ReadableStrings;
             IList<string> readableFilePaths = result.ReadableFilePaths;
             IList<string> uniqueInjectedKeys = result.UniqueInjectedKeys;
+
+            if (redactEnabled)
+            {
+                sensitiveValues = RedactedValues(processedEnvs);
+            }
+
+            if (maskEnabled)
+            {
+                commandEnv = new Dictionary<string, string>(processEnv);
+                foreach (RunProcessedEnv processedEnv in processedEnvs)
+                {
+                    foreach (string key in processedEnv.Parsed.Keys)
+                    {
+                        if (commandEnv.TryGetValue(key, out string? existingValue))
+                        {
+                            commandEnv[key] = Mask(existingValue, showChar);
+                        }
+                    }
+                }
+            }
+
+            if (validateEnabled)
+            {
+                DotenvxException? validationError = ValidateEnvExample(result.AfterEnv);
+                if (validationError != null)
+                {
+                    if (ignoreList.Contains(validationError.Code))
+                    {
+                        _logger.Verbose($"ignored: {validationError.Message}");
+                    }
+                    else if (strict)
+                    {
+                        throw validationError;
+                    }
+                    else
+                    {
+                        _logger.Error(validationError.MessageWithHelp ?? validationError.Message);
+                    }
+                }
+            }
 
             foreach (RunProcessedEnv processedEnv in processedEnvs)
             {
@@ -194,21 +263,35 @@ public class RunAction : Command
                     }
                 }
 
+                IReadOnlyDictionary<string, string> parsedForDisplay = processedEnv.Parsed;
+                IReadOnlyDictionary<string, string> injectedForDisplay = processedEnv.Injected;
+                IReadOnlyDictionary<string, string> preExistedForDisplay = processedEnv.PreExisted;
+                if (maskEnabled)
+                {
+                    parsedForDisplay = MaskDict(processedEnv.Parsed, showChar);
+                    injectedForDisplay = MaskDict(processedEnv.Injected, showChar);
+                    preExistedForDisplay = MaskDict(processedEnv.PreExisted, showChar);
+                }
+
                 // debug parsed
-                _logger.Debug($"parsed: {JsonSerializer.Serialize(processedEnv.Parsed)}");
+                Dictionary<string, string> debugParsed = redactEnabled
+                    ? RedactOutputDict(parsedForDisplay, sensitiveValues)
+                    : parsedForDisplay.ToDictionary();
+                _logger.Debug($"parsed: {JsonSerializer.Serialize(debugParsed)}");
 
                 // verbose/debug injected key/value
-                foreach (KeyValuePair<string, string> kvp in processedEnv.Injected)
+                foreach (KeyValuePair<string, string> kvp in injectedForDisplay)
                 {
                     _logger.Verbose($"{kvp.Key} set");
-                    _logger.Debug($"{kvp.Key} set to {kvp.Value}");
+                    _logger.Debug(RedactOutputText($"{kvp.Key} set to {kvp.Value}", sensitiveValues)!);
                 }
 
                 // verbose/debug preExisted key/value
-                foreach (KeyValuePair<string, string> kvp in processedEnv.PreExisted)
+                foreach (KeyValuePair<string, string> kvp in preExistedForDisplay)
                 {
                     _logger.Verbose($"{kvp.Key} pre-exists (protip: use --overload to override)");
-                    _logger.Debug($"{kvp.Key} pre-exists as {kvp.Value} (protip: use --overload to override)");
+                    _logger.Debug(RedactOutputText(
+                        $"{kvp.Key} pre-exists as {kvp.Value} (protip: use --overload to override)", sensitiveValues)!);
                 }
             }
 
@@ -242,6 +325,11 @@ public class RunAction : Command
         }
 
         // Execute the command
-        return await ExecuteCommand(_logger, commandArgs, processEnv);
+        return await ExecuteCommand(_logger, commandArgs, commandEnv, sensitiveValues);
+    }
+
+    private static Dictionary<string, string> MaskDict(IReadOnlyDictionary<string, string> value, object showChar)
+    {
+        return value.ToDictionary(kvp => kvp.Key, kvp => Mask(kvp.Value, showChar));
     }
 }
