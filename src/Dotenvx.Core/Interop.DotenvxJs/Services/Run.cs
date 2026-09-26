@@ -100,7 +100,7 @@ public class Run
         {
             ParseResult parseResult = Parse.Factory(env, null, _processEnv, _overload, null).Execute();
             row.Parsed = parseResult.Parsed;
-            row.Errors = parseResult.Errors;
+            row.Errors = CoarsenDecryptErrors(parseResult.Errors);
             row.Injected = parseResult.Injected;
             row.PreExisted = parseResult.PreExisted;
 
@@ -153,7 +153,7 @@ public class Run
             row.PrivateKey = privateKey;
             row.Src = src;
             row.Parsed = parseResult.Parsed;
-            row.Errors = parseResult.Errors;
+            row.Errors = CoarsenDecryptErrors(parseResult.Errors);
             row.Injected = parseResult.Injected;
             row.PreExisted = parseResult.PreExisted;
 
@@ -174,5 +174,31 @@ public class Run
         }
 
         _processedEnvs.Add(row);
+    }
+
+    /// <remarks>
+    /// Parse.cs's per-key DecryptKeyValue call (see DecryptKeyValues.cs) always throws the SPECIFIC
+    /// failure cause (WrongPrivateKeyException/MissingPrivateKeyException/InvalidPrivateKeyException/
+    /// MalformedEncryptedDataException) - correct for Main.cs's Parse() method, which mirrors
+    /// main.js's own standalone `parse()` function (its own manual per-key decryptKeyValue() loop,
+    /// confirmed still true at this pin). But Run.cs itself mirrors resolvers/envs.js, which - like
+    /// every other resolver (get.js, and main.js's own config()/get() functions, both of which route
+    /// through the SAME resolver) - decrypts via @dotenvx/primitives' own internal `parse()`, which
+    /// ALWAYS coarsens any decrypt failure to a generic DECRYPTION_FAILED ("could not decrypt {key}")
+    /// regardless of cause - confirmed live 2026-09-25 by probing parse() directly with both a wrong-
+    /// but-valid-format key and a fully missing key, both producing DECRYPTION_FAILED, never
+    /// WRONG_PRIVATE_KEY/MISSING_PRIVATE_KEY. Since Get.cs/ValidateAction.cs/Main.Config()/Main.Get()
+    /// all resolve through THIS class's Execute(), fixing it here fixes all of them at once.
+    /// </remarks>
+    private static IList<Exception> CoarsenDecryptErrors(IReadOnlyList<Exception> errors)
+    {
+        return errors.Select(error => error switch
+        {
+            WrongPrivateKeyException e => new DecryptionFailedException($"could not decrypt {e.Key}"),
+            MissingPrivateKeyException e => new DecryptionFailedException($"could not decrypt {e.Key}"),
+            InvalidPrivateKeyException e => new DecryptionFailedException($"could not decrypt {e.Key}"),
+            MalformedEncryptedDataException e => new DecryptionFailedException($"could not decrypt {e.Key}"),
+            _ => error
+        }).ToList<Exception>();
     }
 }

@@ -204,6 +204,51 @@ public class RunTest : EnvironmentTestBase
         result.UniqueInjectedKeys.ShouldContain("HELLO");
     }
 
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-25 fix. Confirmed live that
+    /// @dotenvx/primitives' parse() (what resolvers/envs.js, i.e. this class, actually decrypts
+    /// through) coarsens EVERY decrypt failure to generic DECRYPTION_FAILED, never the specific
+    /// WRONG_PRIVATE_KEY/MISSING_PRIVATE_KEY/etc. codes - those are only real for main.js's own
+    /// standalone parse() function (Main.Parse() here), which manually calls decryptKeyValue()
+    /// per key instead of going through the resolver. Run.cs previously surfaced the specific
+    /// WrongPrivateKeyException directly (correct for Main.Parse(), wrong for everything routing
+    /// through Run - CLI run/get/validate, and Main.Config()/Main.Get()).
+    /// </remarks>
+    [Fact]
+    public void TestRunWrongPrivateKeyCoarsensToGenericDecryptionFailed()
+    {
+        File.Copy("tests/monorepo/apps/encrypted/.env", ".env", overwrite: true);
+        Environment.SetEnvironmentVariable("DOTENV_PRIVATE_KEY",
+            "0000000000000000000000000000000000000000000000000000000000000001");
+
+        EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = ".env" }];
+        RunResult result = new Run(envs).Execute();
+
+        result.ProcessedEnvs.ShouldHaveSingleItem();
+        Exception error = result.ProcessedEnvs[0].Errors.ShouldHaveSingleItem();
+        DotenvxException dotenvxError = error.ShouldBeOfType<DecryptionFailedException>();
+        dotenvxError.Code.ShouldBe("DECRYPTION_FAILED");
+        dotenvxError.Message.ShouldBe("[DECRYPTION_FAILED] could not decrypt HELLO");
+    }
+
+    /// <remarks>
+    /// Not from a JS test - companion to the WRONG_PRIVATE_KEY regression test above, confirming
+    /// a fully missing private key coarsens the same way (also confirmed live: parse() returns
+    /// DECRYPTION_FAILED, not MISSING_PRIVATE_KEY, when no key is available at all).
+    /// </remarks>
+    [Fact]
+    public void TestRunMissingPrivateKeyCoarsensToGenericDecryptionFailed()
+    {
+        File.Copy("tests/monorepo/apps/encrypted/.env", ".env", overwrite: true);
+
+        EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = ".env" }];
+        RunResult result = new Run(envs).Execute();
+
+        result.ProcessedEnvs.ShouldHaveSingleItem();
+        Exception error = result.ProcessedEnvs[0].Errors.ShouldHaveSingleItem();
+        error.ShouldBeOfType<DecryptionFailedException>();
+    }
+
     /// <remarks>Refer to "#run - env var precedence: environment variables take precedence over .env files by default"</remarks>
     [Fact]
     public void TestRunEnvVarPrecedenceOverEnvFiles()

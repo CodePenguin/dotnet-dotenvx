@@ -35,30 +35,67 @@ public class DecryptionFailedException(string message) : DotenvxException(
     $"[DECRYPTION_FAILED] {message}",
     "fix: [https://github.com/dotenvx/dotenvx/issues/757]");
 
-public class InvalidPrivateKeyException(string key, string privateKeyName, string privateKey) : DotenvxException(
-    "INVALID_PRIVATE_KEY",
-    $"[INVALID_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'",
-    "fix: [https://github.com/dotenvx/dotenvx/issues/465]");
+public class InvalidPrivateKeyException : DotenvxException
+{
+    public InvalidPrivateKeyException(string key, string privateKeyName, string privateKey) : base(
+        "INVALID_PRIVATE_KEY",
+        $"[INVALID_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'",
+        "fix: [https://github.com/dotenvx/dotenvx/issues/465]")
+    {
+        Key = key;
+    }
 
-public class MalformedEncryptedDataException(string key) : DotenvxException(
-    "MALFORMED_ENCRYPTED_DATA",
-    $"[MALFORMED_ENCRYPTED_DATA] could not decrypt {key} because encrypted data appears malformed",
-    "fix: [https://github.com/dotenvx/dotenvx/issues/467]");
+    // Exposed so a coarse-decrypt-error consumer (see Run.cs) can rebuild a generic
+    // "could not decrypt {key}" DecryptionFailedException without re-parsing the message text -
+    // matches @dotenvx/primitives' parse() coarsening every specific decrypt failure into
+    // DECRYPTION_FAILED (confirmed live 2026-09-25), unlike main.js's own standalone parse()
+    // function, which surfaces this specific code directly.
+    public string Key { get; }
+}
+
+public class MalformedEncryptedDataException : DotenvxException
+{
+    public MalformedEncryptedDataException(string key) : base(
+        "MALFORMED_ENCRYPTED_DATA",
+        $"[MALFORMED_ENCRYPTED_DATA] could not decrypt {key} because encrypted data appears malformed",
+        "fix: [https://github.com/dotenvx/dotenvx/issues/467]")
+    {
+        Key = key;
+    }
+
+    public string Key { get; }
+}
 
 public class MissingEnvFileException(string envFilePath) : DotenvxException(
     "MISSING_ENV_FILE",
     $"[MISSING_ENV_FILE] missing file ({envFilePath})",
     "fix: [https://github.com/dotenvx/dotenvx/issues/484]");
 
-public class MissingPrivateKeyException(string key, string privateKeyName, string privateKey) : DotenvxException(
-    "MISSING_PRIVATE_KEY",
-    $"[MISSING_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'",
-    "fix: [https://github.com/dotenvx/dotenvx/issues/464]");
+public class MissingPrivateKeyException : DotenvxException
+{
+    public MissingPrivateKeyException(string key, string privateKeyName, string privateKey) : base(
+        "MISSING_PRIVATE_KEY",
+        $"[MISSING_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'",
+        "fix: [https://github.com/dotenvx/dotenvx/issues/464]")
+    {
+        Key = key;
+    }
 
-public class WrongPrivateKeyException(string key, string privateKeyName, string privateKey) : DotenvxException(
-    "WRONG_PRIVATE_KEY",
-    $"[WRONG_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'",
-    "fix: [https://github.com/dotenvx/dotenvx/issues/466]");
+    public string Key { get; }
+}
+
+public class WrongPrivateKeyException : DotenvxException
+{
+    public WrongPrivateKeyException(string key, string privateKeyName, string privateKey) : base(
+        "WRONG_PRIVATE_KEY",
+        $"[WRONG_PRIVATE_KEY] could not decrypt {key} using private key '{privateKeyName}={Truncate(privateKey)}'",
+        "fix: [https://github.com/dotenvx/dotenvx/issues/466]")
+    {
+        Key = key;
+    }
+
+    public string Key { get; }
+}
 
 public class MissingKeyException(string key) : DotenvxException(
     "MISSING_KEY",
