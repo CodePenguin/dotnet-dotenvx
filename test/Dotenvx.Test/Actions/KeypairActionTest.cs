@@ -4,6 +4,7 @@ using System.Text.Json;
 using Dotenvx;
 using Dotenvx.Actions;
 using Dotenvx.Core.Test;
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 
 using NSubstitute;
@@ -27,6 +28,10 @@ public class KeyPairActionTest : EnvironmentTestBase
         Console.SetOut(_consoleOutput);
         _consoleOutput.GetStringBuilder().Clear();
         RootCommand = new LoggingRootCommand { new KeyPairAction(MockLogger) };
+        // Every test here mocks KeyPair.Factory directly - the action's own missing-file check
+        // (added 2026-09-25, see KeyPairAction.cs's class remarks) runs before that mock is ever
+        // reached, so default to "file exists" here and cover the missing-file case explicitly.
+        Fsx.ExistsSync = _ => true;
     }
 
     private RootCommand RootCommand { get; }
@@ -208,5 +213,24 @@ public class KeyPairActionTest : EnvironmentTestBase
         exitCode.ShouldBe(1);
         string output = _consoleOutput.ToString();
         output.ShouldBe("\n");
+    }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-25 fix. Live-verified against Node: a
+    /// missing env file exits 1 with a raw, untranslated ENOENT message (resolvers/keypair.js
+    /// calls fsx.readFileX with no existence check at all, letting the raw fs error propagate
+    /// through catchAndLog) - this port previously returned exit 0 with null keys instead.
+    /// </remarks>
+    [Fact]
+    public void TestKeypairMissingEnvFile()
+    {
+        Fsx.ExistsSync = _ => false;
+
+        ParseResult parseResult = RootCommand.Parse(["keypair"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(1);
+        MockLogger.ErrorMessages.ShouldContain(s =>
+            s.StartsWith("ENOENT: no such file or directory, open '") && s.EndsWith(".env'"));
     }
 }

@@ -6,6 +6,17 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// Reference source: dotenvx/src/lib/resolvers/keypair.js (moved there from
 /// src/lib/services/keypair.js, which no longer exists at this pin - confirmed 2026-09-24, part of
 /// the same custodian/keyring reorg CLAUDE.md already documents elsewhere).
+///
+/// This class is a dual-purpose seam: the `keypair` CLI command uses it directly (via
+/// KeyPairAction.cs), but `FindPrivateKey.cs`/`FindPublicKey.cs` ALSO use it internally as an
+/// "does a key already exist for this file" lookup - called by run/encrypt/set's fresh-key-
+/// generation logic for env files that legitimately don't exist YET (e.g. `encrypt` on a brand
+/// new file creates a sample kit first, checking for an existing key before doing so). A missing-
+/// file existence check therefore CANNOT live here without breaking those callers (confirmed the
+/// hard way 2026-09-25: throwing here made `encrypt`/`config()` on a missing file fail instead of
+/// creating a fresh sample kit, since they route through this exact class to check for an existing
+/// key first) - see KeyPairAction.cs for where the CLI-specific missing-file behavior actually
+/// belongs instead.
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class KeyPair(string envFile = ".env", string? envKeysFilePath = null)

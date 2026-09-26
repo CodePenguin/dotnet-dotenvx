@@ -1,17 +1,33 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 
+using DotenvxJsHelpers = Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
 
-/// <remarks>Reference source: dotenvx/src/cli/actions/keypair.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/cli/actions/keypair.js. Fixed 2026-09-25, two independent bugs:
+/// (1) no try/catch at all around keyPair.Run() - keypair.js wraps its whole body in
+/// try/catch -&gt; catchAndLog(error) -&gt; exit 1, so any resolver error was previously an unhandled
+/// .NET exception instead of a clean single-line stderr message + exit 1; (2) a missing env file
+/// silently returned null keys with exit 0 instead of Node's raw, untranslated ENOENT error - the
+/// real resolver calls `fsx.readFileX(filepath)` with no existence check, letting the raw fs error
+/// propagate (fsx.js's readFileX does zero translation, unlike run/get/decrypt's own higher-layer
+/// resolver code). The existence check belongs HERE, not inside KeyPair.cs itself - that class is
+/// also used internally by FindPrivateKey.cs/FindPublicKey.cs as an "does a key already exist yet"
+/// lookup for run/encrypt/set's fresh-key-generation logic, which legitimately needs the graceful
+/// null-return behavior for files that don't exist yet (confirmed by breaking `encrypt` on a fresh
+/// file when this check was first added to KeyPair.cs itself instead).
+/// </remarks>
 public class KeyPairAction : Command
 {
     private readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
@@ -73,47 +89,61 @@ public class KeyPairAction : Command
         var options = new { envFile, envKeysFile, format, prettyPrint };
         _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
 
-        KeyPair keyPair = KeyPair.Factory(envFile ?? ".env", envKeysFile);
-        Dictionary<string, string?> results = keyPair.Run();
-
-        if (key != null)
+        try
         {
-            string? single = results.GetValueOrDefault(key);
-            if (single == null)
+            string resolvedEnvFile = envFile ?? ".env";
+            if (!Fsx.ExistsSync(resolvedEnvFile))
             {
-                Console.WriteLine("");
-                return 1;
+                throw new Exception($"ENOENT: no such file or directory, open '{Path.GetFullPath(resolvedEnvFile)}'");
             }
 
-            if (format == "colon")
+            KeyPair keyPair = KeyPair.Factory(resolvedEnvFile, envKeysFile);
+            Dictionary<string, string?> results = keyPair.Run();
+
+            if (key != null)
             {
-                Console.WriteLine($"{key}:{single}");
+                string? single = results.GetValueOrDefault(key);
+                if (single == null)
+                {
+                    Console.WriteLine("");
+                    return 1;
+                }
+
+                if (format == "colon")
+                {
+                    Console.WriteLine($"{key}:{single}");
+                }
+                else
+                {
+                    Console.WriteLine(single);
+                }
             }
             else
             {
-                Console.WriteLine(single);
+                if (format == "shell")
+                {
+                    string inline = string.Join(' ', results.Select(kvp => $"{kvp.Key}={kvp.Value ?? ""}"));
+                    Console.WriteLine(inline);
+                }
+                else if (format == "colon")
+                {
+                    string inline = string.Join(' ', results.Select(kvp => $"{kvp.Key}:{kvp.Value ?? ""}"));
+                    Console.WriteLine(inline);
+                }
+                else
+                {
+                    JsonSerializerOptions jsonOptions =
+                        prettyPrint ? _prettyPrintJsonOptions : _compactJsonOptions;
+                    Console.WriteLine(JsonSerializer.Serialize(results, jsonOptions));
+                }
             }
-        }
-        else
-        {
-            if (format == "shell")
-            {
-                string inline = string.Join(' ', results.Select(kvp => $"{kvp.Key}={kvp.Value ?? ""}"));
-                Console.WriteLine(inline);
-            }
-            else if (format == "colon")
-            {
-                string inline = string.Join(' ', results.Select(kvp => $"{kvp.Key}:{kvp.Value ?? ""}"));
-                Console.WriteLine(inline);
-            }
-            else
-            {
-                JsonSerializerOptions jsonOptions =
-                    prettyPrint ? _prettyPrintJsonOptions : _compactJsonOptions;
-                Console.WriteLine(JsonSerializer.Serialize(results, jsonOptions));
-            }
-        }
 
-        return 0;
+            return 0;
+        }
+        catch (Exception error)
+        {
+            DotenvxJsHelpers.CatchAndLog(_logger, error);
+            return 1;
+        }
     }
 }
