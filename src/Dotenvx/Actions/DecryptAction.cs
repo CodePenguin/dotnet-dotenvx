@@ -36,11 +36,16 @@ public class DecryptAction : Command
     private readonly Option<string[]?> _excludeKeyOption =
         new("--exclude-key", "-ek")
         {
-            Description = "keys(s) to exclude from decryption (default: none)", HelpName = "excludeKeys..."
+            Description = "keys(s) to exclude from decryption (default: none)", HelpName = "excludeKeys...",
+            AllowMultipleArgumentsPerToken = true
         };
 
     private readonly Option<string[]?> _keysOption =
-        new("--key", "-k") { Description = "keys(s) to decrypt (default: all keys in file)", HelpName = "keys..." };
+        new("--key", "-k")
+        {
+            Description = "keys(s) to decrypt (default: all keys in file)", HelpName = "keys...",
+            AllowMultipleArgumentsPerToken = true
+        };
 
     private readonly IDotenvxLogger _logger;
 

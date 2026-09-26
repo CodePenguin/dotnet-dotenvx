@@ -23,7 +23,8 @@ public class GenexampleAction : Command
     private readonly Option<string[]?> _envFileOption =
         new("--file", "--env-file", "-f")
         {
-            Description = "path(s) to your env file(s) (default: \".env\")", HelpName = "paths..."
+            Description = "path(s) to your env file(s) (default: \".env\")", HelpName = "paths...",
+            AllowMultipleArgumentsPerToken = true
         };
 
     private readonly IDotenvxLogger _logger;

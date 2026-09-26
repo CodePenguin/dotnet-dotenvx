@@ -45,14 +45,16 @@ public class LsAction : Command
     private readonly Option<string[]?> _envFileOption =
         new("--file", "--env-file", "-f")
         {
-            Description = "path(s) to your env file(s) (default: \".env*\")", HelpName = "filenames..."
+            Description = "path(s) to your env file(s) (default: \".env*\")", HelpName = "filenames...",
+            AllowMultipleArgumentsPerToken = true
         };
 
     private readonly Option<string[]?> _excludeEnvFileOption =
         new("--exclude-env-file", "-ef")
         {
             Description = "path(s) to exclude from your env file(s) (default: none)",
-            HelpName = "excludeFilenames..."
+            HelpName = "excludeFilenames...",
+            AllowMultipleArgumentsPerToken = true
         };
 
     private readonly Option<bool> _jsonOption =

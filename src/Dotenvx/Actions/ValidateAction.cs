@@ -47,11 +47,16 @@ public class ValidateAction : Command
         new("--env", "-e")
         {
             Description = "environment variable(s) set as string (example: \"HELLO=World\")",
-            HelpName = "strings..."
+            HelpName = "strings...",
+            AllowMultipleArgumentsPerToken = true
         };
 
     private readonly Option<string[]?> _ignoreOption =
-        new("--ignore") { Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes..." };
+        new("--ignore")
+        {
+            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes...",
+            AllowMultipleArgumentsPerToken = true
+        };
 
     private readonly IDotenvxLogger _logger;
 

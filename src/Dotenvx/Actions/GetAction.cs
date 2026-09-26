@@ -42,13 +42,15 @@ public class GetAction : Command
         new("--env", "-e")
         {
             Description = "environment variable(s) set as string (example: \"HELLO=World\") (default: [])",
-            HelpName = "strings..."
+            HelpName = "strings...",
+            AllowMultipleArgumentsPerToken = true
         };
 
     private readonly Option<string[]?> _excludeKeyOption =
         new("--exclude-key", "-ek")
         {
-            Description = "keys(s) to exclude from output (default: none)", HelpName = "excludeKeys..."
+            Description = "keys(s) to exclude from output (default: none)", HelpName = "excludeKeys...",
+            AllowMultipleArgumentsPerToken = true
         };
 
     private readonly Option<string> _formatOption =
@@ -61,13 +63,15 @@ public class GetAction : Command
     private readonly Option<string[]?> _ignoreOption =
         new("--ignore")
         {
-            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes..."
+            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes...",
+            AllowMultipleArgumentsPerToken = true
         };
 
     private readonly Option<string[]?> _includeKeyOption =
         new("--include-key", "-ik")
         {
-            Description = "keys(s) to include in output (default: all)", HelpName = "includeKeys..."
+            Description = "keys(s) to include in output (default: all)", HelpName = "includeKeys...",
+            AllowMultipleArgumentsPerToken = true
         };
 
     private readonly Argument<string?> _keyArgument =

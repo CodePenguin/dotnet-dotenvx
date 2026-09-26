@@ -20,7 +20,11 @@ public class GitignoreAction : Command
     private readonly IDotenvxLogger _logger;
 
     private readonly Option<string[]?> _patternOption =
-        new("--pattern") { Description = "pattern(s) to gitignore (default: [\".env*\"])", HelpName = "patterns..." };
+        new("--pattern")
+        {
+            Description = "pattern(s) to gitignore (default: [\".env*\"])", HelpName = "patterns...",
+            AllowMultipleArgumentsPerToken = true
+        };
 
     public GitignoreAction(IDotenvxLogger logger) : base("gitignore", "append to .gitignore")
     {
