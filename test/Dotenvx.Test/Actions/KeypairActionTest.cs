@@ -233,4 +233,41 @@ public class KeyPairActionTest : EnvironmentTestBase
         MockLogger.ErrorMessages.ShouldContain(s =>
             s.StartsWith("ENOENT: no such file or directory, open '") && s.EndsWith(".env'"));
     }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-26 fix (see CLAUDE.md trap #30's "still-
+    /// open gap" note). `resolvers/keypair.js`'s own for-loop merges each file's public/private key
+    /// pair into one combined result object - this port previously only accepted a single `-f` file
+    /// at all; confirmed live against Node that `-f .env -f .env.production` merges both files'
+    /// keys into one output.
+    /// </remarks>
+    [Fact]
+    public void TestKeypairMergesMultipleEnvFiles()
+    {
+        KeyPair mockDevKeyPair = Substitute.For<KeyPair>();
+        mockDevKeyPair.Run().Returns(new Dictionary<string, string?>
+        {
+            { "DOTENV_PUBLIC_KEY", PublicKey }, { "DOTENV_PRIVATE_KEY", PrivateKey }
+        });
+        KeyPair mockProductionKeyPair = Substitute.For<KeyPair>();
+        mockProductionKeyPair.Run().Returns(new Dictionary<string, string?>
+        {
+            { "DOTENV_PUBLIC_KEY_PRODUCTION", PublicKey }, { "DOTENV_PRIVATE_KEY_PRODUCTION", PrivateKey }
+        });
+        KeyPair.Factory = (file, _) => file == ".env" ? mockDevKeyPair : mockProductionKeyPair;
+
+        ParseResult parseResult = RootCommand.Parse(["keypair", "-f", ".env", "-f", ".env.production"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        string output = _consoleOutput.ToString();
+        var data = new
+        {
+            DOTENV_PUBLIC_KEY = PublicKey,
+            DOTENV_PRIVATE_KEY = PrivateKey,
+            DOTENV_PUBLIC_KEY_PRODUCTION = PublicKey,
+            DOTENV_PRIVATE_KEY_PRODUCTION = PrivateKey
+        };
+        output.ShouldBe($"{JsonSerializer.Serialize(data, _compactJsonOptions)}\n");
+    }
 }

@@ -32,7 +32,7 @@ public class KeyPairAction : Command
 {
     private readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
 
-    private readonly Option<string?> _envFileOption =
+    private readonly Option<string[]?> _envFileOption =
         new("--file", "--env-file", "-f") { Description = "path(s) to your env file(s)", HelpName = "paths..." };
 
     private readonly Option<string?> _envKeysFileOption =
@@ -75,7 +75,7 @@ public class KeyPairAction : Command
     private int Execute(ParseResult parseResult)
     {
         string? key = parseResult.GetValue(_keyArgument);
-        string? envFile = parseResult.GetValue(_envFileOption);
+        string[]? envFile = parseResult.GetValue(_envFileOption);
         string? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         string? formatValue = parseResult.GetValue(_formatOption);
         string format = formatValue ?? "json";
@@ -91,14 +91,27 @@ public class KeyPairAction : Command
 
         try
         {
-            string resolvedEnvFile = envFile ?? ".env";
-            if (!Fsx.ExistsSync(resolvedEnvFile))
+            string[] resolvedEnvFiles = DotenvxJsHelpers.SplitCommaSeparatedEnvFiles(envFile);
+            if (resolvedEnvFiles.Length == 0)
             {
-                throw new Exception($"ENOENT: no such file or directory, open '{Path.GetFullPath(resolvedEnvFile)}'");
+                resolvedEnvFiles = [".env"];
             }
 
-            KeyPair keyPair = KeyPair.Factory(resolvedEnvFile, envKeysFile);
-            Dictionary<string, string?> results = keyPair.Run();
+            Dictionary<string, string?> results = [];
+            foreach (string resolvedEnvFile in resolvedEnvFiles)
+            {
+                if (!Fsx.ExistsSync(resolvedEnvFile))
+                {
+                    throw new Exception(
+                        $"ENOENT: no such file or directory, open '{Path.GetFullPath(resolvedEnvFile)}'");
+                }
+
+                KeyPair keyPair = KeyPair.Factory(resolvedEnvFile, envKeysFile);
+                foreach ((string resultKey, string? resultValue) in keyPair.Run())
+                {
+                    results[resultKey] = resultValue;
+                }
+            }
 
             if (key != null)
             {
