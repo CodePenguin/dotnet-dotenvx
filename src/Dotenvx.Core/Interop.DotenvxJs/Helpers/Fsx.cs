@@ -81,7 +81,11 @@ public static class Fsx
         {
             "ascii" => System.Text.Encoding.ASCII,
             "utf8" => System.Text.Encoding.UTF8,
-            "utf16" => System.Text.Encoding.Unicode,
+            // "utf16le" is what DetectEncoding.cs actually returns (matching Node's own encoding
+            // name, which is always little-endian - Node has no native big-endian UTF-16 buffer
+            // encoding) - .NET's Encoding.GetEncoding doesn't recognize that literal string at
+            // all, so this needs its own case rather than falling through to the default.
+            "utf16" or "utf16le" => System.Text.Encoding.Unicode,
             "utf32" => System.Text.Encoding.UTF32,
             _ => System.Text.Encoding.GetEncoding(encoding)
         };

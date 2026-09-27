@@ -1,3 +1,5 @@
+using System.Text;
+
 using Shouldly;
 
 namespace Dotenvx.ParityTest;
@@ -338,6 +340,28 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
     // there's no valid parity comparison for them until the pin advances past that commit. See
     // .claude/plan.md. DOTENV_PATH/DOTENV_F (already in the pin) are covered in
     // NormalizeDotenvConfigPathTest.cs at the unit level instead.
+
+    /// <remarks>
+    /// Regression test for a 2026-09-27 bug: `DetectEncoding.cs` returns "utf16le" for a file
+    /// starting with a UTF-16LE BOM, matching Node's own encoding name - but `Fsx.ReadFileX`'s
+    /// encoding switch didn't recognize that literal string and threw
+    /// (`'utf16le' is not a supported encoding name`) on every read of such a file.
+    /// </remarks>
+    [Fact]
+    public async Task Utf16LeEncodedEnvFileMatches()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => File.WriteAllText(Path.Combine(WorkDir, ".env"), "HELLO=World\n", Encoding.Unicode), null,
+            "get", "HELLO");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
 
     /// <remarks>
     /// Regression test for a 2026-09-26 bug: `--include-key`/`--exclude-key` are genuinely

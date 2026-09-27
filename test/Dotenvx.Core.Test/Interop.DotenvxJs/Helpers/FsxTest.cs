@@ -59,6 +59,25 @@ public class FsxTest : EnvironmentTestBase
         result.ShouldBe("hello");
     }
 
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-27 bug. `DetectEncoding.cs` returns the
+    /// literal string "utf16le" for a file starting with a UTF-16LE BOM (matching Node's own
+    /// encoding name), but `ReadFileX`'s encoding switch only recognized "utf16", not "utf16le" -
+    /// it fell through to `Encoding.GetEncoding("utf16le")`, which throws
+    /// (`ArgumentException: 'utf16le' is not a supported encoding name`) since that literal
+    /// string isn't a real .NET encoding name. Confirmed live: `dotenvx get` on a genuinely
+    /// UTF-16LE-encoded .env file crashed with that exact message on every read.
+    /// </remarks>
+    [Fact]
+    public void TestReadFileXUtf16LeEncoding()
+    {
+        File.WriteAllText("tests_fsx_somefile.txt", "hello", System.Text.Encoding.Unicode);
+
+        string result = Fsx.ReadFileX("tests_fsx_somefile.txt", "utf16le");
+
+        result.ShouldBe("hello");
+    }
+
     /// <remarks>Refer to "#writeFileXSync"</remarks>
     [Fact]
     public void TestWriteFileXSync()
