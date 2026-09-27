@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 
@@ -46,7 +47,8 @@ public class LsAction : Command
         new("--file", "--env-file", "-f")
         {
             Description = "path(s) to your env file(s) (default: \".env*\")", HelpName = "filenames...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<string[]?> _excludeEnvFileOption =
@@ -54,7 +56,8 @@ public class LsAction : Command
         {
             Description = "path(s) to exclude from your env file(s) (default: none)",
             HelpName = "excludeFilenames...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<bool> _jsonOption =

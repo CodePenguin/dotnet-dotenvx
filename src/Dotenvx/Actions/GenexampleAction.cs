@@ -3,6 +3,7 @@ using System.CommandLine;
 using System.IO;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -24,7 +25,8 @@ public class GenexampleAction : Command
         new("--file", "--env-file", "-f")
         {
             Description = "path(s) to your env file(s) (default: \".env\")", HelpName = "paths...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly IDotenvxLogger _logger;

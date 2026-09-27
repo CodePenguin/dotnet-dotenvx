@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
@@ -43,14 +44,16 @@ public class GetAction : Command
         {
             Description = "environment variable(s) set as string (example: \"HELLO=World\") (default: [])",
             HelpName = "strings...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<string[]?> _excludeKeyOption =
         new("--exclude-key", "-ek")
         {
             Description = "keys(s) to exclude from output (default: none)", HelpName = "excludeKeys...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<string> _formatOption =
@@ -64,14 +67,16 @@ public class GetAction : Command
         new("--ignore")
         {
             Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<string[]?> _includeKeyOption =
         new("--include-key", "-ik")
         {
             Description = "keys(s) to include in output (default: all)", HelpName = "includeKeys...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Argument<string?> _keyArgument =

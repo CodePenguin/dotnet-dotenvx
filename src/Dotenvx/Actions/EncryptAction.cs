@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -39,14 +40,16 @@ public class EncryptAction : Command
         new("--exclude-key", "-ek")
         {
             Description = "keys(s) to exclude from encryption (default: none)", HelpName = "excludeKeys...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<string[]?> _keyOption =
         new("--key", "-k")
         {
             Description = "keys(s) to encrypt (default: all keys in file)", HelpName = "keys...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly IDotenvxLogger _logger;

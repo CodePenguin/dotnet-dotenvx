@@ -192,4 +192,24 @@ public class GetActionTest : EnvironmentTestBase
         output.ShouldBe("\n");
         MockLogger.ErrorMessages.ShouldNotContain("MISSING_KEY");
     }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-27 bug (see CLAUDE.md's trap on
+    /// `OptionParsers.ParseMultiValue`). `System.CommandLine`'s `AllowMultipleArgumentsPerToken`
+    /// (needed for `--include-key`'s genuine variadic syntax) greedily consumed a completely
+    /// unregistered flag as just another array value instead of rejecting it, so
+    /// `get --include-key HELLO --totally-bogus-flag` used to silently succeed with
+    /// `includeKey = ["HELLO", "--totally-bogus-flag"]` instead of erroring the way Node's
+    /// commander does for any unrecognized `--flag`-shaped token.
+    /// </remarks>
+    [Fact]
+    public void TestIncludeKeyRejectsUnrecognizedFlagInsteadOfSwallowingIt()
+    {
+        File.WriteAllText(".env", "HELLO=World");
+        ParseResult parseResult = RootCommand.Parse(["get", "--include-key", "HELLO", "--totally-bogus-flag"]);
+
+        parseResult.Errors.ShouldNotBeEmpty();
+        int exitCode = parseResult.Invoke();
+        exitCode.ShouldNotBe(0);
+    }
 }

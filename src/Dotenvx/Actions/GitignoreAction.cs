@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
@@ -23,7 +24,8 @@ public class GitignoreAction : Command
         new("--pattern")
         {
             Description = "pattern(s) to gitignore (default: [\".env*\"])", HelpName = "patterns...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     public GitignoreAction(IDotenvxLogger logger) : base("gitignore", "append to .gitignore")

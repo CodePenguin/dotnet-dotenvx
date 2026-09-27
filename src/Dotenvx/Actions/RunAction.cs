@@ -44,14 +44,16 @@ public class RunAction : Command
         {
             Description = "environment variable(s) set as string (example: \"HELLO=World\") (default: [])",
             HelpName = "strings...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<string[]?> _ignoreOption =
         new("--ignore")
         {
             Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes...",
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly IDotenvxLogger _logger;
