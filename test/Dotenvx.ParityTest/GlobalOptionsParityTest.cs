@@ -61,4 +61,30 @@ public class GlobalOptionsParityTest(NodeParityFixture fixture) : ParityTestBase
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
+
+    /// <remarks>
+    /// Regression test for a 2026-09-28 bug: `--version`/`-V` is only registered on the root
+    /// command by default (matching how commander's own `--version` is a program-level, but still
+    /// recursive, option) - without `Recursive = true` on .NET's `VersionOption`,
+    /// `dotenvx get --version` fell through to the `[KEY]` positional argument instead of printing
+    /// the version, exiting 1 with `[MISSING_KEY] missing key (--version)` where Node prints the
+    /// version and exits 0. Doesn't compare the actual version STRING (this port's own package
+    /// version legitimately differs from the emulated Node CLI's "2.24.1" - a separate, open
+    /// question), only that both sides recognize the flag and exit 0 with non-empty output.
+    /// </remarks>
+    [Fact]
+    public async Task VersionFlagAfterSubcommandIsRecognizedOnBothSides()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=World\n"), null, "get", "--version");
+
+        dotnet.ExitCode.ShouldBe(0);
+        node.ExitCode.ShouldBe(0);
+        dotnet.StandardOutput.ShouldNotBeEmpty();
+    }
 }
