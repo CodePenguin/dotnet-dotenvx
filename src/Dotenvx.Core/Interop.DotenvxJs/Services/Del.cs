@@ -99,8 +99,11 @@ public class Del
 
     private static string RemoveKey(string src, string key)
     {
+        // Leading [\s﻿]* (not just \s*) so a byte-order-mark surviving at the very start of
+        // the decoded source (see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md) doesn't stop
+        // removal of a FIRST key that happens to sit right after it.
         Regex lineRegex = new(
-            "^\\s*(?:export\\s+)?" + Regex.Escape(key) + // KEY (with optional export prefix)
+            "^[\\s\\uFEFF]*(?:export\\s+)?" + Regex.Escape(key) + // KEY (with optional export prefix)
             "(?:\\s*=\\s*?|:\\s+?)" + // = or : assignment
             "(?:\\s*'(?:\\\\'|[^'])*'|\\s*\"(?:\\\\\"|[^\"])*\"|\\s*`(?:\\\\`|[^`])*`|[^#\\r\\n]+)?" + // value
             "[ \\t]*(?:#.*)?$", // optional trailing comment (horizontal whitespace only - don't cross lines)

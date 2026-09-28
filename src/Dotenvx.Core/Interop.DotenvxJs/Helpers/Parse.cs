@@ -241,8 +241,11 @@ public partial class Parse(
     [GeneratedRegex(@"^(['""`])([\s\S]*)\1$")]
     private static partial Regex CleanRegex();
 
+    // Leading [\s﻿]* (not just \s*) so a byte-order-mark surviving at the very start of the
+    // decoded source (see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md) doesn't stop the
+    // FIRST key from being recognized - JS's \s regex metaclass matches U+FEFF; .NET's does not.
     [GeneratedRegex(
-        """(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)""",
+        """(?:^|^)[\s﻿]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)""",
         RegexOptions.Multiline)]
     private static partial Regex LineRegex();
 

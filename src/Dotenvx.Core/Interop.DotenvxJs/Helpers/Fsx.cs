@@ -90,15 +90,21 @@ public static class Fsx
             _ => System.Text.Encoding.GetEncoding(encoding)
         };
 
-        // Deliberately uses File.ReadAllText (auto-strips a leading BOM) rather than decoding raw
-        // bytes via enc.GetString - see CLAUDE.md's trap on this for why a raw-byte decode (which
-        // would match Node's own BOM-preserving read behavior) was tried and reverted: Node's
-        // parser tolerates a leading U+FEFF before a key only because JS's `\s` regex metacharacter
-        // matches U+FEFF, while .NET's `\s` does not - so preserving the BOM here made every
-        // parsing regex in this port (DotenvParseRegex and others) fail to recognize the FIRST key
-        // in a BOM-prefixed file at all, a much more common and more severe break than the narrow
-        // "write-back doesn't preserve the BOM" gap this would have fixed.
-        return File.ReadAllText(filepath, enc);
+        // Decode from raw bytes rather than File.ReadAllText(path, enc): that overload's
+        // StreamReader auto-detects and STRIPS a leading byte-order-mark matching the requested
+        // encoding, but Node's own raw Buffer decode (what detectEncoding.js/fs.readFileSync are
+        // built on) does NOT strip it - a leading BOM survives as a literal U+FEFF character in the
+        // decoded string on both `utf8` and `utf16le`, and gets written back out verbatim by any
+        // command that rewrites the file. `Encoding.GetString(bytes)` matches that raw-decode
+        // behavior (confirmed via a scratch probe: unlike File.ReadAllText, it does not strip a
+        // leading BOM). This was tried once before and reverted because every `\s`-based parsing
+        // regex in this port failed to recognize a key immediately after a preserved BOM (JS's `\s`
+        // matches U+FEFF; .NET's doesn't) - those regexes (DotenvParseRegex, Parse.cs's LineRegex,
+        // ValidateEnvExample's ScanLineRegex, Del.cs's RemoveKey, Append.cs/Replace.cs) have since
+        // been updated to accept `[\s﻿]*` at the relevant line-start position, so this is safe
+        // now - see CLAUDE.md's trap on this for the full history.
+        byte[] bytes = ReadFileSync(filepath);
+        return enc.GetString(bytes);
     }
 
     private static byte[] DefaultReadFileSync(string path)

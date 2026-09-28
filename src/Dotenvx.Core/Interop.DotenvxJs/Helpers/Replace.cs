@@ -34,9 +34,12 @@ public static partial class Helpers
                 }
             }
 
+            // ([\s﻿]*)? not just (\s*)? so a byte-order-mark surviving at the very start of
+            // the decoded source is captured and preserved (not lost) when this key is the FIRST
+            // one in the file - see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md.
             Regex currentPart = new(
                 "^" + // start of line
-                "(\\s*)?" + // spaces
+                "([\\s\\uFEFF]*)?" + // spaces
                 "(export\\s+)?" + // export
                 Regex.Escape(key) + // KEY
                 "\\s*=\\s*" + // spaces (KEY = value)
@@ -78,8 +81,11 @@ public static partial class Helpers
     {
         Dictionary<string, string> obj = new();
         string lines = Regex.Replace(src, "\r\n?", "\n");
+        // Leading [\s﻿]* (not just \s*) so a byte-order-mark surviving at the very start of
+        // the decoded source doesn't stop the FIRST key from being recognized - see
+        // Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md.
         MatchCollection matches = Regex.Matches(lines,
-            @"(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)",
+            @"(?:^|^)[\s﻿]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)",
             RegexOptions.Multiline);
 
         foreach (Match match in matches)

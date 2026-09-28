@@ -71,11 +71,29 @@ public class FsxTest : EnvironmentTestBase
     [Fact]
     public void TestReadFileXUtf16LeEncoding()
     {
-        File.WriteAllText("tests_fsx_somefile.txt", "hello", System.Text.Encoding.Unicode);
+        // No BOM here deliberately - this test is only about "utf16le" being a recognized
+        // encoding name at all; BOM preservation is covered separately below.
+        File.WriteAllText("tests_fsx_somefile.txt", "hello", new System.Text.UnicodeEncoding(false, false));
 
         string result = Fsx.ReadFileX("tests_fsx_somefile.txt", "utf16le");
 
         result.ShouldBe("hello");
+    }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for the BOM-preservation fix (see CLAUDE.md's trap on
+    /// this). Node's raw Buffer decode never strips a leading byte-order-mark - it survives as a
+    /// literal U+FEFF character in the decoded string, and gets written back out verbatim by any
+    /// command that rewrites the file.
+    /// </remarks>
+    [Fact]
+    public void TestReadFileXPreservesLeadingByteOrderMark()
+    {
+        File.WriteAllText("tests_fsx_somefile.txt", "hello", System.Text.Encoding.UTF8);
+
+        string result = Fsx.ReadFileX("tests_fsx_somefile.txt", "utf8");
+
+        result.ShouldBe("﻿hello");
     }
 
     /// <remarks>Refer to "#writeFileXSync"</remarks>

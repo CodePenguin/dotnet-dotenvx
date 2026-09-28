@@ -1,3 +1,5 @@
+using System.Text;
+
 using Shouldly;
 
 namespace Dotenvx.ParityTest;
@@ -194,5 +196,43 @@ public class SetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         dotnet.StandardError.ShouldBe(node.StandardError);
         ReadFile(".env").ShouldContain("FOO=\"bar\"");
+    }
+
+    /// <remarks>
+    /// Regression test for the BOM-preservation fix (see CLAUDE.md's trap on this). Node's raw
+    /// Buffer decode never strips a leading byte-order-mark, so it survives a read-modify-write
+    /// round-trip - a `.env` file that starts with a UTF-8 BOM keeps that BOM after `set` rewrites
+    /// it. This required both decoding `ReadFileX` from raw bytes (preserving the BOM character)
+    /// and updating every `\s`-based parsing regex in this port to also accept a leading `﻿`,
+    /// since .NET's `\s` (unlike JS's) doesn't match it.
+    /// </remarks>
+    [Fact]
+    public async Task SetPreservesLeadingByteOrderMarkThroughRewrite()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        string envPath = Path.Combine(WorkDir, ".env");
+
+        void Setup()
+        {
+            File.WriteAllText(envPath, "HELLO=World\n", new UTF8Encoding(true));
+        }
+
+        Setup();
+        CliResult node = await Fixture.RunNodeAsync(WorkDir, null, "set", "FOO", "bar", "--plain");
+        byte[] nodeBytes = File.ReadAllBytes(envPath);
+
+        Setup();
+        CliResult dotnet = await Fixture.RunDotnetAsync(WorkDir, null, "set", "FOO", "bar", "--plain");
+        byte[] dotnetBytes = File.ReadAllBytes(envPath);
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnetBytes.ShouldBe(nodeBytes);
+        dotnetBytes[0].ShouldBe((byte)0xEF);
+        dotnetBytes[1].ShouldBe((byte)0xBB);
+        dotnetBytes[2].ShouldBe((byte)0xBF);
     }
 }
