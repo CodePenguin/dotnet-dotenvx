@@ -34,7 +34,7 @@ public static partial class Helpers
                 }
             }
 
-            // ([\s﻿]*)? not just (\s*)? so a byte-order-mark surviving at the very start of
+            // ([\s\uFEFF]*)? not just (\s*)? so a byte-order-mark surviving at the very start of
             // the decoded source is captured and preserved (not lost) when this key is the FIRST
             // one in the file - see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md.
             Regex currentPart = new(
@@ -81,12 +81,13 @@ public static partial class Helpers
     {
         Dictionary<string, string> obj = new();
         string lines = Regex.Replace(src, "\r\n?", "\n");
-        // Leading [\s﻿]* (not just \s*) so a byte-order-mark surviving at the very start of
-        // the decoded source doesn't stop the FIRST key from being recognized - see
-        // Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md.
+        // Leading [\s\uFEFF]* (not just \s*) so a byte-order-mark surviving at the very start of
+        // the decoded source doesn't stop the FIRST key from being recognized, and
+        // RegexOptions.ECMAScript makes \w ASCII-only (matching JS's \w exactly) instead of .NET's
+        // default Unicode-aware \w - see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md.
         MatchCollection matches = Regex.Matches(lines,
-            @"(?:^|^)[\s﻿]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)",
-            RegexOptions.Multiline);
+            @"(?:^|^)[\s\uFEFF]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)",
+            RegexOptions.Multiline | RegexOptions.ECMAScript);
 
         foreach (Match match in matches)
         {

@@ -93,7 +93,7 @@ public class FsxTest : EnvironmentTestBase
 
         string result = Fsx.ReadFileX("tests_fsx_somefile.txt", "utf8");
 
-        result.ShouldBe("﻿hello");
+        result.ShouldBe("\uFEFFhello");
     }
 
     /// <remarks>Refer to "#writeFileXSync"</remarks>

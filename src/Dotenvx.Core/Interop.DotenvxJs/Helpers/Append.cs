@@ -28,7 +28,7 @@ public static partial class Helpers
                 enforceEndOfLine = "$"; // EMPTY scenario
             }
 
-            // ([\s﻿]*)? not just (\s*)? so a byte-order-mark surviving at the very start of
+            // ([\s\uFEFF]*)? not just (\s*)? so a byte-order-mark surviving at the very start of
             // the decoded source is captured and preserved (not lost) when this key is the FIRST
             // one in the file - see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md.
             Regex currentPart = new(

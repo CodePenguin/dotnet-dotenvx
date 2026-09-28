@@ -203,7 +203,7 @@ public class SetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
     /// Buffer decode never strips a leading byte-order-mark, so it survives a read-modify-write
     /// round-trip - a `.env` file that starts with a UTF-8 BOM keeps that BOM after `set` rewrites
     /// it. This required both decoding `ReadFileX` from raw bytes (preserving the BOM character)
-    /// and updating every `\s`-based parsing regex in this port to also accept a leading `﻿`,
+    /// and updating every `\s`-based parsing regex in this port to also accept a leading `\uFEFF`,
     /// since .NET's `\s` (unlike JS's) doesn't match it.
     /// </remarks>
     [Fact]

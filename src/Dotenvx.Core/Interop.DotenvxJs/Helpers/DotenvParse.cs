@@ -61,12 +61,16 @@ public static partial class Helpers
         return obj;
     }
 
-    // Leading [\s﻿]* (not just \s*) so a byte-order-mark surviving at the very start of the
+    // Leading [\s\uFEFF]* (not just \s*) so a byte-order-mark surviving at the very start of the
     // decoded source (see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md) doesn't stop the
     // FIRST key from being recognized - JS's \s regex metaclass matches U+FEFF; .NET's does not.
+    // RegexOptions.ECMAScript makes \w ASCII-only (matching JS's \w exactly) instead of .NET's
+    // default Unicode-aware \w - confirmed live that Node rejects a non-ASCII key entirely
+    // (`H\u00C9LLO=World` parses to `{}`, not a key named "H\u00C9LLO") while .NET's default \w
+    // silently accepted it as a valid key name.
     [GeneratedRegex(
-        @"(?:^|^)[\s﻿]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)",
-        RegexOptions.Multiline)]
+        @"(?:^|^)[\s\uFEFF]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)",
+        RegexOptions.Multiline | RegexOptions.ECMAScript)]
     private static partial Regex DotenvParseRegex();
 
     [GeneratedRegex(@"\r\n?")]

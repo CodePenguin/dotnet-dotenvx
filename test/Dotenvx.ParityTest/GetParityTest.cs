@@ -388,4 +388,29 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
+
+    /// <remarks>
+    /// Regression test for a 2026-09-28 bug: JavaScript's `\w` regex metacharacter is ASCII-only
+    /// (`[A-Za-z0-9_]`), but .NET's default `\w` is Unicode-aware and matches letters like "É" too -
+    /// so a key like `HÉLLO=World` was silently accepted as a valid key by this port's parser
+    /// while Node's real parser rejects the whole line (`{}` - not even a partial match), confirmed
+    /// live. Fixed by adding `RegexOptions.ECMAScript` (which makes `\w` ASCII-only, matching JS
+    /// exactly) to every regex in this port that uses `[\w.-]+` for key matching.
+    /// </remarks>
+    [Fact]
+    public async Task NonAsciiKeyNameIsRejectedIdentically()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HÉLLO=World\nHELLO=World\n"), null,
+            "get", "--format", "json");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+        dotnet.StandardOutput.ShouldBe("{\"HELLO\":\"World\"}\n");
+    }
 }

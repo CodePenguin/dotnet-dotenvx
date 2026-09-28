@@ -101,7 +101,7 @@ public static class Fsx
         // regex in this port failed to recognize a key immediately after a preserved BOM (JS's `\s`
         // matches U+FEFF; .NET's doesn't) - those regexes (DotenvParseRegex, Parse.cs's LineRegex,
         // ValidateEnvExample's ScanLineRegex, Del.cs's RemoveKey, Append.cs/Replace.cs) have since
-        // been updated to accept `[\s﻿]*` at the relevant line-start position, so this is safe
+        // been updated to accept `[\s\uFEFF]*` at the relevant line-start position, so this is safe
         // now - see CLAUDE.md's trap on this for the full history.
         byte[] bytes = ReadFileSync(filepath);
         return enc.GetString(bytes);

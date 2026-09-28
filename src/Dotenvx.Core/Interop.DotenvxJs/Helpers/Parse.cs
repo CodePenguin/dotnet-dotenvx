@@ -241,12 +241,14 @@ public partial class Parse(
     [GeneratedRegex(@"^(['""`])([\s\S]*)\1$")]
     private static partial Regex CleanRegex();
 
-    // Leading [\s﻿]* (not just \s*) so a byte-order-mark surviving at the very start of the
+    // Leading [\s\uFEFF]* (not just \s*) so a byte-order-mark surviving at the very start of the
     // decoded source (see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md) doesn't stop the
     // FIRST key from being recognized - JS's \s regex metaclass matches U+FEFF; .NET's does not.
+    // RegexOptions.ECMAScript makes \w ASCII-only (matching JS's \w exactly) instead of .NET's
+    // default Unicode-aware \w.
     [GeneratedRegex(
-        """(?:^|^)[\s﻿]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)""",
-        RegexOptions.Multiline)]
+        """(?:^|^)[\s\uFEFF]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)""",
+        RegexOptions.Multiline | RegexOptions.ECMAScript)]
     private static partial Regex LineRegex();
 
     [GeneratedRegex(@"\$\{[^}]+\}|\$[A-Za-z_][A-Za-z0-9_]*")]
