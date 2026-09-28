@@ -128,10 +128,21 @@ public class DelTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBeEmpty();
     }
 
-    /// <remarks>Refer to "errors when the env file is missing"</remarks>
+    /// <remarks>
+    /// Refer to "errors when the env file is missing". Overrides the constructor's blanket
+    /// `Fsx.ReadFileSync = _ => []` mock for this one test - that mock previously worked here only
+    /// because `Del.cs`'s missing-file detection actually went through `Fsx.ReadFileX`'s OLD,
+    /// separate `File.ReadAllText` call (which hit the real, genuinely-missing file directly and
+    /// threw), never through this mocked `ReadFileSync` delegate at all. Once `ReadFileX` was fixed
+    /// to decode from `Fsx.ReadFileSync`'s own bytes (to preserve a leading BOM the same way Node
+    /// does - see CLAUDE.md's trap on this), the blanket mock started intercepting THIS call too,
+    /// silently returning `[]` for a "missing" file instead of a real `FileNotFoundException`.
+    /// </remarks>
     [Fact]
     public void TestRunMissingEnvFile()
     {
+        Fsx.ReadFileSync = _ => throw new FileNotFoundException();
+
         DelResult result = new Del("FOO", [new() { Type = EnvType.EnvFile, Value = "nonexistent.env" }]).Run();
 
         ProcessedDel row = result.ProcessedEnvs[0];
