@@ -146,7 +146,7 @@ public class RunAction : Command
         // Check for separator '--'
         bool hasSeparator = parseResult.Tokens.Any(x => x.Type == TokenType.DoubleDash);
 
-        if (commandArgs.Length < 1 || !hasSeparator)
+        if (commandArgs.Length < 1)
         {
             if (hasSeparator)
             {

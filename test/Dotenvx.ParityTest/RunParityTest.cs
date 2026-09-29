@@ -147,4 +147,34 @@ public class RunParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
         dotnet.StandardOutput.ShouldContain("NotSecret");
     }
+
+    /// <remarks>
+    /// Regression test for a 2026-09-29 bug found via a code audit: `RunAction.cs`'s gate was
+    /// `commandArgs.Length &lt; 1 || !hasSeparator`, rejecting ANY `run` invocation without a
+    /// literal `--` separator. Real `run.js` only gates on `commandArgs.length &lt; 1` -
+    /// `hasSeparator` merely selects which error message to print when that gate fires. Node
+    /// supports running a command WITHOUT `--` via `inferCommandArgsFromProcessArgv`'s fallback
+    /// (skip recognized `-f`/flag tokens, return the first plausible non-flag token onward) - a
+    /// bare `dotenvx run node -e "..."` works fine on real Node. The two existing C# unit tests for
+    /// this exact scenario (`RunActionTest.TestRunEnvFileAmbiguousArgumentsMissingDoubleDash*`) had
+    /// themselves been misported from the start - the real upstream JS tests they're named after
+    /// assert SUCCESS, not the "ambiguous command" error (confirmed via `dotenvx/tests/cli/actions/
+    /// run.test.js`), which is why this divergence went undetected until an explicit code audit.
+    /// </remarks>
+    [Fact]
+    public async Task RunWithoutDoubleDashSeparatorStillRunsTheCommand()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=World\n"), null,
+            "run", "node", "-e", "console.log(process.env.HELLO)");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.ExitCode.ShouldBe(0);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
 }

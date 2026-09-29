@@ -978,30 +978,86 @@ public class RunActionTest : EnvironmentTestBase
             "missing command after [dotenvx run --]. try [dotenvx run -- yourcommand]");
     }
 
-    /// <remarks>Refer to "run - envFile (ambiguous arguments, missing --)"</remarks>
+    /// <remarks>
+    /// Refer to "run - envFile (ambiguous arguments, missing --)". This test previously asserted
+    /// the OPPOSITE of what the real upstream test does - the actual JS test (dotenvx/tests/cli/
+    /// actions/run.test.js) stubs `args: []` and `process.argv` to this exact shape and asserts
+    /// SUCCESS (envsResolver called, verbose/debug/success logged normally) via `run.js`'s
+    /// `inferCommandArgsFromProcessArgv` fallback - it does NOT assert the "ambiguous command"
+    /// error. That error path is real (see the two dedicated tests below for it), but this specific
+    /// scenario - `-f &lt;file&gt; command args` with no `--` at all - is exactly the case the
+    /// fallback exists to handle, matching how real `dotenvx run -f .env node -e "..."` (no `--`)
+    /// behaves live. Ported wrong originally (misread from the test's own name alone, without
+    /// checking what it actually asserts) - fixed 2026-09-29 alongside `RunAction.cs`'s gate.
+    /// </remarks>
     [Fact]
     public void TestRunEnvFileAmbiguousArgumentsMissingDoubleDash()
     {
-        // Mocking not needed as this is CLI parsing error
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs =
+            [
+                new RunProcessedEnv
+                {
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    Parsed = new Dictionary<string, string> { ["HELLO"] = "World" },
+                    Injected = new Dictionary<string, string> { ["HELLO"] = "World" },
+                    PreExisted = new Dictionary<string, string>()
+                }
+            ],
+            ReadableStrings = [],
+            ReadableFilePaths = [".env"],
+            UniqueInjectedKeys = ["HELLO"],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
         ParseResult parseResult = RootCommand.Parse(["run", "-f", ".env.production", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(1);
-        MockLogger.ErrorMessages.ShouldContain(
-            "ambiguous command due to missing \'--\' separator. try [dotenvx run -f .env.production -- yourcommand]");
+        exitCode.ShouldBe(0);
+        mockRun.Received(1).Execute();
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env");
     }
 
-    /// <remarks>Refer to "run - envFile (ambiguous arguments, missing -- and envFile is empty)"</remarks>
+    /// <remarks>
+    /// Refer to "run - envFile (ambiguous arguments, missing -- and envFile is empty)" - same fix
+    /// as the test above, see its remarks for why.
+    /// </remarks>
     [Fact]
     public void TestRunEnvFileAmbiguousArgumentsMissingDoubleDashEnvFileEmpty()
     {
-        // Mocking not needed as this is CLI parsing error
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs =
+            [
+                new RunProcessedEnv
+                {
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    Parsed = new Dictionary<string, string> { ["HELLO"] = "World" },
+                    Injected = new Dictionary<string, string> { ["HELLO"] = "World" },
+                    PreExisted = new Dictionary<string, string>()
+                }
+            ],
+            ReadableStrings = [],
+            ReadableFilePaths = [".env"],
+            UniqueInjectedKeys = ["HELLO"],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
         ParseResult parseResult = RootCommand.Parse(["run", "-f", ".env", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(1);
-        MockLogger.ErrorMessages.ShouldContain(
-            "ambiguous command due to missing \'--\' separator. try [dotenvx run -f .env -- yourcommand]");
+        exitCode.ShouldBe(0);
+        mockRun.Received(1).Execute();
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env");
     }
 
     /// <remarks>
