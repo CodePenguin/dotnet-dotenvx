@@ -97,4 +97,29 @@ public class KeypairParityTest(NodeParityFixture fixture) : ParityTestBase(fixtu
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
+
+    /// <remarks>
+    /// Regression test for a 2026-09-29 bug found via a code audit: `keypair.js`'s single-KEY
+    /// branch checks `results === undefined` (key entirely absent), not falsy - a key that WAS
+    /// derived but has a `null` value (e.g. `DOTENV_PUBLIC_KEY` on a plaintext-only file) still
+    /// falls through to `console.log(results)`, printing the literal text "null", exit 0.
+    /// `KeyPairAction.cs` used `Dictionary.GetValueOrDefault`, which can't distinguish "absent" from
+    /// "present but null" - it took the "not found" branch (empty line, exit 1) instead.
+    /// </remarks>
+    [Fact]
+    public async Task KeyPairSingleKeyWithNullValuePrintsLiteralNullNotEmpty()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=World\n"), null, "keypair", "DOTENV_PUBLIC_KEY");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.ExitCode.ShouldBe(0);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+        dotnet.StandardOutput.Trim().ShouldBe("null");
+    }
 }

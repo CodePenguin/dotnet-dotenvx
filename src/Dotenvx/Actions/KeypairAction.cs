@@ -115,20 +115,28 @@ public class KeyPairAction : Command
 
             if (key != null)
             {
-                string? single = results.GetValueOrDefault(key);
-                if (single == null)
+                // keypair.js's check is `results === undefined` (key entirely absent from the
+                // resolved object), not falsy - a key that WAS derived but has a null value (e.g.
+                // DOTENV_PUBLIC_KEY on a plaintext-only file) still falls through to printing it,
+                // and JS's template-literal/console.log coercion renders that null as the literal
+                // text "null". `GetValueOrDefault` can't distinguish "absent" from "present but
+                // null" the way `TryGetValue`'s bool return can - using the wrong one here made a
+                // present-but-null key take the "not found" branch (empty line, exit 1) instead of
+                // printing "null" and exiting 0, confirmed live against Node.
+                if (!results.TryGetValue(key, out string? single))
                 {
                     Console.WriteLine("");
                     return 1;
                 }
 
+                string singleText = single ?? "null";
                 if (format == "colon")
                 {
-                    Console.WriteLine($"{key}:{single}");
+                    Console.WriteLine($"{key}:{singleText}");
                 }
                 else
                 {
-                    Console.WriteLine(single);
+                    Console.WriteLine(singleText);
                 }
             }
             else
