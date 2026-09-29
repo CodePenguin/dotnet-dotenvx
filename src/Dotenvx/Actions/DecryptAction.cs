@@ -139,7 +139,7 @@ public class DecryptAction : Command
 
         try
         {
-            Decrypt decryptService = new(envItems.ToArray(), null, excludeKey, envKeysFilePath);
+            Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath);
             DecryptResult result = decryptService.Run();
 
             IList<ProcessedDecrypt> processedEnvs = result.ProcessedEnvs;

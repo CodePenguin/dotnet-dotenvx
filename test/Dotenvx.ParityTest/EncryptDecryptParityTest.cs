@@ -394,4 +394,46 @@ public class EncryptDecryptParityTest(NodeParityFixture fixture) : ParityTestBas
         node.StandardOutput.ShouldNotContain("*");
     }
 
+    /// <remarks>
+    /// Regression test for a 2026-09-29 bug found via a code audit: `DecryptAction.cs`'s
+    /// non-`--stdout` (file-write) branch passed `null` instead of the parsed `-k`/`--key` values
+    /// to `Decrypt`'s constructor - a straight parameter-order/wiring mistake, not a different-but-
+    /// equivalent code path. `dotenvx decrypt -k SPECIFIC_KEY` (writing to file) decrypted and
+    /// rewrote ALL keys instead of only the one requested. The `--stdout` branch already correctly
+    /// passed the filter through, which is why this port's own ParityTest coverage never caught it
+    /// - every existing `-k` scenario happened to use `--stdout`.
+    /// </remarks>
+    [Fact]
+    public async Task DecryptSpecificKeyOnFileWritePathOnlyDecryptsThatKey()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        const string publicKey = FixedKeypairFixture.PublicKey;
+        const string encryptedTwoKeyEnv =
+            $"DOTENV_PUBLIC_KEY=\"{publicKey}\"\n" +
+            "HELLO=encrypted:BGftYDEUfycZeomeqB4m8HxtfNH3Pe8TxCNAodAJ2Q7t1x8J4iFFY0TjDu1MNIzJKl3DLDT33oDTCVWOBZe1ZvC/RWZy5F92dj6qPPvhA9e7kuifQwrinrEirS9XJINSqHOyyeIP\n" +
+            "FOO=encrypted:BJdAk7BCmd3nQw2xoXRxxxdi1ncLnkJm0rSrQI6HLo5y2144H4HthRLgQFYQghf2SfVSaPbhDEgXlN2TeMqYfUnjkQOgqnS+T+MjI5V0a9eF6/h6ToKJ9gZEZEcx+PxDCctY6g==\n";
+
+        void Setup()
+        {
+            WriteFile(".env", encryptedTwoKeyEnv);
+            WriteFile(".env.keys", FixedKeypairFixture.PrivateKeyFile);
+        }
+
+        Setup();
+        CliResult node = await Fixture.RunNodeAsync(WorkDir, null, "decrypt", "-k", "HELLO");
+        string nodeEnvFile = ReadFile(".env");
+
+        Setup();
+        CliResult dotnet = await Fixture.RunDotnetAsync(WorkDir, null, "decrypt", "-k", "HELLO");
+        string dotnetEnvFile = ReadFile(".env");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnetEnvFile.ShouldBe(nodeEnvFile);
+        dotnetEnvFile.ShouldContain("HELLO=World");
+        dotnetEnvFile.ShouldContain("FOO=encrypted:");
+    }
 }
