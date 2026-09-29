@@ -16,7 +16,15 @@ public class RotateTest : EnvironmentTestBase
         ClearEnvironment();
     }
 
-    /// <remarks>Refer to "#run (no arguments)"</remarks>
+    /// <remarks>
+    /// Refer to "#run (no arguments)". Was asserting `UnchangedFilePaths.ShouldBe([".env"])` - a
+    /// misport, fixed 2026-09-29. The real historical test (`git show
+    /// f1ffd157:tests/lib/services/rotate.test.js`) asserts `ct.same(unchangedFilepaths, [])` -
+    /// EMPTY - for this exact error scenario. `unchangedFilepaths` is only ever populated on the
+    /// SUCCESS path upstream (`changedFilepaths.add(...)` runs at the end of the try block, with no
+    /// corresponding `unchangedFilepaths.add(...)` anywhere in the class at all), so an error case
+    /// contributes to neither bucket.
+    /// </remarks>
     [Fact]
     public void TestRunNoArguments()
     {
@@ -33,10 +41,12 @@ public class RotateTest : EnvironmentTestBase
         p.Error.ShouldBeEquivalentTo(exampleError);
 
         result.ChangedFilePaths.ShouldBeEmpty();
-        result.UnchangedFilePaths.ShouldBe([".env"]);
+        result.UnchangedFilePaths.ShouldBeEmpty();
     }
 
-    /// <remarks>Refer to "#run (no env file)"</remarks>
+    /// <remarks>
+    /// Refer to "#run (no env file)" - same misport/fix as the test above, see its remarks.
+    /// </remarks>
     [Fact]
     public void TestRunNoEnvFile()
     {
@@ -53,7 +63,7 @@ public class RotateTest : EnvironmentTestBase
         p.Error.ShouldBeEquivalentTo(exampleError);
 
         result.ChangedFilePaths.ShouldBeEmpty();
-        result.UnchangedFilePaths.ShouldBe([".env"]);
+        result.UnchangedFilePaths.ShouldBeEmpty();
     }
 
     /// <remarks>

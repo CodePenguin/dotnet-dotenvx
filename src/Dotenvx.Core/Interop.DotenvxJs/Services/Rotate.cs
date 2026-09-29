@@ -215,13 +215,19 @@ public class Rotate(
 
         _processedEnvs.Add(row);
 
+        // The historical rotate.js (commit f1ffd157) never populates unchangedFilepaths anywhere -
+        // changedFilepaths.add(...) only runs on the success path, at the very end of the try
+        // block, so a file that errors (missing .env/.env.keys, etc.) lands in NEITHER bucket -
+        // it's tracked only via the per-file warning already logged from row.Error. Bucketing every
+        // non-Changed row (including error rows, since row.Changed only ever becomes true on
+        // success) into _unchangedFilePaths was a bug: it made a file that genuinely FAILED also
+        // print a misleading "○ no change (thatfile)" summary line alongside its real warning,
+        // something upstream never does. _unchangedFilePaths is therefore permanently empty here,
+        // matching upstream's own (apparently unintentional) dead functionality exactly rather than
+        // "fixing" it toward something that looks more complete.
         if (row.Changed)
         {
             _changedFilePaths.Add(envFilepath);
-        }
-        else
-        {
-            _unchangedFilePaths.Add(envFilepath);
         }
     }
 
