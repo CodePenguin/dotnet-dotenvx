@@ -12,6 +12,17 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
     private readonly string _cwd = Path.GetFullPath(directory);
     private readonly string[] _ignore = ["node_modules/**", "**/node_modules/**", ".git/**", "**/.git/**"];
 
+    // Matches ls.js's DEFAULT_EXCLUDED_DIRECTORY_EXTENSIONS - the Fdir crawler never descends into
+    // node_modules/.git or a directory whose extension matches one of these (macOS bundle formats),
+    // so files inside are never even candidates. This port originally only filtered .env* files
+    // AFTER a full unrestricted tree walk via the glob-based _ignore list above, which happened to
+    // still exclude node_modules/.git (both are covered by those globs too) but had NO equivalent
+    // for the bundle extensions at all - a .env* file inside e.g. a `.photoslibrary` directory would
+    // be listed here but never seen by Node. Fixed by pruning at the directory-walk level directly,
+    // matching LsAction.cs's own already-correct CountCrawledDirectories exclusion set.
+    private static readonly HashSet<string> ExcludedDirectoryExtensions =
+        [".app", ".key", ".numbers", ".pages", ".photoslibrary"];
+
     protected Ls() : this("./")
     {
         // For unit tests
@@ -35,16 +46,40 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
         Func<string, bool> exclude = Picomatch(excluded);
         Func<string, bool> include = Picomatch(Patterns(), excluded);
 
-        // Enumerate every file once and let the "**/"-prefixed picomatch globs do the actual
-        // filtering (matching upstream's Fdir-crawl-then-filter approach), rather than passing
-        // each user pattern to Directory.GetFiles as its own OS search pattern - "**/" isn't
-        // valid .NET search-pattern syntax, only valid picomatch/glob syntax.
-        return Directory.GetFiles(_cwd, "*", SearchOption.AllDirectories)
+        // Enumerate every file once (pruning excluded directories during the walk, matching
+        // upstream's Fdir crawler) and let the "**/"-prefixed picomatch globs do the actual
+        // filtering, rather than passing each user pattern to Directory.GetFiles as its own OS
+        // search pattern - "**/" isn't valid .NET search-pattern syntax, only valid picomatch/glob
+        // syntax.
+        return EnumerateFiles(_cwd)
             .Select(file => Path.GetRelativePath(_cwd, file).Replace(Path.DirectorySeparatorChar, '/'))
             .Where(path => !exclude(path) && include(path))
             .Distinct()
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
+    }
+
+    private static IEnumerable<string> EnumerateFiles(string directory)
+    {
+        foreach (string file in Directory.GetFiles(directory))
+        {
+            yield return file;
+        }
+
+        foreach (string subdirectory in Directory.GetDirectories(directory))
+        {
+            string name = Path.GetFileName(subdirectory);
+            if (name is "node_modules" or ".git" ||
+                ExcludedDirectoryExtensions.Contains(Path.GetExtension(subdirectory).ToLowerInvariant()))
+            {
+                continue;
+            }
+
+            foreach (string file in EnumerateFiles(subdirectory))
+            {
+                yield return file;
+            }
+        }
     }
 
     private string[] Patterns()

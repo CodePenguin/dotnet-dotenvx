@@ -106,4 +106,32 @@ public class LsParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
+
+    /// <remarks>
+    /// Regression test for a 2026-09-29 bug found via a code audit: `ls.js`'s Fdir crawler never
+    /// descends into `node_modules`/`.git`, or a directory whose extension matches one of five
+    /// macOS bundle formats (`.app`/`.key`/`.numbers`/`.pages`/`.photoslibrary`) -
+    /// `DEFAULT_EXCLUDED_DIRECTORY_EXTENSIONS` in `resolvers/ls.js`. This port's `Ls.FilePaths()`
+    /// enumerated the whole tree unconditionally, filtering afterward via glob patterns that had no
+    /// equivalent for the bundle extensions - a `.env*` file inside e.g. a `.photoslibrary`
+    /// directory was listed here but never even seen by Node's crawler.
+    /// </remarks>
+    [Fact]
+    public async Task EnvFileInsideBundleExtensionDirectoryIsExcluded()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () =>
+            {
+                WriteFile(".env", "A=1\n");
+                WriteFile("photos.photoslibrary/.env", "A=1\n");
+            }, null, "ls");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
 }
