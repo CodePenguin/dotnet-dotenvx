@@ -114,6 +114,11 @@ public class MissingKeyException(string key) : DotenvxException(
     $"[MISSING_KEY] missing key ({key})",
     "fix: [https://github.com/dotenvx/dotenvx/issues/759]");
 
+public class MissingValueException(string key) : DotenvxException(
+    "MISSING_VALUE",
+    $"[MISSING_VALUE] missing value ({key})",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/864]");
+
 public class MissingDirectoryException(string directory) : DotenvxException(
     "MISSING_DIRECTORY",
     $"[MISSING_DIRECTORY] missing directory ({directory})",

@@ -52,8 +52,8 @@ public class SetAction : Command
     private readonly Option<bool> _noCreateOption =
         new("--no-create") { Description = "do not create env file if missing (default: false)" };
 
-    private readonly Argument<string> _valueArgument =
-        new("value") { Description = "value" };
+    private readonly Argument<string?> _valueArgument =
+        new("value") { Description = "value", Arity = ArgumentArity.ZeroOrOne };
 
     public SetAction(IDotenvxLogger logger) : base("set",
         "set a single environment variable")
@@ -72,12 +72,22 @@ public class SetAction : Command
     private int Execute(ParseResult parseResult)
     {
         string key = parseResult.GetValue(_keyArgument)!;
-        string value = parseResult.GetValue(_valueArgument)!;
+        string? value = parseResult.GetValue(_valueArgument);
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         bool encrypt = parseResult.GetValue(_encryptOption);
         bool plain = parseResult.GetValue(_plainOption);
         bool noCreate = parseResult.GetValue(_noCreateOption);
+
+        // set.js's other branch here - interactively prompting for a hidden password when a real
+        // TTY is attached - isn't implemented anywhere in this port (no interactive-prompt
+        // infrastructure exists at all), so a missing value always takes the non-TTY error path,
+        // matching the realistic scripted/automated usage this port targets.
+        if (value == null)
+        {
+            CatchAndLog(_logger, new MissingValueException(key));
+            return 1;
+        }
 
         _logger.Debug($"key: {key}");
         _logger.Debug($"value: {value}");
@@ -124,8 +134,6 @@ public class SetAction : Command
                     Fsx.WriteFileX(processedEnv.FilePath, processedEnv.EnvSrc);
 
                     _logger.Verbose($"{processedEnv.Key} set{withEncryption} ({processedEnv.EnvFilePath})");
-                    _logger.Debug(
-                        $"{processedEnv.Key} set{withEncryption} to {processedEnv.Value} ({processedEnv.EnvFilePath})");
                 }
                 else
                 {

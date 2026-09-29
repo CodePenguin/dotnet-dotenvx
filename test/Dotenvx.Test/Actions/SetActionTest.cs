@@ -278,4 +278,24 @@ public class SetActionTest : EnvironmentTestBase
         MockLogger.ErrorMessages.ShouldContain("Mock Error. Mock Help");
         MockLogger.DebugMessages.ShouldContain("ERROR_CODE: 500");
     }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-29 bug found via a code audit. `set.js`
+    /// throws `[MISSING_VALUE] missing value (KEY)` (exit 1) when no value is given and stdin isn't
+    /// a TTY - this port had NO handling for a missing value at all (the value argument was
+    /// required at the System.CommandLine parse level, producing a generic parser error instead).
+    /// Interactive TTY password-prompting (set.js's OTHER branch for this case) isn't implemented
+    /// anywhere in this port - deliberately out of scope, matching the project's general lack of any
+    /// interactive-prompt infrastructure - so a missing value always takes this error path.
+    /// </remarks>
+    [Fact]
+    public void TestSetMissingValue()
+    {
+        ParseResult parseResult = RootCommand.Parse(["set", "HELLO"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(1);
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_VALUE] missing value (HELLO). fix: [https://github.com/dotenvx/dotenvx/issues/864]");
+    }
 }
