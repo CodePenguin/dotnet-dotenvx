@@ -164,6 +164,40 @@ public class RunTest : EnvironmentTestBase
         Environment.GetEnvironmentVariable("HELLO").ShouldBe("String");
     }
 
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-29 bug found via a code audit: a raw
+    /// `--env "KEY=encrypted:..."` string never had any way to decrypt, because `InjectEnv`
+    /// hardcoded `privateKey: null` regardless of what was in the process environment. Confirmed
+    /// live against Node that `DOTENV_PRIVATE_KEY=... dotenvx run --env "KEY=encrypted:..."`
+    /// decrypts successfully with no `.env` file involved at all - a raw env string has no
+    /// filename, so `DOTENV_PRIVATE_KEY` (not a convention-suffixed variant) is the only candidate.
+    /// Uses the same fixed, pre-verified keypair as the parity suite's `FixedKeypairFixture`.
+    /// </remarks>
+    [Fact]
+    public void TestRunEnvFlagDecryptsUsingProcessEnvPrivateKey()
+    {
+        const string privateKey = "1fc1cafa954a7a2bf0a6fbff46189c9e03e3a66b4d1133108ab9fcdb9e154b70";
+        const string encryptedValue =
+            "encrypted:BGftYDEUfycZeomeqB4m8HxtfNH3Pe8TxCNAodAJ2Q7t1x8J4iFFY0TjDu1MNIzJKl3DLDT33oDTCVWOBZe1ZvC/RWZy5F92dj6qPPvhA9e7kuifQwrinrEirS9XJINSqHOyyeIP";
+
+        // DOTENV_PRIVATE_KEY being set makes DetermineEnvs also guess a default .env file (see
+        // DetermineEnvs.cs) - give it an explicit, real (empty) file so that entry isn't itself a
+        // MissingEnvFileException unrelated to what this test actually verifies.
+        File.WriteAllText(".env", "");
+        Dictionary<string, string> processEnv = new() { ["DOTENV_PRIVATE_KEY"] = privateKey };
+        EnvItem[] envs =
+        [
+            new() { Type = EnvType.Env, Value = $"HELLO={encryptedValue}" },
+            new() { Type = EnvType.EnvFile, Value = ".env" }
+        ];
+
+        RunResult result = new Run(envs, processEnv: processEnv).Execute();
+
+        RunProcessedEnv envRow = result.ProcessedEnvs.Single(p => p.Type == EnvType.Env);
+        envRow.Errors.ShouldBeEmpty();
+        envRow.Injected.ShouldBe(new Dictionary<string, string> { { "HELLO", "World" } });
+    }
+
     /// <remarks>Refer to "#run - encrypted .env"</remarks>
     [Fact]
     public void TestRunEncryptedEnvFile()

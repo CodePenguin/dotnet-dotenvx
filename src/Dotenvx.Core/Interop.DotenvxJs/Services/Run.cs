@@ -98,7 +98,16 @@ public class Run
 
         try
         {
-            ParseResult parseResult = Parse.Factory(env, null, _processEnv, _overload, null).Execute();
+            // envs.js's real injectEnv forwards the process environment's own DOTENV_PRIVATE_KEY
+            // into the parse call (a raw --env string has no filename, so there's no convention-
+            // specific *_PRODUCTION-style suffix to derive - DOTENV_PRIVATE_KEY is the only
+            // candidate). Confirmed live: `DOTENV_PRIVATE_KEY=... dotenvx run --env "KEY=encrypted:
+            // ..."` decrypts successfully on real Node with no .env file involved at all - this
+            // port previously hardcoded privateKey: null here, so the exact same scenario always
+            // failed with DECRYPTION_FAILED regardless of what was exported in the shell.
+            _processEnv.TryGetValue("DOTENV_PRIVATE_KEY", out string? privateKey);
+            ParseResult parseResult =
+                Parse.Factory(env, privateKey, _processEnv, _overload, "DOTENV_PRIVATE_KEY").Execute();
             row.Parsed = parseResult.Parsed;
             row.Errors = CoarsenDecryptErrors(parseResult.Errors);
             row.Injected = parseResult.Injected;
