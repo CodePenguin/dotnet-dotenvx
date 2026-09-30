@@ -20,20 +20,13 @@ public static partial class Helpers
             return options;
         }
 
-        return new ConfigOptions
-        {
-            Logger = options.Logger,
-            Path = options.Path,
-            Overload = options.Overload,
-            ProcessEnv = options.ProcessEnv,
-            Ignore = [..options.Ignore ?? [], ..configIgnore],
-            Strict = options.Strict,
-            EnvKeysFile = options.EnvKeysFile,
-            Convention = options.Convention,
-            Debug = options.Debug,
-            Quiet = options.Quiet,
-            Verbose = options.Verbose,
-            LogLevel = options.LogLevel
-        };
+        // JS does `{ ...options, ignore: [...] }` - a full spread that preserves every property
+        // (regardless of the caller's actual options shape, e.g. GetOptions' All/Format) without
+        // mutating the original. This used to hand-reconstruct a plain `new ConfigOptions {...}`,
+        // silently dropping any derived type's own fields whenever DOTENV_IGNORE/
+        // DOTENV_CONFIG_IGNORE was actually set - Clone() preserves the runtime type instead.
+        ConfigOptions clone = options.Clone();
+        clone.Ignore = [..options.Ignore ?? [], ..configIgnore];
+        return clone;
     }
 }

@@ -112,8 +112,7 @@ public class MainTest : EnvironmentTestBase
         ConfigResult result = Main.Config(new ConfigOptions { Logger = MockLogger });
 
         mockRun.Received(1).Execute();
-        MockLogger.ErrorMessages.ShouldContain("some error");
-        MockLogger.ErrorMessages.ShouldContain("some help");
+        MockLogger.ErrorMessages.ShouldContain("some error. some help");
         result.ShouldNotBeNull();
     }
 
@@ -288,19 +287,31 @@ public class MainTest : EnvironmentTestBase
 
         processEnv["HELLO"].ShouldBe("backend");
         result.Parsed["HELLO"].ShouldBe("backend");
-        result.Error.ShouldNotBeNull();
-        result.Error.Message.ShouldContain("MISSING_ENV_FILE");
+        result.Error.ShouldBeNull();
     }
 
-    /// <remarks>Refer to "config monorepo/apps/backend/.env AND attempt on directory frontend --strict it throws"</remarks>
+    /// <remarks>
+    /// Refer to "config monorepo/apps/backend/.env AND directory frontend --strict" - renamed
+    /// (dropping "attempt on") and rewritten upstream once `buildConfigEnvs`/directory resolution
+    /// landed: a directory Path entry now correctly resolves to `{directory}/.env` instead of being
+    /// treated as a literal, nonexistent filename. Confirmed via `dotenvx/tests/lib/main.test.js` -
+    /// there's a SEPARATE, still-current "get monorepo/apps/backend/.env AND attempt on directory
+    /// frontend --strict it throws" test with the OLD title/behavior, because get() (unlike
+    /// config()) never routes through buildCommandEnvs at all (see BuildConfigEnvs.cs's doc comment
+    /// and CLAUDE.md's Main.cs audit trap) - this port's OWN two tests here had been misported
+    /// against config()'s now-superseded pre-buildConfigEnvs behavior.
+    /// </remarks>
     [Fact]
-    public void TestConfigMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontendStrictItThrows()
+    public void TestConfigMonorepoAppsBackendEnvAndDirectoryFrontendStrict()
     {
         Dictionary<string, string> processEnv = new();
         ConfigOptions options = new() { ProcessEnv = processEnv, Path = [BackendEnvFile, FrontendPath], Strict = true };
 
-        DotenvxException exception = Should.Throw<DotenvxException>(() => Main.Config(options));
-        exception.Message.ShouldContain("MISSING_ENV_FILE");
+        ConfigResult result = Main.Config(options);
+
+        processEnv["HELLO"].ShouldBe("backend");
+        result.Parsed["HELLO"].ShouldBe("backend");
+        result.Error.ShouldBeNull();
     }
 
     /// <remarks>Refer to "config monorepo/apps/backend/.env AND attempt on directory frontend --strict but error ALSO ignored"</remarks>
@@ -498,7 +509,12 @@ public class MainTest : EnvironmentTestBase
         result.ShouldNotBeNull();
     }
 
-    /// <remarks>Refer to "set calls Sets.run - no changes"</remarks>
+    /// <remarks>
+    /// No longer a distinct current upstream scenario - no "set calls Sets.run..." test exists in
+    /// the current dotenvx/tests/lib/main.test.js at all. Assertion corrected 2026-09-29 (was
+    /// locking in Main.Set()'s wrong "no changes" text/symbol; real main.js's set() prints
+    /// "○ no change (...)", matching every other command's no-change message).
+    /// </remarks>
     [Fact]
     public void TestSetCallsSetsRunNoChanges()
     {
@@ -530,11 +546,15 @@ public class MainTest : EnvironmentTestBase
         SetsResult result = Main.Set("HELLO", "World", options);
 
         mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("no changes (.env)");
+        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
         result.ShouldNotBeNull();
     }
 
-    /// <remarks>Refer to "set calls Sets.run - changes"</remarks>
+    /// <remarks>
+    /// No longer a distinct current upstream scenario - see TestSetCallsSetsRunNoChanges' remark.
+    /// Assertion corrected 2026-09-29: real main.js's set() prints "◈ encrypted {key} (...)" when
+    /// encrypting, not the fabricated "✔ set {key} with encryption (...)".
+    /// </remarks>
     [Fact]
     public void TestSetCallsSetsRunChanges()
     {
@@ -568,11 +588,18 @@ public class MainTest : EnvironmentTestBase
         SetsResult result = Main.Set("HELLO", "World", options);
 
         mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
+        MockLogger.InfoMessages.ShouldContain("◈ encrypted HELLO (.env)");
         result.ShouldNotBeNull();
     }
 
-    /// <remarks>Refer to "set calls Sets.run - MISSING_ENV_FILE"</remarks>
+    /// <remarks>
+    /// No longer a distinct current upstream scenario - see TestSetCallsSetsRunNoChanges' remark.
+    /// Assertion corrected 2026-09-29: real main.js's set() prints exactly ONE combined
+    /// `logger.warn(message)` per errored file (message = error.messageWithHelp when available),
+    /// not a separate Warn(message) + Help(customText) pair - the "? add one with [echo ...]"
+    /// text has no upstream basis at all (same fabricated-help-text bug class as CLAUDE.md's
+    /// original error-message-printing trap).
+    /// </remarks>
     [Fact]
     public void TestSetCallsSetsRunMissingEnvFile()
     {
@@ -603,11 +630,14 @@ public class MainTest : EnvironmentTestBase
 
         mockSets.Received(1).Run();
         MockLogger.WarningMessages.ShouldContain("MISSING_ENV_FILE");
-        MockLogger.InfoMessages.ShouldContain("? add one with [echo \"HELLO=World\" > .env] and re-run [dotenvx set]");
         result.ShouldNotBeNull();
     }
 
-    /// <remarks>Refer to "set calls Sets.run - OTHER_ERROR"</remarks>
+    /// <remarks>
+    /// No longer a distinct current upstream scenario - see TestSetCallsSetsRunNoChanges' remark.
+    /// Assertion corrected 2026-09-29 to the same single-combined-Warn-call fix described on
+    /// TestSetCallsSetsRunMissingEnvFile.
+    /// </remarks>
     [Fact]
     public void TestSetCallsSetsRunOtherError()
     {
@@ -637,12 +667,15 @@ public class MainTest : EnvironmentTestBase
         SetsResult result = Main.Set("HELLO", "World", options);
 
         mockSets.Received(1).Run();
-        MockLogger.WarningMessages.ShouldContain("some error");
-        MockLogger.InfoMessages.ShouldContain("some help");
+        MockLogger.WarningMessages.ShouldContain("some error. some help");
         result.ShouldNotBeNull();
     }
 
-    /// <remarks>Refer to "set calls Sets.run - changes"</remarks>
+    /// <remarks>
+    /// No longer a distinct current upstream scenario - see TestSetCallsSetsRunNoChanges' remark.
+    /// Duplicate of TestSetCallsSetsRunChanges (same scenario, different name) - kept as its own
+    /// test since it predates this file's traceability convention; assertion corrected the same way.
+    /// </remarks>
     [Fact]
     public void TestSetCallsSetsRunChangesWithLogger()
     {
@@ -676,11 +709,22 @@ public class MainTest : EnvironmentTestBase
         SetsResult result = Main.Set("HELLO", "World", options);
 
         mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
+        MockLogger.InfoMessages.ShouldContain("◈ encrypted HELLO (.env)");
         result.ShouldNotBeNull();
     }
 
-    /// <remarks>Refer to "set calls Sets.run - privateKeyAdded and not ignoring .env.keys"</remarks>
+    /// <remarks>
+    /// No longer a distinct current upstream scenario - see TestSetCallsSetsRunNoChanges' remark.
+    /// Assertion corrected 2026-09-29: when a changed file exists, real main.js's set() prints only
+    /// the ONE "◈ encrypted {key} (...)" success line (`if (changedFilepaths.length > 0) {...} else
+    /// if (encrypt &amp;&amp; localKeyAddedEnv) {...}` - the two branches are mutually exclusive) - the
+    /// separate "✔ key added to .env.keys (...)" success line plus its two "next run [...]" help
+    /// lines have no upstream basis at all (same fabricated-message bug class already found in
+    /// RotateAction.cs - see CLAUDE.md trap #27). This port also has no native/armor key storage,
+    /// so the real `localKeyAddedEnv`/" · armored ⛨" branch this test's NAME references is only
+    /// reachable here via <see cref="TestSetCallsSetsRunLocalKeyAddedWithNoChangedFiles"/> below,
+    /// which actually exercises it (unchanged files, key still freshly added).
+    /// </remarks>
     [Fact]
     public void TestSetCallsSetsRunPrivateKeyAddedAndNotIgnoringDotenvKeys()
     {
@@ -718,12 +762,52 @@ public class MainTest : EnvironmentTestBase
         SetsResult result = Main.Set("HELLO", "World", options);
 
         mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
-        MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
-        MockLogger.InfoMessages.ShouldContain(
-            "⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
-        MockLogger.InfoMessages.ShouldContain(
-            "⮕  next run [DOTENV_PRIVATE_KEY='1234' dotenvx get HELLO] to test decryption locally");
+        MockLogger.InfoMessages.ShouldContain("◈ encrypted HELLO (.env)");
+        result.ShouldNotBeNull();
+    }
+
+    /// <remarks>
+    /// Not from a JS test - dedicated coverage for main.js's `else if (encrypt &amp;&amp;
+    /// localKeyAddedEnv)` branch (the ONLY currently-reachable path since this port has no
+    /// remote/armor key storage): a fresh keypair was generated (PrivateKeyAdded) but the VALUE
+    /// itself didn't change (empty ChangedFilePaths, matching Sets.cs's real "identical value" no-op
+    /// - see CLAUDE.md's Sets.cs re-encryption trap), so the success line still needs to report the
+    /// file the key was added to, using localKeyAddedEnv.EnvFilePath as the fallback source.
+    /// </remarks>
+    [Fact]
+    public void TestSetCallsSetsRunLocalKeyAddedWithNoChangedFiles()
+    {
+        Sets mockSets = Substitute.For<Sets>("KEY", "value", Array.Empty<EnvItem>(), true, null!, false);
+        ProcessedSet[] processedEnvs =
+        [
+            new()
+            {
+                Key = "HELLO",
+                Value = "World",
+                FilePath = ".env",
+                EnvFilePath = ".env",
+                EnvSrc = "HELLO=World",
+                Changed = false,
+                Error = null,
+                PrivateKeyAdded = true,
+                EnvKeysFilePath = ".env.keys",
+                PrivateKeyName = "DOTENV_PRIVATE_KEY",
+                PrivateKey = "1234"
+            }
+        ];
+        mockSets.Run().Returns(new SetsResult
+        {
+            ProcessedEnvs = processedEnvs, ChangedFilePaths = [], UnchangedFilePaths = [".env"]
+        });
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
+
+        SetsOptions options = new() { Logger = MockLogger };
+
+        SetsResult result = Main.Set("HELLO", "World", options);
+
+        mockSets.Received(1).Run();
+        MockLogger.InfoMessages.ShouldContain("◈ encrypted HELLO (.env)");
+        MockLogger.InfoMessages.ShouldNotContain("○ no change (.env)");
         result.ShouldNotBeNull();
     }
 

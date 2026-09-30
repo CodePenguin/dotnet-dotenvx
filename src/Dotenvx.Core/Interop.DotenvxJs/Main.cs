@@ -43,9 +43,15 @@ public static class Main
 
         try
         {
-            EnvItem[] envs = NormalizeDotenvConfigPath(BuildEnvs(options));
+            EnvItem[] envs = NormalizeDotenvConfigPath(BuildConfigEnvs(options));
 
             RunResult runResult = Run.Factory(envs, options.Overload ?? false, processEnv, envKeysFile).Execute();
+
+            if (options.Mask != null)
+            {
+                object showChar = Equals(options.Mask, true) ? 6 : options.Mask;
+                MaskProcessedEnvs(runResult.ProcessedEnvs, processEnv, showChar);
+            }
 
             Exception? lastError = null;
             Dictionary<string, string> parsedAll = new();
@@ -77,27 +83,12 @@ public static class Main
 
                     lastError = error;
 
-                    if (errorCode == "MISSING_ENV_FILE")
+                    if (errorCode == "MISSING_ENV_FILE" && !string.IsNullOrEmpty(options.Convention))
                     {
-                        if (!string.IsNullOrEmpty(options.Convention))
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        logger?.Error(error.Message);
-                        if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
-                        {
-                            logger?.Error(ex.Help);
-                        }
-                    }
-                    else
-                    {
-                        logger?.Error(error.Message);
-                        if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
-                        {
-                            logger?.Error(ex.Help);
-                        }
-                    }
+                    logger?.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
                 }
 
                 // debug parsed
@@ -146,11 +137,7 @@ public static class Main
                 throw; // re-throw if strict
             }
 
-            logger?.Error(error.Message);
-            if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
-            {
-                logger?.Error(ex.Help);
-            }
+            logger?.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
 
             return new ConfigResult { Parsed = new Dictionary<string, string>(), Error = error };
         }
@@ -192,10 +179,20 @@ public static class Main
     public static object? Get(string? key, GetOptions? options = null)
     {
         options ??= new GetOptions();
+        options = (GetOptions)NormalizeDotenvConfigConvention(options);
+        options = (GetOptions)NormalizeDotenvConfigIgnore(options);
+
         EnvItem[] envs = BuildEnvs(options);
         GetResult result = Services.Get
             .Factory(key, envs, options.Overload ?? false, options.All ?? false, options.EnvKeysFile)
             .Run();
+
+        IReadOnlyDictionary<string, string> parsed = result.Parsed;
+        if (options.Mask != null)
+        {
+            object showChar = Equals(options.Mask, true) ? 6 : options.Mask;
+            parsed = parsed.ToDictionary(kv => kv.Key, kv => Mask(kv.Value, showChar));
+        }
 
         // handle errors
         List<string> ignore = options.Ignore ?? [];
@@ -212,16 +209,12 @@ public static class Main
                 throw error;
             }
 
-            options.Logger?.Error(error.Message);
-            if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
-            {
-                options.Logger?.Error(ex.Help);
-            }
+            options.Logger?.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
         }
 
         if (key != null)
         {
-            return result.Parsed.GetValueOrDefault(key);
+            return parsed.GetValueOrDefault(key);
         }
 
         // If Format is specified, return a formatted string
@@ -229,16 +222,16 @@ public static class Main
         {
             return options.Format switch
             {
-                "eval" or "eval-export" => string.Join('\n', result.Parsed.Select(kv =>
+                "eval" or "eval-export" => string.Join('\n', parsed.Select(kv =>
                     $"{(options.Format == "eval-export" ? "export " : "")}{kv.Key}={Escape(kv.Value)}")),
-                "shell" => string.Join(' ', result.Parsed.Select(kv => $"{kv.Key}={kv.Value}")),
-                "colon" => string.Join(' ', result.Parsed.Select(kv => $"{kv.Key}:{kv.Value}")),
-                _ => result.Parsed
+                "shell" => string.Join(' ', parsed.Select(kv => $"{kv.Key}={kv.Value}")),
+                "colon" => string.Join(' ', parsed.Select(kv => $"{kv.Key}:{kv.Value}")),
+                _ => parsed
             };
         }
 
         // Otherwise return the dictionary
-        return result.Parsed;
+        return parsed;
     }
 
     public static string[] Ls(string directory = "./", string[]? envFile = null, string[]? excludeEnvFile = null)
@@ -276,11 +269,7 @@ public static class Main
         // display any errors
         foreach (Exception error in response.Errors)
         {
-            logger?.Error(error.Message);
-            if (error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
-            {
-                logger?.Error(ex.Help);
-            }
+            logger?.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
         }
 
         return response.Parsed;
@@ -307,54 +296,38 @@ public static class Main
 
             if (processedEnv.Error == null)
             {
-                options?.Logger?.Verbose($"setting for {processedEnv.EnvFilePath}");
-                if (!processedEnv.Changed)
-                {
-                    continue;
-                }
-
                 options?.Logger?.Verbose($"{key} set{withEncryption} ({processedEnv.EnvFilePath})");
                 options?.Logger?.Debug(
                     $"{key} set{withEncryption} to {processedEnv.Value} ({processedEnv.EnvFilePath})");
             }
             else
             {
-                if (processedEnv.Error.Message.Contains("MISSING_ENV_FILE"))
-                {
-                    options?.Logger?.Warn(processedEnv.Error.Message);
-                    options?.Logger?.Help("? add one with [echo \"HELLO=World\" > .env] and re-run [dotenvx set]");
-                }
-                else
-                {
-                    options?.Logger?.Warn(processedEnv.Error.Message);
-                    if (processedEnv.Error is DotenvxException ex && !string.IsNullOrEmpty(ex.Help))
-                    {
-                        options?.Logger?.Help(ex.Help);
-                    }
-                }
+                options?.Logger?.Warn((processedEnv.Error as DotenvxException)?.MessageWithHelp ??
+                                       processedEnv.Error.Message);
             }
         }
+
+        // this port has no native/armor key storage (out of scope - see CLAUDE.md's submodule-pin
+        // note), so remotePrivateKeyAdded/the " · armored ⛨" suffix can never apply here.
+        ProcessedSet? localKeyAddedEnv = result.ProcessedEnvs.FirstOrDefault(p => p.PrivateKeyAdded);
 
         if (result.ChangedFilePaths.Length > 0)
         {
-            options?.Logger?.Success($"✔ set {key}{withEncryption} ({string.Join(',', result.ChangedFilePaths)})");
+            string msg = encrypt
+                ? $"◈ encrypted {key} ({string.Join(',', result.ChangedFilePaths)})"
+                : $"◇ set {key} ({string.Join(',', result.ChangedFilePaths)})";
+            options?.Logger?.Success(msg);
+        }
+        else if (encrypt && localKeyAddedEnv != null)
+        {
+            string keyAddedEnvFilepath = !string.IsNullOrEmpty(localKeyAddedEnv.EnvFilePath)
+                ? localKeyAddedEnv.EnvFilePath
+                : result.ChangedFilePaths.FirstOrDefault() ?? ".env";
+            options?.Logger?.Success($"◈ encrypted {key} ({keyAddedEnvFilepath})");
         }
         else if (result.UnchangedFilePaths.Length > 0)
         {
-            options?.Logger?.Info($"no changes ({string.Join(',', result.UnchangedFilePaths)})");
-        }
-
-        foreach (ProcessedSet processedEnv in result.ProcessedEnvs)
-        {
-            if (!processedEnv.PrivateKeyAdded)
-            {
-                continue;
-            }
-
-            options?.Logger?.Success($"✔ key added to {processedEnv.EnvKeysFilePath} ({processedEnv.PrivateKeyName})");
-            options?.Logger?.Help("⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
-            options?.Logger?.Help(
-                $"⮕  next run [{processedEnv.PrivateKeyName}='{processedEnv.PrivateKey}' dotenvx get {key}] to test decryption locally");
+            options?.Logger?.Info($"○ no change ({string.Join(',', result.UnchangedFilePaths)})");
         }
 
         return result;
