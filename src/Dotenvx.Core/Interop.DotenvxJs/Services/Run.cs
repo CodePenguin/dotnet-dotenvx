@@ -201,13 +201,42 @@ public class Run
     /// </remarks>
     private static IList<Exception> CoarsenDecryptErrors(IReadOnlyList<Exception> errors)
     {
-        return errors.Select(error => error switch
+        // Confirmed live by calling @dotenvx/primitives' parse() directly with two simultaneously
+        // undecryptable keys: it returns ONE error whose message lists every failing key,
+        // comma-joined ("could not decrypt FOO, BAR"), not one discrete error per key - matched via
+        // the real CLI too (`dotenvx get` on a file with two bad encrypted values prints exactly one
+        // combined DECRYPTION_FAILED line on Node, but this port previously printed two separate
+        // lines, one per key).
+        List<string> decryptFailedKeys = [];
+        List<Exception> otherErrors = [];
+
+        foreach (Exception error in errors)
         {
-            WrongPrivateKeyException e => new DecryptionFailedException($"could not decrypt {e.Key}"),
-            MissingPrivateKeyException e => new DecryptionFailedException($"could not decrypt {e.Key}"),
-            InvalidPrivateKeyException e => new DecryptionFailedException($"could not decrypt {e.Key}"),
-            MalformedEncryptedDataException e => new DecryptionFailedException($"could not decrypt {e.Key}"),
-            _ => error
-        }).ToList<Exception>();
+            string? key = error switch
+            {
+                WrongPrivateKeyException e => e.Key,
+                MissingPrivateKeyException e => e.Key,
+                InvalidPrivateKeyException e => e.Key,
+                MalformedEncryptedDataException e => e.Key,
+                _ => null
+            };
+
+            if (key != null)
+            {
+                decryptFailedKeys.Add(key);
+            }
+            else
+            {
+                otherErrors.Add(error);
+            }
+        }
+
+        if (decryptFailedKeys.Count == 0)
+        {
+            return otherErrors;
+        }
+
+        otherErrors.Add(new DecryptionFailedException($"could not decrypt {string.Join(", ", decryptFailedKeys)}"));
+        return otherErrors;
     }
 }

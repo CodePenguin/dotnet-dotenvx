@@ -283,6 +283,34 @@ public class RunTest : EnvironmentTestBase
         error.ShouldBeOfType<DecryptionFailedException>();
     }
 
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-29 bug found via a code audit, closing out
+    /// the one genuinely-unverified item from CLAUDE.md's Main.cs audit trap. Confirmed by calling
+    /// `@dotenvx/primitives`' `parse()` directly with two simultaneously undecryptable keys: it
+    /// returns ONE error whose message comma-joins every failing key ("could not decrypt FOO, BAR"),
+    /// not one discrete error per key - live-verified via the real CLI too (`dotenvx get` on a file
+    /// with two bad encrypted values prints exactly one combined line on Node). CoarsenDecryptErrors
+    /// previously mapped each failing key to its own separate DecryptionFailedException.
+    /// </remarks>
+    [Fact]
+    public void TestRunMultipleSimultaneousDecryptFailuresCombineIntoOneError()
+    {
+        Environment.SetEnvironmentVariable("DOTENV_PRIVATE_KEY",
+            "0000000000000000000000000000000000000000000000000000000000000001");
+        File.WriteAllText(".env",
+            "DOTENV_PUBLIC_KEY=\"03eaf2142ab3d55bdf108962334e06696db798e7412cfc51d75e74b4f87f299bba\"\n" +
+            "FOO=\"encrypted:BG8M6U+GKJGwpGA42ml2erb9+T2NBX6Z2JkBLynDy21poz0UfF5aPxCgRbIyhnQFdWKd0C9GZ7lM5PeL86xghoMcWvvPpkyQ0yaD2pZ64RzoxFGB1lTZYlEgQOxTDJnWxODHfuQcFY10uA==\"\n" +
+            "BAR=\"encrypted:BG8M6U+GKJGwpGA42ml2erb9+T2NBX6Z2JkBLynDy21poz0UfF5aPxCgRbIyhnQFdWKd0C9GZ7lM5PeL86xghoMcWvvPpkyQ0yaD2pZ64RzoxFGB1lTZYlEgQOxTDJnWxODHfuQcFY10uA==\"\n");
+
+        EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = ".env" }];
+        RunResult result = new Run(envs).Execute();
+
+        result.ProcessedEnvs.ShouldHaveSingleItem();
+        Exception error = result.ProcessedEnvs[0].Errors.ShouldHaveSingleItem();
+        DotenvxException dotenvxError = error.ShouldBeOfType<DecryptionFailedException>();
+        dotenvxError.Message.ShouldBe("[DECRYPTION_FAILED] could not decrypt FOO, BAR");
+    }
+
     /// <remarks>Refer to "#run - env var precedence: environment variables take precedence over .env files by default"</remarks>
     [Fact]
     public void TestRunEnvVarPrecedenceOverEnvFiles()
