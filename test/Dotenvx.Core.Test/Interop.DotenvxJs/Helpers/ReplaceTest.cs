@@ -196,4 +196,57 @@ GROUP='$1$2'";
 
         newSrc.ShouldBe("HELLO=World\nAPI_KEY=\"1234\"\n");
     }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-29 bug found investigating whether this
+    /// file's upstream-doc-comment staleness (replace.js no longer exists; the current authority is
+    /// @dotenvx/primitives' upsert()) hid a behavioral gap. Confirmed live against Node: a duplicate
+    /// key with DIFFERENT values on each occurrence gets EVERY occurrence updated to the new value,
+    /// not just the one whose text happened to match the last-value-wins parse result. This port's
+    /// original single-value-text-matching regex only ever touched the LAST occurrence, silently
+    /// leaving earlier duplicates stale.
+    /// </remarks>
+    [Fact]
+    public void TestReplaceUpdatesEveryOccurrenceOfADuplicateKeyWithDifferentValues()
+    {
+        const string src = "FOO=old1\nBAR=x\nFOO=old2\n";
+
+        string newSrc = Replace(src, "FOO", "new");
+
+        newSrc.ShouldBe("FOO=new\nBAR=x\nFOO=new\n");
+    }
+
+    /// <remarks>
+    /// Not from a JS test - companion to the above, confirming each occurrence keeps its OWN
+    /// original quote style rather than all converging on one quote (or none), matching Node's
+    /// live-verified behavior exactly.
+    /// </remarks>
+    [Fact]
+    public void TestReplaceEveryOccurrencePreservesItsOwnQuoteStyle()
+    {
+        const string src = "FOO=\"old1\"\nBAR=x\nFOO=old2\n";
+
+        string newSrc = Replace(src, "FOO", "new");
+
+        newSrc.ShouldBe("FOO=\"new\"\nBAR=x\nFOO=new\n");
+    }
+
+    /// <remarks>
+    /// Not from a JS test - the existing `Src` fixture already contains a duplicate `EXPORT` key
+    /// (lines 21/23, both `export EXPORT=k`) with an `export`-prefixed line in between
+    /// (`EXPORT2='export EXPORT=k'`) that must NOT be mistaken for a third occurrence. Confirms the
+    /// multi-occurrence path correctly identifies real occurrences by parsed key, not by scanning
+    /// for the raw substring, and preserves the `export ` prefix on both.
+    /// </remarks>
+    [Fact]
+    public void TestReplaceUpdatesBothIdenticalExportPrefixedDuplicates()
+    {
+        string expected = Src
+            .Replace("export EXPORT=k\nEXPORT2='export EXPORT=k'\nexport EXPORT=k",
+                "export EXPORT=ttt\nEXPORT2='export EXPORT=k'\nexport EXPORT=ttt");
+
+        string newSrc = Replace(Src, "EXPORT", "ttt");
+
+        newSrc.ShouldBe(expected);
+    }
 }

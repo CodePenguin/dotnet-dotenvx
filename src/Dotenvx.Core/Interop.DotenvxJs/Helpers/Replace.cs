@@ -7,6 +7,21 @@ public static partial class Helpers
 {
     public static string Replace(string src, string key, string replaceValue)
     {
+        // @dotenvx/primitives' upsert() (the live-verified successor to this file, since
+        // replace.js no longer exists at HEAD) replaces EVERY occurrence of a duplicate key with
+        // the new value, each keeping its own original quote style - confirmed live against Node
+        // (`FOO=old1` / `FOO=old2` both become the new value, `FOO="old1"` keeps its double
+        // quotes while a neighboring unquoted `FOO=old2` stays unquoted). The single-occurrence
+        // path below predates that finding and only ever matched the LAST occurrence's value
+        // text, silently leaving earlier duplicates stale - fork off to the multi-occurrence path
+        // first so that well-tested single/no-occurrence behavior is untouched.
+        List<(int ValueIndex, int ValueLength, string Value, string Quote)> occurrences =
+            FindKeyOccurrences(src, key);
+        if (occurrences.Count > 1)
+        {
+            return ReplaceAllOccurrences(src, occurrences, replaceValue);
+        }
+
         Dictionary<string, object> parsed = DotenvParse(src, true, true);
         Dictionary<string, string> quotes = GetQuotes(src);
 
@@ -75,6 +90,50 @@ public static partial class Helpers
 
             return src + newPart;
         }
+    }
+
+    // Finds every occurrence of `key` in `src` (not just the first/last), returning each
+    // occurrence's value span (for position-based splicing, so an untouched replacement of one
+    // occurrence never shifts another's index) plus its already-quote-stripped value and original
+    // quote character - same per-match logic as GetQuotes, generalized to collect all matches for
+    // a specific key in source order instead of collapsing them into one dictionary entry.
+    private static List<(int ValueIndex, int ValueLength, string Value, string Quote)> FindKeyOccurrences(
+        string src, string key)
+    {
+        List<(int, int, string, string)> result = [];
+        foreach (Match match in DotenvParseRegex().Matches(src))
+        {
+            if (match.Groups[1].Value != key)
+            {
+                continue;
+            }
+
+            Group valueGroup = match.Groups[2];
+            string rawValue = valueGroup.Value.Trim();
+            string maybeQuote = rawValue.Length > 0 ? rawValue[0].ToString() : "";
+            string stripped = Regex.Replace(rawValue, @"^(['""`])([\s\S]*)\1$", "$2");
+            string quote = maybeQuote == stripped.FirstOrDefault().ToString() ? "" : maybeQuote;
+            result.Add((valueGroup.Index, valueGroup.Length, stripped, quote));
+        }
+
+        return result;
+    }
+
+    // Splices each occurrence's own new value in, preserving that occurrence's own quote style,
+    // working backward so earlier occurrences' indices stay valid while later ones are replaced.
+    // Plain string splicing (not Regex.Replace) needs no $-sign escaping of replaceValue.
+    private static string ReplaceAllOccurrences(
+        string src, IReadOnlyList<(int ValueIndex, int ValueLength, string Value, string Quote)> occurrences,
+        string replaceValue)
+    {
+        string result = src;
+        for (int i = occurrences.Count - 1; i >= 0; i--)
+        {
+            (int index, int length, _, string quote) = occurrences[i];
+            result = result[..index] + quote + replaceValue + quote + result[(index + length)..];
+        }
+
+        return result;
     }
 
     public static Dictionary<string, string> GetQuotes(string src)
