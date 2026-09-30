@@ -136,6 +136,7 @@ public class RunAction : Command
         {
             envs = maskEnabled ? envs?.Select(e => MaskEnvSrc(e, showChar)).ToArray() : envs,
             envFile,
+            envKeysFile,
             overload,
             strict,
             convention,
@@ -168,14 +169,8 @@ public class RunAction : Command
 
         try
         {
-            List<EnvItem> explicitEnvItems = [];
-            if (envs != null)
-            {
-                explicitEnvItems.AddRange(envs.Select(e => new EnvItem { Type = EnvType.Env, Value = e }));
-            }
-
-            explicitEnvItems.AddRange(
-                SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
+            List<EnvItem> explicitEnvItems =
+                EnvItemOrdering.BuildExplicitEnvItemsInOrder(parseResult, _envOption, _envFileOption);
 
             EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
 

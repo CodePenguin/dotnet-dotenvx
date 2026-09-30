@@ -189,14 +189,8 @@ public class GetAction : Command
         };
         _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
 
-        List<EnvItem> explicitEnvItems = [];
-        if (envs != null)
-        {
-            explicitEnvItems.AddRange(envs.Select(e => new EnvItem { Type = EnvType.Env, Value = e }));
-        }
-
-        explicitEnvItems.AddRange(
-            SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
+        List<EnvItem> explicitEnvItems =
+            EnvItemOrdering.BuildExplicitEnvItemsInOrder(parseResult, _envOption, _envFileOption);
 
         EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
 

@@ -23,9 +23,14 @@ public class ExtCommand : Command
         PrebuildAction prebuildAction, PrecommitAction precommitAction, ScanAction scanAction)
         : base("ext", "🔌 extensions")
     {
+        // Order matches ext.js's own registration order exactly (ls, genexample, gitignore,
+        // prebuild, precommit, scan) - purely a `dotenvx ext --help` listing-order detail, but
+        // upstream itself registers this same set in a DIFFERENT order at the top level
+        // (gitignore before genexample, precommit before prebuild), so there's no single "right"
+        // order to copy uniformly; this file specifically mirrors ext.js's own list.
         Subcommands.Add(lsAction);
-        Subcommands.Add(gitignoreAction);
         Subcommands.Add(genexampleAction);
+        Subcommands.Add(gitignoreAction);
         Subcommands.Add(prebuildAction);
         Subcommands.Add(precommitAction);
         Subcommands.Add(scanAction);

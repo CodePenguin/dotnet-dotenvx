@@ -98,7 +98,8 @@ public class ValidateAction : Command
         convention = normalizedOptions.Convention;
         ignoreList = normalizedOptions.Ignore?.ToArray() ?? [];
 
-        _logger.Debug($"options: {JsonSerializer.Serialize(new { envs, envFile, overload, convention, ignoreList })}");
+        _logger.Debug(
+            $"options: {JsonSerializer.Serialize(new { envs, envFile, envKeysFile, overload, convention, ignoreList })}");
 
         // Isolated copy, never mutating the real process environment - matches validate.js's own
         // `const validateEnv = { ...process.env }`.
@@ -106,14 +107,8 @@ public class ValidateAction : Command
 
         try
         {
-            List<EnvItem> explicitEnvItems = [];
-            if (envs != null)
-            {
-                explicitEnvItems.AddRange(envs.Select(e => new EnvItem { Type = EnvType.Env, Value = e }));
-            }
-
-            explicitEnvItems.AddRange(
-                SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
+            List<EnvItem> explicitEnvItems =
+                EnvItemOrdering.BuildExplicitEnvItemsInOrder(parseResult, _envOption, _envFileOption);
 
             EnvItem[] envItems = BuildCommandEnvs(explicitEnvItems.ToArray(), convention);
 

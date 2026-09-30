@@ -46,7 +46,14 @@ public class GenexampleAction : Command
         string[]? envFile = rawEnvFile is { Length: > 0 } ? rawEnvFile : null;
 
         _logger.Debug($"directory: {directory}");
-        _logger.Debug($"options: {JsonSerializer.Serialize(new { envFile = envFile ?? [".env"] })}");
+        // genexample.js has no own default handling - it relies on commander's own scalar default
+        // ('.env', a bare string, not an array) for `-f, --env-file <paths...>`, so `options.envFile`
+        // stays a plain string when `-f` is never passed at all; only an EXPLICIT `-f` produces an
+        // array. Confirmed live: `--debug` with no `-f` prints `{"envFile":".env"}` on Node, not
+        // `{"envFile":[".env"]}` - matched here even though every other code path treats both shapes
+        // identically (a 1-element array and its scalar behave the same everywhere else).
+        object debugEnvFile = envFile ?? (object)".env";
+        _logger.Debug($"options: {JsonSerializer.Serialize(new { envFile = debugEnvFile })}");
 
         try
         {
