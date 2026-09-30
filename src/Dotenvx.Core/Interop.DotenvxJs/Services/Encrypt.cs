@@ -168,6 +168,15 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
             foreach ((string envKey, object envValue) in envParsed)
             {
+                // encrypt.js: `if (isDotenvPublicKey(key) || isPlainKey(key)) continue` - a key
+                // ending in _PLAIN is exempt from encryption entirely, checked before exclude/
+                // include filtering. IsPublicKey(envKey, value) below already special-cases the
+                // public key by requiring the VALUE to match too; isPlainKey only inspects the key.
+                if (IsPlainKey(envKey))
+                {
+                    continue;
+                }
+
                 string value = envValue as string ?? "";
 
                 if (_exclude(envKey))

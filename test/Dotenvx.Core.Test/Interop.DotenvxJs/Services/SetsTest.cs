@@ -511,14 +511,26 @@ public class SetsTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe(new List<string> { "tests/monorepo/apps/shebang/.env" });
     }
 
-    /// <remarks>Refer to "#run (finds .env file only) with --encrypt AND setting from unencrypted to encrypted same value"</remarks>
+    /// <remarks>
+    /// Refer to "#run (finds .env file only) with --encrypt AND setting from unencrypted to
+    /// encrypted same value" - but the historical JS test of this name (retrieved via `git show
+    /// 98f4373a^:tests/lib/services/sets.test.js`, the commit that deleted the pre-reorg
+    /// `services/sets.js`/its test file) predates the `@dotenvx/primitives` refactor and asserted
+    /// `changed: true` for this scenario. Live-verified against the ACTUAL pinned Node CLI
+    /// (`tests/monorepo/apps/unencrypted/.env`'s real fixture, `HELLO="unencrypted"`, no existing
+    /// key): `set HELLO unencrypted` prints "○ no change" and leaves `.env` byte-for-byte
+    /// untouched, even though a `.env.keys` file IS still freshly created as a side effect (same
+    /// unconditional-key-generation behavior already covered by the sibling shebang test above) -
+    /// 2026-09-29, found investigating the Sets.cs re-encryption fix (this test previously locked
+    /// in the exact bug that fix corrects, using an artificial `DOTENV_PUBLIC_KEY` process-env
+    /// override that the real historical/current test never used, to dodge the nondeterminism of
+    /// this scenario's genuinely fresh keypair).
+    /// </remarks>
     [Fact]
     public void TestRunFindsEnvFileWithEncryptAndSettingFromUnencryptedToEncryptedSameValue()
     {
+        string envKeysFilePath = Path.Combine("tests", "monorepo", "apps", "unencrypted", ".env.keys");
         const string envFile = "tests/monorepo/apps/unencrypted/.env";
-        Environment.SetEnvironmentVariable("DOTENV_PUBLIC_KEY",
-            "03eaf2142ab3d55bdf108962334e06696db798e7412cfc51d75e74b4f87f299bba");
-
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
         SetsResult
@@ -532,14 +544,27 @@ public class SetsTest : EnvironmentTestBase
         row.Type.ShouldBe(EnvType.EnvFile);
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
-        row.Changed.ShouldBeTrue();
+        row.EnvKeysFilePath.ShouldBe(envKeysFilePath);
+        row.Changed.ShouldBeFalse();
         row.OriginalValue.ShouldBe("unencrypted");
+        row.PrivateKeyAdded.ShouldBeTrue();
         row.PublicKey.ShouldNotBeNull();
-        row.PrivateKey.ShouldBeNull();
+        row.PrivateKey.ShouldNotBeNull();
         row.EncryptedValue.ShouldNotBeNull();
         row.PrivateKeyName.ShouldNotBeNull();
-        row.EnvSrc.ShouldBe($"HELLO=\"{row.EncryptedValue}\"\n");
-        result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
+        row.EnvSrc.ShouldBe(string.Join("\n", (string[])
+        [
+            "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
+            "#/            public-key encryption for .env files          /",
+            "#/       [how it works](https://dotenvx.com/encryption)     /",
+            "#/----------------------------------------------------------/",
+            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\"",
+            "",
+            "# .env",
+            "HELLO=\"unencrypted\""
+        ]) + "\n");
+        result.ChangedFilePaths.ShouldBeEmpty();
+        result.UnchangedFilePaths.ShouldBe(new List<string> { envFile });
     }
 
     /// <remarks>Refer to "#run (finds .env file) with --encrypt and custom envKeysFilepath"</remarks>
@@ -620,5 +645,34 @@ public class SetsTest : EnvironmentTestBase
             $"KEY=\"{row.EncryptedValue}\""
         ]) + "\n");
         result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
+    }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-29 bug found via a code audit: set.js's
+    /// `const noEncrypt = !options.encrypt || isPlainKey(key)` means a key ending in `_PLAIN` is
+    /// always stored as plaintext regardless of the default `--encrypt`, and - since noEncrypt also
+    /// gates the whole "generate a fresh keypair if none exists" branch upstream - no `.env.keys`
+    /// file or `DOTENV_PUBLIC_KEY` header gets created either. Confirmed live against Node: `set
+    /// HELLO_PLAIN mysecret` on a fresh `.env` with no existing key produces `HELLO_PLAIN="mysecret"`
+    /// verbatim, no `.env.keys` side effect, and no `EnvKeysFilePath`/`PrivateKeyAdded` on the row.
+    /// </remarks>
+    [Fact]
+    public void TestRunPlainSuffixedKeyStoresAsPlaintextEvenWithEncryptOn()
+    {
+        Fsx.ReadFileX = (_, _) => "HELLO=World\n";
+        Fsx.ReadFileSync = _ => [];
+        Fsx.ExistsSync = filepath => filepath.EndsWith(".env");
+
+        SetsResult result = new Sets("HELLO_PLAIN", "mysecret", []).Run();
+
+        result.ProcessedEnvs.Length.ShouldBe(1);
+        ProcessedSet row = result.ProcessedEnvs[0];
+        row.Changed.ShouldBeTrue();
+        row.PrivateKeyAdded.ShouldBeFalse();
+        row.EnvKeysFilePath.ShouldBeNull();
+        row.PublicKey.ShouldBeNull();
+        row.PrivateKey.ShouldBeNull();
+        row.EncryptedValue.ShouldBeNull();
+        row.EnvSrc.ShouldBe("HELLO=World\nHELLO_PLAIN=\"mysecret\"\n");
     }
 }

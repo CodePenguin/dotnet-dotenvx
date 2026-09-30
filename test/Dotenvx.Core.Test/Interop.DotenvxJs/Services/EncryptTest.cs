@@ -486,4 +486,27 @@ public class EncryptTest : EnvironmentTestBase
             File.WriteAllText(envKeysFile, originalKeysFileContents);
         }
     }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-29 bug found via a code audit:
+    /// encrypt.js's `if (isDotenvPublicKey(key) || isPlainKey(key)) continue` exempts any key
+    /// ending in `_PLAIN` from encryption entirely, checked before exclude/include filtering.
+    /// Confirmed live against Node: this port had no such check, silently encrypting `_PLAIN`-
+    /// suffixed keys.
+    /// </remarks>
+    [Fact]
+    public void TestRunSkipsPlainSuffixedKeys()
+    {
+        File.WriteAllText(".env", "HELLO=World\nHELLO_PLAIN=NotSecret\n");
+
+        EncryptResult result = new Encrypt([], null, null, null).Run();
+
+        result.ProcessedEnvs.ShouldHaveSingleItem();
+        EncryptProcessedEnv p = result.ProcessedEnvs[0];
+        p.Keys.ShouldBe(["HELLO"]);
+
+        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
+        parsed["HELLO_PLAIN"].ShouldBe("NotSecret");
+    }
 }

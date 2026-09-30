@@ -109,9 +109,13 @@ public class Sets
 
             Dictionary<string, object> envParsed = DotenvParse(envSrc);
             row.OriginalValue = (string?)envParsed.GetValueOrDefault(_key ?? "");
-            bool wasPlainText = !IsEncrypted(row.OriginalValue ?? "");
 
-            if (_encrypt)
+            // set.js: `const noEncrypt = !options.encrypt || isPlainKey(key)` - a key ending in
+            // _PLAIN always stores as plaintext regardless of --encrypt/-c, independent of
+            // encrypt.js's identical exemption (see Encrypt.cs).
+            bool noEncrypt = !_encrypt || IsPlainKey(_key ?? "");
+
+            if (!noEncrypt)
             {
                 string? publicKey;
                 string? privateKey = null;
@@ -213,9 +217,12 @@ public class Sets
                 row.PrivateKeyName = privateKeyName;
             }
 
-            bool goingFromPlainTextToEncrypted = wasPlainText && _encrypt;
+            // set.js compares the requested value against the CURRENT (decrypted, if applicable)
+            // value alone - it never force-re-encrypts an unchanged value just because it happened
+            // to be stored as plaintext before. Confirmed live: `set FOO bar` on an existing
+            // `FOO=bar` (plaintext, encryption on) is "○ no change", not a forced encryption.
             bool valueChanged = (_value ?? "") != (row.OriginalValue ?? "");
-            if (goingFromPlainTextToEncrypted || valueChanged)
+            if (valueChanged)
             {
                 row.EnvSrc = Replace(envSrc, _key ?? "", row.EncryptedValue ?? _value ?? "");
                 _changedFilePaths.Add(envFilePath);
