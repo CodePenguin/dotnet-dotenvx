@@ -36,7 +36,8 @@ public class GetAction : Command
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
         {
-            Description = "path to your .env.keys file (default: same path as your env file)", HelpName = "path"
+            Description = "path(s) to your .env.keys file(s) (default: same path as your env file)",
+            HelpName = "path"
         };
 
     private readonly Option<string[]?> _envOption =
@@ -104,11 +105,18 @@ public class GetAction : Command
     // case this pattern was found from.
     private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true, NewLine = "\n" };
 
+    // dotenvx.js registers `--pp` as a SEPARATE commander option (`.option('--pp', 'pretty print
+    // output (alias)')`) alongside `-pp, --pretty-print` - the same shape already correctly ported
+    // for keypair (KeyPairAction.cs), but missing here: `get --pp` fell through to the `[KEY]`
+    // positional and failed with MISSING_KEY instead of pretty-printing, confirmed live.
     private readonly Option<bool> _prettyPrintOption =
-        new("--pretty-print", "-pp") { Description = "pretty print output" };
+        new("--pretty-print", "-pp", "--pp") { Description = "pretty print output" };
 
     private readonly Option<bool> _strictOption =
-        new("--strict") { Description = "process.exit(1) on any errors", DefaultValueFactory = _ => false };
+        new("--strict")
+        {
+            Description = "process.exit(1) on any errors (default: false)", DefaultValueFactory = _ => false
+        };
 
     public GetAction(IDotenvxLogger logger) : base("get",
         "return a single environment variable")

@@ -35,7 +35,10 @@ public class ValidateAction : Command
         };
 
     private readonly Option<string[]?> _envFileOption =
-        new("--file", "--env-file", "-f") { Description = "path(s) to your env file(s)", HelpName = "path" };
+        new("--file", "--env-file", "-f")
+        {
+            Description = "path(s) to your env file(s) (default: [])", HelpName = "path"
+        };
 
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
@@ -46,7 +49,7 @@ public class ValidateAction : Command
     private readonly Option<string[]?> _envOption =
         new("--env", "-e")
         {
-            Description = "environment variable(s) set as string (example: \"HELLO=World\")",
+            Description = "environment variable(s) set as string (example: \"HELLO=World\") (default: [])",
             HelpName = "strings...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue

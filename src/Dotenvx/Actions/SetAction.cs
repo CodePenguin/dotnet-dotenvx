@@ -50,7 +50,7 @@ public class SetAction : Command
         new("--plain") { Description = "store value as plain text (default: false)" };
 
     private readonly Option<bool> _noCreateOption =
-        new("--no-create") { Description = "do not create env file if missing (default: false)" };
+        new("--no-create") { Description = "do not create .env file(s) when missing" };
 
     private readonly Argument<string?> _valueArgument =
         new("value") { Description = "value", Arity = ArgumentArity.ZeroOrOne };
