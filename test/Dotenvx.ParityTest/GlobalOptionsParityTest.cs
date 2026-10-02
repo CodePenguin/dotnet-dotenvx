@@ -68,9 +68,7 @@ public class GlobalOptionsParityTest(NodeParityFixture fixture) : ParityTestBase
     /// recursive, option) - without `Recursive = true` on .NET's `VersionOption`,
     /// `dotenvx get --version` fell through to the `[KEY]` positional argument instead of printing
     /// the version, exiting 1 with `[MISSING_KEY] missing key (--version)` where Node prints the
-    /// version and exits 0. Doesn't compare the actual version STRING (this port's own package
-    /// version legitimately differs from the emulated Node CLI's "2.24.1" - a separate, open
-    /// question), only that both sides recognize the flag and exit 0 with non-empty output.
+    /// version and exits 0.
     /// </remarks>
     [Fact]
     public async Task VersionFlagAfterSubcommandIsRecognizedOnBothSides()
@@ -85,6 +83,29 @@ public class GlobalOptionsParityTest(NodeParityFixture fixture) : ParityTestBase
 
         dotnet.ExitCode.ShouldBe(0);
         node.ExitCode.ShouldBe(0);
-        dotnet.StandardOutput.ShouldNotBeEmpty();
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
+    /// <remarks>
+    /// Locks in the versioning policy established 2026-10-02 (see CLAUDE.md's submodule-pin note):
+    /// `src/Dotenvx/Dotenvx.csproj`'s `Version` is kept in lockstep with the submodule's pinned tag,
+    /// so `dotenvx --version` truthfully states which upstream release this port is at parity with -
+    /// not just "both sides print something", but the literal same string. A prior version of this
+    /// suite (see the now-removed doc comment on `VersionFlagAfterSubcommandIsRecognizedOnBothSides`)
+    /// deliberately didn't compare the string because the policy wasn't settled yet.
+    /// </remarks>
+    [Fact]
+    public async Task RootVersionFlagMatchesExactly()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => { }, null, "--version");
+
+        dotnet.ExitCode.ShouldBe(0);
+        node.ExitCode.ShouldBe(0);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
 }
