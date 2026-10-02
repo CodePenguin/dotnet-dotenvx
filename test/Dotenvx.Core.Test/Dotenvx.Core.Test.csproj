@@ -35,6 +35,11 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\Dotenvx.Core\Dotenvx.Core.csproj" />
+        <!-- Referenced so its build output (FakeGitleaks.dll) is copied next to this project's
+             output automatically - GitleaksHelperTest points GitleaksHelper.RunShellCommand at it
+             instead of the real `gitleaks` binary, matching the Dotenvx.ParityTest/Dotenvx
+             ProjectReference convention for the same reason. -->
+        <ProjectReference Include="..\FakeGitleaks\FakeGitleaks.csproj" />
     </ItemGroup>
 
     <ItemGroup>

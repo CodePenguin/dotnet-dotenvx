@@ -30,6 +30,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Primitives", "src\D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Primitives.Test", "test\Dotenvx.Primitives.Test\Dotenvx.Primitives.Test.csproj", "{A64FF8D0-4E87-408C-B358-3C48646E9CDB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FakeGitleaks", "test\FakeGitleaks\FakeGitleaks.csproj", "{506307B7-D45E-4022-AA8A-E9799E9AD404}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -184,6 +186,18 @@ Global
 		{A64FF8D0-4E87-408C-B358-3C48646E9CDB}.Release|x64.Build.0 = Release|Any CPU
 		{A64FF8D0-4E87-408C-B358-3C48646E9CDB}.Release|x86.ActiveCfg = Release|Any CPU
 		{A64FF8D0-4E87-408C-B358-3C48646E9CDB}.Release|x86.Build.0 = Release|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Debug|x64.Build.0 = Debug|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Debug|x86.Build.0 = Debug|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Release|Any CPU.Build.0 = Release|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Release|x64.ActiveCfg = Release|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Release|x64.Build.0 = Release|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Release|x86.ActiveCfg = Release|Any CPU
+		{506307B7-D45E-4022-AA8A-E9799E9AD404}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -201,5 +215,6 @@ Global
 		{030B057E-D602-408A-B83E-4C4C7CE529ED} = {5128B3C6-9E9D-4949-9DA4-72E6C5F069FF}
 		{C55BCD5E-3582-4198-A242-8547FDB647A7} = {0DFDEEB7-CE68-4FE8-89C4-1FBDD914C5CB}
 		{A64FF8D0-4E87-408C-B358-3C48646E9CDB} = {5128B3C6-9E9D-4949-9DA4-72E6C5F069FF}
+		{506307B7-D45E-4022-AA8A-E9799E9AD404} = {5128B3C6-9E9D-4949-9DA4-72E6C5F069FF}
 	EndGlobalSection
 EndGlobal
