@@ -2,12 +2,18 @@ using System.Text;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
-/// <remarks>Reference source: dotenvx/src/lib/helpers/treeify.js</remarks>
+/// <remarks>
+/// No `treeify.js` exists in this submodule at this pin (confirmed via find - a stale reference).
+/// `ls.js` actually renders via `@dotenvx/tooling`'s live-callable `objectTreeify` export directly
+/// (`const { objectTreeify: treeify } = require('@dotenvx/tooling')`), not a local dotenvx helper.
+/// Cross-checked 2026-10-02 against that real export with the exact empty-object-leaf tree shape
+/// `ArrayToTree` actually produces (not `null` leaves) - output format (`├─`/`└─`/`│  ` characters,
+/// trailing-newline trimming, single-item and empty-tree cases) matches exactly; no bug found here,
+/// unlike `Interop.PicomatchJs`/`Interop.IgnoreJs` (see traps #59/#60), which both had real drift
+/// from their own live-callable real counterparts.
+/// </remarks>
 public static partial class Helpers
 {
-    /// <summary>
-    ///     Approximate equivalent functionality of Node.js object-treeify package.
-    /// </summary>
     public static string Treeify(Dictionary<string, object> tree, string prefix = "")
     {
         // Only the outermost call should strip the trailing newline - recursive calls append
