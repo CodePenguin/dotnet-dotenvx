@@ -4,6 +4,8 @@ using Dotenvx.Interop.DotenvxJs.Types;
 
 using Org.BouncyCastle.Crypto;
 
+using static Dotenvx.Primitives.Primitives;
+
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>
@@ -58,7 +60,8 @@ public static partial class Helpers
         {
             try
             {
-                byte[] decryptedBytes = EciesJs.EciesJs.Decrypt(privateKeyHex, cipherText);
+                byte[] decryptedBytes =
+                    global::Dotenvx.Primitives.Interop.EciesJs.EciesJs.Decrypt(privateKeyHex, cipherText);
                 decryptedValue = Encoding.UTF8.GetString(decryptedBytes);
                 decryptionError = null;
                 break;

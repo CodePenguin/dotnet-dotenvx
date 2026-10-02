@@ -4,6 +4,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
@@ -107,7 +108,7 @@ public class Sets
                 envSrc = "";
             }
 
-            Dictionary<string, object> envParsed = DotenvParse(envSrc);
+            Dictionary<string, object> envParsed = Parse(envSrc);
             row.OriginalValue = (string?)envParsed.GetValueOrDefault(_key ?? "");
 
             // set.js: `const noEncrypt = !options.encrypt || isPlainKey(key)` - a key ending in
@@ -135,7 +136,7 @@ public class Sets
 
                 if (existingPrivateKey != null)
                 {
-                    (string PublicKey, string PrivateKey) kp = KeyPair(existingPrivateKey);
+                    (string PublicKey, string PrivateKey) kp = Keypair(existingPrivateKey);
                     publicKey = kp.PublicKey;
                     privateKey = kp.PrivateKey;
 
@@ -181,7 +182,7 @@ public class Sets
                     envSrc = ps.EnvSrc;
 
                     (string PublicKey, string PrivateKey)
-                        kp = KeyPair(); // generates a fresh keypair in memory
+                        kp = Keypair(); // generates a fresh keypair in memory
                     publicKey = kp.PublicKey;
                     privateKey = kp.PrivateKey;
 
@@ -213,7 +214,7 @@ public class Sets
 
                 row.PublicKey = publicKey;
                 row.PrivateKey = privateKey;
-                row.EncryptedValue = EncryptValue(_value ?? "", publicKey);
+                row.EncryptedValue = Encrypt(_value ?? "", publicKey);
                 row.PrivateKeyName = privateKeyName;
             }
 
@@ -224,7 +225,7 @@ public class Sets
             bool valueChanged = (_value ?? "") != (row.OriginalValue ?? "");
             if (valueChanged)
             {
-                row.EnvSrc = Replace(envSrc, _key ?? "", row.EncryptedValue ?? _value ?? "");
+                row.EnvSrc = Upsert(envSrc, _key ?? "", row.EncryptedValue ?? _value ?? "");
                 _changedFilePaths.Add(envFilePath);
                 row.Changed = true;
             }

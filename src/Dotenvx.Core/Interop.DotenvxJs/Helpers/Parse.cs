@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
@@ -167,7 +168,7 @@ public partial class Parse(
 
     private string Eval(string key, string value)
     {
-        return EvalKeyValue(key, value, _processEnv, _runningParsed);
+        return Evaluate(key, value, _processEnv, _runningParsed);
     }
 
     private string Expand(string value)

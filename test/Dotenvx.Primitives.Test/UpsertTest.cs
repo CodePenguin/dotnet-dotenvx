@@ -1,11 +1,11 @@
 using Shouldly;
 
-using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
-namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Primitives.Test;
 
 /// <remarks>Reference source: dotenvx/tests/lib/helpers/replace.test.js</remarks>
-public class ReplaceTest
+public class UpsertTest
 {
     private const string Src = @"HELLO=a
 SPACER= b
@@ -50,10 +50,10 @@ GROUP='$1$2'";
     {
         string expected = Src + "\nDOESNOTEXIST=\"ttt\"";
 
-        string newSrc = Replace(Src, "DOESNOTEXIST", "ttt");
+        string newSrc = Upsert(Src, "DOESNOTEXIST", "ttt");
 
         newSrc.ShouldBe(expected);
-        DotenvParse(newSrc, true, true)["DOESNOTEXIST"].ShouldBe("ttt");
+        Parse(newSrc, true, true)["DOESNOTEXIST"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "appends when ending newline"</remarks>
@@ -64,10 +64,10 @@ GROUP='$1$2'";
 
         string expected = srcWithNewline + "DOESNOTEXIST=\"ttt\"\n";
 
-        string newSrc = Replace(srcWithNewline, "DOESNOTEXIST", "ttt");
+        string newSrc = Upsert(srcWithNewline, "DOESNOTEXIST", "ttt");
 
         newSrc.ShouldBe(expected);
-        DotenvParse(newSrc, true, true)["DOESNOTEXIST"].ShouldBe("ttt");
+        Parse(newSrc, true, true)["DOESNOTEXIST"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#HELLO"</remarks>
@@ -76,10 +76,10 @@ GROUP='$1$2'";
     {
         string expected = Src.Replace("HELLO=a", "HELLO=ttt");
 
-        string newSrc = Replace(Src, "HELLO", "ttt");
+        string newSrc = Upsert(Src, "HELLO", "ttt");
 
         newSrc.ShouldBe(expected);
-        DotenvParse(newSrc, true, true)["HELLO"].ShouldBe("ttt");
+        Parse(newSrc, true, true)["HELLO"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#SPACER"</remarks>
@@ -88,10 +88,10 @@ GROUP='$1$2'";
     {
         string expected = Src.Replace("SPACER= b", "SPACER=ttt");
 
-        string newSrc = Replace(Src, "SPACER", "ttt");
+        string newSrc = Upsert(Src, "SPACER", "ttt");
 
         newSrc.ShouldBe(expected);
-        DotenvParse(newSrc, true, true)["SPACER"].ShouldBe("ttt");
+        Parse(newSrc, true, true)["SPACER"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#SPACEL"</remarks>
@@ -100,10 +100,10 @@ GROUP='$1$2'";
     {
         string expected = Src.Replace("SPACEL =c", "SPACEL=ttt");
 
-        string newSrc = Replace(Src, "SPACEL", "ttt");
+        string newSrc = Upsert(Src, "SPACEL", "ttt");
 
         newSrc.ShouldBe(expected);
-        DotenvParse(newSrc, true, true)["SPACEL"].ShouldBe("ttt");
+        Parse(newSrc, true, true)["SPACEL"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#SPACEB"</remarks>
@@ -112,10 +112,10 @@ GROUP='$1$2'";
     {
         string expected = Src.Replace("SPACEB = d", "SPACEB=ttt");
 
-        string newSrc = Replace(Src, "SPACEB", "ttt");
+        string newSrc = Upsert(Src, "SPACEB", "ttt");
 
         newSrc.ShouldBe(expected);
-        DotenvParse(newSrc, true, true)["SPACEB"].ShouldBe("ttt");
+        Parse(newSrc, true, true)["SPACEB"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#SINGLE"</remarks>
@@ -124,10 +124,10 @@ GROUP='$1$2'";
     {
         string expected = Src.Replace("SINGLE='e'", "SINGLE='ttt'");
 
-        string newSrc = Replace(Src, "SINGLE", "ttt");
+        string newSrc = Upsert(Src, "SINGLE", "ttt");
 
         newSrc.ShouldBe(expected);
-        DotenvParse(newSrc, true, true)["SINGLE"].ShouldBe("ttt");
+        Parse(newSrc, true, true)["SINGLE"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#DOUBLE"</remarks>
@@ -136,10 +136,10 @@ GROUP='$1$2'";
     {
         string expected = Src.Replace("DOUBLE=\"f\"", "DOUBLE=\"ttt\"");
 
-        string newSrc = Replace(Src, "DOUBLE", "ttt");
+        string newSrc = Upsert(Src, "DOUBLE", "ttt");
 
         newSrc.ShouldBe(expected);
-        DotenvParse(newSrc, true, true)["DOUBLE"].ShouldBe("ttt");
+        Parse(newSrc, true, true)["DOUBLE"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#replace"</remarks>
@@ -148,7 +148,7 @@ GROUP='$1$2'";
     {
         string src = "HELLO=World";
 
-        string newSrc = Replace(src, "HELLO", "Universe");
+        string newSrc = Upsert(src, "HELLO", "Universe");
 
         newSrc.ShouldBe("HELLO=Universe");
     }
@@ -159,7 +159,7 @@ GROUP='$1$2'";
     {
         string src = "HELLO='World'";
 
-        string newSrc = Replace(src, "HELLO", "Universe");
+        string newSrc = Upsert(src, "HELLO", "Universe");
 
         newSrc.ShouldBe("HELLO='Universe'");
     }
@@ -170,7 +170,7 @@ GROUP='$1$2'";
     {
         string src = "HELLO=\"World\"";
 
-        string newSrc = Replace(src, "HELLO", "Universe");
+        string newSrc = Upsert(src, "HELLO", "Universe");
 
         newSrc.ShouldBe("HELLO=\"Universe\"");
     }
@@ -181,7 +181,7 @@ GROUP='$1$2'";
     {
         string src = "HELLO=World";
 
-        string newSrc = Replace(src, "API_KEY", "1234");
+        string newSrc = Upsert(src, "API_KEY", "1234");
 
         newSrc.ShouldBe("HELLO=World\nAPI_KEY=\"1234\"");
     }
@@ -192,7 +192,7 @@ GROUP='$1$2'";
     {
         string src = "HELLO=World\n";
 
-        string newSrc = Replace(src, "API_KEY", "1234");
+        string newSrc = Upsert(src, "API_KEY", "1234");
 
         newSrc.ShouldBe("HELLO=World\nAPI_KEY=\"1234\"\n");
     }
@@ -211,7 +211,7 @@ GROUP='$1$2'";
     {
         const string src = "FOO=old1\nBAR=x\nFOO=old2\n";
 
-        string newSrc = Replace(src, "FOO", "new");
+        string newSrc = Upsert(src, "FOO", "new");
 
         newSrc.ShouldBe("FOO=new\nBAR=x\nFOO=new\n");
     }
@@ -226,7 +226,7 @@ GROUP='$1$2'";
     {
         const string src = "FOO=\"old1\"\nBAR=x\nFOO=old2\n";
 
-        string newSrc = Replace(src, "FOO", "new");
+        string newSrc = Upsert(src, "FOO", "new");
 
         newSrc.ShouldBe("FOO=\"new\"\nBAR=x\nFOO=new\n");
     }
@@ -245,7 +245,7 @@ GROUP='$1$2'";
             .Replace("export EXPORT=k\nEXPORT2='export EXPORT=k'\nexport EXPORT=k",
                 "export EXPORT=ttt\nEXPORT2='export EXPORT=k'\nexport EXPORT=ttt");
 
-        string newSrc = Replace(Src, "EXPORT", "ttt");
+        string newSrc = Upsert(Src, "EXPORT", "ttt");
 
         newSrc.ShouldBe(expected);
     }

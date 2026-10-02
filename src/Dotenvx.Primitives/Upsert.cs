@@ -1,15 +1,14 @@
 using System.Text.RegularExpressions;
 
-namespace Dotenvx.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Primitives;
 
-/// <remarks>Reference source: dotenvx/src/lib/helpers/replace.js</remarks>
-public static partial class Helpers
+/// <remarks>Reference source: @dotenvx/primitives' `upsert()` export (replace.js, this file's old reference, no longer exists at this pin).</remarks>
+public static partial class Primitives
 {
-    public static string Replace(string src, string key, string replaceValue)
+    public static string Upsert(string src, string key, string replaceValue)
     {
-        // @dotenvx/primitives' upsert() (the live-verified successor to this file, since
-        // replace.js no longer exists at HEAD) replaces EVERY occurrence of a duplicate key with
-        // the new value, each keeping its own original quote style - confirmed live against Node
+        // @dotenvx/primitives' upsert() replaces EVERY occurrence of a duplicate key with the new
+        // value, each keeping its own original quote style - confirmed live against Node
         // (`FOO=old1` / `FOO=old2` both become the new value, `FOO="old1"` keeps its double
         // quotes while a neighboring unquoted `FOO=old2` stays unquoted). The single-occurrence
         // path below predates that finding and only ever matched the LAST occurrence's value
@@ -22,7 +21,7 @@ public static partial class Helpers
             return ReplaceAllOccurrences(src, occurrences, replaceValue);
         }
 
-        Dictionary<string, object> parsed = DotenvParse(src, true, true);
+        Dictionary<string, object> parsed = Parse(src, true, true);
         Dictionary<string, string> quotes = GetQuotes(src);
 
         if (parsed.TryGetValue(key, out object? value))
@@ -101,7 +100,7 @@ public static partial class Helpers
         string src, string key)
     {
         List<(int, int, string, string)> result = [];
-        foreach (Match match in DotenvParseRegex().Matches(src))
+        foreach (Match match in ParseRegex().Matches(src))
         {
             if (match.Groups[1].Value != key)
             {

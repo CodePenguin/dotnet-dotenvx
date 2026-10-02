@@ -1,6 +1,4 @@
-using Dotenvx.Interop.EciesJs;
-
-namespace Dotenvx.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Primitives;
 
 /// <remarks>
 /// Reference source: @dotenvx/primitives' `keypair(existingPrivateKeyHex?)` export (no readable
@@ -10,13 +8,13 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// public key; otherwise generate a fresh keypair. Every real call site (transforms/encrypt.js,
 /// transforms/set.js) only ever calls the no-arg fresh-key path, matching this port's own callers.
 /// </remarks>
-public static partial class Helpers
+public static partial class Primitives
 {
-    public static (string PublicKey, string PrivateKey) KeyPair(string? existingPrivateKey = null)
+    public static (string PublicKey, string PrivateKey) Keypair(string? existingPrivateKey = null)
     {
-        PrivateKey kp = !string.IsNullOrEmpty(existingPrivateKey)
-            ? PrivateKey.FromHex(existingPrivateKey)
-            : new PrivateKey();
+        Interop.EciesJs.PrivateKey kp = !string.IsNullOrEmpty(existingPrivateKey)
+            ? Interop.EciesJs.PrivateKey.FromHex(existingPrivateKey)
+            : new Interop.EciesJs.PrivateKey();
         return (kp.PublicKey.ToHex(), kp.ToHex());
     }
 }

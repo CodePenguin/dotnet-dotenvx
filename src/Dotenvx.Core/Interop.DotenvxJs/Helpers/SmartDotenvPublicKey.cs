@@ -1,3 +1,5 @@
+using static Dotenvx.Primitives.Primitives;
+
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>
@@ -30,7 +32,7 @@ public static partial class Helpers
         }
 
         string keysSrc = Fsx.ReadFileX(envFilePath);
-        Dictionary<string, object> keysParsed = DotenvParse(keysSrc);
+        Dictionary<string, object> keysParsed = Parse(keysSrc);
 
         if (keysParsed.TryGetValue(publicKeyName, out object? value) && value is string s && !string.IsNullOrEmpty(s))
         {

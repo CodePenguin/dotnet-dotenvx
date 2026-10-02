@@ -1,3 +1,5 @@
+using static Dotenvx.Primitives.Primitives;
+
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/smartDotenvPrivateKey.js</remarks>
@@ -58,7 +60,7 @@ public static partial class Helpers
         }
 
         string keysSrc = Fsx.ReadFileX(keysFilePath);
-        Dictionary<string, object> keysParsed = DotenvParse(keysSrc);
+        Dictionary<string, object> keysParsed = Parse(keysSrc);
 
         if (keysParsed.TryGetValue(privateKeyName, out object? value) && value is string s && !string.IsNullOrEmpty(s))
         {
@@ -76,7 +78,7 @@ public static partial class Helpers
         }
 
         string envSrc = Fsx.ReadFileX(envFilePath);
-        Dictionary<string, object> envParsed = DotenvParse(envSrc);
+        Dictionary<string, object> envParsed = Parse(envSrc);
 
         string? publicKeyName = null;
         foreach (string keyName in envParsed.Keys)

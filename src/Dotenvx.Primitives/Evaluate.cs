@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 using Dotenvx.Interop.DotenvxJs.Types;
 
-namespace Dotenvx.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Primitives;
 
 /// <remarks>
 /// Reference source: @dotenvx/primitives' `evaluate(value, {processEnv, runningParsed})` export (no
@@ -13,11 +13,12 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// regex being structurally different from upstream's (nested-paren-aware here, a simple first-`)`
 /// match there), live-oracle verification across nested parens, multiple substitutions per line, a
 /// literal paren inside a command, multiline chomping, and a failed/missing command all produced
-/// byte-identical results on both CLIs.
+/// byte-identical results on both CLIs. This port keeps `key` as an explicit parameter (used only
+/// for the thrown exception's message) rather than upstream's options-object shape.
 /// </remarks>
-public static partial class Helpers
+public static partial class Primitives
 {
-    public static string EvalKeyValue(string key, string value, IDictionary<string, string> processEnv,
+    public static string Evaluate(string key, string value, IDictionary<string, string> processEnv,
         Dictionary<string, string> runningParsed)
     {
         // Match everything between the outermost $() using a regex with non-capturing groups

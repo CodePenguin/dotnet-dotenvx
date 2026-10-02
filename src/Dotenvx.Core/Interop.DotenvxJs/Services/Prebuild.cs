@@ -3,6 +3,7 @@ using Dotenvx.Interop.DotenvxJs.Types;
 using Dotenvx.Interop.IgnoreJs;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 

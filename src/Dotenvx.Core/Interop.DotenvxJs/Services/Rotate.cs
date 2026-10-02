@@ -4,6 +4,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
@@ -119,7 +120,7 @@ public class Rotate(
 
             string encoding = DetectEncoding(row.FilePath);
             string envSrc = Fsx.ReadFileX(row.FilePath, encoding);
-            Dictionary<string, object> envParsedObj = DotenvParse(envSrc);
+            Dictionary<string, object> envParsedObj = Parse(envSrc);
             Dictionary<string, string> envParsed = envParsedObj.ToDictionary(kvp => kvp.Key, kvp => (string)kvp.Value);
 
             string publicKeyName = GuessPublicKeyName(envFilepath);
@@ -142,12 +143,12 @@ public class Rotate(
             string envKeysSrc = value;
 
             // New keypair
-            (string PublicKey, string PrivateKey) nkp = KeyPair();
+            (string PublicKey, string PrivateKey) nkp = Keypair();
             string newPublicKey = nkp.PublicKey;
             string newPrivateKey = nkp.PrivateKey;
 
             // .env
-            envSrc = Replace(envSrc, publicKeyName, newPublicKey);
+            envSrc = Upsert(envSrc, publicKeyName, newPublicKey);
             row.Changed = true;
             foreach (KeyValuePair<string, string> kvp in envParsed)
             {
@@ -173,7 +174,7 @@ public class Rotate(
                     continue;
                 }
 
-                if (!IsEncrypted(v))
+                if (!Encrypted(v))
                 {
                     continue;
                 }
@@ -181,9 +182,9 @@ public class Rotate(
                 row.Keys = [.. row.Keys, k];
 
                 string decryptedValue = DecryptKeyValue(k, v, privateKeyName, existingPrivateKey);
-                string encryptedValue = EncryptValue(decryptedValue, newPublicKey);
+                string encryptedValue = Encrypt(decryptedValue, newPublicKey);
 
-                envSrc = Replace(envSrc, k, encryptedValue);
+                envSrc = Upsert(envSrc, k, encryptedValue);
             }
 
             row.EnvSrc = envSrc;

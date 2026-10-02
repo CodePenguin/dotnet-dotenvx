@@ -2,6 +2,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
@@ -64,11 +65,11 @@ public class Genexample(string directory = ".", string[]? envFile = null)
             }
 
             string src = Fsx.ReadFileX(filepath);
-            Dictionary<string, object> parsed = DotenvParse(src);
+            Dictionary<string, object> parsed = Parse(src);
             foreach (string key in parsed.Keys)
             {
                 keys.Add(key);
-                src = Replace(src, key, "");
+                src = Upsert(src, key, "");
             }
 
             exampleSrc += $"\n{src}";
@@ -85,7 +86,7 @@ public class Genexample(string directory = ".", string[]? envFile = null)
         else
         {
             exampleSrc = Fsx.ReadFileX(ExampleFilepath);
-            Dictionary<string, object> parsed = DotenvParse(exampleSrc);
+            Dictionary<string, object> parsed = Parse(exampleSrc);
             foreach (string key in keys)
             {
                 if (parsed.TryGetValue(key, out object? value))

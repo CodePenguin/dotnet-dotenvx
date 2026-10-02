@@ -3,6 +3,7 @@ using Dotenvx.Interop.DotenvxJs.Types;
 using Shouldly;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 
@@ -16,7 +17,7 @@ public class DecryptKeyValueTest
     [Fact]
     public void TestDecryptKeyValueWithValidInputDecryptsValue()
     {
-        string encryptedString = EncryptValue("hello", PublicKey);
+        string encryptedString = Encrypt("hello", PublicKey);
         string? decrypted = DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY", PrivateKey);
         decrypted.ShouldBe("hello");
     }
@@ -25,7 +26,7 @@ public class DecryptKeyValueTest
     [Fact]
     public void TestDecryptKeyValueWithNullPrivateKeyThrowsException()
     {
-        string encryptedString = EncryptValue("hello", PublicKey);
+        string encryptedString = Encrypt("hello", PublicKey);
 
         DotenvxException ex = Should.Throw<DotenvxException>(() =>
             DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY_PRODUCTION", null));
@@ -84,7 +85,7 @@ public class DecryptKeyValueTest
     [Fact]
     public void TestDecryptKeyValueWithInvalidPrivateKeyThrowsException()
     {
-        string encryptedString = EncryptValue("hello", PublicKey);
+        string encryptedString = Encrypt("hello", PublicKey);
 
         DotenvxException ex = Should.Throw<DotenvxException>(() =>
             DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY", "invalid-private-key"));
@@ -98,7 +99,7 @@ public class DecryptKeyValueTest
     [Fact]
     public void TestDecryptKeyValueWithEmptyPrivateKeyThrowsException()
     {
-        string encryptedString = EncryptValue("hello", PublicKey);
+        string encryptedString = Encrypt("hello", PublicKey);
 
         DotenvxException ex = Should.Throw<DotenvxException>(() =>
             DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY", ""));
@@ -112,7 +113,7 @@ public class DecryptKeyValueTest
     [Fact]
     public void TestDecryptKeyValueWithWrongPrivateKeyThrowsException()
     {
-        string encryptedString = EncryptValue("hello", PublicKey);
+        string encryptedString = Encrypt("hello", PublicKey);
 
         DotenvxException ex = Should.Throw<DotenvxException>(() =>
             DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY",
@@ -127,7 +128,7 @@ public class DecryptKeyValueTest
     [Fact]
     public void TestDecryptKeyValueWithEmptyStringDecryptsValue()
     {
-        string encryptedString = EncryptValue("", PublicKey);
+        string encryptedString = Encrypt("", PublicKey);
         string? decrypted = DecryptKeyValue("KEY", encryptedString, "DOTENV_PRIVATE_KEY", PrivateKey);
         decrypted.ShouldBe("");
     }

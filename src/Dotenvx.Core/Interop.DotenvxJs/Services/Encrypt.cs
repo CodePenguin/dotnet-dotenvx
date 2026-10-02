@@ -4,6 +4,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
@@ -82,7 +83,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                 row.Changed = true;
             }
 
-            Dictionary<string, object> envParsed = DotenvParse(envSrc);
+            Dictionary<string, object> envParsed = Parse(envSrc);
 
             string? publicKey;
             string? privateKey = null;
@@ -102,7 +103,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
             if (!string.IsNullOrEmpty(existingPrivateKey))
             {
-                (string PublicKey, string PrivateKey) kp = KeyPair(existingPrivateKey);
+                (string PublicKey, string PrivateKey) kp = Keypair(existingPrivateKey);
                 publicKey = kp.PublicKey;
                 privateKey = kp.PrivateKey;
 
@@ -138,7 +139,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                 string firstLinePreserved = ps.FirstLinePreserved;
                 envSrc = ps.EnvSrc;
 
-                (string PublicKey, string PrivateKey) kp = KeyPair();
+                (string PublicKey, string PrivateKey) kp = Keypair();
                 publicKey = kp.PublicKey;
                 privateKey = kp.PrivateKey;
 
@@ -189,7 +190,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                     continue;
                 }
 
-                bool encrypted = IsEncrypted(value) || IsPublicKey(envKey, value);
+                bool encrypted = Encrypted(value) || IsPublicKey(envKey, value);
                 if (encrypted)
                 {
                     continue;
@@ -197,9 +198,9 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
                 row.Keys.Add(envKey);
 
-                string encryptedValue = EncryptValue(value, publicKey);
+                string encryptedValue = Encrypt(value, publicKey);
 
-                envSrc = Replace(envSrc, envKey, encryptedValue);
+                envSrc = Upsert(envSrc, envKey, encryptedValue);
 
                 row.Changed = true;
             }

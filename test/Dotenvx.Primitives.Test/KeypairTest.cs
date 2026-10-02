@@ -1,8 +1,8 @@
 using Shouldly;
 
-using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
-namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Primitives.Test;
 
 /// <remarks>Reference source: dotenvx/tests/lib/helpers/keypair.test.js</remarks>
 public class KeypairTest
@@ -11,7 +11,7 @@ public class KeypairTest
     [Fact]
     public void TestKeypair()
     {
-        (string publicKey, string privateKey) = KeyPair();
+        (string publicKey, string privateKey) = Keypair();
 
         publicKey.ShouldNotBeNullOrEmpty();
         privateKey.ShouldNotBeNullOrEmpty();
@@ -24,7 +24,7 @@ public class KeypairTest
     public void TestKeypairUsesProvidedPrivateKey()
     {
         const string existingPrivateKey = "4c06b1f9ffc4af11d0d206fd43f28bc96b68647158c1666edc4832f19857cef9";
-        (string publicKey, string privateKey) = KeyPair(existingPrivateKey);
+        (string publicKey, string privateKey) = Keypair(existingPrivateKey);
 
         privateKey.ShouldBe(existingPrivateKey);
         publicKey.ShouldNotBeNullOrEmpty();

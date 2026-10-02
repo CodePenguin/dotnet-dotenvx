@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 
+using static Dotenvx.Primitives.Primitives;
+
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/append.js</remarks>
@@ -10,7 +12,7 @@ public static partial class Helpers
         string output;
         string newPart = "";
 
-        Dictionary<string, object> parsed = DotenvParse(src, true, true);
+        Dictionary<string, object> parsed = Parse(src, true, true);
         Dictionary<string, string> quotes = GetQuotes(src);
         if (parsed.TryGetValue(key, out object? parsedValue))
         {

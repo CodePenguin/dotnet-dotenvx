@@ -4,16 +4,16 @@ using Dotenvx.Interop.DotenvxJs.Types;
 
 using Shouldly;
 
-using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
-namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Primitives.Test;
 
 /// <remarks>
 /// Reference source: dotenvx/src/lib/helpers/evalKeyValue.js. No longer present at the currently
 /// pinned commit - moved into the external, unvendored @dotenvx/primitives package - so this points
 /// at its last readable version (pre-primitives-extraction, commit 882ea84c) for behavior parity.
 /// </remarks>
-public class EvalKeyValueTest
+public class EvaluateTest
 {
     private static readonly bool IsWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
@@ -21,7 +21,7 @@ public class EvalKeyValueTest
     [Fact]
     public void TestEvalKeyValueExecutesSimpleCommand()
     {
-        string result = EvalKeyValue("EVAL", "$(echo world)", new Dictionary<string, string>(), []);
+        string result = Evaluate("EVAL", "$(echo world)", new Dictionary<string, string>(), []);
 
         result.ShouldBe("world");
     }
@@ -30,7 +30,7 @@ public class EvalKeyValueTest
     [Fact]
     public void TestEvalKeyValueLeavesValueWithoutSubstitutionUnchanged()
     {
-        string result = EvalKeyValue("HELLO", "World", new Dictionary<string, string>(), []);
+        string result = Evaluate("HELLO", "World", new Dictionary<string, string>(), []);
 
         result.ShouldBe("World");
     }
@@ -39,7 +39,7 @@ public class EvalKeyValueTest
     [Fact]
     public void TestEvalKeyValueSupportsMultipleSubstitutions()
     {
-        string result = EvalKeyValue("EVAL", "$(echo one),$(echo two)", new Dictionary<string, string>(), []);
+        string result = Evaluate("EVAL", "$(echo one),$(echo two)", new Dictionary<string, string>(), []);
 
         result.ShouldBe("one,two");
     }
@@ -51,7 +51,7 @@ public class EvalKeyValueTest
         string command = IsWindows ? "$(echo %MY_VAR%)" : "$(echo $MY_VAR)";
         Dictionary<string, string> runningParsed = new() { ["MY_VAR"] = "fromRunningParsed" };
 
-        string result = EvalKeyValue("EVAL", command, new Dictionary<string, string>(), runningParsed);
+        string result = Evaluate("EVAL", command, new Dictionary<string, string>(), runningParsed);
 
         result.ShouldBe("fromRunningParsed");
     }
@@ -61,7 +61,7 @@ public class EvalKeyValueTest
     public void TestEvalKeyValueThrowsCommandSubstitutionFailedOnNonZeroExit()
     {
         DotenvxException ex = Should.Throw<DotenvxException>(() =>
-            EvalKeyValue("EVAL", "$(exit 1)", new Dictionary<string, string>(), []));
+            Evaluate("EVAL", "$(exit 1)", new Dictionary<string, string>(), []));
 
         ex.Code.ShouldBe("COMMAND_SUBSTITUTION_FAILED");
     }

@@ -1,4 +1,4 @@
-namespace Dotenvx.Interop.EciesJs;
+namespace Dotenvx.Primitives.Interop.EciesJs;
 
 /// <summary>
 ///     C# equivalent for eciesjs src/index.ts (https://github.com/ecies/js).

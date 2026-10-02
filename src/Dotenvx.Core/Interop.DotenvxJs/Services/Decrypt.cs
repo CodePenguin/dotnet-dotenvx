@@ -4,6 +4,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
@@ -62,7 +63,7 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
         {
             string encoding = DetectEncoding(filePath);
             string envSrc = Fsx.ReadFileX(filePath, encoding);
-            Dictionary<string, object> envParsed = DotenvParse(envSrc);
+            Dictionary<string, object> envParsed = Parse(envSrc);
 
             string? privateKey = FindPrivateKey(envFilePath, envKeysFilePath);
             string privateKeyName = GuessPrivateKeyName(envFilePath);
@@ -85,7 +86,7 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                     continue;
                 }
 
-                bool encrypted = IsEncrypted(value);
+                bool encrypted = Encrypted(value);
                 if (!encrypted)
                 {
                     continue;
@@ -94,7 +95,7 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                 try
                 {
                     string decryptedValue = DecryptKeyValue(envKey, value, privateKeyName, privateKey);
-                    envSrc = Replace(envSrc, envKey, decryptedValue);
+                    envSrc = Upsert(envSrc, envKey, decryptedValue);
                     row.Keys.Add(envKey);
                     row.Changed = true;
                 }

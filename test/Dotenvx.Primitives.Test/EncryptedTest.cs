@@ -1,17 +1,17 @@
 using Shouldly;
 
-using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
-namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Primitives.Test;
 
 /// <remarks>Reference source: dotenvx/tests/lib/helpers/isEncrypted.test.js</remarks>
-public class IsEncryptedTest
+public class EncryptedTest
 {
     /// <remarks>Refer to "#isEncrypted"</remarks>
     [Fact]
-    public void TestIsEncrypted()
+    public void TestEncrypted()
     {
-        bool result = IsEncrypted("encrypted:1234");
+        bool result = Encrypted("encrypted:1234");
 
         result.ShouldBe(true);
     }
@@ -21,7 +21,7 @@ public class IsEncryptedTest
     public void TestIsEncryptedRealWorld()
     {
         bool result =
-            IsEncrypted(
+            Encrypted(
                 "encrypted:BHqJQhgpCHY4My3PQ1UE3vSTyfqM/wNaISWSVQgi8eBQze4X7AMkcl0tg4skow5vI7Akhm0UXV43+FeYOvxcXifjjKbHZeXp+hFxKk5zu/N3tB95DiCpXSLA2bbcyeTNLAfTZgXa");
 
         result.ShouldBe(true);
@@ -31,7 +31,7 @@ public class IsEncryptedTest
     [Fact]
     public void TestIsEncryptedNotEncrypted()
     {
-        bool result = IsEncrypted("1234");
+        bool result = Encrypted("1234");
 
         result.ShouldBe(false);
     }
@@ -40,7 +40,7 @@ public class IsEncryptedTest
     [Fact]
     public void TestIsEncryptedPassesNull()
     {
-        bool result = IsEncrypted(null);
+        bool result = Encrypted(null);
 
         result.ShouldBe(false);
     }

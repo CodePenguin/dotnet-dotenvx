@@ -1,4 +1,4 @@
-namespace Dotenvx.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Primitives;
 
 /// <remarks>
 /// Reference source: @dotenvx/primitives' `encrypted(value)` export (no readable source exists -
@@ -6,9 +6,9 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// v2.24.1 pin once its logic moved there). Verified via live-oracle decompile: a falsy-check then
 /// prefix-check, matching `value?.StartsWith(Prefix) == true` exactly for every realistic input.
 /// </remarks>
-public static partial class Helpers
+public static partial class Primitives
 {
-    public static bool IsEncrypted(string? value)
+    public static bool Encrypted(string? value)
     {
         return value?.StartsWith(Prefix) == true;
     }

@@ -1,8 +1,8 @@
-using Dotenvx.Interop.EciesJs;
+using Dotenvx.Primitives.Interop.EciesJs;
 
 using Shouldly;
 
-namespace Dotenvx.Core.Test.Interop.EciesJs;
+namespace Dotenvx.Primitives.Test.Interop.EciesJs;
 
 public class PublicKeyTest : EciesJsTestBase
 {

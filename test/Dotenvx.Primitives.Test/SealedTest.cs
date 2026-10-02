@@ -1,8 +1,8 @@
 using Shouldly;
 
-using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
-namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
+namespace Dotenvx.Primitives.Test;
 
 /// <remarks>
 /// Reference source: @dotenvx/primitives' `sealed()` export - no readable source, matrix verified
