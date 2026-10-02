@@ -30,10 +30,22 @@ public class CommandSubstitutionFailed(string key, string command, string messag
     $"[COMMAND_SUBSTITUTION_FAILED] could not eval {key} containing command '{command}': {message}",
     "fix: [https://github.com/dotenvx/dotenvx/issues/532]");
 
-public class DecryptionFailedException(string message) : DotenvxException(
-    "DECRYPTION_FAILED",
-    $"[DECRYPTION_FAILED] {message}",
-    "fix: [https://github.com/dotenvx/dotenvx/issues/757]");
+public class DecryptionFailedException : DotenvxException
+{
+    public DecryptionFailedException(string message, string? key = null) : base(
+        "DECRYPTION_FAILED",
+        $"[DECRYPTION_FAILED] {message}",
+        "fix: [https://github.com/dotenvx/dotenvx/issues/757]")
+    {
+        Key = key;
+    }
+
+    // Set only by DecryptKeyValue.cs's per-key throw sites, so Run.cs's CoarsenDecryptErrors can
+    // fold a directly-thrown DecryptionFailedException (e.g. malformed/empty ciphertext) into the
+    // same combined "could not decrypt {keys}" message as the other four decrypt-failure
+    // exceptions, instead of leaking its literal crypto-library message straight to the user.
+    public string? Key { get; }
+}
 
 public class InvalidPrivateKeyException : DotenvxException
 {

@@ -218,6 +218,7 @@ public class Run
                 MissingPrivateKeyException e => e.Key,
                 InvalidPrivateKeyException e => e.Key,
                 MalformedEncryptedDataException e => e.Key,
+                DecryptionFailedException e => e.Key,
                 _ => null
             };
 

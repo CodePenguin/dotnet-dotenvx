@@ -379,9 +379,17 @@ public class EncryptTest : EnvironmentTestBase
              """);
     }
 
-    /// <remarks>Refer to "#run (finds .env and .env.keys file) but derived public key does not match configured public key"</remarks>
+    /// <remarks>
+    /// No longer a distinct current upstream scenario - no test with this title exists anywhere in
+    /// the submodule at this pin. Rewritten 2026-10-02 after a code audit found and fixed a real bug
+    /// in SmartDotenvPublicKey.cs: a stray DOTENV_PUBLIC_KEY in the process environment used to be
+    /// checked BEFORE the target file's own public key, so it could look like a "mismatch" against
+    /// an already-correctly-paired file. Live-verified against the real pinned Node CLI that the
+    /// correct behavior is to ignore the process-env value entirely - "○ no change", no error -
+    /// since the file's own DOTENV_PUBLIC_KEY already matches its own .env.keys private key.
+    /// </remarks>
     [Fact]
-    public void TestRunFindsEnvAndEnvKeysFileButDerivedPublicKeyDoesNotMatchConfiguredPublicKey()
+    public void TestRunIgnoresStrayProcessEnvPublicKeyWhenFileIsAlreadyCorrectlyPaired()
     {
         Environment.SetEnvironmentVariable("DOTENV_PUBLIC_KEY", "12345");
 
@@ -391,7 +399,8 @@ public class EncryptTest : EnvironmentTestBase
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         EncryptProcessedEnv p = result.ProcessedEnvs[0];
-        p.Error.ShouldBeOfType<MispairedPrivateKeyException>();
+        p.Error.ShouldBeNull();
+        result.UnchangedFilePaths.ShouldBe([envFile]);
     }
 
     /// <remarks>Refer to "#run (finds .env file only)"</remarks>

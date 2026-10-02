@@ -6,7 +6,15 @@ using Dotenvx.Interop.DotenvxJs.Types;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
-/// <remarks>Reference source: dotenvx/src/lib/helpers/evalKeyValue.js</remarks>
+/// <remarks>
+/// Reference source: @dotenvx/primitives' `evaluate(value, {processEnv, runningParsed})` export (no
+/// readable source exists - evalKeyValue.js, this file's old reference, was deleted from dotenvx
+/// itself well before the v2.24.1 pin once its logic moved there). Despite this port's `$(...)`
+/// regex being structurally different from upstream's (nested-paren-aware here, a simple first-`)`
+/// match there), live-oracle verification across nested parens, multiple substitutions per line, a
+/// literal paren inside a command, multiline chomping, and a failed/missing command all produced
+/// byte-identical results on both CLIs.
+/// </remarks>
 public static partial class Helpers
 {
     public static string EvalKeyValue(string key, string value, IDictionary<string, string> processEnv,
