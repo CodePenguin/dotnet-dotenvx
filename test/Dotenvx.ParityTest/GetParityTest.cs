@@ -143,6 +143,30 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
 
+    /// <remarks>
+    /// Not from a JS test - found 2026-10-02 via a static audit cross-checking this port's
+    /// Picomatch reimplementation against the real, live-callable `@dotenvx/primitives` `scan()`
+    /// export it stands in for. `scan()`'s `ik`/`ek` wildcard matching never matches a leading dot
+    /// by default (confirmed live), but this port's Picomatch always behaved as if `dot: true` -
+    /// `get --include-key "*"` on a file with a dot-prefixed (but validly parseable) key name
+    /// diverged: Node excluded it, this port included it. See IndexJs.Picomatch's own doc comment
+    /// for the fix.
+    /// </remarks>
+    [Fact]
+    public async Task IncludeKeyWildcardExcludesDotPrefixedKeyIdentically()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", ".SECRET=hidden\nFOO=bar\n"), null, "get", "--include-key", "*");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
     [Fact]
     public async Task IncludeAndExcludeKeyCombineIdentically()
     {

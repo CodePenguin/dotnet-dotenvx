@@ -126,4 +126,57 @@ public class IndexJsTest
 
         matcher("file.txt").ShouldBeTrue();
     }
+
+    /// <remarks>
+    /// Not from a JS test - found 2026-10-02 via a static audit cross-checking this reimplementation
+    /// against the real, live-callable `@dotenvx/primitives` `match`/`scan` exports it stands in for.
+    /// `dot` defaults to false (confirmed live via `scan(src, { ik: ['*'] })` on a file with a
+    /// `.SECRET` key: Node excludes it) - a bare wildcard never matches a leading dot unless the
+    /// caller opts in, matching every key-filtering call site's real upstream behavior
+    /// (encrypt/decrypt/rotate/get's -k/--include-key/--exclude-key).
+    /// </remarks>
+    [Fact]
+    public void Picomatch_DefaultDot_WildcardDoesNotMatchLeadingDot()
+    {
+        Func<string, bool> matcher = Picomatch(["*"]);
+
+        matcher(".SECRET").ShouldBeFalse();
+        matcher("FOO").ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Picomatch_DotTrue_WildcardMatchesLeadingDot()
+    {
+        Func<string, bool> matcher = Picomatch(["*"], dot: true);
+
+        matcher(".SECRET").ShouldBeTrue();
+        matcher("FOO").ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Picomatch_DefaultDot_LiteralLeadingDotInPatternStillMatches()
+    {
+        Func<string, bool> matcher = Picomatch([".*"]);
+
+        matcher(".SECRET").ShouldBeTrue();
+        matcher(".ABC").ShouldBeTrue();
+        matcher("FOO").ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Picomatch_DefaultDot_AppliesToIgnoreListToo()
+    {
+        Func<string, bool> matcher = Picomatch(["*"], ["*"], dot: true);
+
+        // dot:true applies to both the include and exclude lists identically, so a wildcard
+        // exclude DOES catch a dot-prefixed name here.
+        matcher(".SECRET").ShouldBeFalse();
+
+        Func<string, bool> defaultDotMatcher = Picomatch(["FOO", ".SECRET"], ["*"]);
+
+        // With the real default (dot:false), a wildcard exclude does NOT catch a dot-prefixed
+        // name, so it stays included if the include list separately names it literally.
+        defaultDotMatcher(".SECRET").ShouldBeTrue();
+        defaultDotMatcher("FOO").ShouldBeFalse();
+    }
 }

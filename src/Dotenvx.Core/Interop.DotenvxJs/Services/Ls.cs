@@ -43,8 +43,10 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
     private string[] FilePaths()
     {
         string[] excluded = Exclude();
-        Func<string, bool> exclude = Picomatch(excluded);
-        Func<string, bool> include = Picomatch(Patterns(), excluded);
+        // dot: true matches ls.js's own real `match(patterns, { dot: true })` options - see
+        // IndexJs.Picomatch's doc comment for why the default changed to dot:false everywhere else.
+        Func<string, bool> exclude = Picomatch(excluded, dot: true);
+        Func<string, bool> include = Picomatch(Patterns(), excluded, dot: true);
 
         // Enumerate every file once (pruning excluded directories during the walk, matching
         // upstream's Fdir crawler) and let the "**/"-prefixed picomatch globs do the actual
