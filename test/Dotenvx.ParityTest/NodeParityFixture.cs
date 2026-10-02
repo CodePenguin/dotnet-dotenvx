@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 
 namespace Dotenvx.ParityTest;
 
@@ -94,6 +95,16 @@ public sealed class NodeParityFixture : IAsyncLifetime
         return RunProcessAsync(_dotnetPath, [DotenvxDllPath, ..args], workingDirectory, env);
     }
 
+    /// <summary>
+    /// Runs an inline Node script (the "live oracle" technique - see CLAUDE.md's `@dotenvx/
+    /// primitives` section) from within the `dotenvx/` submodule directory, so `require('./src/
+    /// lib/...')`-relative paths resolve the same way they would from a real file in that tree.
+    /// </summary>
+    public Task<CliResult> RunNodeScriptAsync(string script)
+    {
+        return RunProcessAsync(_nodePath, ["-e", script], Path.Combine(RepoRoot, "dotenvx"));
+    }
+
     private static async Task<CliResult> RunProcessAsync(string fileName, IReadOnlyList<string> args,
         string workingDirectory, IReadOnlyDictionary<string, string>? env = null)
     {
@@ -104,6 +115,8 @@ public sealed class NodeParityFixture : IAsyncLifetime
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            StandardOutputEncoding = new UTF8Encoding(false),
+            StandardErrorEncoding = new UTF8Encoding(false),
             CreateNoWindow = true
         };
 
