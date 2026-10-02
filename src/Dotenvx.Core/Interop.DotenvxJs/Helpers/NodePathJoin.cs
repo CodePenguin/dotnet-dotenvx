@@ -26,13 +26,16 @@ public static partial class Helpers
 {
     public static string NodePathJoin(string directory, string file)
     {
-        string normalizedDirectory = NormalizePathSegments(directory);
+        // Node joins the non-empty args with a separator, then normalizes the WHOLE result - so a
+        // rooted or ".."-bearing `file` is resolved against `directory`, never treated as a fresh root.
+        string combined = (directory, file) switch
+        {
+            ("", _) => file,
+            (_, "") => directory,
+            _ => directory + "/" + file
+        };
 
-        // "." (Node's most common directory default, and the collapsed form of "./", "a/..", etc.)
-        // disappears entirely when joined with something else.
-        return normalizedDirectory is "." or ""
-            ? NormalizePathSegments(file)
-            : $"{normalizedDirectory}{Path.DirectorySeparatorChar}{NormalizePathSegments(file)}";
+        return NormalizePathSegments(combined);
     }
 
     private static string NormalizePathSegments(string path)

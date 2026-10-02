@@ -41,6 +41,6 @@ public static partial class Helpers
         return keys;
     }
 
-    [GeneratedRegex(@"\boptional\b", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"\boptional\b", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
     private static partial Regex OptionalCommentRegex();
 }

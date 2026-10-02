@@ -70,4 +70,21 @@ public class ValidateEnvExampleTest : EnvironmentTestBase
 
         error.ShouldBeNull();
     }
+
+    /// <remarks>
+    /// Not from a JS test - JS's `\b` is ASCII-only (`/\boptional\b/i.test("optionalé")` is true),
+    /// while .NET's default `\b` is Unicode-aware; see trap #43.
+    /// </remarks>
+    [Fact]
+    public void OptionalCommentWordBoundaryIsAsciiOnly()
+    {
+        bool valid = ValidateExample(
+            new Dictionary<string, string[]> { ["KEY"] = [""] },
+            new Dictionary<string, string>(),
+            new Dictionary<string, string?[]> { ["KEY"] = ["optionalé"] },
+            out string[] missing);
+
+        valid.ShouldBeTrue();
+        missing.ShouldBeEmpty();
+    }
 }
