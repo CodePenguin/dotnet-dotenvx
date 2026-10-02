@@ -29,7 +29,7 @@ public class ScanAction : Command
 
     private int Execute(ParseResult parseResult)
     {
-        _logger.Debug($"options: {JsonSerializer.Serialize(new { })}");
+        _logger.Debug($"options: {JsonStringify(new { })}");
 
         (int versionExitCode, _) = GitleaksHelper.RunCommand("version");
         if (versionExitCode != 0)

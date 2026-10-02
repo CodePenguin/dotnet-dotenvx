@@ -21,6 +21,34 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
 
+    /// <remarks>
+    /// Not from a JS test - found 2026-10-02 auditing `ls`: System.Text.Json's default encoder printed
+    /// `&` as `\u0026` (and `<`, `>`, `+`, `'`, every non-ASCII character, DEL, U+2028 ...) where Node's
+    /// `JSON.stringify` prints them literally, so a URL value with `&` in `get` output differed byte-for-byte.
+    /// </remarks>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetJsonEscapesLikeJsonStringify(bool prettyPrint)
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        string content = string.Concat(
+            "URL='http://x?a=1&b=<2>+3\\'q'\n",
+            "UNI='héllo😀\u2028\u00A0\uFEFF'\n",
+            "CTRL='x", (char)1, (char)0x1f, (char)0x7f, "y'\n",
+            "TEXT='a\\u00e9\\b'\n");
+
+        string[] args = prettyPrint ? ["get", "--pretty-print"] : ["get"];
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => WriteFile(".env", content), null, args);
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
+
     [Fact]
     public async Task GetSingleKeyReturnsIdenticalValue()
     {

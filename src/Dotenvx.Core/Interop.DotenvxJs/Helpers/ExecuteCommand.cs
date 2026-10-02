@@ -64,7 +64,7 @@ public static partial class Helpers
         {
             logger.Debug("received SIGINT");
             logger.Debug("checking command process");
-            logger.Debug(JsonSerializer.Serialize(child));
+            logger.Debug(JsonStringify(child));
 
             if (child != null)
             {

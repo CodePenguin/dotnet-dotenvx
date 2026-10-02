@@ -87,29 +87,23 @@ public class LsAction : Command
         _logger.Debug($"directory: {directory}");
 
         var options = new { envFile, excludeEnvFile };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         Ls lsService = Ls.Factory(directory, envFile, excludeEnvFile);
         string[] filepaths = lsService.Run();
-        _logger.Debug($"filepaths: {JsonSerializer.Serialize(filepaths)}");
+        _logger.Debug($"filepaths: {JsonStringify(filepaths)}");
 
         if (json)
         {
             string cwd = Path.GetFullPath(directory);
             string[] absoluteFilepaths = filepaths.Select(filepath => Path.GetFullPath(Path.Combine(cwd, filepath)))
                 .ToArray();
-            // JsonSerializerOptions.WriteIndented defaults to Environment.NewLine ("\r\n" on
-            // Windows) for indentation breaks; Node's JSON.stringify always emits "\n" - explicit
-            // NewLine keeps this byte-for-byte with the reference CLI (see NodeParityTest).
-            Console.WriteLine(JsonSerializer.Serialize(absoluteFilepaths, new JsonSerializerOptions
-            {
-                WriteIndented = true, NewLine = "\n"
-            }));
+            Console.WriteLine(JsonStringify(absoluteFilepaths, true));
         }
         else
         {
             Dictionary<string, object> tree = ArrayToTree(filepaths);
-            _logger.Debug($"tree: {JsonSerializer.Serialize(tree)}");
+            _logger.Debug($"tree: {JsonStringify(tree)}");
 
             string treeified = Treeify(tree);
             _logger.Info(treeified);

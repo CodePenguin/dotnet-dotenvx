@@ -149,6 +149,12 @@ public partial class Parse(
         // Remove surrounding quotes
         value = CleanRegex().Replace(Trimmer(value), "$2");
 
+        // Unescape \' if single quoted (primitives' value pass)
+        if (quote == '\'')
+        {
+            value = value.Replace("\\'", "'");
+        }
+
         // Expand newlines if double quoted
         if (quote == '"')
         {

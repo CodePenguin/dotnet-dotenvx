@@ -40,7 +40,7 @@ public class PrecommitAction : Command
         bool install = parseResult.GetValue(_installOption);
 
         _logger.Debug($"directory: {directory}");
-        _logger.Debug($"options: {JsonSerializer.Serialize(new { install })}");
+        _logger.Debug($"options: {JsonStringify(new { install })}");
 
         try
         {

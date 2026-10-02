@@ -143,7 +143,7 @@ public class RunAction : Command
             convention,
             ignoreList
         };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         // Check for separator '--'
         bool hasSeparator = parseResult.Tokens.Any(x => x.Type == TokenType.DoubleDash);
@@ -277,7 +277,7 @@ public class RunAction : Command
                 Dictionary<string, string> debugParsed = redactEnabled
                     ? RedactOutputDict(parsedForDisplay, sensitiveValues)
                     : parsedForDisplay.ToDictionary();
-                _logger.Debug($"parsed: {JsonSerializer.Serialize(debugParsed)}");
+                _logger.Debug($"parsed: {JsonStringify(debugParsed)}");
 
                 // verbose/debug injected key/value
                 foreach (KeyValuePair<string, string> kvp in injectedForDisplay)

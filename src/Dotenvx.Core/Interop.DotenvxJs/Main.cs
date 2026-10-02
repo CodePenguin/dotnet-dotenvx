@@ -92,7 +92,7 @@ public static class Main
                 }
 
                 // debug parsed
-                logger?.Debug($"parsed: {JsonSerializer.Serialize(processedEnv.Parsed)}");
+                logger?.Debug($"parsed: {JsonStringify(processedEnv.Parsed)}");
 
                 foreach (KeyValuePair<string, string> entry in processedEnv.Injected)
                 {

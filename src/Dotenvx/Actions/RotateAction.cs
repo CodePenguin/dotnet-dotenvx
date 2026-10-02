@@ -98,7 +98,7 @@ public class RotateAction : Command
             key,
             stdout
         };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         // Build envs like in GetAction
         List<EnvItem> envItems = [];

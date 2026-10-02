@@ -18,10 +18,8 @@ public class KeyPairActionTest : EnvironmentTestBase
 {
     private const string PublicKey = "03eaf2142ab3d55bdf108962334e06696db798e7412cfc51d75e74b4f87f299bba";
     private const string PrivateKey = "ec9e80073d7ace817d35acb8b7293cbf8e5981b4d2f5708ee5be405122993cd1";
-    private readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
     private readonly StringWriter _consoleOutput = new() { NewLine = "\n" };
     private readonly TextWriter _originalOut = Console.Out;
-    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true, NewLine = "\n" };
 
     public KeyPairActionTest()
     {
@@ -59,7 +57,7 @@ public class KeyPairActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         string output = _consoleOutput.ToString();
         var data = new { DOTENV_PUBLIC_KEY = "<PublicKey>", DOTENV_PRIVATE_KEY = "<PrivateKey>" };
-        output.ShouldBe($"{JsonSerializer.Serialize(data, _compactJsonOptions)}\n");
+        output.ShouldBe($"{Helpers.JsonStringify(data)}\n");
     }
 
     /// <remarks>Refer to "keypair KEY"</remarks>
@@ -196,7 +194,7 @@ public class KeyPairActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         string output = _consoleOutput.ToString();
         var data = new { DOTENV_PUBLIC_KEY = PublicKey, DOTENV_PRIVATE_KEY = PrivateKey };
-        output.ShouldBe($"{JsonSerializer.Serialize(data, _prettyPrintJsonOptions)}\n");
+        output.ShouldBe($"{Helpers.JsonStringify(data, true)}\n");
     }
 
     /// <remarks>Refer to "keypair KEY (not found)"</remarks>
@@ -268,6 +266,6 @@ public class KeyPairActionTest : EnvironmentTestBase
             DOTENV_PUBLIC_KEY_PRODUCTION = PublicKey,
             DOTENV_PRIVATE_KEY_PRODUCTION = PrivateKey
         };
-        output.ShouldBe($"{JsonSerializer.Serialize(data, _compactJsonOptions)}\n");
+        output.ShouldBe($"{Helpers.JsonStringify(data)}\n");
     }
 }

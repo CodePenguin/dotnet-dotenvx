@@ -92,7 +92,7 @@ public class EncryptAction : Command
             stdout,
             noCreate
         };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         List<EnvItem> envItems = [];
         envItems.AddRange(

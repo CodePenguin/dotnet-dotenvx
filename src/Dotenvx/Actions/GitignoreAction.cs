@@ -6,6 +6,8 @@ using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
 
+using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+
 using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
@@ -43,7 +45,7 @@ public class GitignoreAction : Command
         string[]? rawPatterns = parseResult.GetValue(_patternOption);
         string[] patterns = rawPatterns is { Length: > 0 } ? rawPatterns : [".env*"];
 
-        _logger.Debug($"options: {JsonSerializer.Serialize(new { pattern = patterns })}");
+        _logger.Debug($"options: {JsonStringify(new { pattern = patterns })}");
 
         Gitignore gitignoreService = Gitignore.Factory(patterns);
         GitignoreGenericResult[] results = gitignoreService.Run();

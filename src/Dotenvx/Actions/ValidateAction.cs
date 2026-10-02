@@ -102,7 +102,7 @@ public class ValidateAction : Command
         ignoreList = normalizedOptions.Ignore?.ToArray() ?? [];
 
         _logger.Debug(
-            $"options: {JsonSerializer.Serialize(new { envs, envFile, envKeysFile, overload, convention, ignoreList })}");
+            $"options: {JsonStringify(new { envs, envFile, envKeysFile, overload, convention, ignoreList })}");
 
         // Isolated copy, never mutating the real process environment - matches validate.js's own
         // `const validateEnv = { ...process.env }`.

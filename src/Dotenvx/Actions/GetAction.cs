@@ -22,8 +22,6 @@ public class GetAction : Command
     private readonly Option<bool> _allOption =
         new("--all", "-a") { Description = "include all machine envs as well" };
 
-    private readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
-
     private readonly Option<string> _conventionOption =
         new("--convention")
         {
@@ -99,11 +97,6 @@ public class GetAction : Command
             Description =
                 "override existing env variables (by default, existing env vars take precedence over .env files)"
         };
-
-    // NewLine = "\n" matches Node's JSON.stringify (always "\n"); WriteIndented alone defaults to
-    // Environment.NewLine ("\r\n" on Windows) - see NodeParityTest's ls --json bug for the sibling
-    // case this pattern was found from.
-    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true, NewLine = "\n" };
 
     // dotenvx.js registers `--pp` as a SEPARATE commander option (`.option('--pp', 'pretty print
     // output (alias)')`) alongside `-pp, --pretty-print` - the same shape already correctly ported
@@ -195,7 +188,7 @@ public class GetAction : Command
             format,
             prettyPrint
         };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         List<EnvItem> explicitEnvItems =
             EnvItemOrdering.BuildExplicitEnvItemsInOrder(parseResult, _envOption, _envFileOption);
@@ -271,9 +264,7 @@ public class GetAction : Command
                         }
                     default:
                         {
-                            JsonSerializerOptions jsonOptions =
-                                prettyPrint ? _prettyPrintJsonOptions : _compactJsonOptions;
-                            Console.WriteLine(JsonSerializer.Serialize(parsed, jsonOptions));
+                            Console.WriteLine(JsonStringify(parsed, prettyPrint));
                             break;
                         }
                 }

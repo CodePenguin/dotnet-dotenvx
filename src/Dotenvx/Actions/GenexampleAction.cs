@@ -53,7 +53,7 @@ public class GenexampleAction : Command
         // `{"envFile":[".env"]}` - matched here even though every other code path treats both shapes
         // identically (a 1-element array and its scalar behave the same everywhere else).
         object debugEnvFile = envFile ?? (object)".env";
-        _logger.Debug($"options: {JsonSerializer.Serialize(new { envFile = debugEnvFile })}");
+        _logger.Debug($"options: {JsonStringify(new { envFile = debugEnvFile })}");
 
         try
         {

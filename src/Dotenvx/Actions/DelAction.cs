@@ -43,7 +43,7 @@ public class DelAction : Command
         _logger.Debug($"key: {key}");
 
         var options = new { envFile };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         try
         {

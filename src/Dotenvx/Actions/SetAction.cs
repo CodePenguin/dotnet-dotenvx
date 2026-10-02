@@ -93,7 +93,7 @@ public class SetAction : Command
         _logger.Debug($"value: {value}");
 
         var options = new { envFile, envKeysFile, encrypt, plain };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         // `-c`/`--encrypt` has no real "off" state upstream (commander registers it as a bare
         // boolean flag defaulting to true, with no --no-encrypt negation) - `--plain` is the only

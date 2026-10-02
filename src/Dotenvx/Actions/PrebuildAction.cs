@@ -35,7 +35,7 @@ public class PrebuildAction : Command
         string directory = parseResult.GetValue(_directoryArgument) ?? ".";
 
         _logger.Debug($"directory: {directory}");
-        _logger.Debug($"options: {JsonSerializer.Serialize(new { })}");
+        _logger.Debug($"options: {JsonStringify(new { })}");
 
         try
         {

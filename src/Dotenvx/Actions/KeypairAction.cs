@@ -10,6 +10,8 @@ using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 
 using DotenvxJsHelpers = Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+
 using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
@@ -30,8 +32,6 @@ namespace Dotenvx.Actions;
 /// </remarks>
 public class KeyPairAction : Command
 {
-    private readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
-
     private readonly Option<string[]?> _envFileOption =
         new("--file", "--env-file", "-f") { Description = "path(s) to your env file(s)", HelpName = "paths..." };
 
@@ -52,10 +52,6 @@ public class KeyPairAction : Command
         new("key") { Arity = ArgumentArity.ZeroOrOne, Description = "environment variable key name", HelpName = "KEY" };
 
     private readonly IDotenvxLogger _logger;
-
-    // NewLine = "\n" matches Node's JSON.stringify (always "\n"); WriteIndented alone defaults to
-    // Environment.NewLine ("\r\n" on Windows).
-    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true, NewLine = "\n" };
 
     private readonly Option<bool> _prettyPrintOption =
         new("--pretty-print", "-pp", "--pp") { Description = "pretty print output" };
@@ -87,7 +83,7 @@ public class KeyPairAction : Command
         }
 
         var options = new { envFile, envKeysFile, format, prettyPrint };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         try
         {
@@ -153,9 +149,7 @@ public class KeyPairAction : Command
                 }
                 else
                 {
-                    JsonSerializerOptions jsonOptions =
-                        prettyPrint ? _prettyPrintJsonOptions : _compactJsonOptions;
-                    Console.WriteLine(JsonSerializer.Serialize(results, jsonOptions));
+                    Console.WriteLine(JsonStringify(results, prettyPrint));
                 }
             }
 

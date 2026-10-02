@@ -93,7 +93,7 @@ public class DecryptAction : Command
             keys,
             stdout
         };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         List<EnvItem> envItems = [];
         envItems.AddRange(

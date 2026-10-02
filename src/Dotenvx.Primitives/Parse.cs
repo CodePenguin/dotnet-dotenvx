@@ -38,6 +38,12 @@ public static partial class Primitives
             // Remove surrounding quotes
             value = SurroundingQuotesRegex().Replace(value, "$2");
 
+            // Unescape \' if single quoted (primitives' value pass; plain dotenv leaves it alone)
+            if (maybeQuote == '\'')
+            {
+                value = value.Replace("\\'", "'");
+            }
+
             // Expand newlines if double quoted
             if (maybeQuote == '"' && !skipExpandForDoubleQuotes)
             {
