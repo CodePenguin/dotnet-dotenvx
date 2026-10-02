@@ -40,7 +40,7 @@ public static partial class Helpers
                     new EnvItem { Type = EnvType.EnvFile, Value = ".env.defaults" }
                 ];
             default:
-                throw new Exception($"INVALID_CONVENTION: '{convention}'. permitted conventions: ['nextjs', 'flow']");
+                throw new InvalidConventionException(convention);
         }
     }
 }

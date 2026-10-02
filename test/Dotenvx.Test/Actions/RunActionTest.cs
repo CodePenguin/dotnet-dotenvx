@@ -876,7 +876,7 @@ public class RunActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(1);
         MockLogger.ErrorMessages.ShouldContain(
-            "INVALID_CONVENTION: 'invalid'. permitted conventions: ['nextjs', 'flow']");
+            "[INVALID_CONVENTION] invalid convention (invalid). fix: [https://github.com/dotenvx/dotenvx/issues/761]");
     }
 
     /// <remarks>

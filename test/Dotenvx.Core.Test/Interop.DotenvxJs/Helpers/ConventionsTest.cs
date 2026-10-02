@@ -54,13 +54,21 @@ public class ConventionsTest : IDisposable
         });
     }
 
-    /// <remarks>Refer to "#conventions (invalid)"</remarks>
+    /// <remarks>
+    /// Refer to "#conventions (invalid)". Rewritten 2026-10-02 - the old assertion locked in a
+    /// fabricated message/exception type (a plain `Exception` with invented text) instead of the
+    /// real `InvalidConventionException`/errors.js-shaped message, found via an unrelated
+    /// investigation into this port's error-code coverage.
+    /// </remarks>
     [Fact]
     public void TestConventionsInvalidThrowsException()
     {
-        Exception exception = Should.Throw<Exception>(() => Conventions("invalid"));
+        InvalidConventionException exception =
+            Should.Throw<InvalidConventionException>(() => Conventions("invalid"));
 
-        exception.Message.ShouldBe("INVALID_CONVENTION: 'invalid'. permitted conventions: ['nextjs', 'flow']");
+        exception.Message.ShouldBe("[INVALID_CONVENTION] invalid convention (invalid)");
+        exception.Code.ShouldBe("INVALID_CONVENTION");
+        exception.Help.ShouldBe("fix: [https://github.com/dotenvx/dotenvx/issues/761]");
     }
 
     /// <remarks>Refer to "#conventions (process.env.NODE_ENV is test)"</remarks>

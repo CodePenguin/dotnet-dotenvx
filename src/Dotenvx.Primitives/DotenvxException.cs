@@ -25,6 +25,11 @@ public class DotenvxException(string code, string message, string? help = null) 
     public string MessageWithHelp => string.IsNullOrEmpty(Help) ? Message : $"{Message}. {Help}";
 }
 
+public class InvalidConventionException(string convention) : DotenvxException(
+    "INVALID_CONVENTION",
+    $"[INVALID_CONVENTION] invalid convention ({convention})",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/761]");
+
 public class CommandSubstitutionFailed(string key, string command, string message) : DotenvxException(
     "COMMAND_SUBSTITUTION_FAILED",
     $"[COMMAND_SUBSTITUTION_FAILED] could not eval {key} containing command '{command}': {message}",
