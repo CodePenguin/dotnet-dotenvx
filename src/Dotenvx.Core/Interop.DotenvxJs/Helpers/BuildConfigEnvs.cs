@@ -15,6 +15,11 @@ public static partial class Helpers
 {
     public static EnvItem[] BuildConfigEnvs(ConfigOptions options)
     {
+        if (options.Envs != null)
+        {
+            return options.Envs;
+        }
+
         ConfigOptions pathOptions = new()
         {
             Logger = options.Logger,

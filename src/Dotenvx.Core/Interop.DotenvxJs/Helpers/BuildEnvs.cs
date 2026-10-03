@@ -7,6 +7,11 @@ public static partial class Helpers
 {
     internal static EnvItem[] BuildEnvs(ConfigOptions options)
     {
+        if (options.Envs != null)
+        {
+            return options.Envs;
+        }
+
         string[] optionPaths = DotenvOptionPaths(options);
         List<EnvItem> envs = [];
 

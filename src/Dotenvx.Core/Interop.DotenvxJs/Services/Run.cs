@@ -27,6 +27,9 @@ public class Run
     private readonly IDictionary<string, string> _beforeEnv;
     private readonly string? _envKeysFilePath;
     private readonly EnvItem[] _envs;
+
+    // main.js config() only runs `determine` when no explicit `envs` option was given; every other caller determines
+    public bool DetermineOnExecute { get; set; } = true;
     private readonly bool _opsOn;
     private readonly bool _overload;
 
@@ -52,7 +55,7 @@ public class Run
         _useSystemEnv = processEnv == null;
         _processEnv = processEnv ?? EnvironmentHelper.GetEnvironmentVariablesAsDictionary();
         _beforeEnv = new Dictionary<string, string>(_processEnv);
-        _envs = DetermineEnvs(envs ?? [], _processEnv);
+        _envs = envs ?? [];
         _opsOn = opsOn;
         _overload = overload;
         _envKeysFilePath = envKeysFilePath;
@@ -68,7 +71,8 @@ public class Run
 
     public virtual RunResult Execute()
     {
-        foreach (EnvItem env in _envs)
+        EnvItem[] envs = DetermineOnExecute ? DetermineEnvs(_envs, _processEnv) : _envs;
+        foreach (EnvItem env in envs)
         {
             switch (env.Type)
             {

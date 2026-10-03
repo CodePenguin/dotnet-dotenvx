@@ -47,7 +47,9 @@ public static class Main
         {
             EnvItem[] envs = NormalizeDotenvConfigPath(BuildConfigEnvs(options));
 
-            RunResult runResult = Run.Factory(envs, options.Overload ?? false, processEnv, envKeysFile).Execute();
+            Run run = Run.Factory(envs, options.Overload ?? false, processEnv, envKeysFile);
+            run.DetermineOnExecute = options.Envs == null;
+            RunResult runResult = run.Execute();
 
             if (options.Mask != null)
             {
@@ -71,7 +73,7 @@ public static class Main
                     string errorCode = error is DotenvxException dotenvxError ? dotenvxError.Code : "GENERIC_ERROR";
 
                     // Check if the error code is in the ignore list
-                    bool isIgnored = ignore.Any(ignoreCode => errorCode.Contains(ignoreCode));
+                    bool isIgnored = ignore.Contains(errorCode); // exact code match, like `ignore.includes(error.code)`
                     if (isIgnored)
                     {
                         logger?.Verbose($"ignored: {error.Message}");

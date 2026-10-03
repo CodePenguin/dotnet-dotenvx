@@ -4,6 +4,7 @@ using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Shouldly;
 
@@ -22,7 +23,7 @@ public class MainTest : EnvironmentTestBase
         Fsx.WriteFileX = (_, _) => { };
     }
 
-    /// <remarks>Refer to "config calls Run.run"</remarks>
+    /// <remarks>Refer to "config calls envs resolver"</remarks>
     [Fact]
     public void TestConfigCallsRunRun()
     {
@@ -45,7 +46,7 @@ public class MainTest : EnvironmentTestBase
         result.Error.ShouldBeNull();
     }
 
-    /// <remarks>Refer to "config with convention - calls Run.run with proper envs"</remarks>
+    /// <remarks>Refer to "config with convention - calls envs resolver with proper envs"</remarks>
     [Fact]
     public void TestConfigWithConventionCallsRunRunWithProperEnvs()
     {
@@ -68,7 +69,7 @@ public class MainTest : EnvironmentTestBase
         result.Error.ShouldBeNull();
     }
 
-    /// <remarks>Refer to "config with convention flow - calls Run.run with proper envs"</remarks>
+    /// <remarks>Refer to "config with convention flow - calls envs resolver with proper envs"</remarks>
     [Fact]
     public void TestConfigWithConventionFlowCallsRunRunWithProperEnvs()
     {
@@ -91,7 +92,7 @@ public class MainTest : EnvironmentTestBase
         result.Error.ShouldBeNull();
     }
 
-    /// <remarks>Refer to "config with Run.run errors"</remarks>
+    /// <remarks>Refer to "config with envs resolver errors"</remarks>
     [Fact]
     public void TestConfigWithRunRunErrors()
     {
@@ -116,7 +117,7 @@ public class MainTest : EnvironmentTestBase
         result.ShouldNotBeNull();
     }
 
-    /// <remarks>Refer to "config with Run.run errors and ignore"</remarks>
+    /// <remarks>Refer to "config with envs resolver errors and ignore"</remarks>
     [Fact]
     public void TestConfigWithRunRunErrorsAndIgnore()
     {
@@ -141,7 +142,7 @@ public class MainTest : EnvironmentTestBase
         result.ShouldNotBeNull();
     }
 
-    /// <remarks>Refer to "parse calls Parse.run"</remarks>
+    /// <remarks>Refer to "parse parses plaintext"</remarks>
     [Fact]
     public void TestParseCallsParseRun()
     {
@@ -150,7 +151,7 @@ public class MainTest : EnvironmentTestBase
         parsed["HELLO"].ShouldBe("World");
     }
 
-    /// <remarks>Refer to "parse calls Parse.run with options.processEnv"</remarks>
+    /// <remarks>Refer to "parse parses plaintext with options.processEnv"</remarks>
     [Fact]
     public void TestParseCallsParseRunWithOptionsProcessEnv()
     {
@@ -160,7 +161,7 @@ public class MainTest : EnvironmentTestBase
         parsed["HELLO"].ShouldBe("World");
     }
 
-    /// <remarks>Refer to "parse calls Parse.run with options.privateKey"</remarks>
+    /// <remarks>Refer to "parse decrypts with options.privateKey"</remarks>
     [Fact]
     public void TestParseCallsParseRunWithOptionsPrivateKey()
     {
@@ -171,7 +172,7 @@ public class MainTest : EnvironmentTestBase
         parsed["HELLO"].ShouldBe("World");
     }
 
-    /// <remarks>Refer to "parse calls Parse.run with invalid options.privateKey"</remarks>
+    /// <remarks>Refer to "parse logs invalid options.privateKey"</remarks>
     [Fact]
     public void TestParseCallsParseRunWithInvalidOptionsPrivateKey()
     {
@@ -276,7 +277,7 @@ public class MainTest : EnvironmentTestBase
         result.Error.Message.ShouldContain("MISSING_ENV_FILE");
     }
 
-    /// <remarks>Refer to "config monorepo/apps/backend/.env AND attempt on directory frontend"</remarks>
+    /// <remarks>Refer to "config monorepo/apps/backend/.env AND directory frontend"</remarks>
     [Fact]
     public void TestConfigMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontend()
     {
@@ -314,7 +315,7 @@ public class MainTest : EnvironmentTestBase
         result.Error.ShouldBeNull();
     }
 
-    /// <remarks>Refer to "config monorepo/apps/backend/.env AND attempt on directory frontend --strict but error ALSO ignored"</remarks>
+    /// <remarks>Refer to "config monorepo/apps/backend/.env AND frontend/missing --strict but error ALSO ignored"</remarks>
     [Fact]
     public void TestConfigMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontendStrictButErrorAlsoIgnored()
     {
@@ -334,7 +335,7 @@ public class MainTest : EnvironmentTestBase
         ConfigOptions options = new()
         {
             ProcessEnv = processEnv,
-            Path = [BackendEnvFile, FrontendPath],
+            Path = [BackendEnvFile, "tests/monorepo/apps/frontend/missing"],
             Strict = true,
             Ignore = ["MISSING_ENV_FILE"]
         };
@@ -345,7 +346,7 @@ public class MainTest : EnvironmentTestBase
         result.ShouldNotBeNull();
     }
 
-    /// <remarks>Refer to "config with Run.run processedEnv with undefined processedEnv.errors"</remarks>
+    /// <remarks>Refer to "config with envs resolver processedEnv with undefined processedEnv.errors"</remarks>
     [Fact]
     public void TestConfigWithRunRunProcessedEnvWithUndefinedProcessedEnvErrors()
     {
@@ -368,7 +369,7 @@ public class MainTest : EnvironmentTestBase
         result.Error.ShouldBeNull();
     }
 
-    /// <remarks>Refer to "ls calls Ls.run"</remarks>
+    /// <remarks>Refer to "ls finds env files"</remarks>
     [Fact]
     public void TestLsCallsLsRun()
     {
@@ -951,5 +952,209 @@ public class MainTest : EnvironmentTestBase
 
         mockGet.Received(1).Run();
         MockLogger.ErrorMessages.ShouldBeEmpty();
+    }
+
+    private static Run StubRun(params RunProcessedEnv[] processedEnvs)
+    {
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs = processedEnvs,
+            ReadableStrings = [],
+            ReadableFilePaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+        return mockRun;
+    }
+
+    /// <remarks>Refer to "config with envs ignores path and convention"</remarks>
+    [Fact]
+    public void TestConfigWithEnvsIgnoresPathAndConvention()
+    {
+        EnvItem[] envs = [new() { Type = EnvType.Env, Value = "HELLO=envs" }];
+        Run mockRun = StubRun();
+        EnvItem[]? received = null;
+        Run.Factory = (e, _, _, _) =>
+        {
+            received = e;
+            return mockRun;
+        };
+
+        Main.Config(new ConfigOptions { Path = ["tests/.env"], Convention = "nextjs", Envs = envs });
+
+        mockRun.Received(1).Execute();
+        received.ShouldBe(envs);
+        mockRun.DetermineOnExecute.ShouldBeFalse(); // explicit envs are used as-is, no default .env is added
+    }
+
+    /// <remarks>Refer to "config with envs resolver WRONG_PRIVATE_KEY errors"</remarks>
+    [Fact]
+    public void TestConfigWithEnvsResolverWrongPrivateKeyErrors()
+    {
+        StubRun(new RunProcessedEnv
+        {
+            Errors = [new WrongPrivateKeyException("HELLO", "DOTENV_PRIVATE_KEY", "199bdd6" + new string('0', 57))]
+        });
+
+        Main.Config(new ConfigOptions { Logger = MockLogger });
+
+        MockLogger.ErrorMessages.ShouldContain(
+            "[WRONG_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=199bdd6…'. fix: [https://github.com/dotenvx/dotenvx/issues/466]");
+        MockLogger.ErrorMessages.ShouldNotContain("[WRONG_PRIVATE_KEY] https://github.com/dotenvx/dotenvx/issues/466");
+    }
+
+    /// <remarks>Refer to "config with envs resolver MISSING_PRIVATE_KEY errors"</remarks>
+    [Fact]
+    public void TestConfigWithEnvsResolverMissingPrivateKeyErrors()
+    {
+        StubRun(new RunProcessedEnv
+        {
+            Errors = [new MissingPrivateKeyException("HELLO", "DOTENV_PRIVATE_KEY", "")]
+        });
+
+        Main.Config(new ConfigOptions { Logger = MockLogger });
+
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY='. fix: [https://github.com/dotenvx/dotenvx/issues/464]");
+        MockLogger.ErrorMessages.ShouldNotContain("[MISSING_PRIVATE_KEY] https://github.com/dotenvx/dotenvx/issues/464");
+    }
+
+    /// <remarks>Refer to "config with envs resolver punctuated private-key errors"</remarks>
+    [Fact]
+    public void TestConfigWithEnvsResolverPunctuatedPrivateKeyErrors()
+    {
+        StubRun(new RunProcessedEnv
+        {
+            Errors =
+            [
+                new CustomException("[WRONG_PRIVATE_KEY] punctuated", code: "WRONG_PRIVATE_KEY"),
+                new CustomException("[MISSING_PRIVATE_KEY] punctuated", code: "MISSING_PRIVATE_KEY")
+            ]
+        });
+
+        Main.Config(new ConfigOptions { Logger = MockLogger });
+
+        MockLogger.ErrorMessages.ShouldContain(
+            "[WRONG_PRIVATE_KEY] punctuated. fix: [https://github.com/dotenvx/dotenvx/issues/466]");
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_PRIVATE_KEY] punctuated. fix: [https://github.com/dotenvx/dotenvx/issues/464]");
+    }
+
+    private ConfigResult ConfigThatThrows(Exception thrown)
+    {
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Throws(thrown);
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        return Main.Config(new ConfigOptions { Logger = MockLogger });
+    }
+
+    /// <remarks>Refer to "config catches thrown error and returns parsed/error"</remarks>
+    [Fact]
+    public void TestConfigCatchesThrownErrorAndReturnsParsedError()
+    {
+        CustomException thrown = new("boom");
+
+        ConfigResult result = ConfigThatThrows(thrown);
+
+        result.Parsed.ShouldBeEmpty();
+        result.Error.ShouldBeSameAs(thrown);
+        MockLogger.ErrorMessages.ShouldContain("boom");
+    }
+
+    /// <remarks>Refer to "config catches thrown WRONG_PRIVATE_KEY and returns parsed/error"</remarks>
+    [Fact]
+    public void TestConfigCatchesThrownWrongPrivateKeyAndReturnsParsedError()
+    {
+        CustomException thrown = new(
+            "[WRONG_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=199bdd6…'",
+            code: "WRONG_PRIVATE_KEY");
+
+        ConfigResult result = ConfigThatThrows(thrown);
+
+        result.Parsed.ShouldBeEmpty();
+        result.Error.ShouldBeSameAs(thrown);
+        MockLogger.ErrorMessages.ShouldContain(
+            "[WRONG_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=199bdd6…'. fix: [https://github.com/dotenvx/dotenvx/issues/466]");
+    }
+
+    /// <remarks>Refer to "config catches thrown MISSING_PRIVATE_KEY and returns parsed/error"</remarks>
+    [Fact]
+    public void TestConfigCatchesThrownMissingPrivateKeyAndReturnsParsedError()
+    {
+        CustomException thrown = new(
+            "[MISSING_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY='",
+            code: "MISSING_PRIVATE_KEY");
+
+        ConfigResult result = ConfigThatThrows(thrown);
+
+        result.Parsed.ShouldBeEmpty();
+        result.Error.ShouldBeSameAs(thrown);
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY='. fix: [https://github.com/dotenvx/dotenvx/issues/464]");
+    }
+
+    /// <remarks>Refer to "config catches thrown punctuated private-key errors"</remarks>
+    [Fact]
+    public void TestConfigCatchesThrownPunctuatedPrivateKeyErrors()
+    {
+        ConfigThatThrows(new CustomException("[WRONG_PRIVATE_KEY] punctuated", code: "WRONG_PRIVATE_KEY"));
+        ConfigThatThrows(new CustomException("[MISSING_PRIVATE_KEY] punctuated", code: "MISSING_PRIVATE_KEY"));
+
+        MockLogger.ErrorMessages.ShouldContain(
+            "[WRONG_PRIVATE_KEY] punctuated. fix: [https://github.com/dotenvx/dotenvx/issues/466]");
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_PRIVATE_KEY] punctuated. fix: [https://github.com/dotenvx/dotenvx/issues/464]");
+    }
+
+    private static (string Src, string PublicKey, string PrivateKey) EncryptedHello()
+    {
+        (string publicKey, string privateKey) = Primitives.Primitives.Keypair();
+        string src = $"DOTENV_PUBLIC_KEY=\"{publicKey}\"\nHELLO=\"{Primitives.Primitives.Encrypt("World", publicKey)}\"\n";
+        return (src, publicKey, privateKey);
+    }
+
+    /// <remarks>Refer to "parse logs WRONG_PRIVATE_KEY in one line"</remarks>
+    [Fact]
+    public void TestParseLogsWrongPrivateKeyInOneLine()
+    {
+        (string src, _, _) = EncryptedHello();
+        (_, string wrongPrivateKey) = Primitives.Primitives.Keypair();
+
+        Main.Parse(src, new ParseOptions { PrivateKey = wrongPrivateKey, ProcessEnv = new Dictionary<string, string>(), Logger = MockLogger });
+
+        MockLogger.ErrorMessages.ShouldHaveSingleItem().ShouldMatch(
+            @"^\[WRONG_PRIVATE_KEY\] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=[0-9a-f]{7}…'\. fix: \[https://github\.com/dotenvx/dotenvx/issues/466\]$");
+    }
+
+    /// <remarks>Refer to "parse logs MISSING_PRIVATE_KEY in one line"</remarks>
+    [Fact]
+    public void TestParseLogsMissingPrivateKeyInOneLine()
+    {
+        (string src, _, _) = EncryptedHello();
+
+        Main.Parse(src, new ParseOptions { ProcessEnv = new Dictionary<string, string>(), Logger = MockLogger });
+
+        MockLogger.ErrorMessages.ShouldHaveSingleItem().ShouldBe(
+            "[MISSING_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY='. fix: [https://github.com/dotenvx/dotenvx/issues/464]");
+    }
+
+    /// <remarks>Refer to "parse ignores configured error codes"</remarks>
+    [Fact]
+    public void TestParseIgnoresConfiguredErrorCodes()
+    {
+        (string src, _, _) = EncryptedHello();
+
+        Main.Parse(src,
+            new ParseOptions
+            {
+                ProcessEnv = new Dictionary<string, string>(), Ignore = ["MISSING_PRIVATE_KEY"], Logger = MockLogger
+            });
+
+        MockLogger.ErrorMessages.ShouldBeEmpty();
+        MockLogger.VerboseMessages.ShouldContain(m => m.StartsWith("ignored: [MISSING_PRIVATE_KEY]"));
     }
 }
