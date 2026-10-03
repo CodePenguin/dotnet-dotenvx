@@ -119,4 +119,63 @@ public class PrebuildTest : EnvironmentTestBase
 
         error.Message.ShouldContain("not encrypted/dockerignored");
     }
+
+    /// <remarks>Refer to "#run (dockerignore is ignoring .env.x file and shouldn't)"</remarks>
+    [Fact]
+    public void TestRunDockerignoreIgnoringEnvXWarns()
+    {
+        MockFilePaths(".env.x");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (_, _) => ".env*";
+
+        PrebuildResult result = new Prebuild().Run();
+
+        result.Warnings.ShouldHaveSingleItem();
+        result.Warnings[0].Message.ShouldBe(".env.x ignored (should not be)");
+    }
+
+    /// <remarks>Refer to "#run (dockerignore is ignoring .env.vault file and shouldn't)"</remarks>
+    [Fact]
+    public void TestRunDockerignoreIgnoringEnvVaultWarns()
+    {
+        MockFilePaths(".env.vault");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (_, _) => ".env*";
+
+        PrebuildResult result = new Prebuild().Run();
+
+        result.Warnings.ShouldHaveSingleItem();
+        result.Warnings[0].Message.ShouldBe(".env.vault ignored (should not be)");
+    }
+
+    /// <remarks>Refer to "#run (.env.vault is exempt and does not throw)"</remarks>
+    [Fact]
+    public void TestRunEnvVaultIsExemptAndDoesNotThrow()
+    {
+        MockFilePaths(".env.vault");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (path, _) => path == ".env.vault" ? "DOTENV_VAULT_PRODUCTION=\"ciphertext\"" : "";
+
+        PrebuildResult result = new Prebuild().Run();
+
+        result.SuccessMessage.ShouldBe("▣ encrypted/dockerignored (1)");
+        result.Warnings.ShouldBeEmpty();
+    }
+
+    /// <remarks>
+    /// Refer to "#run (dockerignore is not ignore .env.production file and should) AND isFileToBeCommitted raises an error (should default to true on the filename)".
+    /// Prebuild has no git check at all, so the upstream test's failing `execSync` stub is irrelevant here; the file
+    /// is simply unencrypted and not dockerignored.
+    /// </remarks>
+    [Fact]
+    public void TestRunUnencryptedNotIgnoredThrowsEvenWhenAGitCheckWouldFail()
+    {
+        MockFilePaths(".env.production");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (path, _) => path == ".env" ? ".env" : path == ".env.production" ? "ENV_VAR=value" : "";
+
+        CustomException error = Should.Throw<CustomException>(() => new Prebuild().Run());
+
+        error.Message.ShouldBe(".env.production not encrypted/dockerignored");
+    }
 }

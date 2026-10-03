@@ -227,4 +227,132 @@ public class PrecommitTest : EnvironmentTestBase
         result.SuccessMessage.ShouldStartWith("▣ dotenvx precommit exists");
         result.Warnings.ShouldBeEmpty();
     }
+
+    /// <remarks>Refer to "#run (gitignore is ignoring .env.x file and shouldn't)"</remarks>
+    [Fact]
+    public void TestRunGitignoreIgnoringEnvXWarns()
+    {
+        MockFilePaths(".env.x");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (_, _) => ".env*";
+        GitHelper.IsInsideGitWorkTree = () => false;
+
+        PrecommitResult result = new Precommit().Run();
+
+        result.Warnings.ShouldHaveSingleItem();
+        result.Warnings[0].Message.ShouldBe(".env.x ignored (should not be)");
+    }
+
+    /// <remarks>Refer to "#run (gitignore is ignoring .env.vault file and shouldn't)"</remarks>
+    [Fact]
+    public void TestRunGitignoreIgnoringEnvVaultWarns()
+    {
+        MockFilePaths(".env.vault");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (_, _) => ".env*";
+        GitHelper.IsInsideGitWorkTree = () => false;
+
+        PrecommitResult result = new Precommit().Run();
+
+        result.Warnings.ShouldHaveSingleItem();
+        result.Warnings[0].Message.ShouldBe(".env.vault ignored (should not be)");
+    }
+
+    /// <remarks>
+    /// Refer to "#run (gitignore is not ignore .env.production file and should) AND isFileToBeCommited raises an error (should default to true on the filename)":
+    /// inside a repo, but the staged-files query fails.
+    /// </remarks>
+    [Fact]
+    public void TestRunStagedFilesQueryFailureDefaultsToAlwaysCheck()
+    {
+        MockFilePaths(".env.production");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (path, _) => path == ".env" ? ".env" : path == ".env.production" ? "ENV_VAR=value" : "";
+        GitHelper.IsInsideGitWorkTree = () => true;
+        GitHelper.DiffNameOnlyNulSeparated = () => throw new Exception("Mock Error");
+
+        CustomException error = Should.Throw<CustomException>(() => new Precommit().Run());
+
+        error.Message.ShouldBe(".env.production not encrypted/gitignored");
+    }
+
+    /// <remarks>
+    /// Refer to "#run (gitignore is not ignore .env.production file and should) AND isInGitRepo raises an error (should default to true on the filename)":
+    /// the repo check itself fails.
+    /// </remarks>
+    [Fact]
+    public void TestRunRepoCheckFailureDefaultsToAlwaysCheck()
+    {
+        MockFilePaths(".env.production");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (path, _) => path == ".env" ? ".env" : path == ".env.production" ? "ENV_VAR=value" : "";
+        GitHelper.IsInsideGitWorkTree = () => throw new Exception("Mock Error");
+
+        CustomException error = Should.Throw<CustomException>(() => new Precommit().Run());
+
+        error.Message.ShouldBe(".env.production not encrypted/gitignored");
+    }
+
+    /// <remarks>Refer to "#run (.env.x in a subfolder is exempt and does not throw)"</remarks>
+    [Fact]
+    public void TestRunEnvXInASubfolderIsExempt()
+    {
+        string file = Path.Combine("app", ".env.x");
+        MockFilePaths(file);
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (path, _) => path == file ? "FOOBAR=\"baz\"" : "";
+        GitHelper.IsInsideGitWorkTree = () => false;
+
+        PrecommitResult result = new Precommit().Run();
+
+        result.SuccessMessage.ShouldBe("▣ encrypted/gitignored (1)");
+        result.Warnings.ShouldBeEmpty();
+    }
+
+    /// <remarks>Refer to "#run (.env.vault is exempt and does not throw)"</remarks>
+    [Fact]
+    public void TestRunEnvVaultIsExempt()
+    {
+        MockFilePaths(".env.vault");
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (path, _) => path == ".env.vault" ? "DOTENV_VAULT_PRODUCTION=\"ciphertext\"" : "";
+        GitHelper.IsInsideGitWorkTree = () => false;
+
+        PrecommitResult result = new Precommit().Run();
+
+        result.SuccessMessage.ShouldBe("▣ encrypted/gitignored (1)");
+        result.Warnings.ShouldBeEmpty();
+    }
+
+    /// <remarks>Refer to "#run (.env.vault in a subfolder is exempt and does not throw)"</remarks>
+    [Fact]
+    public void TestRunEnvVaultInASubfolderIsExempt()
+    {
+        string file = Path.Combine("app", ".env.vault");
+        MockFilePaths(file);
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (path, _) => path == file ? "DOTENV_VAULT_PRODUCTION=\"ciphertext\"" : "";
+        GitHelper.IsInsideGitWorkTree = () => false;
+
+        PrecommitResult result = new Precommit().Run();
+
+        result.SuccessMessage.ShouldBe("▣ encrypted/gitignored (1)");
+        result.Warnings.ShouldBeEmpty();
+    }
+
+    /// <remarks>Refer to "#run (gitignore is ignoring a subfolder .env.example file and shouldn't)"</remarks>
+    [Fact]
+    public void TestRunGitignoreIgnoringASubfolderEnvExampleWarns()
+    {
+        string file = Path.Combine("app", ".env.example");
+        MockFilePaths(file);
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (_, _) => ".env*";
+        GitHelper.IsInsideGitWorkTree = () => false;
+
+        PrecommitResult result = new Precommit().Run();
+
+        result.Warnings.ShouldHaveSingleItem();
+        result.Warnings[0].Message.ShouldBe($"{file} ignored (should not be)");
+    }
 }
