@@ -63,7 +63,7 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
         {
             string encoding = DetectEncoding(filePath);
             string envSrc = Fsx.ReadFileX(filePath, encoding);
-            Dictionary<string, object> envParsed = Parse(envSrc);
+            Dictionary<string, object> envParsed = ScanToDictionary(envSrc);
 
             string? privateKey = FindPrivateKey(envFilePath, envKeysFilePath);
             string privateKeyName = GuessPrivateKeyName(envFilePath);

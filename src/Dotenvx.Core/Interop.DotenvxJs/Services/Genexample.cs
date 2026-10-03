@@ -65,7 +65,7 @@ public class Genexample(string directory = ".", string[]? envFile = null)
             }
 
             string src = Fsx.ReadFileX(filepath);
-            Dictionary<string, object> parsed = Parse(src);
+            Dictionary<string, object> parsed = ScanToDictionary(src);
             foreach (string key in parsed.Keys)
             {
                 keys.Add(key);
@@ -86,7 +86,7 @@ public class Genexample(string directory = ".", string[]? envFile = null)
         else
         {
             exampleSrc = Fsx.ReadFileX(ExampleFilepath);
-            Dictionary<string, object> parsed = Parse(exampleSrc);
+            Dictionary<string, object> parsed = ScanToDictionary(exampleSrc);
             foreach (string key in keys)
             {
                 if (parsed.TryGetValue(key, out object? value))

@@ -60,7 +60,7 @@ public static partial class Helpers
         }
 
         string keysSrc = Fsx.ReadFileX(keysFilePath);
-        Dictionary<string, object> keysParsed = Parse(keysSrc);
+        Dictionary<string, object> keysParsed = ScanToDictionary(keysSrc);
 
         if (keysParsed.TryGetValue(privateKeyName, out object? value) && value is string s && !string.IsNullOrEmpty(s))
         {
@@ -78,7 +78,7 @@ public static partial class Helpers
         }
 
         string envSrc = Fsx.ReadFileX(envFilePath);
-        Dictionary<string, object> envParsed = Parse(envSrc);
+        Dictionary<string, object> envParsed = ScanToDictionary(envSrc);
 
         string? publicKeyName = null;
         foreach (string keyName in envParsed.Keys)

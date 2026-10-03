@@ -83,7 +83,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                 row.Changed = true;
             }
 
-            Dictionary<string, object> envParsed = Parse(envSrc);
+            Dictionary<string, object> envParsed = ScanToDictionary(envSrc);
 
             string? publicKey;
             string? privateKey = null;

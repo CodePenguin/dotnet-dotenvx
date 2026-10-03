@@ -53,7 +53,7 @@ GROUP='$1$2'";
         string newSrc = Upsert(Src, "DOESNOTEXIST", "ttt");
 
         newSrc.ShouldBe(expected);
-        Parse(newSrc, true, true)["DOESNOTEXIST"].ShouldBe("ttt");
+        ScanDictionary.Of(newSrc, true, true)["DOESNOTEXIST"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "appends when ending newline"</remarks>
@@ -67,7 +67,7 @@ GROUP='$1$2'";
         string newSrc = Upsert(srcWithNewline, "DOESNOTEXIST", "ttt");
 
         newSrc.ShouldBe(expected);
-        Parse(newSrc, true, true)["DOESNOTEXIST"].ShouldBe("ttt");
+        ScanDictionary.Of(newSrc, true, true)["DOESNOTEXIST"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#HELLO"</remarks>
@@ -79,7 +79,7 @@ GROUP='$1$2'";
         string newSrc = Upsert(Src, "HELLO", "ttt");
 
         newSrc.ShouldBe(expected);
-        Parse(newSrc, true, true)["HELLO"].ShouldBe("ttt");
+        ScanDictionary.Of(newSrc, true, true)["HELLO"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#SPACER"</remarks>
@@ -91,7 +91,7 @@ GROUP='$1$2'";
         string newSrc = Upsert(Src, "SPACER", "ttt");
 
         newSrc.ShouldBe(expected);
-        Parse(newSrc, true, true)["SPACER"].ShouldBe("ttt");
+        ScanDictionary.Of(newSrc, true, true)["SPACER"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#SPACEL"</remarks>
@@ -103,7 +103,7 @@ GROUP='$1$2'";
         string newSrc = Upsert(Src, "SPACEL", "ttt");
 
         newSrc.ShouldBe(expected);
-        Parse(newSrc, true, true)["SPACEL"].ShouldBe("ttt");
+        ScanDictionary.Of(newSrc, true, true)["SPACEL"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#SPACEB"</remarks>
@@ -115,7 +115,7 @@ GROUP='$1$2'";
         string newSrc = Upsert(Src, "SPACEB", "ttt");
 
         newSrc.ShouldBe(expected);
-        Parse(newSrc, true, true)["SPACEB"].ShouldBe("ttt");
+        ScanDictionary.Of(newSrc, true, true)["SPACEB"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#SINGLE"</remarks>
@@ -127,7 +127,7 @@ GROUP='$1$2'";
         string newSrc = Upsert(Src, "SINGLE", "ttt");
 
         newSrc.ShouldBe(expected);
-        Parse(newSrc, true, true)["SINGLE"].ShouldBe("ttt");
+        ScanDictionary.Of(newSrc, true, true)["SINGLE"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#DOUBLE"</remarks>
@@ -139,7 +139,7 @@ GROUP='$1$2'";
         string newSrc = Upsert(Src, "DOUBLE", "ttt");
 
         newSrc.ShouldBe(expected);
-        Parse(newSrc, true, true)["DOUBLE"].ShouldBe("ttt");
+        ScanDictionary.Of(newSrc, true, true)["DOUBLE"].ShouldBe("ttt");
     }
 
     /// <remarks>Refer to "#replace"</remarks>

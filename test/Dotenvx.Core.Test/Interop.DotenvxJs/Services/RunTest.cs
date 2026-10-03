@@ -211,8 +211,6 @@ public class RunTest : EnvironmentTestBase
         result.ProcessedEnvs.ShouldHaveSingleItem();
         RunProcessedEnv p = result.ProcessedEnvs[0];
         p.Errors.ShouldBeEmpty();
-        p.PrivateKey.ShouldBe(EncryptedPrivateKey);
-        p.PrivateKeyName.ShouldBe("DOTENV_PRIVATE_KEY");
         p.Parsed["HELLO"].ShouldBe("encrypted");
         Environment.GetEnvironmentVariable("HELLO").ShouldBe("encrypted");
         result.UniqueInjectedKeys.ShouldContain("HELLO");

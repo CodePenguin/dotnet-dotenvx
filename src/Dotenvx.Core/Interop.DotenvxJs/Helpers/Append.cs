@@ -12,7 +12,7 @@ public static partial class Helpers
         string output;
         string newPart = "";
 
-        Dictionary<string, object> parsed = Parse(src, true, true);
+        Dictionary<string, object> parsed = ScanToDictionary(src, true, true);
         Dictionary<string, string> quotes = GetQuotes(src);
         if (parsed.TryGetValue(key, out object? parsedValue))
         {

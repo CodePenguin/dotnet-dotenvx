@@ -1,12 +1,15 @@
 using Dotenvx.Interop.DotenvxJs;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Primitives;
 
 using Shouldly;
 
+using static Dotenvx.Primitives.Primitives;
+
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 
-/// <remarks>Reference source: dotenvx/tests/lib/helpers/parse.test.js</remarks>
+/// <remarks>Reference source: dotenvx/tests/lib/main.test.js (main.parse); engine is @dotenvx/primitives parseSync</remarks>
 public class ParseTest
 {
     private const string Src = @"#!/usr/bin/env bash
@@ -201,7 +204,8 @@ EXPAND_SELF=$EXPAND_SELF
     [Fact]
     public void TestEvalFailureIsSilentlyLeftUnresolvedWithNoError()
     {
-        ParseResult result = Parse.Factory("BAD=\"$(exit 1)\"", null, null, false, null).Execute();
+        PrimitivesParseOutput result = ParseSync("BAD=\"$(exit 1)\"",
+            new PrimitivesParseOptions { ProcessEnv = new Dictionary<string, string>(), Fk = [] });
 
         result.Errors.ShouldBeEmpty();
         result.Parsed["BAD"].ShouldBe("$(exit 1)");

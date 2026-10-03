@@ -108,7 +108,7 @@ public class Sets
                 envSrc = "";
             }
 
-            Dictionary<string, object> envParsed = Parse(envSrc);
+            Dictionary<string, object> envParsed = ScanToDictionary(envSrc);
             row.OriginalValue = (string?)envParsed.GetValueOrDefault(_key ?? "");
 
             // set.js: `const noEncrypt = !options.encrypt || isPlainKey(key)` - a key ending in

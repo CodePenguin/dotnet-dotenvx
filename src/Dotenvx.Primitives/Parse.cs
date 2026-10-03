@@ -83,26 +83,6 @@ public static partial class Primitives
         return entries;
     }
 
-    public static Dictionary<string, object> Parse(string src, bool skipExpandForDoubleQuotes = false,
-        bool skipConvertingWindowsNewlines = false, bool collectAllValues = false)
-    {
-        Dictionary<string, object> obj = new();
-        foreach (ScanEntry entry in Scan(src, !skipExpandForDoubleQuotes, !skipConvertingWindowsNewlines))
-        {
-            if (collectAllValues)
-            {
-                // handle scenario where user mistakenly includes plaintext duplicate in .env
-                obj.TryAdd(entry.Key, entry.Value);
-            }
-            else
-            {
-                obj[entry.Key] = entry.Value;
-            }
-        }
-
-        return obj;
-    }
-
     [GeneratedRegex(@"\r\n?")]
     private static partial Regex NormalizeNewLinesRegex();
 }

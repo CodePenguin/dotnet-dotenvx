@@ -123,8 +123,8 @@ public class RotateTest : EnvironmentTestBase
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         const string envKeysFile = "tests/monorepo/apps/encrypted/.env.keys";
 
-        Dictionary<string, object> originalParsed = Parse(Fsx.ReadFileX(envFile));
-        Dictionary<string, object> originalKeysParsed = Parse(Fsx.ReadFileX(envKeysFile));
+        Dictionary<string, object> originalParsed = ScanToDictionary(Fsx.ReadFileX(envFile));
+        Dictionary<string, object> originalKeysParsed = ScanToDictionary(Fsx.ReadFileX(envKeysFile));
 
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -137,13 +137,13 @@ public class RotateTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
 
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
 
-        Dictionary<string, object> parsedKeys = Parse(p.EnvKeysSrc);
+        Dictionary<string, object> parsedKeys = ScanToDictionary(p.EnvKeysSrc);
         parsedKeys.Keys.ShouldBe(["DOTENV_PRIVATE_KEY"]);
 
         (parsed["HELLO"] as string).ShouldNotBe(originalParsed["HELLO"] as string);
@@ -157,8 +157,8 @@ public class RotateTest : EnvironmentTestBase
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         const string envKeysFile = "tests/monorepo/apps/encrypted/.env.keys";
 
-        Dictionary<string, object> originalParsed = Parse(Fsx.ReadFileX(envFile));
-        Dictionary<string, object> originalKeysParsed = Parse(Fsx.ReadFileX(envKeysFile));
+        Dictionary<string, object> originalParsed = ScanToDictionary(Fsx.ReadFileX(envFile));
+        Dictionary<string, object> originalKeysParsed = ScanToDictionary(Fsx.ReadFileX(envKeysFile));
 
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -171,13 +171,13 @@ public class RotateTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
 
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
 
-        Dictionary<string, object> parsedKeys = Parse(p.EnvKeysSrc);
+        Dictionary<string, object> parsedKeys = ScanToDictionary(p.EnvKeysSrc);
         parsedKeys.Keys.ShouldBe(["DOTENV_PRIVATE_KEY"]);
 
         (parsed["HELLO"] as string).ShouldNotBe(originalParsed["HELLO"] as string);
@@ -191,8 +191,8 @@ public class RotateTest : EnvironmentTestBase
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         const string envKeysFile = "tests/monorepo/apps/encrypted/.env.keys";
 
-        Dictionary<string, object> originalParsed = Parse(Fsx.ReadFileX(envFile));
-        Dictionary<string, object> originalKeysParsed = Parse(Fsx.ReadFileX(envKeysFile));
+        Dictionary<string, object> originalParsed = ScanToDictionary(Fsx.ReadFileX(envFile));
+        Dictionary<string, object> originalKeysParsed = ScanToDictionary(Fsx.ReadFileX(envKeysFile));
 
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -205,13 +205,13 @@ public class RotateTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
 
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
 
-        Dictionary<string, object> parsedKeys = Parse(p.EnvKeysSrc);
+        Dictionary<string, object> parsedKeys = ScanToDictionary(p.EnvKeysSrc);
         parsedKeys.Keys.ShouldBe(["DOTENV_PRIVATE_KEY"]);
 
         (parsed["HELLO"] as string).ShouldNotBe(originalParsed["HELLO"] as string);
@@ -226,8 +226,8 @@ public class RotateTest : EnvironmentTestBase
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         const string envKeysFile = "tests/monorepo/apps/encrypted/.env.keys";
 
-        Dictionary<string, object> originalParsed = Parse(Fsx.ReadFileX(envFile));
-        Dictionary<string, object> originalKeysParsed = Parse(Fsx.ReadFileX(envKeysFile));
+        Dictionary<string, object> originalParsed = ScanToDictionary(Fsx.ReadFileX(envFile));
+        Dictionary<string, object> originalKeysParsed = ScanToDictionary(Fsx.ReadFileX(envKeysFile));
 
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -240,13 +240,13 @@ public class RotateTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
 
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
 
-        Dictionary<string, object> parsedKeys = Parse(p.EnvKeysSrc);
+        Dictionary<string, object> parsedKeys = ScanToDictionary(p.EnvKeysSrc);
         parsedKeys.Keys.ShouldBe(["DOTENV_PRIVATE_KEY"]);
 
         (parsed["HELLO"] as string).ShouldNotBe(originalParsed["HELLO"] as string);
@@ -261,8 +261,8 @@ public class RotateTest : EnvironmentTestBase
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         const string envKeysFile = "tests/monorepo/apps/encrypted/.env.keys";
 
-        Dictionary<string, object> originalParsed = Parse(Fsx.ReadFileX(envFile));
-        Dictionary<string, object> originalKeysParsed = Parse(Fsx.ReadFileX(envKeysFile));
+        Dictionary<string, object> originalParsed = ScanToDictionary(Fsx.ReadFileX(envFile));
+        Dictionary<string, object> originalKeysParsed = ScanToDictionary(Fsx.ReadFileX(envKeysFile));
 
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -275,13 +275,13 @@ public class RotateTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
 
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
 
-        Dictionary<string, object> parsedKeys = Parse(p.EnvKeysSrc);
+        Dictionary<string, object> parsedKeys = ScanToDictionary(p.EnvKeysSrc);
         parsedKeys.Keys.ShouldBe(["DOTENV_PRIVATE_KEY"]);
 
         (parsed["HELLO"] as string).ShouldBe(originalParsed["HELLO"] as string);
@@ -321,7 +321,7 @@ public class RotateTest : EnvironmentTestBase
         RotateProcessedEnv p = result.ProcessedEnvs[0];
         p.Keys.ShouldBe(["HELLO"]);
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         (parsed["HELLO"] as string).ShouldNotBe(encryptedHello);
         (parsed["FOO"] as string).ShouldBe(encryptedFoo);
     }
@@ -333,8 +333,8 @@ public class RotateTest : EnvironmentTestBase
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         const string envKeysFile = "tests/monorepo/apps/encrypted/.env.keys";
 
-        Dictionary<string, object> originalParsed = Parse(Fsx.ReadFileX(envFile));
-        Dictionary<string, object> originalKeysParsed = Parse(Fsx.ReadFileX(envKeysFile));
+        Dictionary<string, object> originalParsed = ScanToDictionary(Fsx.ReadFileX(envFile));
+        Dictionary<string, object> originalKeysParsed = ScanToDictionary(Fsx.ReadFileX(envKeysFile));
 
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -347,13 +347,13 @@ public class RotateTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
 
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
 
-        Dictionary<string, object> parsedKeys = Parse(p.EnvKeysSrc);
+        Dictionary<string, object> parsedKeys = ScanToDictionary(p.EnvKeysSrc);
         parsedKeys.Keys.ShouldBe(["DOTENV_PRIVATE_KEY"]);
 
         (parsed["HELLO"] as string).ShouldBe(originalParsed["HELLO"] as string);
@@ -368,8 +368,8 @@ public class RotateTest : EnvironmentTestBase
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         const string envKeysFile = "tests/monorepo/apps/encrypted/.env.keys";
 
-        Dictionary<string, object> originalParsed = Parse(Fsx.ReadFileX(envFile));
-        Dictionary<string, object> originalKeysParsed = Parse(Fsx.ReadFileX(envKeysFile));
+        Dictionary<string, object> originalParsed = ScanToDictionary(Fsx.ReadFileX(envFile));
+        Dictionary<string, object> originalKeysParsed = ScanToDictionary(Fsx.ReadFileX(envKeysFile));
 
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -382,13 +382,13 @@ public class RotateTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
 
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
 
-        Dictionary<string, object> parsedKeys = Parse(p.EnvKeysSrc);
+        Dictionary<string, object> parsedKeys = ScanToDictionary(p.EnvKeysSrc);
         parsedKeys.Keys.ShouldBe(["DOTENV_PRIVATE_KEY"]);
 
         (parsed["HELLO"] as string).ShouldBe(originalParsed["HELLO"] as string);
@@ -403,8 +403,8 @@ public class RotateTest : EnvironmentTestBase
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         const string envKeysFile = "tests/monorepo/apps/encrypted/.env.keys";
 
-        Dictionary<string, object> originalParsed = Parse(Fsx.ReadFileX(envFile));
-        Dictionary<string, object> originalKeysParsed = Parse(Fsx.ReadFileX(envKeysFile));
+        Dictionary<string, object> originalParsed = ScanToDictionary(Fsx.ReadFileX(envFile));
+        Dictionary<string, object> originalKeysParsed = ScanToDictionary(Fsx.ReadFileX(envKeysFile));
 
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -417,13 +417,13 @@ public class RotateTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
 
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
 
-        Dictionary<string, object> parsedKeys = Parse(p.EnvKeysSrc);
+        Dictionary<string, object> parsedKeys = ScanToDictionary(p.EnvKeysSrc);
         parsedKeys.Keys.ShouldBe(["DOTENV_PRIVATE_KEY"]);
 
         (parsed["HELLO"] as string).ShouldNotBe(originalParsed["HELLO"] as string);

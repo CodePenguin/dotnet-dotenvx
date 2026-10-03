@@ -5,8 +5,10 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Primitives;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs;
 
@@ -252,27 +254,69 @@ public static class Main
     {
         options ??= new ParseOptions();
         IDotenvxLogger? logger = options.Logger;
-        IDictionary<string, string> processEnv =
-            options.ProcessEnv?.ToDictionary() ??
-            Environment.GetEnvironmentVariables()
-                .Cast<DictionaryEntry>()
-                .ToDictionary(entry => (string)entry.Key, entry => (string?)entry.Value ?? string.Empty);
+        Dictionary<string, string> processEnv = options.ProcessEnv?.ToDictionary() ??
+                                                Environment.GetEnvironmentVariables()
+                                                    .Cast<DictionaryEntry>()
+                                                    .ToDictionary(entry => (string)entry.Key,
+                                                        entry => (string?)entry.Value ?? string.Empty);
 
         // private decryption key
-        string? privateKey = options.PrivateKey ?? null;
+        string? privateKey = string.IsNullOrEmpty(options.PrivateKey) ? null : options.PrivateKey;
 
         // overload
         bool overload = options.Overload ?? false;
 
-        ParseResult response = Helpers.Parse.Factory(src, privateKey, processEnv, overload, null).Execute();
+        // ignore
+        string[] ignore = options.Ignore ?? [];
+
+        if (privateKey != null)
+        {
+            processEnv["DOTENV_PRIVATE_KEY"] = privateKey;
+        }
+
+        // main.js: primitives' parseSync first (default keyring), then a manual per-key decryptKeyValue
+        // pass over whatever is still encrypted, which is why this function (unlike run/get/validate)
+        // surfaces the specific WRONG_PRIVATE_KEY/MISSING_PRIVATE_KEY codes.
+        Dictionary<string, string> parsed = new(ParseSync(src,
+            new PrimitivesParseOptions { ProcessEnv = processEnv, Overload = overload }).Parsed);
+        List<Exception> errors = [];
+
+        foreach (string key in parsed.Keys.ToList())
+        {
+            if (!Encrypted(parsed[key]))
+            {
+                continue;
+            }
+
+            if (privateKey == null)
+            {
+                errors.Add(new MissingPrivateKeyException(key, "DOTENV_PRIVATE_KEY", ""));
+                continue;
+            }
+
+            try
+            {
+                parsed[key] = DecryptKeyValue(key, parsed[key], "DOTENV_PRIVATE_KEY", privateKey);
+            }
+            catch (Exception error)
+            {
+                errors.Add(error);
+            }
+        }
 
         // display any errors
-        foreach (Exception error in response.Errors)
+        foreach (Exception error in errors)
         {
+            if (error is DotenvxException { Code: var code } && ignore.Contains(code))
+            {
+                logger?.Verbose($"ignored: {error.Message}");
+                continue; // ignore error
+            }
+
             logger?.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
         }
 
-        return response.Parsed;
+        return parsed;
     }
 
     public static SetsResult Set(string key, string value, SetsOptions? options = null)

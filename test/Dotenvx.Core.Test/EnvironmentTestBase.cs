@@ -61,7 +61,6 @@ public class EnvironmentTestBase : IDisposable
         Gitignore.ResetFactory();
         KeyPair.ResetFactory();
         Ls.ResetFactory();
-        Parse.ResetFactory();
         Prebuild.ResetFactory();
         Precommit.ResetFactory();
         Run.ResetFactory();

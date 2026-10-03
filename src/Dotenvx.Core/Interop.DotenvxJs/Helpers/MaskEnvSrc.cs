@@ -7,7 +7,7 @@ public static partial class Helpers
 {
     public static string MaskEnvSrc(string envSrc, object? showChar = null)
     {
-        Dictionary<string, object> parsed = Parse(envSrc, true, true);
+        Dictionary<string, object> parsed = ScanToDictionary(envSrc, true, true);
 
         foreach (KeyValuePair<string, object> pair in parsed)
         {

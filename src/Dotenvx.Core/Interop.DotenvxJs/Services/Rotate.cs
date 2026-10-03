@@ -120,7 +120,7 @@ public class Rotate(
 
             string encoding = DetectEncoding(row.FilePath);
             string envSrc = Fsx.ReadFileX(row.FilePath, encoding);
-            Dictionary<string, object> envParsedObj = Parse(envSrc);
+            Dictionary<string, object> envParsedObj = ScanToDictionary(envSrc);
             Dictionary<string, string> envParsed = envParsedObj.ToDictionary(kvp => kvp.Key, kvp => (string)kvp.Value);
 
             string publicKeyName = GuessPublicKeyName(envFilepath);

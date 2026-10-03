@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Primitives;
 
 using Shouldly;
 
@@ -134,12 +135,12 @@ public sealed class PrimitivesOracleParityTest(NodeParityFixture fixture) : Pari
             ParseCase c = cases[i];
             string label = $"src={JsonSerializer.Serialize(c.Src)} env={JsonSerializer.Serialize(c.Env)} overload={c.Overload}";
 
-            // scan <-> Primitives.Parse (last wins / first wins)
+            // scan <-> ScanToDictionary (last wins / first wins)
             JsonObject? scanParsed = node[i]!["scan"]!["parsed"]?.AsObject();
             if (scanParsed != null)
             {
-                Dictionary<string, object> last = PrimitivesApi.Parse(c.Src);
-                Dictionary<string, object> first = PrimitivesApi.Parse(c.Src, collectAllValues: true);
+                Dictionary<string, object> last = global::Dotenvx.Interop.DotenvxJs.Helpers.Helpers.ScanToDictionary(c.Src);
+                Dictionary<string, object> first = global::Dotenvx.Interop.DotenvxJs.Helpers.Helpers.ScanToDictionary(c.Src, collectAllValues: true);
                 JsonObject expLast = new();
                 JsonObject expFirst = new();
                 foreach ((string k, JsonNode? v) in scanParsed)
@@ -153,7 +154,7 @@ public sealed class PrimitivesOracleParityTest(NodeParityFixture fixture) : Pari
                 Compare(mismatches, $"scan-first {label}", expFirst, ToJson(first));
             }
 
-            // parseSync <-> Core Parse
+            // parseSync <-> Primitives.ParseSync
             JsonNode? np = node[i]!["parse"];
             if (np!["error"] != null)
             {
@@ -162,12 +163,13 @@ public sealed class PrimitivesOracleParityTest(NodeParityFixture fixture) : Pari
             }
 
             Dictionary<string, string> env = c.Env == null ? new() : new Dictionary<string, string>(c.Env);
-            ParseResult actual = new Parse(c.Src, null, env, c.Overload).Execute();
+            PrimitivesParseOutput actual = PrimitivesApi.ParseSync(c.Src,
+                new PrimitivesParseOptions { ProcessEnv = env, Overload = c.Overload, Fk = [] });
             JsonObject act = new()
             {
                 ["parsed"] = ToJson(actual.Parsed),
                 ["injected"] = ToJson(actual.Injected),
-                ["existed"] = ToJson(actual.PreExisted)
+                ["existed"] = ToJson(actual.Existed)
             };
             JsonObject exp = new()
             {
@@ -176,9 +178,9 @@ public sealed class PrimitivesOracleParityTest(NodeParityFixture fixture) : Pari
                 ["existed"] = np["existed"]!.DeepClone()
             };
             Compare(mismatches, $"parse {label}", exp, act);
-            if (actual.Errors.Length != np["errors"]!.GetValue<int>())
+            if (actual.Errors.Count != np["errors"]!.GetValue<int>())
             {
-                mismatches.Add($"parse errors {label}: C# {actual.Errors.Length} != Node {np["errors"]}");
+                mismatches.Add($"parse errors {label}: C# {actual.Errors.Count} != Node {np["errors"]}");
             }
         }
 

@@ -54,7 +54,7 @@ Flat `namespace Dotenvx.Primitives`, one `public static partial class Primitives
 
 Two deliberate shape differences: `Encrypt(value, publicKey)` has the opposite parameter order to JS `encrypt(publicKey, value)` (both are strings, so a silent swap is the risk); `Evaluate` keeps an explicit `key` parameter for error messages.
 
-What stays in Core: dotenvx's own code. `DecryptKeyValue` wraps `Primitives.Decrypt` and adds key names to errors; `SmartDotenvPublicKey`/`SmartDotenvPrivateKey` do key lookup; Core's `Helpers/Parse.cs` is dotenvx's own engine (single private key, per-key errors), a different layer from `Primitives.ParseSync` (keyring based).
+What stays in Core: dotenvx's own code. `DecryptKeyValue` wraps `Primitives.Decrypt` and adds key names to errors; `SmartDotenvPublicKey`/`SmartDotenvPrivateKey` do key lookup; `ScanToDictionary` is glue over `Primitives.Scan`. There is no second parse engine: `Run` (resolvers/envs.js) and `Main.Parse` (main.js) both call `Primitives.ParseSync`; `Main.Parse` then decrypts leftovers with `DecryptKeyValue` exactly as main.js does.
 
 C# constraints that shaped this: a `partial class` must live in one assembly, which is why Core call sites carry both `using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;` and `using static Dotenvx.Primitives.Primitives;`. Inside `namespace Dotenvx.*`, a reference starting `Dotenvx.Primitives...` resolves relative to the enclosing namespace; qualify with `global::`.
 

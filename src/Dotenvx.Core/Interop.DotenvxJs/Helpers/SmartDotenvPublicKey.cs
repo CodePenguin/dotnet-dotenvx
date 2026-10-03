@@ -32,7 +32,7 @@ public static partial class Helpers
         }
 
         string keysSrc = Fsx.ReadFileX(envFilePath);
-        Dictionary<string, object> keysParsed = Parse(keysSrc);
+        Dictionary<string, object> keysParsed = ScanToDictionary(keysSrc);
 
         if (keysParsed.TryGetValue(publicKeyName, out object? value) && value is string s && !string.IsNullOrEmpty(s))
         {

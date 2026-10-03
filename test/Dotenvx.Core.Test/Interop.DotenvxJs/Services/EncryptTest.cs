@@ -125,7 +125,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -146,7 +146,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "ALOHA"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -179,7 +179,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY_CRLF", "HELLO", "ALOHA"]);
         (parsed["DOTENV_PUBLIC_KEY_CRLF"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -227,7 +227,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldBe("one");
@@ -248,7 +248,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldBe("one");
@@ -270,7 +270,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -292,7 +292,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -315,7 +315,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -337,7 +337,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBeEmpty();
         result.UnchangedFilePaths.ShouldBe([envFile]);
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldBe("one");
@@ -360,7 +360,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY_EXPORT", "KEY"]);
         (parsed["DOTENV_PUBLIC_KEY_EXPORT"] as string).ShouldNotBeNullOrEmpty();
         (parsed["KEY"] as string).ShouldStartWith("encrypted:");
@@ -515,7 +515,7 @@ public class EncryptTest : EnvironmentTestBase
         EncryptProcessedEnv p = result.ProcessedEnvs[0];
         p.Keys.ShouldBe(["HELLO"]);
 
-        Dictionary<string, object> parsed = Parse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
         parsed["HELLO_PLAIN"].ShouldBe("NotSecret");
     }
