@@ -4,7 +4,7 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 
-/// <remarks>Reference source: dotenvx/src/lib/helpers/redact.js</remarks>
+/// <remarks>Reference source: dotenvx/tests/lib/helpers/redact.test.js</remarks>
 public class RedactTest
 {
     [Fact]
@@ -23,5 +23,14 @@ public class RedactTest
     public void NullStaysEmpty()
     {
         Redact(null).ShouldBe("");
+    }
+
+    /// <remarks>Refer to "redact replaces strings of any length"</remarks>
+    [Fact]
+    public void ReplacesStringsOfAnyLength()
+    {
+        Redact("a").ShouldBe("[REDACTED]");
+        Redact("super-secret-value").ShouldBe("[REDACTED]");
+        Redact("").ShouldBe("");
     }
 }

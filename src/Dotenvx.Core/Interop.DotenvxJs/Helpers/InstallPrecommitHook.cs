@@ -72,12 +72,12 @@ public class InstallPrecommitHook
         }
     }
 
-    private bool Exists()
+    internal bool Exists()
     {
         return Fsx.ExistsSync(HookPath);
     }
 
-    private string CurrentHook()
+    internal string CurrentHook()
     {
         return Fsx.ReadFileX(HookPath);
     }

@@ -37,7 +37,7 @@ public class KeyPairTest : EnvironmentTestBase
         result["DOTENV_PRIVATE_KEY"].ShouldBe(FixturePrivateKey());
     }
 
-    /// <remarks>Not from a JS test - an explicit keys file path overrides the default location.</remarks>
+    /// <remarks>Refer to "keypair forwards envKeysFilepath to primitive keyring". The upstream test stubs the keyring and asserts the `fk` option; here the real keyring reads the given file. The other three tests in that file (provider and noArmor handling) cover Armor providers, which are out of scope.</remarks>
     [Fact]
     public void TestRunUsesCustomEnvKeysFile()
     {

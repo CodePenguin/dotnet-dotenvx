@@ -6,7 +6,10 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 
-/// <remarks>Reference source: dotenvx/tests/lib/helpers/normalizeDotenvConfigPath.test.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/tests/lib/helpers/normalizeDotenvConfigPath.test.js. Refer to "#normalizeDotenvConfigPath": the
+/// single upstream test has several assertions; each becomes its own test below, named after the assertion message.
+/// </remarks>
 public class NormalizeDotenvConfigPathTest
 {
     /// <remarks>Refer to "uses DOTENV_F when no env file was specified"</remarks>

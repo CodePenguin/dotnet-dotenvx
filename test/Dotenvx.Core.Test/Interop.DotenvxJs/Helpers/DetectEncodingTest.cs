@@ -11,7 +11,7 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 /// <remarks>Reference source: dotenvx/tests/lib/helpers/detectEncoding.test.js</remarks>
 public class DetectEncodingTest : EnvironmentTestBase
 {
-    /// <remarks>Refer to "#detectEncoding utf8"</remarks>
+    /// <remarks>Refer to "#detectEncoding utf8" and "#detectEncodingSync utf8" (one function here, no async/sync split)</remarks>
     [Fact]
     public void TestDetectEncodingUtf8()
     {
@@ -23,7 +23,7 @@ public class DetectEncodingTest : EnvironmentTestBase
         encoding.ShouldBe("utf8");
     }
 
-    /// <remarks>Refer to "#detectEncoding utf16le"</remarks>
+    /// <remarks>Refer to "#detectEncoding utf16le" and "#detectEncodingSync utf16le"</remarks>
     [Fact]
     public void TestDetectEncodingUtf16Le()
     {
@@ -39,7 +39,7 @@ public class DetectEncodingTest : EnvironmentTestBase
         encoding.ShouldBe("utf16le");
     }
 
-    /// <remarks>Refer to "#detectEncoding fallback utf8 (latin1)"</remarks>
+    /// <remarks>Refer to "#detectEncoding fallback utf8 (latin1)" and "#detectEncodingSync fallback utf8 (latin1)"</remarks>
     [Fact]
     public void TestDetectEncodingFallbackUtf8Latin1()
     {

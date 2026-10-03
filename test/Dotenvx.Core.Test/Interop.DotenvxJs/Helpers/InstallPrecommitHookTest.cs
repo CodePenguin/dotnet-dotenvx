@@ -87,4 +87,26 @@ public class InstallPrecommitHookTest : EnvironmentTestBase
         error.MessageWithHelp.ShouldBe(
             "[PRECOMMIT_HOOK_MODIFY_FAILED] failed to modify pre-commit hook: Mock Error. fix: [try again or report error]");
     }
+
+    /// <remarks>Refer to "#_exists true/false"</remarks>
+    [Fact]
+    public void TestExistsTrueFalse()
+    {
+        InstallPrecommitHook installPrecommitHook = new();
+
+        Fsx.ExistsSync = _ => false;
+        installPrecommitHook.Exists().ShouldBeFalse();
+
+        Fsx.ExistsSync = _ => true;
+        installPrecommitHook.Exists().ShouldBeTrue();
+    }
+
+    /// <remarks>Refer to "#_currentHook"</remarks>
+    [Fact]
+    public void TestCurrentHook()
+    {
+        Fsx.ReadFileX = (_, _) => "some file";
+
+        new InstallPrecommitHook().CurrentHook().ShouldBe("some file");
+    }
 }

@@ -7,8 +7,8 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 
 /// <remarks>
-/// Reference source: dotenvx/src/lib/helpers/redactedValues.js. No dedicated upstream unit-test
-/// file exists for this helper - scenarios mirror the source's own filtering logic directly (skip
+/// Reference source: dotenvx/tests/lib/helpers/redactedValues.test.js (one upstream test; the others are extra
+/// scenarios mirroring the source filtering logic directly: skip
 /// `_PLAIN`-suffixed keys, skip null/empty values, dedupe).
 /// </remarks>
 public class RedactedValuesTest
@@ -63,5 +63,32 @@ public class RedactedValuesTest
         ];
 
         RedactedValues(processedEnvs).ShouldBe(["same"]);
+    }
+
+    /// <remarks>Refer to "redactedValues returns injected values except _PLAIN values"</remarks>
+    [Fact]
+    public void ReturnsInjectedValuesExceptPlainValues()
+    {
+        RunProcessedEnv[] processedEnvs =
+        [
+            new RunProcessedEnv
+            {
+                Injected = new Dictionary<string, string>
+                {
+                    ["SECRET"] = "super-secret", ["PUBLIC"] = "public-value", ["VISIBLE_PLAIN"] = "visible-value",
+                    ["EMPTY"] = ""
+                }
+            },
+            new RunProcessedEnv
+            {
+                Injected = new Dictionary<string, string> { ["INLINE"] = "inline-value" },
+                PreExisted = new Dictionary<string, string>
+                {
+                    ["EXISTING"] = "external-value", ["EXISTING_PLAIN"] = "external-visible-value"
+                }
+            }
+        ];
+
+        RedactedValues(processedEnvs).ShouldBe(["super-secret", "public-value", "inline-value", "external-value"]);
     }
 }

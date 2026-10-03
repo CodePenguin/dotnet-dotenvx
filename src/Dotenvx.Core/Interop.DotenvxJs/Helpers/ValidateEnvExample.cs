@@ -1,75 +1,33 @@
-using System.Text.RegularExpressions;
-
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Primitives;
+
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
-/// <remarks>Reference source: dotenvx/src/lib/helpers/validateEnvExample.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/lib/helpers/validateEnvExample.js: scans `.env.example` with primitives'
+/// `scan` (keys plus per-occurrence comments) and validates the env against it; a missing file is
+/// MISSING_ENV_EXAMPLE and failed validations are one VALIDATION_FAILED joined with "; ".
+/// </remarks>
 public static partial class Helpers
 {
-    public static DotenvxException? ValidateEnvExample(IReadOnlyDictionary<string, string> env, string filepath = ".env.example")
+    public static DotenvxException? ValidateEnvExample(IReadOnlyDictionary<string, string> env,
+        string filepath = ".env.example")
     {
         if (!Fsx.ExistsSync(filepath))
         {
             return new MissingEnvExampleException();
         }
 
-        string exampleSrc = Fsx.ReadFileX(filepath);
-        (Dictionary<string, string[]> example, Dictionary<string, string?[]> comments) = ScanKeysAndComments(exampleSrc);
+        ScanResult scanned = Scan(Fsx.ReadFileX(filepath), new ScanOptions());
+        ValidationResult validation = Validate(scanned.Parsed, env, scanned.Comments);
 
-        if (!ValidateExample(example, env, comments, out string[] missingRequired))
+        if (!validation.Valid)
         {
-            return new ValidationFailedException($"missing required ({string.Join(", ", missingRequired)})");
+            return new ValidationFailedException(string.Join("; ", validation.Errors.Select(e => e.Message)));
         }
 
         return null;
     }
-
-    /// <remarks>
-    /// A narrow, `.env.example`-specific stand-in for @dotenvx/primitives' `scan()` (no readable
-    /// source exists for that package - see CLAUDE.md's live-oracle note). Live-probed scan()'s
-    /// real output shape (`node -e "console.log(JSON.stringify(require('@dotenvx/primitives')
-    /// .scan(src)))"`, 2026-09-24): `parsed: {key: [values...]}` (every occurrence, not just the
-    /// last) and `comments: {key: [commentOrNull...]}` (parallel array, one entry per occurrence).
-    /// Only the KEY SET and per-key comments matter for validate.js's algorithm - .env.example's
-    /// own values are always blanked placeholders genexample.js writes, never consulted - so this
-    /// doesn't attempt a fully general multiline/escaped-quote scan() reimplementation, just enough
-    /// to extract keys and trailing `# comment` text per line, matching genexample.js's own
-    /// single-line-per-key output format.
-    /// </remarks>
-    private static (Dictionary<string, string[]>, Dictionary<string, string?[]>) ScanKeysAndComments(string src)
-    {
-        Dictionary<string, List<string>> parsed = [];
-        Dictionary<string, List<string?>> comments = [];
-
-        foreach (Match match in ScanLineRegex().Matches(src))
-        {
-            string key = match.Groups[1].Value;
-            string value = match.Groups[2].Value.Trim();
-            string? comment = match.Groups[3].Success ? match.Groups[3].Value.Trim() : null;
-
-            if (!parsed.TryGetValue(key, out List<string>? values))
-            {
-                values = [];
-                parsed[key] = values;
-                comments[key] = [];
-            }
-
-            values.Add(value);
-            comments[key].Add(comment);
-        }
-
-        return (parsed.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray()),
-            comments.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray()));
-    }
-
-    // Leading [\s\uFEFF]* (not just \s*) so a byte-order-mark surviving at the very start of the
-    // decoded source (see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md) doesn't stop the
-    // FIRST key from being recognized - JS's \s regex metaclass matches U+FEFF; .NET's does not.
-    // RegexOptions.ECMAScript makes \w ASCII-only (matching JS's \w exactly) instead of .NET's
-    // default Unicode-aware \w.
-    [GeneratedRegex(
-        @"^[\s\uFEFF]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#(.*))?$",
-        RegexOptions.Multiline | RegexOptions.ECMAScript)]
-    private static partial Regex ScanLineRegex();
 }

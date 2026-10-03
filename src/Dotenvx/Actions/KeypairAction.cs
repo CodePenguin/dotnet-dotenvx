@@ -87,12 +87,8 @@ public class KeyPairAction : Command
 
         try
         {
-            string[] resolvedEnvFiles = DotenvxJsHelpers.SplitCommaSeparatedEnvFiles(envFile);
-            if (resolvedEnvFiles.Length == 0)
-            {
-                resolvedEnvFiles = [".env"];
-            }
-
+            string[] split = DotenvxJsHelpers.SplitCommaSeparatedEnvFiles(envFile);
+            string[] resolvedEnvFiles = DotenvxJsHelpers.Filepaths(split.Length == 0 ? null : split);
             Dictionary<string, string?> results = [];
             foreach (string resolvedEnvFile in resolvedEnvFiles)
             {

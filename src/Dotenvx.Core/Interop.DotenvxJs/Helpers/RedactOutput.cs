@@ -1,11 +1,10 @@
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>
-/// Reference source: dotenvx/src/lib/helpers/redactOutput.js. Upstream's `redactOutput` recurses
-/// over arrays/plain-objects/strings; this port only ever needs a plain-string overload (for
-/// per-line debug/error messages) and a string-dictionary overload (for the parsed/injected/
-/// existed dumps `run` logs at debug level) - no call site in this port passes anything else, so
-/// the array/object recursion isn't ported. `createRedactedStreamWriter`'s `StringDecoder`-based
+/// Reference source: dotenvx/src/lib/helpers/redactOutput.js. `RedactOutput` is the faithful recursive
+/// version over arrays/plain-objects/strings; `RedactOutputText` and `RedactOutputDict` are the typed
+/// conveniences this port's call sites use (per-line debug/error messages, and the parsed/injected/
+/// existed dumps `run` logs at debug level). `createRedactedStreamWriter`'s `StringDecoder`-based
 /// byte-chunk decoding is also not ported: .NET's `StreamReader`/`TextReader.ReadAsync(char[])`
 /// already decodes UTF-8 byte chunks into text before this code ever sees them, so there's no raw-
 /// byte multi-byte-split concern left to guard against - only the partial-sensitive-value holdback
@@ -23,21 +22,58 @@ public static partial class Helpers
             .ToArray();
     }
 
-    public static string? RedactOutputText(string? value, IReadOnlyList<string> sensitiveValues)
+    /// <remarks>
+    /// redactOutput.js's `redactOutput`: arrays and plain objects (string-keyed dictionaries) are mapped
+    /// recursively, strings have every sensitive value replaced (longest first), anything else is returned
+    /// as-is; null stays null and no sensitive values means no change.
+    /// </remarks>
+    public static object? RedactOutput(object? value, IEnumerable<string?>? sensitiveValues)
     {
-        string[] values = NormalizedValues(sensitiveValues);
+        string[] values = NormalizedValues(sensitiveValues ?? []);
+        return RedactOutputValues(value, values);
+    }
+
+    private static object? RedactOutputValues(object? value, string[] values)
+    {
         if (values.Length < 1 || value is null)
         {
             return value;
         }
 
-        string result = value;
-        foreach (string sensitiveValue in values)
+        switch (value)
         {
-            result = result.Replace(sensitiveValue, Redact(sensitiveValue));
-        }
+            case string text:
+                string result = text;
+                foreach (string sensitiveValue in values)
+                {
+                    result = result.Replace(sensitiveValue, Redact(sensitiveValue));
+                }
 
-        return result;
+                return result;
+            case System.Collections.IDictionary dictionary:
+                Dictionary<string, object?> mapped = new();
+                foreach (System.Collections.DictionaryEntry entry in dictionary)
+                {
+                    mapped[(string)entry.Key] = RedactOutputValues(entry.Value, values);
+                }
+
+                return mapped;
+            case System.Collections.IEnumerable items:
+                List<object?> list = [];
+                foreach (object? item in items)
+                {
+                    list.Add(RedactOutputValues(item, values));
+                }
+
+                return list;
+            default:
+                return value;
+        }
+    }
+
+    public static string? RedactOutputText(string? value, IReadOnlyList<string> sensitiveValues)
+    {
+        return (string?)RedactOutput(value, sensitiveValues);
     }
 
     public static Dictionary<string, string> RedactOutputDict(

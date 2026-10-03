@@ -7,13 +7,13 @@ using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 
-/// <remarks>Reference source: dotenvx/tests/lib/helpers/decrypt-key-value.test.js</remarks>
+/// <remarks>Reference source: dotenvx/tests/lib/helpers/decryptKeyValue.test.js</remarks>
 public class DecryptKeyValueTest
 {
     private const string PublicKey = "02b106c30579baf896ae1fddf077cbcb4fef5e7d457932974878dcb51f42b45498";
     private const string PrivateKey = "1fc1cafa954a7a2bf0a6fbff46189c9e03e3a66b4d1133108ab9fcdb9e154b70";
 
-    /// <remarks>Refer to "#decryptKeyValue with valid input"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithValidInputDecryptsValue()
     {
@@ -22,7 +22,7 @@ public class DecryptKeyValueTest
         decrypted.ShouldBe("hello");
     }
 
-    /// <remarks>Refer to "#decryptKeyValue with null private key"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue - privateKey null"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithNullPrivateKeyThrowsException()
     {
@@ -37,7 +37,7 @@ public class DecryptKeyValueTest
         ex.Help.ShouldBe("fix: [https://github.com/dotenvx/dotenvx/issues/464]");
     }
 
-    /// <remarks>Refer to "#decryptKeyValue with non-encrypted value"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue (does not start with encrypted:) returns raw value"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithNonEncryptedValueReturnsOriginalValue()
     {
@@ -45,7 +45,7 @@ public class DecryptKeyValueTest
         decrypted.ShouldBe("world");
     }
 
-    /// <remarks>Refer to "#decryptKeyValue with invalid short encrypted value"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue invalid short encrypted value raises error"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithInvalidShortEncryptedValueThrowsException()
     {
@@ -56,7 +56,7 @@ public class DecryptKeyValueTest
         ex.Message.ShouldBe("[DECRYPTION_FAILED] second arg must be public key");
     }
 
-    /// <remarks>Refer to "#decryptKeyValue with malformed encrypted value"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue invalid encrypted value raises error"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithMalformedEncryptedValueThrowsException()
     {
@@ -70,7 +70,7 @@ public class DecryptKeyValueTest
             "[MALFORMED_ENCRYPTED_DATA] could not decrypt KEY because encrypted data appears malformed");
     }
 
-    /// <remarks>Refer to "#decryptKeyValue with empty encrypted value"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue invalid empty encrypted value raises error"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithEmptyEncryptedValueThrowsException()
     {
@@ -81,7 +81,7 @@ public class DecryptKeyValueTest
         ex.Message.ShouldBe("[DECRYPTION_FAILED] second arg must be public key");
     }
 
-    /// <remarks>Refer to "#decryptKeyValue with invalid private key"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue invalid privateKey"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithInvalidPrivateKeyThrowsException()
     {
@@ -95,7 +95,7 @@ public class DecryptKeyValueTest
             "[INVALID_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY=invalid…'");
     }
 
-    /// <remarks>Refer to "#decryptKeyValue with empty private key"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue empty privateKey"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithEmptyPrivateKeyThrowsException()
     {
@@ -109,7 +109,7 @@ public class DecryptKeyValueTest
         ex.Help.ShouldBe("fix: [https://github.com/dotenvx/dotenvx/issues/464]");
     }
 
-    /// <remarks>Refer to "#decryptKeyValue with wrong private key"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue wrong privateKey"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithWrongPrivateKeyThrowsException()
     {
@@ -124,7 +124,7 @@ public class DecryptKeyValueTest
             "[WRONG_PRIVATE_KEY] could not decrypt KEY using private key 'DOTENV_PRIVATE_KEY=9c1ab41…'");
     }
 
-    /// <remarks>Refer to "#decryptKeyValue with empty string"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue when empty string"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithEmptyStringDecryptsValue()
     {
@@ -133,7 +133,7 @@ public class DecryptKeyValueTest
         decrypted.ShouldBe("");
     }
 
-    /// <remarks>Refer to "#decryptKeyValue with hardcoded scenario"</remarks>
+    /// <remarks>Refer to "#decryptKeyValue - hardcoded scenario"</remarks>
     [Fact]
     public void TestDecryptKeyValueWithHardcodedScenarioDecryptsValue()
     {
