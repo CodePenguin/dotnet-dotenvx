@@ -268,4 +268,21 @@ public class KeyPairActionTest : EnvironmentTestBase
         };
         output.ShouldBe($"{Helpers.JsonStringify(data)}\n");
     }
+
+    /// <remarks>
+    /// Refer to "keypair --pp". The `--pp` shorthand for `--pretty-print`. No C# counterpart for "keypair updates spinner text while waiting for
+    /// approval" and "keypair logs provider errors without an uncaught stack": the spinner and Armor providers are out of scope.
+    /// </remarks>
+    [Fact]
+    public void TestKeypairPp()
+    {
+        KeyPair mockKeyPair = Substitute.For<KeyPair>();
+        mockKeyPair.Run().Returns(new Dictionary<string, string?> { { "DOTENV_PUBLIC_KEY", "<publicKey>" } });
+        KeyPair.Factory = (_, _) => mockKeyPair;
+
+        int exitCode = RootCommand.Parse(["keypair", "--pp"]).Invoke();
+
+        exitCode.ShouldBe(0);
+        _consoleOutput.ToString().ShouldBe($"{Helpers.JsonStringify(new { DOTENV_PUBLIC_KEY = "<publicKey>" }, true)}\n");
+    }
 }

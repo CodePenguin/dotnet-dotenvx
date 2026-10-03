@@ -108,4 +108,16 @@ public class GenexampleTest : EnvironmentTestBase
         error.MessageWithHelp.ShouldBe(
             "[MISSING_ENV_FILE] missing file (.env.nonexistent). fix: [https://github.com/dotenvx/dotenvx/issues/484]");
     }
+
+    /// <remarks>Refer to "#run (string envFile)". The env file may be given as a single name (here a one-element list); the real fixture keeps its comment and blanks the value.</remarks>
+    [Fact]
+    public void TestRunStringEnvFile()
+    {
+        GenexampleResult result = new Genexample("tests/monorepo/apps/frontend", [".env"]).Run();
+
+        result.EnvExampleFile.ShouldBe(
+            "# .env.example - generated with dotenvx\n\n# for testing purposes only\nHELLO=\"\" # this is a comment\n");
+        result.Injected.ShouldBe(new Dictionary<string, string> { { "HELLO", "" } });
+        result.Existed.ShouldBeEmpty();
+    }
 }
