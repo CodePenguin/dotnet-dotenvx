@@ -2,19 +2,19 @@ using System.Collections;
 
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Primitives;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 using static Dotenvx.Primitives.Primitives;
-using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
 /// <remarks>
-/// Reference source: dotenvx/src/lib/transforms/decrypt.js (moved there from
-/// src/lib/services/decrypt.js, which no longer exists at this pin - confirmed 2026-09-24, part of
-/// the same custodian/keyring reorg CLAUDE.md already documents elsewhere). Already the file
-/// actually read/verified against during this session's decrypt partial-failure fix work - this
-/// comment was just stale, not the logic.
+/// Reference source: dotenvx/src/lib/transforms/decrypt.js. Like the original, this parses with primitives'
+/// `parsearrays` (keyring from `fk`, default `.env.keys` in the working directory, plus the process
+/// environment; `ik`/`ek` choose which keys to decrypt) and upserts every parsed value that differs from
+/// the source, so a failed key leaves its ciphertext and reports one combined DECRYPTION_FAILED error
+/// without stopping the rest of the file.
 /// </remarks>
 public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath)
 {
@@ -27,14 +27,8 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
     private readonly List<ProcessedDecrypt> _processedEnvs = [];
     private readonly HashSet<string> _unchangedFilePaths = [];
 
-    private Func<string, bool> _exclude = _ => false;
-    private Func<string, bool> _include = _ => true;
-
     public DecryptResult Run()
     {
-        _exclude = Picomatch(excludeKeys);
-        _include = Picomatch(keys);
-
         foreach (EnvItem env in _envs)
         {
             if (env.Type == EnvType.EnvFile)
@@ -62,55 +56,35 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
         try
         {
             string encoding = DetectEncoding(filePath);
-            string envSrc = Fsx.ReadFileX(filePath, encoding);
-            Dictionary<string, object> envParsed = ScanToDictionary(envSrc);
+            row.EnvSrc = Fsx.ReadFileX(filePath, encoding);
 
-            string? privateKey = FindPrivateKey(envFilePath, envKeysFilePath);
-            string privateKeyName = GuessPrivateKeyName(envFilePath);
-
-            row.PrivateKey = privateKey;
-            row.PrivateKeyName = privateKeyName;
-            row.Changed = false;
-
-            foreach ((string envKey, object envValue) in envParsed)
+            PrimitivesParseArraysOutput result = ParseArraysSync(row.EnvSrc, new PrimitivesParseOptions
             {
-                string value = envValue as string ?? "";
+                Ik = keys,
+                Ek = excludeKeys,
+                Fk = string.IsNullOrEmpty(envKeysFilePath) ? null : [envKeysFilePath],
+                ReadFile = path => Fsx.ReadFileX(path)
+            });
 
-                if (_exclude(envKey))
-                {
-                    continue;
-                }
-
-                if (keys?.Length > 0 && !_include(envKey))
-                {
-                    continue;
-                }
-
-                bool encrypted = Encrypted(value);
-                if (!encrypted)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    string decryptedValue = DecryptKeyValue(envKey, value, privateKeyName, privateKey);
-                    envSrc = Upsert(envSrc, envKey, decryptedValue);
-                    row.Keys.Add(envKey);
-                    row.Changed = true;
-                }
-                catch (Exception)
-                {
-                    // Matches @dotenvx/primitives' parsearrays() (used only by the `decrypt` command,
-                    // confirmed via live oracle - unlike run/get/set's singular parse(), which surfaces
-                    // the specific WRONG_PRIVATE_KEY/MISSING_PRIVATE_KEY/etc. cause): one key's
-                    // decryption failure doesn't abort the rest of the file, and the specific
-                    // underlying cause is collapsed into a single generic message per failed key.
-                    row.Error ??= new DecryptionFailedException($"could not decrypt {envKey}");
-                }
+            if (result.Errors.Count > 0)
+            {
+                row.Error = CustomError(result.Errors[0]);
             }
 
-            row.EnvSrc = envSrc;
+            foreach ((string key, List<string> values) in result.Parsed)
+            {
+                string before = row.EnvSrc;
+                string after = Upsert(before, key, values.ToArray());
+                if (after == before)
+                {
+                    continue;
+                }
+
+                row.EnvSrc = after;
+                row.Changed = true;
+                row.Keys.Add(key);
+            }
+
             if (row.Changed)
             {
                 _changedFilePaths.Add(envFilePath);

@@ -111,6 +111,11 @@ public class SetAction : Command
             Sets setsService = Sets.Factory(key, value, envItems.ToArray(), encrypt, envKeysFilePath, noCreate);
             SetsResult result = setsService.Run();
 
+            if (!string.IsNullOrEmpty(result.KeysSrc))
+            {
+                Fsx.WriteFileX(envKeysFilePath ?? ".env.keys", result.KeysSrc);
+            }
+
             IList<ProcessedSet> processedEnvs = result.ProcessedEnvs;
             IList<string> changedFilePaths = result.ChangedFilePaths;
             IList<string> unchangedFilePaths = result.UnchangedFilePaths;

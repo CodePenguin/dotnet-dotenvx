@@ -207,11 +207,7 @@ public class Run
     {
         if (parsed.Errors.Count > 0)
         {
-            return parsed.Errors
-                .Select(e => e.Code == "DECRYPTION_FAILED"
-                    ? (Exception)new DecryptionFailedException(e.Message["[DECRYPTION_FAILED] ".Length..])
-                    : new DotenvxException(e.Code, e.Message))
-                .ToList();
+            return parsed.Errors.Select(CustomError).ToList();
         }
 
         string[] keys = parsed.Parsed.Where(kv => Encrypted(kv.Value)).Select(kv => kv.Key).ToArray();

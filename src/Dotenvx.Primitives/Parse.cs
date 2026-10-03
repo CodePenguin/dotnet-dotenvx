@@ -45,7 +45,7 @@ public static partial class Primitives
         return s.TrimStart(JsWhitespaceChars);
     }
 
-    internal static string JsTrim(string s)
+    public static string JsTrim(string s)
     {
         return s.Trim(JsWhitespaceChars);
     }

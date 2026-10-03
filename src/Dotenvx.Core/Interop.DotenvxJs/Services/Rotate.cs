@@ -125,7 +125,7 @@ public class Rotate(
 
             string publicKeyName = GuessPublicKeyName(envFilepath);
             string privateKeyName = GuessPrivateKeyName(envFilepath);
-            string? existingPrivateKey = FindPrivateKey(envFilepath, envKeysFilePath);
+            string? existingPrivateKey = KeyPair.Factory(envFilepath, envKeysFilePath).Run().GetValueOrDefault(privateKeyName);
 
             row.EnvKeysFilePath = localEnvKeysFilePath;
             if (!_envKeysSources.TryGetValue(localEnvKeysFilePath, out string? value))

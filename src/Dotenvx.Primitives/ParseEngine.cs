@@ -9,6 +9,9 @@ public sealed class PrimitivesParseOptions
     public string[]? Fk { get; init; }
     public Func<string, IDictionary<string, string>?>? Provider { get; init; }
     public Func<string, Task<IDictionary<string, string>?>>? AsyncProvider { get; init; }
+
+    // .NET test seam, not part of the JS API: how key files are read (default File.ReadAllText); a throw means "unreadable"
+    public Func<string, string>? ReadFile { get; init; }
 }
 
 public sealed record PrimitivesError(string Code, string Message);
@@ -75,6 +78,7 @@ public static partial class Primitives
             Ring = ring,
             Fk = options.Fk,
             ProcessEnv = options.ProcessEnv,
+            ReadFile = options.ReadFile,
             Provider = options.Provider,
             AsyncProvider = options.AsyncProvider
         };

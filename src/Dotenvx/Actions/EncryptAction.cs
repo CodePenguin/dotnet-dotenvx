@@ -128,6 +128,11 @@ public class EncryptAction : Command
             Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate);
             EncryptResult result = encryptService.Run();
 
+            if (!string.IsNullOrEmpty(result.KeysSrc))
+            {
+                Fsx.WriteFileX(envKeysFilePath ?? ".env.keys", result.KeysSrc);
+            }
+
             IList<EncryptProcessedEnv> processedEnvs = result.ProcessedEnvs;
             IList<string> changedFilePaths = result.ChangedFilePaths;
             IList<string> unchangedFilePaths = result.UnchangedFilePaths;

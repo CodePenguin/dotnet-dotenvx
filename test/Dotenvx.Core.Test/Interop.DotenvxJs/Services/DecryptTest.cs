@@ -11,6 +11,12 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Services;
 /// <remarks>Reference source: dotenvx/tests/lib/services/decrypt.test.js</remarks>
 public class DecryptTest : EnvironmentTestBase
 {
+    // the real transform reads keys from `fk` (default `.env.keys` in the working directory), not from the env file directory
+    private static string KeysFor(string envFile)
+    {
+        return Path.Combine(Path.GetDirectoryName(envFile)!, ".env.keys").Replace((char)92, (char)47);
+    }
+
     public DecryptTest()
     {
         ClearEnvironment();
@@ -79,7 +85,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, null, null, null).Run();
+        DecryptResult result = new Decrypt(envs, null, null, KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -95,20 +101,24 @@ public class DecryptTest : EnvironmentTestBase
         (parsed["HELLO"] as string).ShouldBe("encrypted");
     }
 
-    /// <remarks>Refer to "#run (finds .env file with multiline value)"</remarks>
+    /// <remarks>
+    /// Refer to "#run (finds .env file with multiline value)". Live-verified against the real Node CLI:
+    /// `decrypt` upserts every parsed value, so the double-quoted backslash-n escapes in ALOHA come back
+    /// as real newlines (HELLO is already multiline and unchanged).
+    /// </remarks>
     [Fact]
     public void TestRunFindsEnvFileWithMultilineValue()
     {
         const string envFile = "tests/monorepo/apps/multiline/.env";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, null, null, null).Run();
+        DecryptResult result = new Decrypt(envs, null, null, KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
-        p.Keys.ShouldBeEmpty();
+        p.Keys.ShouldBe(["ALOHA"]);
         p.EnvFilePath.ShouldBe(envFile);
-        result.ChangedFilePaths.ShouldBeEmpty();
-        result.UnchangedFilePaths.ShouldBe([envFile]);
+        result.ChangedFilePaths.ShouldBe([envFile]);
+        result.UnchangedFilePaths.ShouldBeEmpty();
 
         Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["HELLO", "ALOHA"]);
@@ -128,7 +138,11 @@ public class DecryptTest : EnvironmentTestBase
             EFGH
             IJKL
             -----END RSA PRIVATE KEY-----"
-            ALOHA="-----BEGIN RSA PRIVATE KEY-----\nABCD\nEFGH\nIJKL\n-----END RSA PRIVATE KEY-----"
+            ALOHA="-----BEGIN RSA PRIVATE KEY-----
+            ABCD
+            EFGH
+            IJKL
+            -----END RSA PRIVATE KEY-----"
 
             """);
     }
@@ -139,7 +153,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, ["HELLO2"], null, null).Run();
+        DecryptResult result = new Decrypt(envs, ["HELLO2"], null, KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -162,7 +176,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, ["HELLO2"], null, null).Run();
+        DecryptResult result = new Decrypt(envs, ["HELLO2"], null, KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -185,7 +199,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, ["HE*"], null, null).Run();
+        DecryptResult result = new Decrypt(envs, ["HE*"], null, KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -208,7 +222,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, null, ["HELLO2"], null).Run();
+        DecryptResult result = new Decrypt(envs, null, ["HELLO2"], KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -231,7 +245,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, null, ["HELLO2"], null).Run();
+        DecryptResult result = new Decrypt(envs, null, ["HELLO2"], KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -296,7 +310,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, null, ["HE*"], null).Run();
+        DecryptResult result = new Decrypt(envs, null, ["HE*"], KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];

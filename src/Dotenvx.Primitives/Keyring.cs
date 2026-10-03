@@ -15,7 +15,7 @@ public static partial class Primitives
         List<string> privateKeys = [];
         foreach (string file in options.Fk ?? [".env.keys"])
         {
-            privateKeys.AddRange(ReadPrivateKeys(file));
+            privateKeys.AddRange(ReadPrivateKeys(file, options.ReadFile));
         }
 
         return BuildKeyring(options, privateKeys, key => options.Provider?.Invoke(key));
@@ -27,7 +27,7 @@ public static partial class Primitives
         List<string> privateKeys = [];
         foreach (string file in options.Fk ?? [".env.keys"])
         {
-            privateKeys.AddRange(await Task.Run(() => ReadPrivateKeys(file)));
+            privateKeys.AddRange(await Task.Run(() => ReadPrivateKeys(file, options.ReadFile)));
         }
 
         Dictionary<string, string> ring = BuildKeyring(options, privateKeys, null);
@@ -108,12 +108,12 @@ public static partial class Primitives
         }
     }
 
-    private static List<string> ReadPrivateKeys(string path)
+    private static List<string> ReadPrivateKeys(string path, Func<string, string>? readFile)
     {
         List<string> keys = [];
         try
         {
-            string src = File.ReadAllText(path);
+            string src = readFile is null ? File.ReadAllText(path) : readFile(path);
             foreach (ScanEntry entry in Scan(src))
             {
                 if (entry.Key.StartsWith("DOTENV_PRIVATE_KEY"))
@@ -149,4 +149,7 @@ public sealed class KeyringOptions
     public IDictionary<string, string>? ProcessEnv { get; init; }
     public Func<string, IDictionary<string, string>?>? Provider { get; init; }
     public Func<string, Task<IDictionary<string, string>?>>? AsyncProvider { get; init; }
+
+    // .NET test seam, not part of the JS API: how key files are read (default File.ReadAllText); a throw means "unreadable"
+    public Func<string, string>? ReadFile { get; init; }
 }

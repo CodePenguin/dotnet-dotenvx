@@ -9,6 +9,24 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Services;
 /// <remarks>Reference source: dotenvx/tests/lib/services/sets.test.js</remarks>
 public class SetsTest : EnvironmentTestBase
 {
+    // mutateSrc.js: the public key header notes the keys file (default .env.keys in the working directory) relative to the env file
+    private static string FkComment(string envFile)
+    {
+        string relative = Path.GetRelativePath(Path.GetDirectoryName(Path.GetFullPath(envFile))!, Path.GetFullPath(".env.keys"));
+        return relative == ".env.keys" ? "" : $" # -fk {relative}";
+    }
+
+    private static string? Pub(ProcessedSet row)
+    {
+        return Primitives.Primitives.PublicKeys(row.EnvSrc).FirstOrDefault();
+    }
+
+    private static string? Enc(ProcessedSet row)
+    {
+        return Primitives.Primitives.Scan(row.EnvSrc, new Primitives.ScanOptions())
+            .Parsed.GetValueOrDefault(row.Key ?? "")?.LastOrDefault();
+    }
+
     public SetsTest()
     {
         ClearEnvironment();
@@ -35,9 +53,9 @@ public class SetsTest : EnvironmentTestBase
         row.Type.ShouldBe(EnvType.EnvFile);
         row.FilePath.ShouldBe(Path.GetFullPath(".env"));
         row.EnvFilePath.ShouldBe(".env");
-        row.Changed.ShouldBeFalse();
+        row.Changed.ShouldBeTrue(); // transforms/set.js marks a to-be-created file as changed
         row.Error.ShouldBeNull();
-        result.ChangedFilePaths.ShouldBeEmpty();
+        result.ChangedFilePaths.ShouldBe([".env"]);
     }
 
     /// <remarks>Refer to "#run (no arguments)", noCreate variant - see remarks on <see cref="TestRunNoArguments"/>.</remarks>
@@ -123,7 +141,6 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeTrue();
-        row.OriginalValue.ShouldBeNull();
         row.EnvSrc.ShouldBe(envSrc);
         result.ChangedFilePaths.ShouldBe(new List<string> { "tests/monorepo/apps/frontend/.env" });
     }
@@ -146,7 +163,6 @@ public class SetsTest : EnvironmentTestBase
         row.Type.ShouldBe(EnvType.EnvFile);
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
-        row.OriginalValue.ShouldBe("frontend");
         row.Changed.ShouldBeTrue();
         row.EnvSrc.ShouldBe(envSrc);
         result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
@@ -171,7 +187,6 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeFalse();
-        row.OriginalValue.ShouldBe("frontend");
         row.EnvSrc.ShouldBe(envSrc);
         result.ChangedFilePaths.ShouldBeEmpty();
         result.UnchangedFilePaths.ShouldBe(new List<string> { envFile });
@@ -196,7 +211,6 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeTrue();
-        row.OriginalValue.ShouldBeNull();
         row.EnvSrc.ShouldBe(envSrc);
         result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
     }
@@ -218,23 +232,20 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeTrue();
-        row.OriginalValue.ShouldBeNull();
-        row.EncryptedValue.ShouldNotBeNull();
-        row.PublicKey.ShouldNotBeNull();
-        row.PrivateKey.ShouldNotBeNull();
-        row.PrivateKeyName.ShouldNotBeNull();
+        Enc(row).ShouldNotBeNull();
+        Pub(row).ShouldNotBeNull();
         row.EnvSrc.ShouldBe(string.Join("\n", (string[])
         [
             "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\"",
+            $"DOTENV_PUBLIC_KEY=\"{Pub(row)}\"{FkComment(envFile)}",
             "",
             "# .env",
             "# for testing purposes only",
             "HELLO=\"frontend\" # this is a comment",
-            $"KEY=\"{row.EncryptedValue}\""
+            $"KEY=\"{Enc(row)}\""
         ]) + "\n");
         result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
     }
@@ -256,22 +267,19 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeTrue();
-        row.OriginalValue.ShouldBeNull();
-        row.PublicKey.ShouldNotBeNull();
-        row.PrivateKey.ShouldNotBeNull();
-        row.EncryptedValue.ShouldNotBeNull();
-        row.PrivateKeyName.ShouldNotBeNull();
+        Pub(row).ShouldNotBeNull();
+        Enc(row).ShouldNotBeNull();
         row.EnvSrc.ShouldBe(string.Join("\n", (string[])
         [
             "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\"",
+            $"DOTENV_PUBLIC_KEY=\"{Pub(row)}\"",
             "",
             "# .env",
             "HELLO=\"encrypted:BG8M6U+GKJGwpGA42ml2erb9+T2NBX6Z2JkBLynDy21poz0UfF5aPxCgRbIyhnQFdWKd0C9GZ7lM5PeL86xghoMcWvvPpkyQ0yaD2pZ64RzoxFGB1lTZYlEgQOxTDJnWxODHfuQcFY10uA==\"",
-            $"KEY=\"{row.EncryptedValue}\""
+            $"KEY=\"{Enc(row)}\""
         ]) + "\n");
         result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
     }
@@ -293,21 +301,18 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeTrue();
-        row.OriginalValue.ShouldBe("encrypted");
-        row.PublicKey.ShouldNotBeNull();
-        row.PrivateKey.ShouldNotBeNull();
-        row.EncryptedValue.ShouldNotBeNull();
-        row.PrivateKeyName.ShouldNotBeNull();
+        Pub(row).ShouldNotBeNull();
+        Enc(row).ShouldNotBeNull();
         row.EnvSrc.ShouldBe(string.Join("\n", (string[])
         [
             "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\"",
+            $"DOTENV_PUBLIC_KEY=\"{Pub(row)}\"",
             "",
             "# .env",
-            $"HELLO=\"{row.EncryptedValue}\""
+            $"HELLO=\"{Enc(row)}\""
         ]) + "\n");
         result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
     }
@@ -340,7 +345,7 @@ public class SetsTest : EnvironmentTestBase
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeTrue();
         row.Error.ShouldBeNull();
-        row.EncryptedValue.ShouldNotBeNull();
+        Enc(row).ShouldNotBeNull();
     }
 
     /// <remarks>Refer to "#run (finds .env file only) with --encrypt"</remarks>
@@ -365,22 +370,18 @@ public class SetsTest : EnvironmentTestBase
             row.FilePath.ShouldBe(Path.GetFullPath(envFile));
             row.EnvFilePath.ShouldBe(envFile);
             row.Changed.ShouldBeTrue();
-            row.OriginalValue.ShouldBe(
-                "encrypted:BG8M6U+GKJGwpGA42ml2erb9+T2NBX6Z2JkBLynDy21poz0UfF5aPxCgRbIyhnQFdWKd0C9GZ7lM5PeL86xghoMcWvvPpkyQ0yaD2pZ64RzoxFGB1lTZYlEgQOxTDJnWxODHfuQcFY10uA==");
-            row.PublicKey.ShouldNotBeNull();
-            row.PrivateKey.ShouldBeNull();
-            row.EncryptedValue.ShouldNotBeNull();
-            row.PrivateKeyName.ShouldBe("DOTENV_PRIVATE_KEY");
+            Pub(row).ShouldNotBeNull();
+            Enc(row).ShouldNotBeNull();
             row.EnvSrc.ShouldBe(string.Join("\n", (string[])
             [
                 "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
                 "#/            public-key encryption for .env files          /",
                 "#/       [how it works](https://dotenvx.com/encryption)     /",
                 "#/----------------------------------------------------------/",
-                $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\"",
+                $"DOTENV_PUBLIC_KEY=\"{Pub(row)}\"",
                 "",
                 "# .env",
-                $"HELLO=\"{row.EncryptedValue}\""
+                $"HELLO=\"{Enc(row)}\""
             ]) + "\n");
             result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
         }
@@ -411,23 +412,19 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeTrue();
-        row.OriginalValue.ShouldBeNull();
-        row.PrivateKeyAdded.ShouldBeTrue();
-        row.EnvKeysFilePath.ShouldBe(envKeysFilePath);
-        row.PublicKey.ShouldNotBeNull();
-        row.PrivateKey.ShouldNotBeNull();
-        row.EncryptedValue.ShouldNotBeNull();
-        row.PrivateKeyName.ShouldNotBeNull();
+        result.KeysSrc.ShouldNotBeNull();
+        Pub(row).ShouldNotBeNull();
+        Enc(row).ShouldNotBeNull();
         row.EnvSrc.ShouldBe(string.Join("\n", (string[])
         [
             "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\"",
+            $"DOTENV_PUBLIC_KEY=\"{Pub(row)}\"{FkComment(envFile)}",
             "",
             "# .env",
-            $"HELLO=\"{row.EncryptedValue}\""
+            $"HELLO=\"{Enc(row)}\""
         ]) + "\n");
         result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
     }
@@ -452,24 +449,20 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeTrue();
-        row.OriginalValue.ShouldBeNull();
-        row.PrivateKeyAdded.ShouldBeTrue();
-        row.EnvKeysFilePath.ShouldBe(envKeysFilePath);
-        row.PublicKey.ShouldNotBeNull();
-        row.PrivateKey.ShouldNotBeNull();
-        row.EncryptedValue.ShouldNotBeNull();
-        row.PrivateKeyName.ShouldNotBeNull();
+        result.KeysSrc.ShouldNotBeNull();
+        Pub(row).ShouldNotBeNull();
+        Enc(row).ShouldNotBeNull();
         row.EnvSrc.ShouldBe(string.Join("\n", (string[])
         [
             "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\"",
+            $"DOTENV_PUBLIC_KEY=\"{Pub(row)}\"{FkComment(envFile)}",
             "",
             "# .env",
             "## hi",
-            $"HELLO=\"{row.EncryptedValue}\""
+            $"HELLO=\"{Enc(row)}\""
         ]));
         result.ChangedFilePaths.ShouldBe(new List<string> { "tests/monorepo/apps/encrypted/.env" });
     }
@@ -491,14 +484,10 @@ public class SetsTest : EnvironmentTestBase
         row.Type.ShouldBe(EnvType.EnvFile);
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
-        row.EnvKeysFilePath.ShouldBe(envKeysFilePath);
         row.Changed.ShouldBeTrue();
-        row.OriginalValue.ShouldBe("shebang");
-        row.PrivateKeyAdded.ShouldBeTrue();
-        row.PublicKey.ShouldNotBeNull();
-        row.PrivateKey.ShouldNotBeNull();
-        row.EncryptedValue.ShouldNotBeNull();
-        row.PrivateKeyName.ShouldNotBeNull();
+        result.KeysSrc.ShouldNotBeNull();
+        Pub(row).ShouldNotBeNull();
+        Enc(row).ShouldNotBeNull();
         row.EnvSrc.ShouldContain("#!/bin/bash");
         row.EnvSrc.ShouldBe(string.Join("\n", (string[])
         [
@@ -507,10 +496,10 @@ public class SetsTest : EnvironmentTestBase
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\"",
+            $"DOTENV_PUBLIC_KEY=\"{Pub(row)}\"{FkComment(envFile)}",
             "",
             "# .env",
-            $"HELLO=\"{row.EncryptedValue}\""
+            $"HELLO=\"{Enc(row)}\""
         ]) + "\n");
         result.ChangedFilePaths.ShouldBe(new List<string> { "tests/monorepo/apps/shebang/.env" });
     }
@@ -548,21 +537,17 @@ public class SetsTest : EnvironmentTestBase
         row.Type.ShouldBe(EnvType.EnvFile);
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
-        row.EnvKeysFilePath.ShouldBe(envKeysFilePath);
         row.Changed.ShouldBeFalse();
-        row.OriginalValue.ShouldBe("unencrypted");
-        row.PrivateKeyAdded.ShouldBeTrue();
-        row.PublicKey.ShouldNotBeNull();
-        row.PrivateKey.ShouldNotBeNull();
-        row.EncryptedValue.ShouldNotBeNull();
-        row.PrivateKeyName.ShouldNotBeNull();
+        result.KeysSrc.ShouldNotBeNull();
+        Pub(row).ShouldNotBeNull();
+        Enc(row).ShouldNotBeNull();
         row.EnvSrc.ShouldBe(string.Join("\n", (string[])
         [
             "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\"",
+            $"DOTENV_PUBLIC_KEY=\"{Pub(row)}\"{FkComment(envFile)}",
             "",
             "# .env",
             "HELLO=\"unencrypted\""
@@ -589,25 +574,21 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeTrue();
-        row.OriginalValue.ShouldBeNull();
-        row.EncryptedValue.ShouldNotBeNull();
-        row.PublicKey.ShouldNotBeNull();
-        row.PrivateKey.ShouldNotBeNull();
-        row.EnvKeysFilePath.ShouldBe(envKeysFilePath);
-        row.PrivateKeyAdded.ShouldBeTrue();
-        row.PrivateKeyName.ShouldNotBeNull();
+        Enc(row).ShouldNotBeNull();
+        Pub(row).ShouldNotBeNull();
+        result.KeysSrc.ShouldNotBeNull();
         row.EnvSrc.ShouldBe(string.Join("\n", (string[])
         [
             "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY=\"{row.PublicKey}\" # -fk {Path.Combine("..", "..", ".env.keys")}",
+            $"DOTENV_PUBLIC_KEY=\"{Pub(row)}\" # -fk {Path.Combine("..", "..", ".env.keys")}",
             "",
             "# .env",
             "# for testing purposes only",
             "HELLO=\"app1\"",
-            $"KEY=\"{row.EncryptedValue}\""
+            $"KEY=\"{Enc(row)}\""
         ]) + "\n");
         result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
     }
@@ -630,23 +611,20 @@ public class SetsTest : EnvironmentTestBase
         row.FilePath.ShouldBe(Path.GetFullPath(envFile));
         row.EnvFilePath.ShouldBe(envFile);
         row.Changed.ShouldBeTrue();
-        row.OriginalValue.ShouldBeNull();
-        row.EncryptedValue.ShouldNotBeNull();
-        row.PublicKey.ShouldNotBeNull();
-        row.PrivateKey.ShouldNotBeNull();
-        row.PrivateKeyName.ShouldNotBeNull();
+        Enc(row).ShouldNotBeNull();
+        Pub(row).ShouldNotBeNull();
         row.EnvSrc.ShouldBe(string.Join("\n", (string[])
         [
             "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
             "#/            public-key encryption for .env files          /",
             "#/       [how it works](https://dotenvx.com/encryption)     /",
             "#/----------------------------------------------------------/",
-            $"DOTENV_PUBLIC_KEY_PRODUCTION=\"{row.PublicKey}\" # -fk {Path.Combine("..", "..", ".env.keys")}",
+            $"DOTENV_PUBLIC_KEY_PRODUCTION=\"{Pub(row)}\" # -fk {Path.Combine("..", "..", ".env.keys")}",
             "",
             "# .env.production",
             "# for testing purposes only",
             "HELLO=\"production\"",
-            $"KEY=\"{row.EncryptedValue}\""
+            $"KEY=\"{Enc(row)}\""
         ]) + "\n");
         result.ChangedFilePaths.ShouldBe(new List<string> { envFile });
     }
@@ -672,11 +650,9 @@ public class SetsTest : EnvironmentTestBase
         result.ProcessedEnvs.Length.ShouldBe(1);
         ProcessedSet row = result.ProcessedEnvs[0];
         row.Changed.ShouldBeTrue();
-        row.PrivateKeyAdded.ShouldBeFalse();
-        row.EnvKeysFilePath.ShouldBeNull();
-        row.PublicKey.ShouldBeNull();
-        row.PrivateKey.ShouldBeNull();
-        row.EncryptedValue.ShouldBeNull();
+        result.KeysSrc.ShouldBeNull();
+        Pub(row).ShouldBeNull();
+        Enc(row).ShouldBe("mysecret");
         row.EnvSrc.ShouldBe("HELLO=World\nHELLO_PLAIN=\"mysecret\"\n");
     }
 }

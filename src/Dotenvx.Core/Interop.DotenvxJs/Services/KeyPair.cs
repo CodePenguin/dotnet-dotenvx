@@ -1,4 +1,9 @@
+using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Primitives;
+
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
@@ -38,21 +43,46 @@ public class KeyPair(string envFile = ".env", string? envKeysFilePath = null)
         Factory = DefaultFactory;
     }
 
+
     public virtual Dictionary<string, string?> Run()
     {
         Dictionary<string, string?> result = new();
 
         foreach (string envFilePath in _envFiles)
         {
-            // public key
-            string publicKeyName = GuessPublicKeyName(envFilePath);
-            string? publicKeyValue = SmartDotenvPublicKey(envFilePath);
-            result[publicKeyName] = publicKeyValue;
+            // keypair.js: the public key is `publickeys(src)[0]`; a missing file is treated as "no key yet"
+            // here (see the remarks above), the CLI action reports it before getting this far
+            string? publicKey = Fsx.ExistsSync(envFilePath)
+                ? PublicKeys(Fsx.ReadFileX(envFilePath)).FirstOrDefault()
+                : null;
+            if (string.IsNullOrEmpty(publicKey))
+            {
+                publicKey = null;
+            }
 
-            // private key
-            string privateKeyName = GuessPrivateKeyName(envFilePath);
-            string? privateKeyValue = SmartDotenvPrivateKey(envFilePath, envKeysFilePath);
-            result[privateKeyName] = privateKeyValue;
+            Dictionary<string, string> ring = new();
+            if (publicKey != null)
+            {
+                ring[publicKey] = "";
+            }
+
+            string fk = !string.IsNullOrEmpty(envKeysFilePath)
+                ? envKeysFilePath
+                : Path.Combine(Path.GetDirectoryName(Path.GetFullPath(envFilePath)) ?? "", ".env.keys");
+
+            ring = KeyringSync(new KeyringOptions
+            {
+                Ring = ring,
+                Fk = [fk],
+                ProcessEnv = EnvironmentHelper.GetEnvironmentVariablesAsDictionary(),
+                ReadFile = path => Fsx.ReadFileX(path)
+            });
+
+            result[GuessPublicKeyName(envFilePath)] = publicKey;
+            result[GuessPrivateKeyName(envFilePath)] =
+                publicKey != null && !string.IsNullOrEmpty(ring.GetValueOrDefault(publicKey))
+                    ? ring[publicKey]
+                    : null;
         }
 
         return result;

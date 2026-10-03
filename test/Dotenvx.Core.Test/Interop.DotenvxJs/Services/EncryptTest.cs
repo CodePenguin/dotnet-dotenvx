@@ -12,6 +12,13 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Services;
 /// <remarks>Reference source: dotenvx/tests/lib/services/encrypt.test.js</remarks>
 public class EncryptTest : EnvironmentTestBase
 {
+    // mutateSrc.js: the public key header notes the keys file (default .env.keys in the working directory) relative to the env file
+    private static string FkComment(string envFile)
+    {
+        string relative = Path.GetRelativePath(Path.GetDirectoryName(Path.GetFullPath(envFile))!, Path.GetFullPath(".env.keys"));
+        return relative == ".env.keys" ? "" : $" # -fk {relative}";
+    }
+
     public EncryptTest()
     {
         ClearEnvironment();
@@ -157,7 +164,7 @@ public class EncryptTest : EnvironmentTestBase
             "#/            public-key encryption for .env files          /\n",
             "#/       [how it works](https://dotenvx.com/encryption)     /\n",
             "#/----------------------------------------------------------/\n",
-            $"DOTENV_PUBLIC_KEY=\"{parsed["DOTENV_PUBLIC_KEY"]}\"\n\n",
+            $"DOTENV_PUBLIC_KEY=\"{parsed["DOTENV_PUBLIC_KEY"]}\"{FkComment(envFile)}\n\n",
             "# .env\n",
             $"HELLO=\"{parsed["HELLO"]}\"\n",
             $"ALOHA=\"{parsed["ALOHA"]}\"\n"
@@ -190,7 +197,7 @@ public class EncryptTest : EnvironmentTestBase
             "#/            public-key encryption for .env files          /\n",
             "#/       [how it works](https://dotenvx.com/encryption)     /\n",
             "#/----------------------------------------------------------/\n",
-            $"DOTENV_PUBLIC_KEY_CRLF=\"{parsed["DOTENV_PUBLIC_KEY_CRLF"]}\"\n\n",
+            $"DOTENV_PUBLIC_KEY_CRLF=\"{parsed["DOTENV_PUBLIC_KEY_CRLF"]}\"{FkComment(envFile)}\n\n",
             "# .env.crlf\n",
             $"HELLO=\"{parsed["HELLO"]}\"\r\n",
             $"ALOHA=\"{parsed["ALOHA"]}\"\r\n"
@@ -372,7 +379,7 @@ public class EncryptTest : EnvironmentTestBase
              #/            public-key encryption for .env files          /
              #/       [how it works](https://dotenvx.com/encryption)     /
              #/----------------------------------------------------------/
-             DOTENV_PUBLIC_KEY_EXPORT="{parsed["DOTENV_PUBLIC_KEY_EXPORT"] as string}"
+             DOTENV_PUBLIC_KEY_EXPORT="{parsed["DOTENV_PUBLIC_KEY_EXPORT"] as string}"{FkComment(envFile)}
 
              # .env.export
              export KEY={parsed["KEY"] as string}

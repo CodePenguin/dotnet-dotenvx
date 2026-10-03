@@ -331,6 +331,11 @@ public static class Main
 
         SetsResult result = Sets.Factory(key, value, envs, encrypt, envKeysFilepath, noCreate).Run();
 
+        if (!string.IsNullOrEmpty(result.KeysSrc))
+        {
+            Fsx.WriteFileX(envKeysFilepath ?? ".env.keys", result.KeysSrc);
+        }
+
         foreach (ProcessedSet processedEnv in result.ProcessedEnvs)
         {
             if (processedEnv.Error == null)

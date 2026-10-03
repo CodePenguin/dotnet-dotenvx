@@ -741,9 +741,6 @@ public class MainTest : EnvironmentTestBase
                 Changed = true,
                 Error = null,
                 PrivateKeyAdded = true,
-                EnvKeysFilePath = ".env.keys",
-                PrivateKeyName = "DOTENV_PRIVATE_KEY",
-                PrivateKey = "1234"
             }
         ];
         mockSets.Run().Returns(new SetsResult
@@ -790,9 +787,6 @@ public class MainTest : EnvironmentTestBase
                 Changed = false,
                 Error = null,
                 PrivateKeyAdded = true,
-                EnvKeysFilePath = ".env.keys",
-                PrivateKeyName = "DOTENV_PRIVATE_KEY",
-                PrivateKey = "1234"
             }
         ];
         mockSets.Run().Returns(new SetsResult
