@@ -78,6 +78,7 @@ public class LsAction : Command
 
     private int Execute(ParseResult parseResult)
     {
+        DateTime startedAt = DateTime.UtcNow;
         string directory = parseResult.GetValue(_directoryArgument) ?? "./";
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? excludeEnvFile = parseResult.GetValue(_excludeEnvFileOption);
@@ -109,12 +110,16 @@ public class LsAction : Command
             _logger.Info(treeified);
         }
 
-        PrintSummary(filepaths, Path.GetFullPath(directory));
+        // ls.js: the summary line is skipped when -q/--quiet is set
+        if (!(parseResult.RootCommandResult.Command is LoggingRootCommand root && root.IsQuiet(parseResult)))
+        {
+            PrintSummary(filepaths, Path.GetFullPath(directory), (int)(DateTime.UtcNow - startedAt).TotalSeconds);
+        }
 
         return 0;
     }
 
-    private static void PrintSummary(string[] filepaths, string cwd)
+    private static void PrintSummary(string[] filepaths, string cwd, int elapsedSeconds)
     {
         int matchedDirectoryCount = filepaths
             .Select(filepath => filepath.Contains('/') ? filepath[..filepath.LastIndexOf('/')] : ".")
@@ -126,7 +131,7 @@ public class LsAction : Command
         string directoryLabel = matchedDirectoryCount == 1 ? "directory" : "directories";
 
         Console.Error.WriteLine(
-            $"▣ found {filepaths.Length:N0} .env {fileLabel} across {matchedDirectoryCount:N0} {directoryLabel} of {directoryCount:N0} scanned in 0s");
+            $"▣ found {filepaths.Length:N0} .env {fileLabel} across {matchedDirectoryCount:N0} {directoryLabel} of {directoryCount:N0} scanned in {elapsedSeconds}s");
     }
 
     private static readonly HashSet<string> ExcludedDirectoryExtensions =

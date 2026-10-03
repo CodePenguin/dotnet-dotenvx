@@ -113,4 +113,53 @@ public class LsActionTest : EnvironmentTestBase
             Directory.Delete(scratch.FullName, true);
         }
     }
+
+    /// <remarks>
+    /// Refer to "ls does not print a summary in quiet mode". The upstream tests "ls traverses with a spinner and stops it
+    /// before output" and "ls stops the spinner and reports traversal errors" are about the TTY spinner, which this port
+    /// does not have; their non-spinner assertions (summary line to stderr, not stdout) are covered by
+    /// <see cref="TestLsPrintsFoundSummaryLineToStderr" />.
+    /// </remarks>
+    [Fact]
+    public void TestLsDoesNotPrintASummaryInQuietMode()
+    {
+        Ls mockLs = Substitute.For<Ls>();
+        mockLs.Run().Returns([".env"]);
+        Ls.Factory = (_, _, _) => mockLs;
+
+        int exitCode = RootCommand.Parse(["ls", "--quiet"]).Invoke();
+
+        exitCode.ShouldBe(0);
+        _consoleError.ToString().ShouldBeEmpty();
+    }
+
+    /// <remarks>Refer to "ls prints absolute filepaths as json"</remarks>
+    [Fact]
+    public void TestLsPrintsAbsoluteFilepathsAsJson()
+    {
+        DirectoryInfo scratch = Directory.CreateTempSubdirectory("dotenvx-ls-test-");
+        Environment.CurrentDirectory = scratch.FullName;
+        try
+        {
+            Ls mockLs = Substitute.For<Ls>();
+            mockLs.Run().Returns([".env", "packages/example/.env"]);
+            Ls.Factory = (_, _, _) => mockLs;
+
+            int exitCode = RootCommand.Parse(["ls", "--json", scratch.FullName]).Invoke();
+
+            exitCode.ShouldBe(0);
+            string[]? printed = System.Text.Json.JsonSerializer.Deserialize<string[]>(_consoleOutput.ToString());
+            printed.ShouldBe([
+                Path.Combine(scratch.FullName, ".env"),
+                Path.GetFullPath(Path.Combine(scratch.FullName, "packages/example/.env"))
+            ]);
+            MockLogger.InfoMessages.ShouldBeEmpty(); // does not print the tree
+            _consoleError.ToString().ShouldStartWith("▣ found 2 .env files");
+        }
+        finally
+        {
+            Environment.CurrentDirectory = Path.GetTempPath();
+            Directory.Delete(scratch.FullName, true);
+        }
+    }
 }

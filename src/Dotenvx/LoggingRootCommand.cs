@@ -63,6 +63,11 @@ public class LoggingRootCommand : RootCommand
             : null;
     }
 
+    public bool IsQuiet(ParseResult parseResult)
+    {
+        return parseResult.GetValue(_quietLogLevel);
+    }
+
     public bool IsVerboseMode(ParseResult parseResult)
     {
         return parseResult.GetValue(_logLevel) == "verbose" || parseResult.GetValue(_verboseLogLevel);

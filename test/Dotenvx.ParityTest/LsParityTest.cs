@@ -134,4 +134,20 @@ public class LsParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
+
+    /// <remarks>Not from a JS test - found by porting "ls does not print a summary in quiet mode": -q must suppress the stderr summary on both sides.</remarks>
+    [Fact]
+    public async Task QuietSuppressesTheSummaryLineOnBothSides()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(WriteNestedFixture, null, "ls", "-q");
+
+        node.StandardError.ShouldBeEmpty();
+        dotnet.StandardError.ShouldBe(node.StandardError);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+    }
 }
