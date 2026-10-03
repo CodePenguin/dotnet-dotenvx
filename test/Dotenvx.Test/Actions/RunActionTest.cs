@@ -15,7 +15,12 @@ using ParseResult = System.CommandLine.ParseResult;
 
 namespace dotnet_dotenvx.Test.Actions;
 
-/// <remarks>Reference source: dotenvx/tests/cli/actions/run.test.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/tests/cli/actions/run.test.js. No C# counterpart for "run updates spinner from envs resolver status",
+/// "run passes Armor token and wrapped command to envs resolver", "run --no-armor uses armor off", "run --no-1password disables
+/// 1Password resolution" and "run --no-bitwarden disables Bitwarden resolution": spinner, Armor and password-manager features
+/// are out of scope.
+/// </remarks>
 public class RunActionTest : EnvironmentTestBase
 {
     public RunActionTest()
@@ -183,7 +188,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env");
     }
 
-    /// <remarks>Refer to "run - envFile"</remarks>
+    /// <remarks>Refer to "run - envFile" and "run - envFile omits armor suffix" (this port has no armor suffix at all)</remarks>
     [Fact]
     public void TestRunEnvFile()
     {
@@ -1096,4 +1101,31 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.InfoMessages.ShouldContain("⟐ injected env (0) from .env");
     }
 
+
+    /// <remarks>
+    /// Refer to "run - envFile - parsed, injected, and existed missing for some reason upstream - it doesn't choke": a
+    /// processed env with no parsed/injected/existed entries is handled without error. (In C# those are never null, so
+    /// the equivalent is empty dictionaries.)
+    /// </remarks>
+    [Fact]
+    public void TestRunEnvFileWithNothingParsedDoesNotChoke()
+    {
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs = [new RunProcessedEnv { Type = EnvType.EnvFile, FilePath = ".env" }],
+            ReadableStrings = [],
+            ReadableFilePaths = [".env"],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        int exitCode = RootCommand.Parse(["run", "--", "echo", ""]).Invoke();
+
+        exitCode.ShouldBe(0);
+        MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0) from .env");
+    }
 }
