@@ -13,7 +13,7 @@ using Shouldly;
 
 namespace dotnet_dotenvx.Test.Actions;
 
-/// <remarks>Reference source: dotenvx/src/cli/actions/validate.js</remarks>
+/// <remarks>Reference source: dotenvx/tests/cli/actions/validate.test.js</remarks>
 public class ValidateActionTest : EnvironmentTestBase
 {
     public ValidateActionTest()
@@ -38,6 +38,7 @@ public class ValidateActionTest : EnvironmentTestBase
         Run.Factory = (_, _, _, _) => mockRun;
     }
 
+    /// <remarks>Not from a JS test - a missing .env.example is reported as MISSING_ENV_EXAMPLE (exit 1).</remarks>
     [Fact]
     public void TestValidateSucceedsWhenNoErrorsAndExampleValid()
     {
@@ -55,6 +56,7 @@ public class ValidateActionTest : EnvironmentTestBase
             "[MISSING_ENV_EXAMPLE] missing .env.example file. fix: [https://github.com/dotenvx/dotenvx/issues/905]");
     }
 
+    /// <remarks>Refer to "validate succeeds silently when .env.example requirements are present"</remarks>
     [Fact]
     public void TestValidateSucceedsWhenExampleSatisfied()
     {
@@ -72,6 +74,7 @@ public class ValidateActionTest : EnvironmentTestBase
         MockLogger.InfoMessages.ShouldContain("▣ validated");
     }
 
+    /// <remarks>Refer to "validate exits 1 and logs resolver errors"</remarks>
     [Fact]
     public void TestValidatePropagatesPerFileErrors()
     {
@@ -91,6 +94,7 @@ public class ValidateActionTest : EnvironmentTestBase
             "[MISSING_ENV_FILE] missing file (.env). fix: [https://github.com/dotenvx/dotenvx/issues/484]");
     }
 
+    /// <remarks>Not from a JS test - --ignore skips the listed error codes.</remarks>
     [Fact]
     public void TestValidateIgnoresErrorCodeInIgnoreList()
     {
@@ -111,6 +115,7 @@ public class ValidateActionTest : EnvironmentTestBase
         MockLogger.InfoMessages.ShouldContain("▣ validated");
     }
 
+    /// <remarks>Refer to "validate exits 1 and logs validation errors"</remarks>
     [Fact]
     public void TestValidateReportsMissingRequiredKey()
     {

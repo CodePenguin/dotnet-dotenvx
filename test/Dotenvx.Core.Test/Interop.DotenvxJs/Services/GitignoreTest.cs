@@ -126,4 +126,60 @@ public class GitignoreTest : EnvironmentTestBase
         result.Changed.ShouldBeFalse();
         result.Skipped.ShouldBeFalse();
     }
+
+    private static string AppendedTo(Func<GitignoreGenericResult> run)
+    {
+        Fsx.ExistsSync = _ => true;
+        Fsx.ReadFileX = (_, _) => "";
+        Fsx.AppendFileSync = (_, _) => { };
+
+        return run().Filename;
+    }
+
+    /// <remarks>Refer to "Git calls Generic". The Generic class here is GitignoreGeneric; its file is `.gitignore`, created when missing.</remarks>
+    [Fact]
+    public void TestGitCallsGeneric()
+    {
+        Fsx.ExistsSync = _ => false;
+        string? writtenPath = null;
+        Fsx.WriteFileX = (path, _) => writtenPath = path;
+        Fsx.ReadFileX = (_, _) => "";
+        Fsx.AppendFileSync = (_, _) => { };
+
+        GitignoreGenericResult result = new GitignoreGit().Run();
+
+        writtenPath.ShouldBe(".gitignore");
+        result.Filename.ShouldBe(".gitignore");
+        result.Skipped.ShouldBeFalse();
+    }
+
+    /// <remarks>Refer to "Docker calls Generic". Its file is `.dockerignore`, never created.</remarks>
+    [Fact]
+    public void TestDockerCallsGeneric()
+    {
+        AppendedTo(() => new GitignoreDocker().Run()).ShouldBe(".dockerignore");
+        Fsx.ExistsSync = _ => false;
+
+        new GitignoreDocker().Run().Skipped.ShouldBeTrue();
+    }
+
+    /// <remarks>Refer to "Npm calls Generic". Its file is `.npmignore`, never created.</remarks>
+    [Fact]
+    public void TestNpmCallsGeneric()
+    {
+        AppendedTo(() => new GitignoreNpm().Run()).ShouldBe(".npmignore");
+        Fsx.ExistsSync = _ => false;
+
+        new GitignoreNpm().Run().Skipped.ShouldBeTrue();
+    }
+
+    /// <remarks>Refer to "Vercel calls Generic". Its file is `.vercelignore`, never created.</remarks>
+    [Fact]
+    public void TestVercelCallsGeneric()
+    {
+        AppendedTo(() => new GitignoreVercel().Run()).ShouldBe(".vercelignore");
+        Fsx.ExistsSync = _ => false;
+
+        new GitignoreVercel().Run().Skipped.ShouldBeTrue();
+    }
 }
