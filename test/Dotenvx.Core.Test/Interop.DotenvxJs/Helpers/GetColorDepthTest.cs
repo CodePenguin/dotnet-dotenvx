@@ -77,10 +77,7 @@ public class GetColorDepthTest : IDisposable
         depth.ShouldBe(4);
     }
 
-    /// <remarks>
-    ///     Refer to "falls back to 4 when process.env.TERM neither xterm or 256color when getColorDepth throws an error
-    ///     (deno scenario)"
-    /// </remarks>
+    /// <remarks>Refer to "falls back to 4 when process.env.TERM neither xterm or 256color when getColorDepth throws an error (deno scenario)"</remarks>
     [Fact]
     public void TestFallsBackTo4WhenTermNotMatching()
     {
@@ -91,6 +88,6 @@ public class GetColorDepthTest : IDisposable
         depth.ShouldBe(4);
     }
 
-    // Note: The first JS test stubs WriteStream.getColorDepth, which is not applicable in C# port.
-    // The C# implementation directly uses TERM fallback logic.
+    // No C# counterpart for "returns WriteStream.prototype.getColorDepth()": that test stubs Node's own tty probe,
+    // which does not exist in .NET. The C# implementation uses the TERM fallback logic directly.
 }

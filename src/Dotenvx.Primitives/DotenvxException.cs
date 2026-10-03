@@ -83,7 +83,7 @@ public class MalformedEncryptedDataException : DotenvxException
     public string Key { get; }
 }
 
-public class MissingEnvFileException(string envFilePath) : DotenvxException(
+public class MissingEnvFileException(string envFilePath = ".env") : DotenvxException(
     "MISSING_ENV_FILE",
     $"[MISSING_ENV_FILE] missing file ({envFilePath})",
     "fix: [https://github.com/dotenvx/dotenvx/issues/484]");
@@ -95,7 +95,7 @@ public class MissingEnvFileException(string envFilePath) : DotenvxException(
 /// missing .env from a missing .env.keys, which this port previously collapsed into a single
 /// (and for the .env.keys case, actively misleading) MissingEnvFileException.
 /// </remarks>
-public class MissingEnvKeysFileException(string envKeysFilePath) : DotenvxException(
+public class MissingEnvKeysFileException(string envKeysFilePath = ".env.keys") : DotenvxException(
     "MISSING_ENV_KEYS_FILE",
     $"[MISSING_ENV_KEYS_FILE] missing file ({envKeysFilePath})",
     "fix: [https://github.com/dotenvx/dotenvx/issues/775]");
@@ -177,10 +177,53 @@ public class ValidationFailedException(string message) : DotenvxException(
 /// reading every `.custom()` call site in both files). CatchAndLog.cs only logs an `ERROR_CODE:`
 /// debug line when Code is non-empty, matching catchAndLog.js's `if (error.code)` check.
 /// </remarks>
-public class CustomException(string message, string help) : DotenvxException(
-    "",
-    message,
-    help);
+public class CustomException : DotenvxException
+{
+    /// <summary>errors.js ISSUE_BY_CODE: the text inside the generic `fix: [..]` help for each code.</summary>
+    public static readonly IReadOnlyDictionary<string, string> IssueByCode = new Dictionary<string, string>
+    {
+        ["COMMAND_EXITED_WITH_CODE"] = "https://github.com/dotenvx/dotenvx/issues/new",
+        ["COMMAND_SUBSTITUTION_FAILED"] = "https://github.com/dotenvx/dotenvx/issues/532",
+        ["DECRYPTION_FAILED"] = "https://github.com/dotenvx/dotenvx/issues/757",
+        ["INVALID_COLOR"] = "must be 256 colors",
+        ["INVALID_CONVENTION"] = "https://github.com/dotenvx/dotenvx/issues/761",
+        ["INVALID_PASSPHRASE"] = "try again with the correct passphrase",
+        ["INVALID_PRIVATE_KEY"] = "https://github.com/dotenvx/dotenvx/issues/465",
+        ["INVALID_PUBLIC_KEY"] = "https://github.com/dotenvx/dotenvx/issues/756",
+        ["1PASSWORD_FAILED"] = "https://www.1password.dev/cli/get-started",
+        ["BITWARDEN_FAILED"] = "https://bitwarden.com/help/cli/",
+        ["MALFORMED_ENCRYPTED_DATA"] = "https://github.com/dotenvx/dotenvx/issues/467",
+        ["MISPAIRED_PRIVATE_KEY"] = "https://github.com/dotenvx/dotenvx/issues/752",
+        ["MISSING_DIRECTORY"] = "https://github.com/dotenvx/dotenvx/issues/758",
+        ["MISSING_ENV_EXAMPLE"] = "https://github.com/dotenvx/dotenvx/issues/905",
+        ["MISSING_ENV_FILE"] = "https://github.com/dotenvx/dotenvx/issues/484",
+        ["MISSING_ENV_KEYS_FILE"] = "https://github.com/dotenvx/dotenvx/issues/775",
+        ["MISSING_ENV_FILES"] = "https://github.com/dotenvx/dotenvx/issues/760",
+        ["MISSING_KEY"] = "https://github.com/dotenvx/dotenvx/issues/759",
+        ["MISSING_LOG_LEVEL"] = "must be valid log level",
+        ["MISSING_PRIVATE_KEY"] = "https://github.com/dotenvx/dotenvx/issues/464",
+        ["MISSING_PUBLIC_KEY"] = "https://github.com/dotenvx/dotenvx/issues/865",
+        ["MISSING_VALUE"] = "https://github.com/dotenvx/dotenvx/issues/864",
+        ["FILE_NOT_WRITABLE"] = "https://github.com/dotenvx/dotenvx/issues/890",
+        ["PRECOMMIT_HOOK_MODIFY_FAILED"] = "try again or report error",
+        ["VALIDATION_FAILED"] = "https://github.com/dotenvx/dotenvx/issues/907",
+        ["WRONG_PRIVATE_KEY"] = "https://github.com/dotenvx/dotenvx/issues/466"
+    };
+
+    /// <summary>errors.js `custom()`: with a code and no explicit help, help is the generic `fix: [issue url]` for that code.</summary>
+    public CustomException(string message, string? help = null, string? code = null, string? debug = null) : base(
+        code ?? "",
+        message,
+        help ?? (code != null && IssueByCode.TryGetValue(code, out string? issue) ? $"fix: [{issue}]" : null))
+    {
+        Debug = debug;
+    }
+}
+
+public class MissingPublicKeyException() : DotenvxException(
+    "MISSING_PUBLIC_KEY",
+    "[MISSING_PUBLIC_KEY] missing public key",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/865]");
 
 public class PrecommitHookModifyFailedException(string originalMessage) : DotenvxException(
     "PRECOMMIT_HOOK_MODIFY_FAILED",

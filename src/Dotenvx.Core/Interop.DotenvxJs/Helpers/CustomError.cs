@@ -20,6 +20,6 @@ public static partial class Helpers
                 : error.Message);
         }
 
-        return new DotenvxException(error.Code, error.Message);
+        return new CustomException(error.Message, code: error.Code);
     }
 }
