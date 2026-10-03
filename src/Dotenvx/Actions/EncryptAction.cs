@@ -61,7 +61,7 @@ public class EncryptAction : Command
         new("--stdout") { Description = "send to stdout" };
 
     public EncryptAction(IDotenvxLogger logger) : base("encrypt",
-        "convert .env file(s) to encrypted .env file(s)")
+        "encrypt .env file(s)")
     {
         Aliases.Add("enc"); // shorthand
         _logger = logger;

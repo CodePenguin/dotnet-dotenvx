@@ -153,4 +153,44 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
     {
         return string.Join(' ', text.Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
+
+    /// <remarks>
+    /// Not from a JS test - found porting "default help lists direct utility commands ...": three commands (`set`, `encrypt`,
+    /// `decrypt`) had made-up descriptions. Every command's one-line description must match Node's.
+    /// </remarks>
+    [Theory]
+    [InlineData("run")]
+    [InlineData("get")]
+    [InlineData("set")]
+    [InlineData("del")]
+    [InlineData("encrypt")]
+    [InlineData("decrypt")]
+    [InlineData("keypair")]
+    [InlineData("ls")]
+    [InlineData("validate")]
+    [InlineData("gitignore")]
+    [InlineData("genexample")]
+    [InlineData("precommit")]
+    [InlineData("prebuild")]
+    public async Task CommandDescriptionMatchesNode(string command)
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => { }, null, command, "--help");
+
+        string nodeDescription = FirstLineAfter(node.StandardOutput, line => line.StartsWith("Usage:"));
+        string dotnetDescription = FirstLineAfter(dotnet.StandardOutput, line => line.Trim() == "Description:");
+
+        dotnetDescription.ShouldBe(nodeDescription);
+    }
+
+    private static string FirstLineAfter(string help, Func<string, bool> header)
+    {
+        string[] lines = help.Replace("\r\n", "\n").Split('\n');
+        int start = Array.FindIndex(lines, l => header(l));
+        return lines.Skip(start + 1).Select(l => l.Trim()).First(l => l.Length > 0);
+    }
 }

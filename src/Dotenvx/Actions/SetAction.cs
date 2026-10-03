@@ -56,7 +56,7 @@ public class SetAction : Command
         new("value") { Description = "value", Arity = ArgumentArity.ZeroOrOne };
 
     public SetAction(IDotenvxLogger logger) : base("set",
-        "set a single environment variable")
+        "encrypt a single environment variable")
     {
         _logger = logger;
         Add(_encryptOption);
