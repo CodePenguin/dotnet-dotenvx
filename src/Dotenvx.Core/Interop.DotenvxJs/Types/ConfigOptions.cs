@@ -6,6 +6,9 @@ public class ConfigOptions
 {
     public IDotenvxLogger? Logger { get; set; }
     public List<string>? Path { get; set; }
+
+    // JS `options.path` given as a single string: split on commas, trimmed, blanks dropped (an array in `Path` is used as-is)
+    public string? PathString { get; set; }
     public bool? Overload { get; set; }
     public IDictionary<string, string>? ProcessEnv { get; set; }
     public List<string>? Ignore { get; set; }

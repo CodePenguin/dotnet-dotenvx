@@ -283,4 +283,120 @@ public class ConfigTest : EnvironmentTestBase
         mockFsx.Received(1).ReadFileX(Arg.Any<string>(), "utf8");
         mockFsx.Received(1).ReadFileSync(Arg.Any<string>());
     }
+
+    /// <remarks>Refer to "takes comma-separated string for path option"</remarks>
+    [Fact]
+    public void TestTakesCommaSeparatedStringForPathOption()
+    {
+        ConfigResult result = Main.Config(new ConfigOptions { PathString = "tests/.env.local, tests/.env" });
+
+        result.Parsed["BASIC"].ShouldBe("local_basic");
+        result.Parsed["SINGLE_QUOTES"].ShouldBe("single_quotes");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBe("local_basic");
+    }
+
+    /// <remarks>Refer to "respects DOTENV_F"</remarks>
+    [Fact]
+    public void TestRespectsDotenvF()
+    {
+        Environment.SetEnvironmentVariable("DOTENV_F", "tests/.env.local");
+
+        ConfigResult result = Main.Config();
+
+        result.Parsed["BASIC"].ShouldBe("local_basic");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBe("local_basic");
+    }
+
+    /// <remarks>Refer to "respects DOTENV_PATH"</remarks>
+    [Fact]
+    public void TestRespectsDotenvPath()
+    {
+        Environment.SetEnvironmentVariable("DOTENV_PATH", "tests/.env.local");
+
+        ConfigResult result = Main.Config();
+
+        result.Parsed["BASIC"].ShouldBe("local_basic");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBe("local_basic");
+    }
+
+    /// <remarks>Refer to "path option takes precedence over configured paths"</remarks>
+    [Fact]
+    public void TestPathOptionTakesPrecedenceOverConfiguredPaths()
+    {
+        Environment.SetEnvironmentVariable("DOTENV_F", "tests/.env.local");
+        Environment.SetEnvironmentVariable("DOTENV_PATH", "tests/.env.local");
+
+        ConfigResult result = Main.Config(new ConfigOptions { Path = [EnvFileName] });
+
+        result.Parsed["BASIC"].ShouldBe("basic");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
+    }
+
+    /// <remarks>Refer to "sets values from both .env.local and .env. but neither is used as value existed in process.env."</remarks>
+    [Fact]
+    public void TestNeitherFileIsUsedAsTheValueExistedInProcessEnv()
+    {
+        Environment.SetEnvironmentVariable("BASIC", "existing");
+
+        ConfigResult result = Main.Config(new ConfigOptions { Path = [EnvLocalFileName, EnvFileName] });
+
+        // does not override process.env
+        result.Parsed["BASIC"].ShouldBe("existing");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBe("existing");
+    }
+
+    /// <remarks>Refer to "does write over keys already in process.env if the key has a falsy value but override is set to true"</remarks>
+    [Fact]
+    public void TestWritesOverAnEmptyExistingValueWhenOverloadIsTrue()
+    {
+        Environment.SetEnvironmentVariable("BASIC", "");
+
+        ConfigResult result = Main.Config(new ConfigOptions { Path = [EnvFileName], Overload = true });
+
+        result.Parsed["BASIC"].ShouldBe("basic");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
+    }
+
+    /// <remarks>Refer to "respects DOTENV_CONFIG_IGNORE environment variable and does not log matching error"</remarks>
+    [Fact]
+    public void TestRespectsDotenvConfigIgnoreAndDoesNotLogMatchingError()
+    {
+        const string missing = "./.env.fake";
+        string missingEnvFileError = new MissingEnvFileException(missing).MessageWithHelp;
+
+        // control path
+        MockLogger control = new();
+        Main.Config(new ConfigOptions { Path = [missing], Logger = control });
+        control.ErrorMessages.ShouldContain(missingEnvFileError);
+
+        // golden path, merge with existing options, and the diabolical comma shapes
+        foreach (string ignoreString in new[]
+                 {
+                     "MISSING_ENV_FILE", "MISSING_ENV_FILE,FAKE_ERROR", "FAKE_ERROR,MISSING_ENV_FILE",
+                     "FAKE_ERROR,MISSING_ENV_FILE,FAKE_ERROR_2", "MISSING_ENV_FILE,", ",MISSING_ENV_FILE",
+                     ",MISSING_ENV_FILE,"
+                 })
+        {
+            Environment.SetEnvironmentVariable("DOTENV_CONFIG_IGNORE", ignoreString);
+            MockLogger logger = new();
+            Main.Config(new ConfigOptions { Path = [missing], Logger = logger });
+            logger.ErrorMessages.ShouldNotContain(missingEnvFileError);
+        }
+
+        Environment.SetEnvironmentVariable("DOTENV_CONFIG_IGNORE", "MISSING_ENV_FILE");
+        MockLogger merged = new();
+        Main.Config(new ConfigOptions { Path = [missing], Logger = merged, Ignore = ["FAKE_ERROR"] });
+        merged.ErrorMessages.ShouldNotContain(missingEnvFileError);
+    }
+
+    /// <remarks>Refer to "logs only errors when DOTENV_CONFIG_QUIET=true"</remarks>
+    [Fact]
+    public void TestLogsOnlyErrorsWhenDotenvConfigQuietIsTrue()
+    {
+        Environment.SetEnvironmentVariable("DOTENV_CONFIG_QUIET", "true");
+
+        Main.Config(new ConfigOptions { Quiet = false, Logger = MockLogger, Path = [] });
+
+        MockLogger.SetLevelCalled.ShouldBe(DotenvxLogLevel.Error);
+    }
 }

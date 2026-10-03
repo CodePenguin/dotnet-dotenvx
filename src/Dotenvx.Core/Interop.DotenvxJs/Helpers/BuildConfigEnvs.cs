@@ -24,6 +24,7 @@ public static partial class Helpers
         {
             Logger = options.Logger,
             Path = options.Path,
+            PathString = options.PathString,
             Overload = options.Overload,
             ProcessEnv = options.ProcessEnv,
             Ignore = options.Ignore,

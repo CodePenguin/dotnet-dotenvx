@@ -10,7 +10,10 @@ using Shouldly;
 
 namespace Dotenvx.Core.Test.Interop.DotenvxJs;
 
-/// <remarks>Reference source: dotenvx/tests/lib/main.test.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/tests/lib/main.test.js. No C# counterpart for "config supports noArmor option", "config supports
+/// noSpinner option" and "config supports token option": they cover Armor, spinner and token options, which are out of scope.
+/// </remarks>
 public class MainTest : EnvironmentTestBase
 {
     private const string BackendEnvFile = "tests/monorepo/apps/backend/.env";
