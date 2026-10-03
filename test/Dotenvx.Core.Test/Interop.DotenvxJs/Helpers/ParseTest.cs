@@ -151,6 +151,24 @@ EXPAND_SELF=$EXPAND_SELF
             .ShouldBe("double \"quotes\" and single 'quotes' work inside backticks");
     }
 
+    /// <remarks>Not from a JS test - expectations read off the live @dotenvx/primitives parse() on 2026-10-02: ':' operators treat empty as unset, bare operators only treat absent as unset.</remarks>
+    [Fact]
+    public void TestExpandOperatorsTreatEmptyValuesLikePrimitives()
+    {
+        const string src = "E=\nS=\nA=${E:-d}\nB=${E-d}\nC=${E:+x}\nD=${E+x}\nF=${S}y\nG=${Z-d}\nH=${Z+x}\nX=${Z:-a-b}\n";
+
+        IReadOnlyDictionary<string, string> parsed = Main.Parse(src);
+
+        parsed["A"].ShouldBe("d");
+        parsed["B"].ShouldBe("");
+        parsed["C"].ShouldBe("");
+        parsed["D"].ShouldBe("x");
+        parsed["F"].ShouldBe("y");
+        parsed["G"].ShouldBe("d");
+        parsed["H"].ShouldBe("");
+        parsed["X"].ShouldBe("a-b");
+    }
+
     /// <remarks>Refer to "expands newlines but only if double quoted"</remarks>
     [Fact]
     public void TestExpandsNewlinesButOnlyIfDoubleQuoted()

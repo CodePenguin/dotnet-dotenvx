@@ -2,86 +2,107 @@ using System.Text.RegularExpressions;
 
 namespace Dotenvx.Primitives;
 
-/// <remarks>Reference source: dotenvx/src/lib/helpers/dotenvParse.js</remarks>
+/// <summary>One key/value pair found by <see cref="Primitives.Scan" />; Quote is '\0' when unquoted.</summary>
+public readonly record struct ScanEntry(string Key, string Value, char Quote, string? Comment = null);
+
+/// <remarks>
+/// Counterpart of the @dotenvx/primitives `scan`/`parse` exports (no readable source; the minified
+/// function bodies were read via `Function.prototype.toString()` and the result is checked against
+/// the live package by PrimitivesOracleParityTest). `Scan` is the one shared line-parser: this
+/// project's `Parse`/`Sealed`/`PublicKeys` and Dotenvx.Core's `Parse` engine all build on it.
+/// </remarks>
 public static partial class Primitives
 {
-    private static readonly Regex LineRegex = ParseRegex();
+    // JS `\s` (ECMA-262 WhiteSpace + LineTerminator) - .NET's `\s` differs (no U+FEFF, extra U+0085)
+    // and RegexOptions.ECMAScript narrows it to ASCII, so spell the class out.
+    private static readonly char[] JsWhitespaceChars =
+    [
+        (char)9, (char)10, (char)11, (char)12, (char)13, (char)32, (char)0xA0, (char)0x1680,
+        (char)0x2000, (char)0x2001, (char)0x2002, (char)0x2003, (char)0x2004, (char)0x2005,
+        (char)0x2006, (char)0x2007, (char)0x2008, (char)0x2009, (char)0x200A, (char)0x2028,
+        (char)0x2029, (char)0x202F, (char)0x205F, (char)0x3000, (char)0xFEFF
+    ];
+
+    internal static readonly string Ws = new(JsWhitespaceChars);
+
+    // JS line terminators, used for `^`/`$`/`.` under the `m` flag (.NET's Multiline only knows \n).
+    private static readonly string Terminators = new([(char)10, (char)13, (char)0x2028, (char)0x2029]);
+
+    internal static readonly string LineStart = "(?<![^" + Terminators + "])";
+    internal static readonly string LineEnd = "(?![^" + Terminators + "])";
+
+    private static readonly Regex ScanRegex = new(
+        LineStart + "[" + Ws + "]*(?:export[" + Ws + "]+)?([A-Za-z0-9_.-]+)" +
+        "(?:[" + Ws + "]*=[" + Ws + "]*?|:[" + Ws + "]+?)" +
+        "([" + Ws + "]*'(?:\\\\'|[^'])*'|[" + Ws + "]*\"(?:\\\\\"|[^\"])*\"|[" + Ws + "]*`(?:\\\\`|[^`])*`|[^#\\r\\n]+)?" +
+        "[" + Ws + "]*(?:#([^" + Terminators + "]*))?" + LineEnd,
+        RegexOptions.CultureInvariant);
+
+    private static readonly Regex SurroundingQuotes = new("^(['\"`])([\\s\\S]*)\\1$", RegexOptions.CultureInvariant);
+
+    internal static string JsTrimStart(string s)
+    {
+        return s.TrimStart(JsWhitespaceChars);
+    }
+
+    internal static string JsTrim(string s)
+    {
+        return s.Trim(JsWhitespaceChars);
+    }
+
+    public static List<ScanEntry> Scan(string? src, bool expandDoubleQuotedNewlines = true,
+        bool convertWindowsNewlines = true)
+    {
+        string lines = src ?? "";
+        if (convertWindowsNewlines)
+        {
+            lines = NormalizeNewLinesRegex().Replace(lines, "\n");
+        }
+
+        List<ScanEntry> entries = [];
+        foreach (Match match in ScanRegex.Matches(lines))
+        {
+            string raw = JsTrim(match.Groups[2].Value);
+            char quote = raw.Length > 0 && raw[0] is '\'' or '"' or '`' ? raw[0] : '\0';
+            string value = SurroundingQuotes.Replace(raw, "$2");
+
+            if (quote == '\'')
+            {
+                value = value.Replace("\\'", "'");
+            }
+
+            if (quote == '"' && expandDoubleQuotedNewlines)
+            {
+                value = value.Replace("\\n", "\n").Replace("\\r", "\r").Replace("\\t", "\t");
+            }
+
+            entries.Add(new ScanEntry(match.Groups[1].Value, value, quote,
+                match.Groups[3].Success ? JsTrim(match.Groups[3].Value) : null));
+        }
+
+        return entries;
+    }
 
     public static Dictionary<string, object> Parse(string src, bool skipExpandForDoubleQuotes = false,
         bool skipConvertingWindowsNewlines = false, bool collectAllValues = false)
     {
         Dictionary<string, object> obj = new();
-
-        // Convert buffer to string (assuming src is already string)
-        string lines = src;
-
-        // Convert line breaks to same format
-        if (!skipConvertingWindowsNewlines)
+        foreach (ScanEntry entry in Scan(src, !skipExpandForDoubleQuotes, !skipConvertingWindowsNewlines))
         {
-            lines = NormalizeNewLinesRegex().Replace(lines, "\n");
-        }
-
-        MatchCollection matches = LineRegex.Matches(lines);
-        foreach (Match match in matches)
-        {
-            string key = match.Groups[1].Value;
-
-            // Default undefined or null to empty string
-            string value = match.Groups[2].Value;
-
-            // Remove whitespace
-            value = value.Trim();
-
-            // Check if double quoted
-            char maybeQuote = value.Length > 0 ? value[0] : '\0';
-
-            // Remove surrounding quotes
-            value = SurroundingQuotesRegex().Replace(value, "$2");
-
-            // Unescape \' if single quoted (primitives' value pass; plain dotenv leaves it alone)
-            if (maybeQuote == '\'')
-            {
-                value = value.Replace("\\'", "'");
-            }
-
-            // Expand newlines if double quoted
-            if (maybeQuote == '"' && !skipExpandForDoubleQuotes)
-            {
-                value = value.Replace("\\n", "\n"); // newline
-                value = value.Replace("\\r", "\r"); // carriage return
-                value = value.Replace("\\t", "\t"); // tabs
-            }
-
             if (collectAllValues)
             {
                 // handle scenario where user mistakenly includes plaintext duplicate in .env
-                obj.TryAdd(key, value);
+                obj.TryAdd(entry.Key, entry.Value);
             }
             else
             {
-                // Add to object
-                obj[key] = value;
+                obj[entry.Key] = entry.Value;
             }
         }
 
         return obj;
     }
 
-    // Leading [\s﻿]* (not just \s*) so a byte-order-mark surviving at the very start of the
-    // decoded source (see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md) doesn't stop the
-    // FIRST key from being recognized - JS's \s regex metaclass matches U+FEFF; .NET's does not.
-    // RegexOptions.ECMAScript makes \w ASCII-only (matching JS's \w exactly) instead of .NET's
-    // default Unicode-aware \w - confirmed live that Node rejects a non-ASCII key entirely
-    // (`HÉLLO=World` parses to `{}`, not a key named "HÉLLO") while .NET's default \w
-    // silently accepted it as a valid key name.
-    [GeneratedRegex(
-        @"(?:^|^)[\s﻿]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)",
-        RegexOptions.Multiline | RegexOptions.ECMAScript)]
-    private static partial Regex ParseRegex();
-
     [GeneratedRegex(@"\r\n?")]
     private static partial Regex NormalizeNewLinesRegex();
-
-    [GeneratedRegex(@"^(['""`])([\s\S]*)\1$")]
-    private static partial Regex SurroundingQuotesRegex();
 }

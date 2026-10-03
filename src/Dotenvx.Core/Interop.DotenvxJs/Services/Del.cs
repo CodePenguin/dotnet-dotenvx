@@ -5,6 +5,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
@@ -66,7 +67,7 @@ public class Del
             {
                 string encoding = DetectEncoding(filePath);
                 string before = Fsx.ReadFileX(filePath, encoding);
-                string after = RemoveKey(before, _key);
+                string after = Remove(before, _key);
 
                 row.EnvSrc = after;
                 if (after != before)
@@ -95,38 +96,5 @@ public class Del
             ChangedFilePaths = changedFilePaths.ToArray(),
             UnchangedFilePaths = unchangedFilePaths.ToArray()
         };
-    }
-
-    private static string RemoveKey(string src, string key)
-    {
-        // Leading [\s\uFEFF]* (not just \s*) so a byte-order-mark surviving at the very start of
-        // the decoded source (see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md) doesn't stop
-        // removal of a FIRST key that happens to sit right after it.
-        Regex lineRegex = new(
-            "^[\\s\\uFEFF]*(?:export\\s+)?" + Regex.Escape(key) + // KEY (with optional export prefix)
-            "(?:\\s*=\\s*?|:\\s+?)" + // = or : assignment
-            "(?:\\s*'(?:\\\\'|[^'])*'|\\s*\"(?:\\\\\"|[^\"])*\"|\\s*`(?:\\\\`|[^`])*`|[^#\\r\\n]+)?" + // value
-            "[ \\t]*(?:#.*)?$", // optional trailing comment (horizontal whitespace only - don't cross lines)
-            RegexOptions.Multiline);
-
-        string result = src;
-        for (Match match = lineRegex.Match(result); match.Success; match = lineRegex.Match(result))
-        {
-            int start = match.Index;
-            int end = match.Index + match.Length;
-
-            if (end < result.Length && result[end] == '\n')
-            {
-                end++;
-            }
-            else if (start > 0 && result[start - 1] == '\n')
-            {
-                start--;
-            }
-
-            result = result[..start] + result[end..];
-        }
-
-        return result;
     }
 }

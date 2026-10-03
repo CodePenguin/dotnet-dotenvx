@@ -100,9 +100,25 @@ public sealed class NodeParityFixture : IAsyncLifetime
     /// primitives` section) from within the `dotenvx/` submodule directory, so `require('./src/
     /// lib/...')`-relative paths resolve the same way they would from a real file in that tree.
     /// </summary>
-    public Task<CliResult> RunNodeScriptAsync(string script)
+    public async Task<CliResult> RunNodeScriptAsync(string script)
     {
-        return RunProcessAsync(_nodePath, ["-e", script], Path.Combine(RepoRoot, "dotenvx"));
+        if (script.Length < 20000)
+        {
+            return await RunProcessAsync(_nodePath, ["-e", script], Path.Combine(RepoRoot, "dotenvx"));
+        }
+
+        // long scripts overflow the Windows command-line limit - run them from a temp file instead
+        string file = Path.Combine(Path.GetTempPath(), $"oracle-{Guid.NewGuid():N}.cjs");
+        await File.WriteAllTextAsync(file, script);
+        try
+        {
+            return await RunProcessAsync(_nodePath, [file], Path.Combine(RepoRoot, "dotenvx"),
+                new Dictionary<string, string> { ["NODE_PATH"] = Path.Combine(RepoRoot, "dotenvx", "node_modules") });
+        }
+        finally
+        {
+            File.Delete(file);
+        }
     }
 
     private static async Task<CliResult> RunProcessAsync(string fileName, IReadOnlyList<string> args,

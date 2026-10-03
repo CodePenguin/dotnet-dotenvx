@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 
 namespace Dotenvx.Primitives;
 
@@ -18,17 +17,14 @@ public static partial class Primitives
 {
     public static bool Sealed(string content)
     {
-        MatchCollection matches = ParseRegex().Matches(content);
-        foreach (Match match in matches)
+        foreach (ScanEntry entry in Scan(content))
         {
-            string key = match.Groups[1].Value;
-            if (key.StartsWith("DOTENV_PUBLIC_KEY") || key.EndsWith("_PLAIN"))
+            if (entry.Key.StartsWith("DOTENV_PUBLIC_KEY") || entry.Key.EndsWith("_PLAIN"))
             {
                 continue;
             }
 
-            string value = SurroundingQuotesRegex().Replace(match.Groups[2].Value.Trim(), "$2");
-            if (!Encrypted(value))
+            if (!Encrypted(entry.Value))
             {
                 return false;
             }

@@ -35,13 +35,78 @@ public static partial class IndexJs
             return _ => true;
         }
 
-        List<Regex> includes = (globs ?? []).Select(g => ConvertToRegex(g, dot)).ToList();
-        List<Regex> excludes = (ignore ?? []).Select(g => ConvertToRegex(g, dot)).ToList();
+        List<Func<string, bool>> includes = (globs ?? []).SelectMany(ExpandBraces).Select(g => Compile(g, dot)).ToList();
+        List<Func<string, bool>> excludes = (ignore ?? []).SelectMany(ExpandBraces).Select(g => Compile(g, dot)).ToList();
 
         return s =>
         {
-            return includes.Exists(include => include.IsMatch(s)) && !excludes.Exists(exclude => exclude.IsMatch(s));
+            return includes.Exists(include => include(s)) && !excludes.Exists(exclude => exclude(s));
         };
+    }
+
+    // A leading `!` (not an extglob `!(`) negates the rest of that glob, as in picomatch.
+    private static Func<string, bool> Compile(string glob, bool dot)
+    {
+        if (glob.Length > 1 && glob[0] == '!' && glob[1] != '(')
+        {
+            Func<string, bool> inner = Compile(glob[1..], dot);
+            return s => !inner(s);
+        }
+
+        Regex regex = ConvertToRegex(glob, dot);
+        return regex.IsMatch;
+    }
+
+    // `{a,b}` brace alternation (only comma lists; a brace without a top-level comma stays literal).
+    private static IEnumerable<string> ExpandBraces(string glob)
+    {
+        int open = glob.IndexOf('{');
+        if (open < 0)
+        {
+            return [glob];
+        }
+
+        int depth = 0;
+        int close = -1;
+        List<int> commas = [];
+        for (int i = open; i < glob.Length; i++)
+        {
+            if (glob[i] == '{')
+            {
+                depth++;
+            }
+            else if (glob[i] == '}')
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    close = i;
+                    break;
+                }
+            }
+            else if (glob[i] == ',' && depth == 1)
+            {
+                commas.Add(i);
+            }
+        }
+
+        if (close < 0 || commas.Count == 0)
+        {
+            return [glob];
+        }
+
+        string prefix = glob[..open];
+        string suffix = glob[(close + 1)..];
+        List<string> parts = [];
+        int start = open + 1;
+        foreach (int comma in commas)
+        {
+            parts.Add(glob[start..comma]);
+            start = comma + 1;
+        }
+
+        parts.Add(glob[start..close]);
+        return parts.SelectMany(p => ExpandBraces(prefix + p + suffix)).ToList();
     }
 
     private static Regex ConvertToRegex(string pattern, bool dot)
