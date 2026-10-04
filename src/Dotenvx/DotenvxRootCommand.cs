@@ -4,6 +4,7 @@ using System.CommandLine.Invocation;
 using System.IO;
 
 using Dotenvx.Actions;
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 using Dotenvx.Logging;
 
@@ -49,6 +50,11 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(validateAction);
         Subcommands.Add(setAction);
         Subcommands.Add(extCommand);
+
+        foreach (Command command in Subcommands)
+        {
+            UnknownOptionGuard.Apply(command);
+        }
     }
 
     /// <remarks>

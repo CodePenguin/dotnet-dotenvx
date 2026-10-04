@@ -11,10 +11,12 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Services;
 /// <remarks>Reference source: dotenvx/tests/lib/services/decrypt.test.js</remarks>
 public class DecryptTest : EnvironmentTestBase
 {
-    // the real transform reads keys from `fk` (default `.env.keys` in the working directory), not from the env file directory
-    private static string KeysFor(string envFile)
+    // the real transform reads keys from `fk` (default `.env.keys` in the working directory), not from the env file directory.
+    // `fk` is a list at this pin: decrypt.js passes `options.envKeysFile` straight through, which `collectEnvKeys` fills with
+    // one entry per repeated -fk.
+    private static string[] KeysFor(string envFile)
     {
-        return Path.Combine(Path.GetDirectoryName(envFile)!, ".env.keys").Replace((char)92, (char)47);
+        return [Path.Combine(Path.GetDirectoryName(envFile)!, ".env.keys").Replace((char)92, (char)47)];
     }
 
     public DecryptTest()

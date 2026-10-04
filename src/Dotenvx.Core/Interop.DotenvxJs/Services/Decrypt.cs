@@ -16,7 +16,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// the source, so a failed key leaves its ciphertext and reports one combined DECRYPTION_FAILED error
 /// without stopping the rest of the file.
 /// </remarks>
-public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath)
+public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string[]? envKeysFilePaths)
 {
     private readonly HashSet<string> _changedFilePaths = [];
 
@@ -62,7 +62,7 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
             {
                 Ik = keys,
                 Ek = excludeKeys,
-                Fk = string.IsNullOrEmpty(envKeysFilePath) ? null : [envKeysFilePath],
+                Fk = envKeysFilePaths is { Length: > 0 } ? envKeysFilePaths : null,
                 ReadFile = path => Fsx.ReadFileX(path)
             });
 

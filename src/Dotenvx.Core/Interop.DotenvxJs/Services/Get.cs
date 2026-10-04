@@ -10,12 +10,12 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// reorg CLAUDE.md already documents elsewhere).
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class Get(string? key, EnvItem[] envs, bool overload, bool all, string? envKeysFilePath)
+public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]? envKeysFilePaths)
 {
-    private static readonly Func<string?, EnvItem[], bool, bool, string?, Get> DefaultFactory =
+    private static readonly Func<string?, EnvItem[], bool, bool, string[]?, Get> DefaultFactory =
         (key, envs, overload, all, envKeysFile) => new Get(key, envs, overload, all, envKeysFile);
 
-    public static Func<string?, EnvItem[], bool, bool, string?, Get>
+    public static Func<string?, EnvItem[], bool, bool, string[]?, Get>
         Factory { get; internal set; } = DefaultFactory;
 
     internal static void ResetFactory()
@@ -28,7 +28,7 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string? e
         Dictionary<string, string> processEnv = new(Environment.GetEnvironmentVariables()
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
-        RunResult runResult = Services.Run.Factory(envs, overload, processEnv, envKeysFilePath).Execute();
+        RunResult runResult = Services.Run.Factory(envs, overload, processEnv, envKeysFilePaths).Execute();
 
         List<Exception> errors = [];
         foreach (RunProcessedEnv processedEnv in runResult.ProcessedEnvs)
@@ -36,7 +36,7 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string? e
             errors.AddRange(processedEnv.Errors);
         }
 
-        if (key != null)
+        if (!string.IsNullOrEmpty(key)) // resolvers/get.js: `if (key)`, an empty key is the no-key branch
         {
             Dictionary<string, string> parsed = [];
             if (processEnv.TryGetValue(key, out string? value))

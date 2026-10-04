@@ -177,4 +177,76 @@ public class RunParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.ExitCode.ShouldBe(0);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
+
+    /// <remarks>
+    /// Regression test for a 2026-10-04 bug found by auditing the 21 red
+    /// <c>RunActionTest.TestRun*</c> tests, all of which use <c>run -- echo ""</c>: upstream reaches
+    /// execa, whose cross-spawn layer re-runs a command that <c>which.sync</c> cannot resolve through
+    /// <c>%COMSPEC%</c> (<c>cmd.exe /d /s /c</c>). That is why a cmd BUILTIN - never on PATH - runs on
+    /// Node, and why a genuinely missing command surfaces cmd's own "'x' is not recognized..."
+    /// stderr rather than a message of ours. This port reported "Unknown command: echo" instead,
+    /// failing all 21 on Windows while CI (ubuntu) stayed green.
+    ///
+    /// The rows pin the two halves of the emulated command line, which was derived by diffing raw
+    /// bytes against the pinned CLI rather than by reading the JS: each argument is wrapped in double
+    /// quotes (so <c>&amp;</c> can't be read as a command separator) with inner quotes
+    /// backslash-escaped, while the command itself is left bare.
+    /// </remarks>
+    [Theory]
+    [InlineData("")]
+    [InlineData("hi")]
+    [InlineData("a b")]
+    [InlineData("a\"b")]
+    [InlineData("a&b")]
+    public async Task ShellBuiltinRunsThroughComSpecIdentically(string arg)
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        // Windows-only. Whether `echo` is cmd's builtin (output keeps the quotes) or a PATH executable such as Git's echo.exe (it does not) depends on the machine, so both sides are only compared with each other: the
+        // quoting rules are exercised wherever the fallback is what resolves the command, and the output must match Node either way. Cross-platform
+        // child-process behaviour is covered by the
+        // `node`-as-child rows above instead.
+        if (!OperatingSystem.IsWindows())
+        {
+            Console.WriteLine("SKIPPED (ComSpec shell-builtin fallback is Windows-only)");
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=World\n"), null, "run", "--", "echo", arg);
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+        dotnet.ExitCode.ShouldBe(0);
+    }
+
+    /// <summary>
+    /// The other half of the same fallback: an unresolvable command must produce cmd's own stderr and
+    /// cmd's own exit code, not our "Unknown command" line.
+    /// </summary>
+    [Fact]
+    public async Task UnresolvableCommandSurfacesComSpecErrorIdentically()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            Console.WriteLine("SKIPPED (ComSpec shell-builtin fallback is Windows-only)");
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=World\n"), null, "run", "--", "nosuchcmd12345");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+        dotnet.StandardError.ShouldBe(node.StandardError);
+        dotnet.ExitCode.ShouldBe(1);
+    }
 }

@@ -41,7 +41,7 @@ public static class Main
         bool strict = options.Strict ?? false;
 
         // envKeysFile
-        string envKeysFile = options.EnvKeysFile ?? string.Empty;
+        string[]? envKeysFile = string.IsNullOrEmpty(options.EnvKeysFile) ? null : [options.EnvKeysFile];
 
         try
         {
@@ -188,7 +188,8 @@ public static class Main
 
         EnvItem[] envs = BuildEnvs(options);
         GetResult result = Services.Get
-            .Factory(key, envs, options.Overload ?? false, options.All ?? false, options.EnvKeysFile)
+            .Factory(key, envs, options.Overload ?? false, options.All ?? false,
+                string.IsNullOrEmpty(options.EnvKeysFile) ? null : [options.EnvKeysFile])
             .Run();
 
         IReadOnlyDictionary<string, string> parsed = result.Parsed;
@@ -246,7 +247,8 @@ public static class Main
     public static IReadOnlyDictionary<string, string> KeyPair(string envFile = ".env", string? key = null,
         string? envKeysFile = null)
     {
-        Dictionary<string, string?> keypairs = Services.KeyPair.Factory(envFile, envKeysFile).Run();
+        Dictionary<string, string?> keypairs =
+            Services.KeyPair.Factory(envFile, envKeysFile is null ? null : [envKeysFile]).Run();
         return !string.IsNullOrEmpty(key)
             ? new Dictionary<string, string> { { key, keypairs.GetValueOrDefault(key) ?? "" } }
             : keypairs.ToDictionary(kv => kv.Key, kv => kv.Value ?? "");

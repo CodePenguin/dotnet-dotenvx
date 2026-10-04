@@ -41,7 +41,7 @@ public class KeyPairTest : EnvironmentTestBase
     [Fact]
     public void TestRunUsesCustomEnvKeysFile()
     {
-        Dictionary<string, string?> result = new KeyPair(EnvFile, KeysFile).Run();
+        Dictionary<string, string?> result = new KeyPair(EnvFile, [KeysFile]).Run();
 
         result["DOTENV_PRIVATE_KEY"].ShouldBe(FixturePrivateKey());
     }
@@ -52,7 +52,7 @@ public class KeyPairTest : EnvironmentTestBase
     {
         Environment.SetEnvironmentVariable("DOTENV_PRIVATE_KEY", FixturePrivateKey());
 
-        Dictionary<string, string?> result = new KeyPair(EnvFile, "tests/monorepo/apps/encrypted/does-not-exist.keys").Run();
+        Dictionary<string, string?> result = new KeyPair(EnvFile, ["tests/monorepo/apps/encrypted/does-not-exist.keys"]).Run();
 
         result["DOTENV_PRIVATE_KEY"].ShouldBe(FixturePrivateKey());
     }
@@ -61,7 +61,7 @@ public class KeyPairTest : EnvironmentTestBase
     [Fact]
     public void TestRunReturnsNullsWhenTheEnvFileHasNoPublicKey()
     {
-        Dictionary<string, string?> result = new KeyPair("tests/monorepo/apps/frontend/.env", KeysFile).Run();
+        Dictionary<string, string?> result = new KeyPair("tests/monorepo/apps/frontend/.env", [KeysFile]).Run();
 
         result["DOTENV_PUBLIC_KEY"].ShouldBeNull();
         result["DOTENV_PRIVATE_KEY"].ShouldBeNull();

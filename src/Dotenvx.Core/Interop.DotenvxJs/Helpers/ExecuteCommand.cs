@@ -81,6 +81,7 @@ public static partial class Helpers
         try
         {
             // Expand only the executable; child arguments and separators pass through unchanged.
+            bool shellFallback = false;
             try
             {
                 string? foundPath = WhichSync(commandArgs[0]);
@@ -89,9 +90,14 @@ public static partial class Helpers
                     commandArgs[0] = Path.GetFullPath(foundPath);
                     logger.Debug($"expanding process command to [{string.Join(' ', commandArgs)}]");
                 }
+                else
+                {
+                    shellFallback = true;
+                }
             }
             catch
             {
+                shellFallback = true;
                 logger.Debug($"could not expand process command. using [{string.Join(' ', commandArgs)}]");
             }
 
@@ -118,6 +124,11 @@ public static partial class Helpers
             foreach (string arg in commandArgs.Skip(1))
             {
                 child.StartInfo.ArgumentList.Add(arg);
+            }
+
+            if (shellFallback)
+            {
+                ApplyComSpecFallback(child.StartInfo, commandArgs);
             }
 
             // Set environment variables
@@ -184,6 +195,42 @@ public static partial class Helpers
         {
             Console.CancelKeyPress -= SigintHandler;
         }
+    }
+
+    /// <summary>
+    /// Reproduces cross-spawn's Windows shell fallback, which is what upstream reaches through
+    /// execa when `which.sync` cannot resolve the command. Node's libuv re-runs an unresolved
+    /// command through <c>%COMSPEC%</c> as <c>cmd.exe /d /s /c "..."</c>, so a cmd builtin that is
+    /// never on PATH still runs: <c>dotenvx run -- echo hi</c> prints <c>"hi"</c> on Node and used to
+    /// fail here with <c>Unknown command: echo</c>. It is also why a genuinely missing command
+    /// surfaces cmd's own <c>'x' is not recognized as an internal or external command</c> on stderr
+    /// rather than any message of ours.
+    ///
+    /// The exact shape matters, and was derived by running the pinned Node CLI and diffing raw bytes
+    /// (not by reading the JS): each ARGUMENT is wrapped in double quotes with inner quotes
+    /// backslash-escaped, the command itself is left bare, and the whole line is wrapped once more so
+    /// cmd's <c>/s</c> strips exactly that outer pair. So <c>run -- echo ""</c> executes <c>echo ""</c>
+    /// and prints <c>""</c>, and <c>run -- echo a&amp;b</c> executes <c>echo "a&amp;b"</c> - the quotes
+    /// are what stop <c>&amp;</c> being read as a command separator.
+    ///
+    /// <c>Arguments</c> is set instead of <c>ArgumentList</c> because .NET only quotes values it puts
+    /// in <c>ArgumentList</c>; a raw <c>Arguments</c> string is passed to CreateProcess untouched.
+    /// </summary>
+    private static void ApplyComSpecFallback(ProcessStartInfo startInfo, string[] commandArgs)
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return;
+        }
+
+        string commandLine = string.Join(" ",
+            commandArgs.Skip(1).Select(arg => "\"" + arg.Replace("\"", "\\\"", StringComparison.Ordinal) + "\""));
+
+        startInfo.FileName = Environment.GetEnvironmentVariable("ComSpec") is { Length: > 0 } comSpec
+            ? comSpec
+            : "cmd.exe";
+        startInfo.ArgumentList.Clear();
+        startInfo.Arguments = $"/d /s /c \"{commandArgs[0]} {commandLine}\"";
     }
 
     private static string? WhichSync(string command)

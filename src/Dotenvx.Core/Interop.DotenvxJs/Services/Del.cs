@@ -11,10 +11,8 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 
 /// <remarks>
 /// Reference source: dotenvx/src/lib/transforms/del.js. Upstream delegates the actual key removal to
-/// the external @dotenvx/primitives package (not vendored in this submodule); the removal regex here
-/// was derived empirically by diffing real dotenvx CLI output for a range of .env fixtures (quoted,
-/// multiline, exported, and commented values; first/middle/last key; with and without a trailing
-/// newline) rather than ported from readable source.
+/// the `remove` export of @dotenvx/primitives, which is `Primitives.Remove` here (checked against the real
+/// package by PrimitivesOracleParityTest).
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class Del

@@ -175,7 +175,7 @@ public class RunAction : Command
 
             EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
 
-            Run runService = Run.Factory(envItems, overload, processEnv, envKeysFile?.FirstOrDefault());
+            Run runService = Run.Factory(envItems, overload, processEnv, ResolveEnvKeysFile(envKeysFile));
             RunResult result = runService.Execute();
 
             IList<RunProcessedEnv> processedEnvs = result.ProcessedEnvs;

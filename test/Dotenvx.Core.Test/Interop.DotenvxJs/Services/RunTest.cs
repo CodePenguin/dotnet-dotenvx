@@ -203,10 +203,10 @@ public class RunTest : EnvironmentTestBase
     public void TestRunEncryptedEnvFile()
     {
         const string envFile = "tests/monorepo/apps/encrypted/.env";
-        const string envKeysFilePath = "tests/monorepo/apps/encrypted/.env.keys";
+        string[] envKeysFilePaths = ["tests/monorepo/apps/encrypted/.env.keys"];
 
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        RunResult result = new Run(envs, envKeysFilePath: envKeysFilePath).Execute();
+        RunResult result = new Run(envs, envKeysFilePaths: envKeysFilePaths).Execute();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         RunProcessedEnv p = result.ProcessedEnvs[0];

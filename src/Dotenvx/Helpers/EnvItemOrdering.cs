@@ -27,6 +27,14 @@ namespace Dotenvx.Helpers;
 /// each option's already-grouped value array, stopping entirely at a `--` separator so a trailing
 /// command's own arguments (e.g. `run`'s child command, which may itself contain literal `-e`/`-f`-
 /// looking text) are never misattributed to these options.
+///
+/// The two options have DIFFERENT arity upstream and the walk has to honor it: `-e, --env <strings...>`
+/// is a commander variadic that consumes every following non-option token, while `-f, --env-file <path>`
+/// consumes exactly ONE token per occurrence (commander calls `collectEnvs('envFile')` once per
+/// occurrence). Treating both as greedy made `dotenvx get -f .env KEY` - the single most common
+/// `get` form - also collect `KEY` as an env FILE, producing a spurious
+/// `[MISSING_ENV_FILE] missing file (KEY)` and exit 1 where Node prints the value and exits 0
+/// (live-verified against the pinned CLI).
 /// </remarks>
 internal static class EnvItemOrdering
 {
@@ -38,6 +46,7 @@ internal static class EnvItemOrdering
 
         List<EnvItem> items = [];
         EnvType? currentType = null;
+        int remaining = 0;
 
         foreach (Token token in parseResult.Tokens)
         {
@@ -51,27 +60,37 @@ internal static class EnvItemOrdering
                 if (envNames.Contains(token.Value))
                 {
                     currentType = EnvType.Env;
+                    remaining = int.MaxValue; // `-e, --env <strings...>` is commander-variadic: it eats every following token
                 }
                 else if (envFileNames.Contains(token.Value))
                 {
                     currentType = EnvType.EnvFile;
+                    remaining = 1; // `-f, --env-file <path>` takes exactly ONE value per occurrence
                 }
                 else
                 {
                     currentType = null;
+                    remaining = 0;
                 }
 
+                continue;
+            }
+
+            if (remaining <= 0)
+            {
                 continue;
             }
 
             if (currentType == EnvType.Env)
             {
                 items.Add(new EnvItem { Type = EnvType.Env, Value = token.Value });
+                remaining--;
             }
             else if (currentType == EnvType.EnvFile)
             {
                 items.AddRange(SplitCommaSeparatedEnvFiles([token.Value])
                     .Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
+                remaining--;
             }
         }
 

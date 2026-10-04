@@ -21,11 +21,11 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class Run
 {
-    private static readonly Func<EnvItem[], bool, IDictionary<string, string>?, string?, Run> DefaultFactory =
-        (envs, overload, processEnv, envKeysFilePath) => new Run(envs, overload, processEnv, envKeysFilePath);
+    private static readonly Func<EnvItem[], bool, IDictionary<string, string>?, string[]?, Run> DefaultFactory =
+        (envs, overload, processEnv, envKeysFilePaths) => new Run(envs, overload, processEnv, envKeysFilePaths);
 
     private readonly IDictionary<string, string> _beforeEnv;
-    private readonly string? _envKeysFilePath;
+    private readonly string[]? _envKeysFilePaths;
     private readonly EnvItem[] _envs;
 
     // main.js config() only runs `determine` when no explicit `envs` option was given; every other caller determines
@@ -50,7 +50,7 @@ public class Run
     }
 
     public Run(EnvItem[]? envs = null, bool overload = false,
-        IDictionary<string, string>? processEnv = null, string? envKeysFilePath = null, bool opsOn = true)
+        IDictionary<string, string>? processEnv = null, string[]? envKeysFilePaths = null, bool opsOn = true)
     {
         _useSystemEnv = processEnv == null;
         _processEnv = processEnv ?? EnvironmentHelper.GetEnvironmentVariablesAsDictionary();
@@ -58,10 +58,10 @@ public class Run
         _envs = envs ?? [];
         _opsOn = opsOn;
         _overload = overload;
-        _envKeysFilePath = envKeysFilePath;
+        _envKeysFilePaths = envKeysFilePaths;
     }
 
-    public static Func<EnvItem[], bool, IDictionary<string, string>?, string?, Run>
+    public static Func<EnvItem[], bool, IDictionary<string, string>?, string[]?, Run>
         Factory { get; internal set; } = DefaultFactory;
 
     internal static void ResetFactory()
@@ -111,7 +111,7 @@ public class Run
             {
                 Overload = _overload,
                 ProcessEnv = new Dictionary<string, string>(_processEnv),
-                Fk = _envKeysFilePath == null ? null : [_envKeysFilePath]
+                Fk = _envKeysFilePaths is { Length: > 0 } ? _envKeysFilePaths : null
             });
             row.Parsed = parsed.Parsed;
             row.Errors = DecryptErrors(parsed);
@@ -161,18 +161,18 @@ public class Run
             // envs.js: fk = envKeysFilepath || (processEnv[privateKeyName] ? null : <env dir>/.env.keys);
             // a null fk still means primitives' default `.env.keys` in the working directory.
             string privateKeyName = GuessPrivateKeyName(envFilePath);
-            string? fk = _envKeysFilePath;
-            if (string.IsNullOrEmpty(fk) && !(_processEnv.TryGetValue(privateKeyName, out string? exported) &&
+            string[]? fk = _envKeysFilePaths is { Length: > 0 } ? _envKeysFilePaths : null;
+            if (fk is null && !(_processEnv.TryGetValue(privateKeyName, out string? exported) &&
                                               !string.IsNullOrEmpty(exported)))
             {
-                fk = Path.Combine(Path.GetDirectoryName(filepath) ?? "", ".env.keys");
+                fk = [Path.Combine(Path.GetDirectoryName(filepath) ?? "", ".env.keys")];
             }
 
             PrimitivesParseOutput parsed = ParseSync(src, new PrimitivesParseOptions
             {
                 Overload = _overload,
                 ProcessEnv = _processEnv,
-                Fk = string.IsNullOrEmpty(fk) ? null : [fk]
+                Fk = fk
             });
 
             row.Src = src;

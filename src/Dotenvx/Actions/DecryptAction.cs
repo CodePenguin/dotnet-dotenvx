@@ -99,7 +99,7 @@ public class DecryptAction : Command
         envItems.AddRange(
             SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
 
-        string? envKeysFilePath = envKeysFile?.FirstOrDefault();
+        string[]? envKeysFilePath = envKeysFile is { Length: > 0 } ? envKeysFile : null; // decrypt passes `fk` straight through (no directory resolution)
         int errorCount = 0;
 
         // stdout - should not have a try so that exit codes can surface to stdout

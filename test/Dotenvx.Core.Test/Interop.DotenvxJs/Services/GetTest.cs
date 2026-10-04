@@ -28,10 +28,10 @@ public class GetTest : EnvironmentTestBase
     {
         Environment.SetEnvironmentVariable("PRESET_ENV_EXAMPLE", "something/on/machine");
 
-        GetResult result = new Get(null, [], false, true, "").Run();
+        GetResult result = new Get(null, [], false, true, []).Run();
         result.Parsed.ShouldBe(new Dictionary<string, string> { ["PRESET_ENV_EXAMPLE"] = "something/on/machine" });
 
-        result = new Get(null, [], false, false, "").Run();
+        result = new Get(null, [], false, false, []).Run();
         result.Parsed.ShouldBeEmpty();
     }
 

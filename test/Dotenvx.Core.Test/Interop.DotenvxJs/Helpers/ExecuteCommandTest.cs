@@ -59,8 +59,9 @@ public class ExecuteCommandTest
 
     /// <remarks>
     /// Refer to "executeCommand - command-does-not-exist" and "executeCommand - ENOENT": an unresolvable command is
-    /// reported as `Unknown command: X`. On Windows real Node instead lets cmd.exe's own text through (trap #33), the
-    /// documented third-party quirk this port deliberately does not copy.
+    /// reported as `Unknown command: X`. On Windows real Node instead re-runs it through %COMSPEC% (cross-spawn's
+    /// shell fallback, which this port now reproduces, see ExecuteCommand.cs and trap #33), so cmd.exe's own
+    /// "is not recognized" text reaches stderr, our logger stays silent, and the exit code is cmd's (1).
     /// </remarks>
     [Fact]
     public async Task TestCommandDoesNotExist()
@@ -71,7 +72,14 @@ public class ExecuteCommandTest
             new Dictionary<string, string>());
 
         exitCode.ShouldBe(1);
-        logger.Received().Error("Unknown command: definitely-not-a-real-command-xyz");
+        if (OperatingSystem.IsWindows())
+        {
+            logger.DidNotReceiveWithAnyArgs().Error(default!);
+        }
+        else
+        {
+            logger.Received().Error("Unknown command: definitely-not-a-real-command-xyz");
+        }
     }
 
     /// <remarks>

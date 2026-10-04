@@ -115,7 +115,7 @@ public class ValidateAction : Command
 
             EnvItem[] envItems = BuildCommandEnvs(explicitEnvItems.ToArray(), convention);
 
-            Run runService = Run.Factory(envItems, overload, validateEnv, envKeysFile?.FirstOrDefault());
+            Run runService = Run.Factory(envItems, overload, validateEnv, ResolveEnvKeysFile(envKeysFile));
             RunResult result = runService.Execute();
 
             int errorCount = 0;

@@ -156,7 +156,7 @@ public class Sets
             else
             {
                 // expensive additional loop: the current (decrypted) value comes from the get resolver
-                GetResult resolved = Get.Factory(_key, [env], false, true, fk).Run();
+                GetResult resolved = Get.Factory(_key, [env], false, true, [fk]).Run();
                 string? before = resolved.Parsed.GetValueOrDefault(_key ?? "");
                 if (_value != before)
                 {

@@ -24,9 +24,9 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// belongs instead.
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class KeyPair(string envFile = ".env", string? envKeysFilePath = null)
+public class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = null)
 {
-    private static readonly Func<string, string?, KeyPair> DefaultFactory =
+    private static readonly Func<string, string[]?, KeyPair> DefaultFactory =
         (envFile, envKeysFile) => new KeyPair(envFile, envKeysFile);
 
     private readonly string[] _envFiles = [envFile];
@@ -36,7 +36,7 @@ public class KeyPair(string envFile = ".env", string? envKeysFilePath = null)
         // For unit tests
     }
 
-    public static Func<string, string?, KeyPair> Factory { get; internal set; } = DefaultFactory;
+    public static Func<string, string[]?, KeyPair> Factory { get; internal set; } = DefaultFactory;
 
     internal static void ResetFactory()
     {
@@ -66,14 +66,15 @@ public class KeyPair(string envFile = ".env", string? envKeysFilePath = null)
                 ring[publicKey] = "";
             }
 
-            string fk = !string.IsNullOrEmpty(envKeysFilePath)
-                ? envKeysFilePath
-                : Path.Combine(Path.GetDirectoryName(Path.GetFullPath(envFilePath)) ?? "", ".env.keys");
+            // keypair.js: `fk = options.envKeysFilepath || path.resolve(path.dirname(filepath), '.env.keys')`
+            string[] fk = envKeysFilePaths is { Length: > 0 }
+                ? envKeysFilePaths
+                : [Path.Combine(Path.GetDirectoryName(Path.GetFullPath(envFilePath)) ?? "", ".env.keys")];
 
             ring = KeyringSync(new KeyringOptions
             {
                 Ring = ring,
-                Fk = [fk],
+                Fk = fk,
                 ProcessEnv = EnvironmentHelper.GetEnvironmentVariablesAsDictionary(),
                 ReadFile = path => Fsx.ReadFileX(path)
             });

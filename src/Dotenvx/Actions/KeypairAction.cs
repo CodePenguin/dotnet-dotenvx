@@ -35,7 +35,7 @@ public class KeyPairAction : Command
     private readonly Option<string[]?> _envFileOption =
         new("--file", "--env-file", "-f") { Description = "path(s) to your env file(s)", HelpName = "paths..." };
 
-    private readonly Option<string?> _envKeysFileOption =
+    private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
         {
             Description = "path(s) to your .env.keys file(s) (default: same path as your env file)",
@@ -72,7 +72,7 @@ public class KeyPairAction : Command
     {
         string? key = parseResult.GetValue(_keyArgument);
         string[]? envFile = parseResult.GetValue(_envFileOption);
-        string? envKeysFile = parseResult.GetValue(_envKeysFileOption);
+        string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         string? formatValue = parseResult.GetValue(_formatOption);
         string format = formatValue ?? "json";
         bool prettyPrint = parseResult.GetValue(_prettyPrintOption);
@@ -98,7 +98,7 @@ public class KeyPairAction : Command
                         $"ENOENT: no such file or directory, open '{Path.GetFullPath(resolvedEnvFile)}'");
                 }
 
-                KeyPair keyPair = KeyPair.Factory(resolvedEnvFile, envKeysFile);
+                KeyPair keyPair = KeyPair.Factory(resolvedEnvFile, envKeysFile is { Length: > 0 } ? envKeysFile : null);
                 foreach ((string resultKey, string? resultValue) in keyPair.Run())
                 {
                     results[resultKey] = resultValue;

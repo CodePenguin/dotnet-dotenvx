@@ -64,6 +64,41 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
 
+    /// <remarks>
+    /// Regression test found 2026-10-04 verifying multi-value `-fk`: `EnvItemOrdering`'s raw-token
+    /// walk treated `-f`/`--env-file` as greedy and swallowed the positional KEY as one more env FILE
+    /// (upstream `-f, --env-file &lt;path&gt;` takes exactly ONE value per occurrence, while the
+    /// variadic `-e, --env &lt;strings...&gt;` really is greedy). So `dotenvx get -f .env HELLO` - the
+    /// single most common `get` form - also reported a spurious
+    /// `[MISSING_ENV_FILE] missing file (HELLO)` and exited 1 where Node prints `World` and exits 0.
+    /// Each row pairs the one-value-per-occurrence `-f` against the genuinely variadic `-e`, so a
+    /// regression that reverts either half fails here.
+    /// </remarks>
+    [Theory]
+    [InlineData("-f .env HELLO")]
+    [InlineData("--env-file .env HELLO")]
+    [InlineData("-f .env MISSING_KEY")]
+    [InlineData("-f .env -f .env.production HELLO")]
+    [InlineData("-e FOO=bar HELLO")]
+    [InlineData("-f .env -e FOO=bar HELLO")]
+    public async Task GetEnvOptionArityDoesNotSwallowThePositionalKey(string argLine)
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() =>
+        {
+            WriteFile(".env", "HELLO=World\n");
+            WriteFile(".env.production", "HELLO=Production\n");
+        }, null, ["get", .. argLine.Split(' ')]);
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+        dotnet.StandardError.ShouldBe(node.StandardError);
+    }
+
     [Theory]
     [InlineData("shell")]
     [InlineData("eval")]
@@ -464,5 +499,23 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
         dotnet.StandardOutput.ShouldBe("{\"HELLO\":\"World\"}\n");
+    }
+
+    /// <remarks>Not from a JS test - an unknown option must be rejected (exit 1, nothing on stdout) rather than treated as the KEY positional.</remarks>
+    [Fact]
+    public async Task UnknownOptionIsRejectedOnBothSides()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=World\n"), null, "get", "--totally-made-up-flag", "HELLO");
+
+        node.ExitCode.ShouldBe(1);
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.StandardOutput.ShouldBe(node.StandardOutput);
+        dotnet.StandardError.ShouldContain("unknown option '--totally-made-up-flag'");
     }
 }

@@ -197,7 +197,7 @@ public class GetAction : Command
 
         try
         {
-            Get getService = Get.Factory(key, envItems, overload, all, envKeysFile?.FirstOrDefault());
+            Get getService = Get.Factory(key, envItems, overload, all, ResolveEnvKeysFile(envKeysFile));
             GetResult result = getService.Run();
             IReadOnlyDictionary<string, string> parsed = FilterKeys(result.Parsed, includeKey, excludeKey);
 
