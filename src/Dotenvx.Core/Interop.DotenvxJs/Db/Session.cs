@@ -25,6 +25,14 @@ public class Session(IDotenvxLogger? logger = null)
     public const string DotenvxVersion = "DOTENVX_VERSION";
     public const string DotenvxVersionLastCheck = "DOTENVX_VERSION_LAST_CHECK";
 
+    /// <summary>Test seam: `Date.now()`.</summary>
+    public static Func<long> NowMilliseconds { get; internal set; } = () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+    internal static void ResetToDefaults()
+    {
+        NowMilliseconds = () => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+    }
+
     private ConfStore? _store;
 
     private string ConfigPath()
@@ -46,7 +54,7 @@ public class Session(IDotenvxLogger? logger = null)
     }
 
     /// <summary>jsonToEnv.js: `KEY="value"` lines (values are not escaped).</summary>
-    internal static string JsonToEnv(Dictionary<string, object> json)
+    public static string JsonToEnv(Dictionary<string, object> json)
     {
         return string.Join("\n", json.Select(entry =>
             entry.Key + "=" + $"\"{Convert.ToString(entry.Value, CultureInfo.InvariantCulture)}\""));
@@ -200,7 +208,7 @@ public class Session(IDotenvxLogger? logger = null)
             double.TryParse(store.GetString(DotenvxVersionLastCheck), NumberStyles.Float, CultureInfo.InvariantCulture,
                 out double parsedLastCheck);
             long lastCheck = (long)parsedLastCheck;
-            long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            long now = NowMilliseconds();
 
             if (lastCheck + Hours24 >= now)
             {

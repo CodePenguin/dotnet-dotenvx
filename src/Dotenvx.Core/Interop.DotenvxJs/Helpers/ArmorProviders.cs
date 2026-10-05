@@ -9,7 +9,12 @@ using Dotenvx.Primitives;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>`decryptOptions(error)` of parseWithDecryptor.js: what the Armor API reported about a server-side-only key.</summary>
-public record DecryptorOptions(string? PublicKey, string? GrantToken, Exception Error);
+public record DecryptorOptions(string? PublicKey, string? GrantToken, Exception? Error)
+{
+    public Action<string>? OnStatus { get; init; }
+    public string? Token { get; init; }
+    public string? Command { get; init; }
+}
 
 /// <summary>`{ src }`: the source with its values decrypted server side.</summary>
 public record DecryptorResult(string Src);
@@ -22,11 +27,42 @@ public delegate DecryptorResult Decryptor(string src, DecryptorOptions options);
 /// </remarks>
 public static class ArmorProviders
 {
-    /// <summary>providers/armor: `{ publicKey: privateKey }` from the Armor keyring API; network failures are "nothing found".</summary>
-    public static IDictionary<string, string> Provider(string publicKeyHex, IDotenvxLogger? logger = null)
+    private static readonly Func<IDotenvxLogger?, Session> DefaultSessionFactory = logger => new Session(logger);
+
+    private static readonly Func<string?, string?, string, string?, ArmorKeyring> DefaultKeyringFactory =
+        (hostname, token, devicePublicKey, publicKey) => new ArmorKeyring(hostname, token, devicePublicKey, publicKey);
+
+    /// <summary>`new Session()` (upstream tests stub the Session class).</summary>
+    public static Func<IDotenvxLogger?, Session> SessionFactory { get; internal set; } = DefaultSessionFactory;
+
+    /// <summary>`new ArmorKeyring(...)`.</summary>
+    public static Func<string?, string?, string, string?, ArmorKeyring> KeyringFactory { get; internal set; } =
+        DefaultKeyringFactory;
+
+    internal static void ResetToDefaults()
     {
-        var session = new Session(logger);
-        var keyring = new ArmorKeyring(session.Hostname(), session.Token(), session.DevicePublicKey(), publicKeyHex);
+        SessionFactory = DefaultSessionFactory;
+        KeyringFactory = DefaultKeyringFactory;
+    }
+
+    /// <summary>providers/armor: `{ publicKey: privateKey }` from the Armor keyring API; network failures are "nothing found".</summary>
+    public static IDictionary<string, string> Provider(string publicKeyHex, IDotenvxLogger? logger = null,
+        Action<string>? onStatus = null)
+    {
+        Session session = SessionFactory(logger);
+        ArmorKeyring keyring = KeyringFactory(session.Hostname(), session.Token(), session.DevicePublicKey(), publicKeyHex);
+        Action cleanupOpenKeyListener = () => { };
+
+        if (onStatus is not null)
+        {
+            keyring.OnApprovalRequired = (approvalUri, code) =>
+            {
+                string keyDisplay = ArmoredKeyDisplay.Display(publicKeyHex);
+                string keySuffix = keyDisplay != "" ? $" ({keyDisplay})" : "";
+                onStatus($"[{code}] press Enter to open [{approvalUri}] and approve{keySuffix}");
+                cleanupOpenKeyListener = ListenForOpenKey.Listen(() => OpenUrl.Open(approvalUri));
+            };
+        }
 
         try
         {
@@ -46,12 +82,16 @@ public static class ArmorProviders
         {
             return new Dictionary<string, string>();
         }
+        finally
+        {
+            cleanupOpenKeyListener();
+        }
     }
 
     /// <summary>decryptors/armor: posts the source to `/api/armor/decrypt` and returns the decrypted source.</summary>
     public static DecryptorResult DecryptSrc(string src, DecryptorOptions options, IDotenvxLogger? logger = null)
     {
-        var session = new Session(logger);
+        Session session = SessionFactory(logger);
         JsonNode json = ArmorApi.ArmorDecrypt(session.Hostname(), session.Token(), session.DevicePublicKey(),
             options.PublicKey, src, options.GrantToken);
 

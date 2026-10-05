@@ -57,7 +57,9 @@ public static class ArmorHttp
 
     public static bool IsNetworkError(Exception? error)
     {
-        return error is HttpRequestFailedException failed && NetworkErrorCodes.Contains(failed.Code);
+        // isNetworkError.js: `error.code` or `error.cause.code`
+        return (error is HttpRequestFailedException failed && NetworkErrorCodes.Contains(failed.Code)) ||
+               (error?.InnerException is HttpRequestFailedException cause && NetworkErrorCodes.Contains(cause.Code));
     }
 
     private static HttpResult Send(string url, string method, IReadOnlyDictionary<string, string>? headers, string? body)

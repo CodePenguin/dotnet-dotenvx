@@ -39,11 +39,11 @@ Legend: `done` ported and verified, `partial` some behavior missing, `todo` not 
 | `update` | done | always prints the npm commands (never a pkg binary) |
 | `lock` (`up`, `down`) | done | scrypt implemented in `LockCrypto` (no .NET built-in); prompt stderr rendering is not byte-identical to enquirer; the `preAction` Armor update check is Phase E |
 | `native` (`up`, `down`, `push`, `pull`) | done | every store shells out like upstream (`security`, `secret-tool`, `powershell.exe` + upstream script); tested with a fake tool on PATH, real OS stores untested here (Credential Manager writes fail on the dev machine) |
-| `armor` (`up`, `down`, `push`, `pull`, `open`, `move`, `status`, `settings`) | todo | Phase E |
-| `login`, `logout` | todo | Phase E |
-| `curl` | todo | Phase E |
+| `armor` (`up`, `down`, `push`, `pull`, `open`, `move`, `status`, `settings`) | done | verified against a fake Armor API; `open` launches a browser (unit tests only); upstream `ext`-style dynamic fallback to `dotenvx-armor` included |
+| `login`, `logout` | done | OAuth device flow against the fake API |
+| `curl` | done | |
 | `ext` (`ls`, `genexample`, `gitignore`, `prebuild`, `precommit`, `scan`) | done | |
-| `ext <name>` dynamic extensions (`executeExtension`) | todo | Phase F |
+| `ext <name>` dynamic extensions (`executeExtension`) | partial | ExecuteDynamic.Extension is ported and unit-tested but `ExtCommand` does not call it yet |
 | `rotate` | not upstream | forward-ported ahead of the pin (historical commit `f1ffd157`); hidden from the pin's help is not possible (trap #17) |
 
 ## Flags upstream has that we do not
@@ -59,7 +59,7 @@ Legend: `done` ported and verified, `partial` some behavior missing, `todo` not 
 | B | `lock up/down` (local passphrase) | `cli/actions/lock/*`, `services/lock{Up,Down}.js`, `cli/commands/lock.js` | round trip with Node both ways; `INVALID_PASSPHRASE` |
 | C | 1Password and Bitwarden secret resolution (`op`, `bw`) - DONE | `helpers/resolveOnePassword.js`, `resolveBitwardenPassword.js`, `config-onepassword/bitwarden` tests | fake `op`/`bw` executables on PATH, same for both CLIs |
 | D | Native secret stores and `native` command | `helpers/{macosKeychain,linuxSecretService,windowsCredentialManager}.js`, `services/keychain*.js`, `providers/native`, `cli/actions/keychain/*` | fake `security`/`secret-tool`/PowerShell shims; real Credential Manager on Windows locally |
-| E | Armor: device and session store, API client, OAuth login/logout, armor commands, providers and decryptors, `curl`, token handling | `db/*`, `lib/api/*`, `services/armor*.js`, `login.js`, `logout.js`, `providers/armor`, `decryptors/armor`, `cli/actions/armor/*`, `curl.js`, `settings` | local fake HTTP server shared by Node and .NET runs, `HOME`/config dir overridden |
+| E (DONE) | Armor: device and session store, API client, OAuth login/logout, armor commands, providers and decryptors, `curl`, token handling | `db/*`, `lib/api/*`, `services/armor*.js`, `login.js`, `logout.js`, `providers/armor`, `decryptors/armor`, `cli/actions/armor/*`, `curl.js`, `settings` | local fake HTTP server shared by Node and .NET runs, `HOME`/config dir overridden |
 | F | Interactive prompts, spinner and status text, pty for `--redact`, full signal forwarding, dynamic extensions, set/encrypt key-storage selection | `helpers/{prompts,createSpinner,createElapsedStatus,ptyCommand,executeExtension,executeDynamic}.js` | scripted stdin, TTY emulation where possible |
 | G | Remove the out-of-scope notes and exclusion lists; every upstream test titled and ported; sweep extended to the new commands | `docs/upstream-tests-not-ported.md` must become empty | `node scripts/upstream-test-titles.js` prints nothing without the skip pattern |
 

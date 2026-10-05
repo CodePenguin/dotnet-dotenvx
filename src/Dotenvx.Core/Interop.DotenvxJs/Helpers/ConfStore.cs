@@ -9,8 +9,16 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// </remarks>
 public static class EnvPaths
 {
+    /// <summary>Test seam: replaces the OS default config directory (upstream tests stub `envPaths`).</summary>
+    public static Func<string>? ConfigOverride { get; internal set; }
+
     public static string Config(string name)
     {
+        if (ConfigOverride is not null)
+        {
+            return ConfigOverride();
+        }
+
         string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
         if (OperatingSystem.IsMacOS())

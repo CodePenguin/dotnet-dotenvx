@@ -10,6 +10,9 @@ namespace Dotenvx.Interop.DotenvxJs.Api;
 public class ApiException(string code, string message, string? help = null)
     : Types.DotenvxException(code, message, help)
 {
+    /// <summary>`error.help`: always set by buildApiError.js (the `fix: [..]` text, or `[code] &lt;json&gt;` when the API sent none).</summary>
+    public string? ErrorHelp { get; init; }
+
     public JsonNode? Meta { get; init; }
     public JsonNode? Json { get; init; }
     public int StatusCode { get; init; }
@@ -79,13 +82,14 @@ public static class ArmorApi
         // `error.messageWithHelp` only exists when the API sent a help text (so `MessageWithHelp` is the plain message otherwise)
         return new ApiException(code, message, hasHelp ? help : null)
         {
+            ErrorHelp = help,
             Meta = error["meta"],
             Json = json,
             StatusCode = statusCode
         };
     }
 
-    private static ApiException BuildOauthError(int statusCode, JsonNode json)
+    public static ApiException BuildOauthError(int statusCode, JsonNode json)
     {
         string code = json["error"]?.ToString() ?? "";
 
@@ -120,16 +124,16 @@ public static class ArmorApi
     }
 
     public static JsonNode ArmorUp(string hostname, string? token, string devicePublicKey, string? publicKey,
-        string? privateKey, string? team)
+        string? privateKey, string? team, bool omitPrivateKey = false)
     {
         JsonObject body = ArmorBody(devicePublicKey);
-        // an undefined value (a missing key) is dropped by JSON.stringify
+        // an undefined value (a key missing locally) is dropped by JSON.stringify, a null one is sent as null
         if (publicKey is not null)
         {
             body["public_key"] = publicKey;
         }
 
-        if (privateKey is not null)
+        if (!omitPrivateKey)
         {
             body["private_key"] = privateKey;
         }

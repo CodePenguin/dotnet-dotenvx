@@ -17,56 +17,6 @@ using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
 
-/// <remarks>Reference source: dotenvx/src/lib/helpers/listenForOpenKey.js (TTY only).</remarks>
-internal static class OpenKeyListener
-{
-    /// <summary>Starts watching the keyboard: Enter or `y` runs <paramref name="onOpen" />, `n` or Ctrl+C exits like SIGINT.</summary>
-    public static Action Listen(Action onOpen)
-    {
-        if (Console.IsInputRedirected)
-        {
-            return () => { };
-        }
-
-        var cts = new CancellationTokenSource();
-        var thread = new Thread(() =>
-        {
-            bool handled = false;
-            while (!cts.IsCancellationRequested)
-            {
-                if (!Console.KeyAvailable)
-                {
-                    Thread.Sleep(50);
-                    continue;
-                }
-
-                ConsoleKeyInfo key = Console.ReadKey(true);
-                if (key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control) ||
-                    char.ToLowerInvariant(key.KeyChar) == 'n')
-                {
-                    Environment.Exit(130);
-                }
-
-                if (!handled && (key.Key == ConsoleKey.Enter || char.ToLowerInvariant(key.KeyChar) == 'y'))
-                {
-                    handled = true;
-                    try
-                    {
-                        onOpen();
-                    }
-                    catch
-                    {
-                        // upstream: `Promise.resolve(onOpen()).catch(() => {})`
-                    }
-                }
-            }
-        }) { IsBackground = true };
-        thread.Start();
-
-        return () => cts.Cancel();
-    }
-}
-
 internal static class AccountOptions
 {
     public static Option<string?> Hostname()
@@ -108,11 +58,11 @@ public class LoginAction : Command
             LoginStart start = loginService.Run();
 
             string promptMessage =
-                $"◌ press Enter to open [{start.VerificationUri}] and enter code [{FormatCode(start.UserCode)}]...";
+                $"◌ press Enter to open [{start.VerificationUri}] and enter code [{FormatCodeHelper.FormatCode(start.UserCode)}]...";
             logger.Debug($"POST {hostname} with deviceCode {start.DeviceCode} at interval {start.Interval}");
             logger.Info(promptMessage);
 
-            cleanupOpenKeyListener = OpenKeyListener.Listen(() => OpenUrl.Open(start.VerificationUriComplete));
+            cleanupOpenKeyListener = ListenForOpenKey.Listen(() => OpenUrl.Open(start.VerificationUriComplete));
             JsonNode data = loginService.Poll(start.DeviceCode, start.Interval);
             cleanupOpenKeyListener();
 
@@ -129,17 +79,6 @@ public class LoginAction : Command
         }
     }
 
-    /// <summary>formatCode.js: groups of four joined by dashes.</summary>
-    internal static string FormatCode(string value)
-    {
-        var parts = new List<string>();
-        for (int i = 0; i < value.Length; i += 4)
-        {
-            parts.Add(value.Substring(i, Math.Min(4, value.Length - i)));
-        }
-
-        return string.Join("-", parts);
-    }
 }
 
 /// <remarks>Reference source: dotenvx/src/cli/actions/logout.js (also `dotenvx logout`, hidden)</remarks>

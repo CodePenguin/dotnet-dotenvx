@@ -10,12 +10,15 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// child's PATH is `&lt;cwd&gt;/node_modules/.bin:&lt;PATH&gt;` joined with a literal colon even on Windows, exactly as upstream
 /// builds it (so the first original PATH entry is merged into the first one there; verified against the Node CLI).
 /// </remarks>
+/// <summary>Node's `spawnSync` result: `status` (null when killed or never started) and whether `error` was set.</summary>
+public record SpawnResult(int? Status, bool Failed);
+
 public static class ExecuteDynamic
 {
-    private static readonly Func<string, string[], string?, int?> DefaultSpawn = Spawn;
+    private static readonly Func<string, string[], string?, SpawnResult> DefaultSpawn = Spawn;
 
-    /// <summary>(command, args, PATH) => exit status, or null when it could not be started (Node's `result.error`).</summary>
-    public static Func<string, string[], string?, int?> SpawnCommand { get; internal set; } = DefaultSpawn;
+    /// <summary>(command, args, PATH) => the `spawnSync` result.</summary>
+    public static Func<string, string[], string?, SpawnResult> SpawnCommand { get; internal set; } = DefaultSpawn;
 
     internal static void ResetToDefaults()
     {
@@ -26,14 +29,28 @@ public static class ExecuteDynamic
     /// `executeDynamic(program, command, rawArgs)`: forwards to `dotenvx-&lt;command&gt;`. Returns the process exit code
     /// (`process.exit(result.status)` when it is non-zero; a missing program exits 0 after printing the not-found text).
     /// </summary>
-    public static int Dynamic(string command, string[] rawArgs, IDotenvxLogger logger)
+    public static int Dynamic(string? command, string[] rawArgs, IDotenvxLogger logger, Action? outputHelp = null)
     {
+        if (string.IsNullOrEmpty(command))
+        {
+            outputHelp?.Invoke();
+
+            return 1;
+        }
+
         return Run("dotenvx-", command, rawArgs, logger, banner: command == "armor");
     }
 
     /// <summary>`executeExtension(ext, command, rawArgs)`: forwards to `dotenvx-ext-&lt;command&gt;`.</summary>
-    public static int Extension(string command, string[] rawArgs, IDotenvxLogger logger)
+    public static int Extension(string? command, string[] rawArgs, IDotenvxLogger logger, Action? outputHelp = null)
     {
+        if (string.IsNullOrEmpty(command))
+        {
+            outputHelp?.Invoke();
+
+            return 0;
+        }
+
         return Run("dotenvx-ext-", command, rawArgs, logger, banner: false);
     }
 
@@ -49,9 +66,9 @@ public static class ExecuteDynamic
         string binPath = Path.Combine(Directory.GetCurrentDirectory(), "node_modules", ".bin");
         string newPath = $"{binPath}:{Environment.GetEnvironmentVariable("PATH")}";
 
-        int? status = SpawnCommand(prefix + command, forwardedArgs, newPath);
+        SpawnResult result = SpawnCommand(prefix + command, forwardedArgs, newPath);
 
-        if (status is null)
+        if (result.Failed)
         {
             if (banner)
             {
@@ -67,11 +84,10 @@ public static class ExecuteDynamic
                 logger.Info($"error: unknown command '{command}'");
             }
 
-            // `process.exit(null)`: exits 0
-            return 0;
         }
 
-        return status.Value;
+        // `if (result.status !== 0) process.exit(result.status)`: a null status exits 0
+        return result.Status ?? 0;
     }
 
     private static string JsonStringify(string[] values)
@@ -82,12 +98,12 @@ public static class ExecuteDynamic
         });
     }
 
-    private static int? Spawn(string command, string[] args, string? path)
+    private static SpawnResult Spawn(string command, string[] args, string? path)
     {
         string? resolved = SecretCli.ResolveExecutable(command, path);
         if (resolved is null)
         {
-            return null;
+            return new SpawnResult(null, true);
         }
 
         var psi = new ProcessStartInfo { FileName = resolved, UseShellExecute = false };
@@ -103,11 +119,11 @@ public static class ExecuteDynamic
             using Process process = Process.Start(psi)!;
             process.WaitForExit();
 
-            return process.ExitCode;
+            return new SpawnResult(process.ExitCode, false);
         }
         catch (System.ComponentModel.Win32Exception)
         {
-            return null;
+            return new SpawnResult(null, true);
         }
     }
 }

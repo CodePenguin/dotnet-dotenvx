@@ -27,7 +27,7 @@ public class Device
         return _store.Path;
     }
 
-    public string PrivateKey()
+    public virtual string PrivateKey()
     {
         string? current = _store.GetString(PrivateKeySlot);
         if (!string.IsNullOrEmpty(current))

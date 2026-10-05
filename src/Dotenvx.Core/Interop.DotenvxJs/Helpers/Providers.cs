@@ -10,6 +10,22 @@ public class KeyAccessOptions
     public bool NoArmor { get; set; }
     public string? Token { get; set; }
     public IDotenvxLogger? Logger { get; set; }
+
+    /// <summary>The spinner status callback (`onStatus`): Armor access-approval instructions are reported through it.</summary>
+    public Action<string>? OnStatus { get; set; }
+
+    /// <summary>`options.command`: forwarded to the Armor provider/decryptor (unused by them, kept for parity).</summary>
+    public string? Command { get; set; }
+
+    /// <summary>`options.provider` given explicitly (even as null): returned as is, nothing is resolved.</summary>
+    public bool HasCustomProvider { get; set; }
+
+    public Func<string, IDictionary<string, string>?>? CustomProvider { get; set; }
+
+    /// <summary>`options.decryptor` given explicitly (even as null).</summary>
+    public bool HasCustomDecryptor { get; set; }
+
+    public Decryptor? CustomDecryptor { get; set; }
 }
 
 /// <remarks>
@@ -97,6 +113,11 @@ public static class Providers
     /// </summary>
     public static Func<string, IDictionary<string, string>?>? Resolve(KeyAccessOptions options)
     {
+        if (options.HasCustomProvider)
+        {
+            return options.CustomProvider;
+        }
+
         var providerFns = new List<Func<string, IDictionary<string, string>?>>();
 
         if (UseNative(options.NoNative))
@@ -106,7 +127,7 @@ public static class Providers
 
         if (ArmorEnabled(options))
         {
-            providerFns.Add(publicKeyHex => ArmorProviders.Provider(publicKeyHex, options.Logger));
+            providerFns.Add(publicKeyHex => ArmorProviders.Provider(publicKeyHex, options.Logger, options.OnStatus));
         }
 
         return providerFns.Count switch
@@ -120,8 +141,15 @@ public static class Providers
     /// <summary>`decryptors(options)`: the Armor server-side decryptor, or null when Armor is off.</summary>
     public static Decryptor? ResolveDecryptor(KeyAccessOptions options)
     {
+        if (options.HasCustomDecryptor)
+        {
+            return options.CustomDecryptor;
+        }
+
         return ArmorEnabled(options)
-            ? (src, decryptOptions) => ArmorProviders.DecryptSrc(src, decryptOptions, options.Logger)
+            ? (src, decryptOptions) => ArmorProviders.DecryptSrc(src,
+                decryptOptions with { OnStatus = options.OnStatus, Token = options.Token, Command = options.Command },
+                options.Logger)
             : null;
     }
 }

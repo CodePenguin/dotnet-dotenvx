@@ -1,3 +1,4 @@
+using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -68,6 +69,14 @@ public class EnvironmentTestBase : IDisposable
         Del.ResetFactory();
         SecretCli.ResetToDefaults();
         NativeStore.ResetToDefaults();
+        Session.ResetToDefaults();
+        ArmorHttp.ResetToDefaults();
+        ExecuteDynamic.ResetToDefaults();
+        OpenUrl.ResetToDefaults();
+        ArmorProviders.ResetToDefaults();
+        ListenForOpenKey.ResetToDefaults();
+        SystemInformation.ResetToDefaults();
+        EnvPaths.ConfigOverride = null;
         LockUp.ResetFactory();
         KeychainUp.ResetFactory();
         KeychainDown.ResetFactory();

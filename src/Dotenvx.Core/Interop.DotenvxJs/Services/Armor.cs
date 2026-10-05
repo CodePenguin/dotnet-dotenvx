@@ -114,7 +114,8 @@ public class ArmorUp(string hostname, string? token, string devicePublicKey, str
         string? privateKey = ReadEnvKey(privateKeyName, ".env.keys", true, ["MISSING_KEY"]);
 
         JsonNode json = ArmorTeam.Run(team, chosen =>
-            ArmorApi.ArmorUp(hostname, token, devicePublicKey, publicKey, privateKey, chosen));
+            ArmorApi.ArmorUp(hostname, token, devicePublicKey, publicKey, privateKey, chosen,
+                omitPrivateKey: privateKey is null));
 
         RemoveEnvKey(privateKeyName);
 
@@ -244,7 +245,7 @@ public class ArmorKeyring(string? hostname, string? token, string devicePublicKe
         return ArmorApi.ArmorKeyring(hostname, token, devicePublicKey, publicKey, grantToken);
     }
 
-    public JsonNode Run()
+    public virtual JsonNode Run()
     {
         try
         {
