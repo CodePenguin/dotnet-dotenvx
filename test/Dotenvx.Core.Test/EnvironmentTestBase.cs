@@ -30,7 +30,14 @@ public class EnvironmentTestBase : IDisposable
     {
         _existingEnvironmentKeys = _originalEnvironmentVariables.Keys.ToList();
 
-        // unit tests never reach the real OS secret store
+        // unit tests never read the developer's real Armor session or device key (the directory has no settings file, so
+        // Armor is off) ...
+        Environment.SetEnvironmentVariable("DOTENVX_CONFIG",
+            Path.Combine(Path.GetTempPath(), "dotenvx-unit-config-" + Guid.NewGuid().ToString("N")));
+
+        _existingEnvironmentKeys.Add("DOTENVX_CONFIG"); // ClearEnvironment() removes it with the rest
+
+        // ... and never reach the real OS secret store
         NativeStore.Current = NSubstitute.Substitute.For<INativeSecretStore>();
     }
 

@@ -20,10 +20,11 @@ public static partial class Primitives
     // the same prefix string.
     public const string Prefix = "encrypted:";
 
-    public static string Encrypt(string value, string publicKey)
+    /// <summary>`prefix: false` (the third argument upstream, used for Armor's device values) returns bare base64.</summary>
+    public static string Encrypt(string value, string publicKey, bool prefix = true)
     {
         byte[] ciphertext = Interop.EciesJs.EciesJs.Encrypt(publicKey, Encoding.UTF8.GetBytes(value));
         string encoded = Convert.ToBase64String(ciphertext);
-        return $"{Prefix}{encoded}";
+        return prefix ? $"{Prefix}{encoded}" : encoded;
     }
 }

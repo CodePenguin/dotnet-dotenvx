@@ -1,5 +1,6 @@
 using System.Collections;
 
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
@@ -26,7 +27,14 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]?
     /// <summary>resolvers/get.js passes no1Password / noBitwarden through to the envs resolver.</summary>
     public bool No1Password { get; set; }
 
-    public bool NoNative { get; set; }
+    /// <summary>How missing private keys are looked up: --no-native, --no-armor, --token (providers/index.js options).</summary>
+    public KeyAccessOptions KeyAccess { get; set; } = new();
+
+    public bool NoNative
+    {
+        get => KeyAccess.NoNative;
+        set => KeyAccess.NoNative = value;
+    }
 
     public bool NoBitwarden { get; set; }
 
@@ -38,7 +46,7 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]?
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
         Run runService = Services.Run.Factory(envs, overload, processEnv, envKeysFilePaths);
-        runService.NoNative = NoNative;
+        runService.KeyAccess = KeyAccess;
         runService.No1Password = No1Password;
         runService.NoBitwarden = NoBitwarden;
         runService.PromptForSecrets = PromptForSecrets;

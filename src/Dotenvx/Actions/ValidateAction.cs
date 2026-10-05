@@ -65,6 +65,9 @@ public class ValidateAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+    private readonly Option<string?> _tokenOption = SecretResolverOptions.Token();
+
     private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
 
     private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password();
@@ -89,6 +92,8 @@ public class ValidateAction : Command
         Add(_no1PasswordOption);
         Add(_noBitwardenOption);
         Add(_noNativeOption);
+        Add(_noArmorOption);
+        Add(_tokenOption);
         SetAction(Execute);
     }
 
@@ -124,7 +129,7 @@ public class ValidateAction : Command
             EnvItem[] envItems = BuildCommandEnvs(explicitEnvItems.ToArray(), convention);
 
             Run runService = Run.Factory(envItems, overload, validateEnv, ResolveEnvKeysFile(envKeysFile));
-            runService.NoNative = parseResult.GetValue(_noNativeOption);
+            runService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption), SecretResolverOptions.ArmorMode.SessionUnlessToken);
             runService.No1Password = parseResult.GetValue(_no1PasswordOption);
             runService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
             runService.PromptForSecrets = true;

@@ -19,6 +19,8 @@ namespace Dotenvx.Actions;
 /// <remarks>Reference source: dotenvx/src/cli/actions/get.js</remarks>
 public class GetAction : Command
 {
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+
     private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
 
     private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password();
@@ -137,6 +139,7 @@ public class GetAction : Command
         Add(_no1PasswordOption);
         Add(_noBitwardenOption);
         Add(_noNativeOption);
+        Add(_noArmorOption);
         SetAction(Execute);
     }
 
@@ -206,7 +209,7 @@ public class GetAction : Command
         try
         {
             Get getService = Get.Factory(key, envItems, overload, all, ResolveEnvKeysFile(envKeysFile));
-            getService.NoNative = parseResult.GetValue(_noNativeOption);
+            getService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session);
             getService.No1Password = parseResult.GetValue(_no1PasswordOption);
             getService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
             getService.PromptForSecrets = true;

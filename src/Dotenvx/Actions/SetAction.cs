@@ -27,6 +27,8 @@ namespace Dotenvx.Actions;
 /// </remarks>
 public class SetAction : Command
 {
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+
     private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
 
     private readonly Option<bool> _encryptOption =
@@ -70,6 +72,7 @@ public class SetAction : Command
         Add(_plainOption);
                 Add(_valueArgument);
         Add(_noNativeOption);
+        Add(_noArmorOption);
         SetAction(Execute);
     }
 
@@ -113,7 +116,8 @@ public class SetAction : Command
             string? envKeysFilePath = envKeysFile?.LastOrDefault(); // plain `<path>` option: commander keeps the LAST occurrence
 
             Sets setsService = Sets.Factory(key, value, envItems.ToArray(), encrypt, envKeysFilePath, noCreate);
-            setsService.NoNative = parseResult.GetValue(_noNativeOption);
+            setsService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.SessionUnlessToken);
+            setsService.NoArmor = setsService.KeyAccess.NoArmor;
             SetsResult result = setsService.Run();
 
             if (!string.IsNullOrEmpty(result.KeysSrc))

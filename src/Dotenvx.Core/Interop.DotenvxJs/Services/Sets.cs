@@ -30,14 +30,25 @@ public class Sets
     private readonly string? _key;
 
     private readonly bool _noCreate;
+
+    /// <summary>`noArmor`; see <see cref="Encrypt.NoArmor" />.</summary>
+    public bool NoArmor { get; set; } = true;
+
+    private bool _noArmor;
     private readonly List<ProcessedSet> _processedEnvs = [];
     private readonly HashSet<string> _unchangedFilePaths = [];
     private readonly string? _value;
 
     private string? _keysSrc;
 
-    /// <summary>--no-native: skip the OS secret store when reading the current value.</summary>
-    public bool NoNative { get; set; }
+    /// <summary>How missing private keys are looked up: --no-native, --no-armor, --token (providers/index.js options).</summary>
+    public KeyAccessOptions KeyAccess { get; set; } = new();
+
+    public bool NoNative
+    {
+        get => KeyAccess.NoNative;
+        set => KeyAccess.NoNative = value;
+    }
 
     public Sets(string? key, string? value, EnvItem[] envs, bool encrypt = true, string? envKeysFilePath = null,
         bool noCreate = false)
@@ -70,6 +81,7 @@ public class Sets
     public virtual SetsResult Run()
     {
         string fk = string.IsNullOrEmpty(_envKeysFilePath) ? ".env.keys" : _envKeysFilePath;
+        _noArmor = NoArmor; // key storage selector below may change it
 
         // set up keysSrc
         string fkPath = Path.GetFullPath(fk);
@@ -139,12 +151,26 @@ public class Sets
             // only create if missing public key and encryption needed
             if (string.IsNullOrEmpty(publicKey) && !noEncrypt)
             {
+                if (!_noCreate && !_noArmor)
+                {
+                    _noArmor = !KeyStorage.ChooseArmored();
+                }
+
                 (string newPublicKey, string privateKey) = Keypair();
                 publicKey = newPublicKey;
                 string publicKeyName = GuessPublicKeyName(envFilePath);
                 string privateKeyName = GuessPrivateKeyName(envFilePath);
                 envSrc = MutateSrc(envSrc, envFilePath, fk, publicKeyName, publicKey);
-                _keysSrc = MutateKeysSrc(_keysSrc, privateKeyName, privateKey, Path.GetFileName(envFilePath));
+                if (_noArmor)
+                {
+                    _keysSrc = MutateKeysSrc(_keysSrc, privateKeyName, privateKey, Path.GetFileName(envFilePath));
+                }
+                else
+                {
+                    KeyStorage.StoreInArmor(publicKey, privateKey);
+
+                    // don't set keysSrc (in armor)
+                }
             }
 
             if (noEncrypt)
@@ -160,7 +186,7 @@ public class Sets
             {
                 // expensive additional loop: the current (decrypted) value comes from the get resolver
                 Get getService = Get.Factory(_key, [env], false, true, [fk]);
-                getService.NoNative = NoNative;
+                getService.KeyAccess = KeyAccess;
                 GetResult resolved = getService.Run();
                 string? before = resolved.Parsed.GetValueOrDefault(_key ?? "");
                 if (_value != before)

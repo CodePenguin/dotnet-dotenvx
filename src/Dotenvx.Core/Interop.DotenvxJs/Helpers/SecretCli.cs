@@ -44,12 +44,12 @@ public static class SecretCli
     /// only `.com` and `.exe` files count (never `.cmd`/`.bat`/`.ps1`), and the System32 directory is not searched
     /// before PATH the way `CreateProcess` would. Null is `ENOENT`.
     /// </summary>
-    internal static string? ResolveExecutable(string command)
+    internal static string? ResolveExecutable(string command, string? pathVariable = null)
     {
         bool hasDirectory = command.Contains(Path.DirectorySeparatorChar) || command.Contains(Path.AltDirectorySeparatorChar);
         IEnumerable<string> directories = hasDirectory
             ? [""]
-            : [Environment.CurrentDirectory, .. (Environment.GetEnvironmentVariable("PATH") ?? "")
+            : [Environment.CurrentDirectory, .. (pathVariable ?? Environment.GetEnvironmentVariable("PATH") ?? "")
                 .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)];
 
         foreach (string directory in directories)

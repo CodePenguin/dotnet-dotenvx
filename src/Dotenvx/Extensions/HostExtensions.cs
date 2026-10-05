@@ -3,6 +3,8 @@ using System.Linq;
 using System.CommandLine;
 
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Interop.DotenvxJs.Shared;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,12 +26,13 @@ public static class HostExtensions
 
         ParseResult parseResult = root.Parse(args);
 
-        // dotenvx.js: `program.on('command:*')` prints this line to stdout and exits 0
+        // dotenvx.js: the root's `[command] [args...]` action runs executeDynamic: `dotenvx-<command>` from PATH, else
+        // `error: unknown command '<command>'` on stdout and exit 0
         if (ReferenceEquals(parseResult.CommandResult.Command, root) &&
             parseResult.Tokens.FirstOrDefault(t => t.Type == System.CommandLine.Parsing.TokenType.Argument) is { } unknown)
         {
-            Console.Out.WriteLine($"error: unknown command '{unknown.Value}'");
-            return 0;
+            // `process.argv.slice(3)`: everything after the first user argument
+            return ExecuteDynamic.Dynamic(unknown.Value, args[1..], host.Services.GetRequiredService<IDotenvxLogger>());
         }
 
         // commander rejects unknown options even though it tolerates extra positional values (see UnknownOptionGuard)

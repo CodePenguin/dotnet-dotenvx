@@ -54,6 +54,9 @@ public class EncryptAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+    private readonly Option<string?> _tokenOption = SecretResolverOptions.Token();
+
     private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
 
     private readonly Option<bool> _noCreateOption =
@@ -74,6 +77,8 @@ public class EncryptAction : Command
         Add(_stdoutOption);
         Add(_noCreateOption);
         Add(_noNativeOption);
+        Add(_noArmorOption);
+        Add(_tokenOption);
         SetAction(Execute);
     }
 
@@ -106,7 +111,12 @@ public class EncryptAction : Command
         // stdout - should not have a try so that exit codes can surface to stdout
         if (stdout)
         {
-            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate);
+            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate)
+            {
+                NoArmor = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption),
+                    parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption),
+                    SecretResolverOptions.ArmorMode.SessionUnlessToken).NoArmor
+            };
             EncryptResult result = encryptService.Run();
 
             int stdoutErrorCount = 0;
@@ -128,7 +138,12 @@ public class EncryptAction : Command
 
         try
         {
-            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate);
+            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate)
+            {
+                NoArmor = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption),
+                    parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption),
+                    SecretResolverOptions.ArmorMode.SessionUnlessToken).NoArmor
+            };
             EncryptResult result = encryptService.Run();
 
             if (!string.IsNullOrEmpty(result.KeysSrc))

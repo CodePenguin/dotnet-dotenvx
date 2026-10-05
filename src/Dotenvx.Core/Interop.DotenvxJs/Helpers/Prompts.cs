@@ -21,6 +21,104 @@ public static class Prompts
     internal static void ResetToDefaults()
     {
         Password = DefaultPassword;
+        Select = DefaultSelect;
+    }
+
+    /// <summary>A choice for <see cref="Select" />: the text shown and the value returned.</summary>
+    public record Choice(string Name, string Value);
+
+    private static readonly Func<string, IReadOnlyList<Choice>, string?> DefaultSelect = ReadSelection;
+
+    /// <summary>(message, choices) => the chosen value, or null when input ended before Enter. Throws <see cref="PromptCancelledException" />.</summary>
+    public static Func<string, IReadOnlyList<Choice>, string?> Select { get; internal set; } = DefaultSelect;
+
+    // built from char codes: this file must not contain literal escape characters (see AGENTS.md tooling cautions)
+    private static readonly string KeyEscape = ((char)27).ToString();
+    private static readonly string KeyDown = KeyEscape + "[B";
+    private static readonly string KeyUp = KeyEscape + "[A";
+    private static readonly string KeyCtrlC = ((char)3).ToString();
+    private static readonly string KeyEnter = ((char)10).ToString();
+    private static readonly string KeyReturn = ((char)13).ToString();
+
+    private static string? ReadSelection(string message, IReadOnlyList<Choice> choices)
+    {
+        // enquirer select (verified live against piped stdin): Enter submits the highlighted choice, the down/up arrows
+        // move (wrapping), a digit jumps to that index, anything else is ignored; stdin ending first leaves the promise
+        // pending (the process exits 0 silently) and Ctrl+C cancels
+        int index = 0;
+        Render(message, choices, index);
+        bool redirected = Console.IsInputRedirected;
+        if (redirected)
+        {
+            Console.InputEncoding = new UTF8Encoding(false);
+        }
+
+        while (true)
+        {
+            string key;
+            if (redirected)
+            {
+                int next = Console.In.Read();
+                if (next == -1)
+                {
+                    return null;
+                }
+
+                key = ((char)next).ToString();
+                if (next == 0x1b && Console.In.Peek() == '[')
+                {
+                    Console.In.Read();
+                    key = KeyEscape + "[" + (char)Console.In.Read();
+                }
+            }
+            else
+            {
+                ConsoleKeyInfo info = Console.ReadKey(true);
+                key = info.Key switch
+                {
+                    ConsoleKey.DownArrow => KeyDown,
+                    ConsoleKey.UpArrow => KeyUp,
+                    ConsoleKey.Enter => KeyEnter,
+                    ConsoleKey.C when info.Modifiers.HasFlag(ConsoleModifiers.Control) => KeyCtrlC,
+                    _ => info.KeyChar.ToString()
+                };
+            }
+
+            if (key == KeyCtrlC)
+            {
+                throw new PromptCancelledException();
+            }
+
+            if (key == KeyEnter || key == KeyReturn)
+            {
+                Console.Error.WriteLine();
+                return choices[index].Value;
+            }
+
+            if (key == KeyDown)
+            {
+                index = (index + 1) % choices.Count;
+            }
+            else if (key == KeyUp)
+            {
+                index = (index - 1 + choices.Count) % choices.Count;
+            }
+            else if (key.Length == 1 && char.IsDigit(key[0]) && key[0] - '0' < choices.Count)
+            {
+                index = key[0] - '0';
+            }
+
+            Render(message, choices, index);
+        }
+    }
+
+    private static void Render(string message, IReadOnlyList<Choice> choices, int index)
+    {
+        Console.Error.WriteLine($"? {message}");
+        for (int i = 0; i < choices.Count; i++)
+        {
+            Console.Error.WriteLine($"{(i == index ? "❯" : " ")} {choices[i].Name}");
+        }
     }
 
     private static string? ReadPassword(string message, string prefix)

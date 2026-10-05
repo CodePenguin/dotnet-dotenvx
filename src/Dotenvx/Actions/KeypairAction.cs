@@ -54,6 +54,8 @@ public class KeyPairAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+
     private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
 
     private readonly Option<bool> _prettyPrintOption =
@@ -69,6 +71,7 @@ public class KeyPairAction : Command
         Add(_formatOption);
         Add(_prettyPrintOption);
         Add(_noNativeOption);
+        Add(_noArmorOption);
         SetAction(Execute);
     }
 
@@ -103,7 +106,7 @@ public class KeyPairAction : Command
                 }
 
                 KeyPair keyPair = KeyPair.Factory(resolvedEnvFile, envKeysFile is { Length: > 0 } ? envKeysFile : null);
-                keyPair.NoNative = parseResult.GetValue(_noNativeOption);
+                keyPair.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.FlagOnly);
                 foreach ((string resultKey, string? resultValue) in keyPair.Run())
                 {
                     results[resultKey] = resultValue;

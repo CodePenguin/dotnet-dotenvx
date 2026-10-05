@@ -33,9 +33,18 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
     private string? _keysSrc;
 
+    /// <summary>
+    /// `noArmor`: true keeps new keys in .env.keys. The CLI always sets it from `--no-armor` and the Armor session; the
+    /// default is "no Armor" so library callers never reach the network or a prompt unasked.
+    /// </summary>
+    public bool NoArmor { get; set; } = true;
+
+    private bool _noArmor;
+
     public EncryptResult Run()
     {
         string fk = string.IsNullOrEmpty(envKeysFilePath) ? ".env.keys" : envKeysFilePath;
+        _noArmor = NoArmor; // key storage selector below may change it
 
         // set up keysSrc
         string fkPath = Path.GetFullPath(fk);
@@ -99,13 +108,27 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
             if (string.IsNullOrEmpty(publicKey))
             {
+                if (!noCreate && !_noArmor)
+                {
+                    _noArmor = !KeyStorage.ChooseArmored();
+                }
+
                 // upsert public key to .env file
                 (string newPublicKey, string privateKey) = Keypair();
                 publicKey = newPublicKey;
                 string publicKeyName = GuessPublicKeyName(envFilePath);
                 string privateKeyName = GuessPrivateKeyName(envFilePath);
                 envSrc = MutateSrc(envSrc, envFilePath, fk, publicKeyName, publicKey);
-                _keysSrc = MutateKeysSrc(_keysSrc, privateKeyName, privateKey, Path.GetFileName(envFilePath));
+                if (_noArmor)
+                {
+                    _keysSrc = MutateKeysSrc(_keysSrc, privateKeyName, privateKey, Path.GetFileName(envFilePath));
+                }
+                else
+                {
+                    KeyStorage.StoreInArmor(publicKey, privateKey);
+
+                    // don't set keysSrc (in armor)
+                }
             }
 
             ScanResult scanned = Scan(envSrc, new ScanOptions { Ik = keys, Ek = excludeKeys });

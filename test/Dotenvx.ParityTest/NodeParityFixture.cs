@@ -134,6 +134,9 @@ public sealed class NodeParityFixture : IAsyncLifetime
         }
     }
 
+    private static readonly string HermeticConfigDir =
+        Path.Combine(Path.GetTempPath(), "dotenvx-parity-config-" + Guid.NewGuid().ToString("N"));
+
     private static async Task<CliResult> RunProcessAsync(string fileName, IReadOnlyList<string> args,
         string workingDirectory, IReadOnlyDictionary<string, string>? env = null, string? input = null)
     {
@@ -159,6 +162,9 @@ public sealed class NodeParityFixture : IAsyncLifetime
         {
             psi.ArgumentList.Add(arg);
         }
+
+        // hermetic by default: no developer Armor session or device key is ever read
+        psi.EnvironmentVariables["DOTENVX_CONFIG"] = HermeticConfigDir;
 
         if (env != null)
         {

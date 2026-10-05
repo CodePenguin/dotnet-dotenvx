@@ -20,7 +20,7 @@ public abstract class ParityTestBase : IDisposable
         Directory.CreateDirectory(WorkDir);
     }
 
-    public void Dispose()
+    public virtual void Dispose()
     {
         try
         {

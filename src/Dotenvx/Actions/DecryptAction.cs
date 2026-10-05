@@ -52,6 +52,8 @@ public class DecryptAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+
     private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
 
     private readonly Option<bool> _stdoutOption =
@@ -77,6 +79,7 @@ public class DecryptAction : Command
         Add(_stdoutOption);
         Add(_maskOption);
         Add(_noNativeOption);
+        Add(_noArmorOption);
         SetAction(Execute);
     }
 
@@ -110,7 +113,7 @@ public class DecryptAction : Command
         {
             Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath)
             {
-                NoNative = parseResult.GetValue(_noNativeOption)
+                KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session)
             };
             DecryptResult result = decryptService.Run();
 
@@ -147,7 +150,7 @@ public class DecryptAction : Command
         {
             Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath)
             {
-                NoNative = parseResult.GetValue(_noNativeOption)
+                KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session)
             };
             DecryptResult result = decryptService.Run();
 

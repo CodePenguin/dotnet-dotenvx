@@ -27,11 +27,23 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
     private readonly List<ProcessedDecrypt> _processedEnvs = [];
     private readonly HashSet<string> _unchangedFilePaths = [];
 
-    /// <summary>--no-native: skip the OS secret store provider.</summary>
-    public bool NoNative { get; set; }
+    /// <summary>How missing private keys are looked up: --no-native, --no-armor, --token (providers/index.js options).</summary>
+    public KeyAccessOptions KeyAccess { get; set; } = new();
+
+    public bool NoNative
+    {
+        get => KeyAccess.NoNative;
+        set => KeyAccess.NoNative = value;
+    }
+
+    private Func<string, IDictionary<string, string>?>? _provider;
+    private Decryptor? _decryptor;
 
     public DecryptResult Run()
     {
+        _provider = Providers.Resolve(KeyAccess);
+        _decryptor = Providers.ResolveDecryptor(KeyAccess);
+
         foreach (EnvItem env in _envs)
         {
             if (env.Type == EnvType.EnvFile)
@@ -61,16 +73,22 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
             string encoding = DetectEncoding(filePath);
             row.EnvSrc = Fsx.ReadFileX(filePath, encoding);
 
-            PrimitivesParseArraysOutput result = ParseArraysSync(row.EnvSrc, new PrimitivesParseOptions
+            ParseWithDecryptor.Outcome<PrimitivesParseArraysOutput> outcome = ParseWithDecryptor.ArraysSync(row.EnvSrc,
+                new PrimitivesParseOptions
             {
                 Ik = keys,
                 Ek = excludeKeys,
                 Fk = envKeysFilePaths is { Length: > 0 } ? envKeysFilePaths : null,
                 ReadFile = path => Fsx.ReadFileX(path),
-                Provider = Providers.Resolve(NoNative)
-            });
+                Provider = _provider
+            }, _decryptor);
+            PrimitivesParseArraysOutput result = outcome.Output;
 
-            if (result.Errors.Count > 0)
+            if (outcome.LeadingError is not null)
+            {
+                row.Error = outcome.LeadingError;
+            }
+            else if (result.Errors.Count > 0)
             {
                 row.Error = CustomError(result.Errors[0]);
             }

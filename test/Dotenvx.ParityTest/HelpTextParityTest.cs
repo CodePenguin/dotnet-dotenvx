@@ -45,10 +45,7 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
     // divergence, but a cosmetic one - the flag works identically on both sides.
     private static readonly HashSet<string> KnownUnrenderedDotnetAliases = ["--pp"];
 
-    private static readonly HashSet<string> NodeOnlyAliases =
-    [
-        "--no-armor", "--token"
-    ];
+    private static readonly HashSet<string> NodeOnlyAliases = [];
 
     [Theory]
     [InlineData("run")]

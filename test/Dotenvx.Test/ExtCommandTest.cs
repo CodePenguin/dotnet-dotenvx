@@ -33,6 +33,8 @@ public class ExtCommandTest : EnvironmentTestBase
         Console.SetOut(_consoleOutput);
         _consoleOutput.GetStringBuilder().Clear();
         RootCommand = new DotenvxRootCommand(
+            new ArmorCommand(MockLogger),
+            new CurlAction(MockLogger),
             new DecryptAction(MockLogger),
             new DelAction(MockLogger),
             new DoctorAction(MockLogger),
@@ -46,6 +48,8 @@ public class ExtCommandTest : EnvironmentTestBase
             new global::Dotenvx.Actions.HelpAction(),
             new KeyPairAction(MockLogger),
             new LockCommand(MockLogger),
+            new LoginAction(MockLogger),
+            new LogoutAction(MockLogger),
             new LsAction(MockLogger),
             new NativeCommand(MockLogger),
             new PrebuildAction(MockLogger),

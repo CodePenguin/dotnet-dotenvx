@@ -28,8 +28,14 @@ public class Run
     private readonly string[]? _envKeysFilePaths;
     private readonly EnvItem[] _envs;
 
-    /// <summary>--no-native: do not consult the OS secret store for missing private keys (providers/index.js useNative).</summary>
-    public bool NoNative { get; set; }
+    /// <summary>How missing private keys are looked up: --no-native, --no-armor, --token (providers/index.js options).</summary>
+    public KeyAccessOptions KeyAccess { get; set; } = new();
+
+    public bool NoNative
+    {
+        get => KeyAccess.NoNative;
+        set => KeyAccess.NoNative = value;
+    }
 
     /// <summary>--no-1password (or DOTENVX_NO_1PASSWORD=true): leave `op://` references unresolved.</summary>
     public bool No1Password { get; set; }
@@ -51,6 +57,9 @@ public class Run
     private readonly HashSet<string> _readableStrings = [];
     private readonly HashSet<string> _uniqueInjectedKeys = [];
     private readonly bool _useSystemEnv;
+
+    private Func<string, IDictionary<string, string>?>? _provider;
+    private Decryptor? _decryptor;
 
     protected Run()
     {
@@ -83,6 +92,9 @@ public class Run
 
     public virtual RunResult Execute()
     {
+        _provider = Providers.Resolve(KeyAccess);
+        _decryptor = Providers.ResolveDecryptor(KeyAccess);
+
         EnvItem[] envs = DetermineOnExecute ? DetermineEnvs(_envs, _processEnv) : _envs;
         foreach (EnvItem env in envs)
         {
@@ -119,15 +131,16 @@ public class Run
             // envs.js's injectEnv parses with `fk: envKeysFilepath` (null means primitives' own default,
             // `.env.keys` in the working directory) and the shared process environment, which already
             // carries any exported DOTENV_PRIVATE_KEY.
-            PrimitivesParseOutput parsed = ParseSync(env, new PrimitivesParseOptions
+            ParseWithDecryptor.Outcome<PrimitivesParseOutput> outcome = ParseWithDecryptor.Sync(env, new PrimitivesParseOptions
             {
                 Overload = _overload,
                 ProcessEnv = new Dictionary<string, string>(_processEnv),
                 Fk = _envKeysFilePaths is { Length: > 0 } ? _envKeysFilePaths : null,
-                Provider = Providers.Resolve(NoNative)
-            });
+                Provider = _provider
+            }, _decryptor);
+            PrimitivesParseOutput parsed = outcome.Output;
             row.Parsed = parsed.Parsed;
-            row.Errors = DecryptErrors(parsed);
+            row.Errors = DecryptErrors(parsed, outcome.LeadingError);
             row.Injected = parsed.Injected;
             row.PreExisted = parsed.Existed;
             ResolveSecrets(row);
@@ -231,17 +244,18 @@ public class Run
                 fk = [Path.Combine(Path.GetDirectoryName(filepath) ?? "", ".env.keys")];
             }
 
-            PrimitivesParseOutput parsed = ParseSync(src, new PrimitivesParseOptions
+            ParseWithDecryptor.Outcome<PrimitivesParseOutput> outcome = ParseWithDecryptor.Sync(src, new PrimitivesParseOptions
             {
                 Overload = _overload,
                 ProcessEnv = _processEnv,
                 Fk = fk,
-                Provider = Providers.Resolve(NoNative)
-            });
+                Provider = _provider
+            }, _decryptor);
+            PrimitivesParseOutput parsed = outcome.Output;
 
             row.Src = src;
             row.Parsed = parsed.Parsed;
-            row.Errors = DecryptErrors(parsed);
+            row.Errors = DecryptErrors(parsed, outcome.LeadingError);
             row.Injected = parsed.Injected;
             row.PreExisted = parsed.Existed;
             ResolveSecrets(row);
@@ -272,11 +286,13 @@ public class Run
     /// ("could not decrypt A, B"). Primitives always coarsens decrypt failures this way, so `run`/`get`/
     /// `validate`/`config` never surface WRONG_PRIVATE_KEY or MISSING_PRIVATE_KEY.
     /// </remarks>
-    private static IList<Exception> DecryptErrors(PrimitivesParseOutput parsed)
+    private static IList<Exception> DecryptErrors(PrimitivesParseOutput parsed, Exception? leadingError)
     {
-        if (parsed.Errors.Count > 0)
+        // failedKeyAccessFallback: `errors: [error, ...result.errors]`
+        List<Exception> mapped = [.. leadingError is null ? [] : new[] { leadingError }, .. parsed.Errors.Select(CustomError)];
+        if (mapped.Count > 0)
         {
-            return parsed.Errors.Select(CustomError).ToList();
+            return mapped;
         }
 
         string[] keys = parsed.Parsed.Where(kv => Encrypted(kv.Value)).Select(kv => kv.Key).ToArray();

@@ -12,6 +12,15 @@ public sealed class PrimitivesParseOptions
 
     // .NET test seam, not part of the JS API: how key files are read (default File.ReadAllText); a throw means "unreadable"
     public Func<string, string>? ReadFile { get; init; }
+
+    /// <summary>parseWithDecryptor.js `parseOptionsWithoutProvider`: the same options with no key provider.</summary>
+    public PrimitivesParseOptions WithoutProvider()
+    {
+        return new PrimitivesParseOptions
+        {
+            Overload = Overload, Ik = Ik, Ek = Ek, ProcessEnv = ProcessEnv, Fk = Fk, ReadFile = ReadFile
+        };
+    }
 }
 
 public sealed record PrimitivesError(string Code, string Message);

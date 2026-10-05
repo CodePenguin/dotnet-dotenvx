@@ -59,6 +59,9 @@ public class RunAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+    private readonly Option<string?> _tokenOption = SecretResolverOptions.Token();
+
     private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
 
     private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password();
@@ -106,6 +109,8 @@ public class RunAction : Command
         Add(_no1PasswordOption);
         Add(_noBitwardenOption);
         Add(_noNativeOption);
+        Add(_noArmorOption);
+        Add(_tokenOption);
         Add(_args);
         SetAction(async pr => await Execute(pr));
     }
@@ -184,7 +189,7 @@ public class RunAction : Command
             EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
 
             Run runService = Run.Factory(envItems, overload, processEnv, ResolveEnvKeysFile(envKeysFile));
-            runService.NoNative = parseResult.GetValue(_noNativeOption);
+            runService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption), SecretResolverOptions.ArmorMode.SessionUnlessToken);
             runService.No1Password = parseResult.GetValue(_no1PasswordOption);
             runService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
             runService.PromptForSecrets = true;

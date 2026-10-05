@@ -16,6 +16,8 @@ namespace Dotenvx;
 public class DotenvxRootCommand : LoggingRootCommand
 {
     public DotenvxRootCommand(
+        ArmorCommand armorCommand,
+        CurlAction curlAction,
         DecryptAction decryptAction,
         DelAction delAction,
         DoctorAction doctorAction,
@@ -27,6 +29,8 @@ public class DotenvxRootCommand : LoggingRootCommand
         global::Dotenvx.Actions.HelpAction helpAction,
         KeyPairAction keyPairAction,
         LockCommand lockCommand,
+        LoginAction loginAction,
+        LogoutAction logoutAction,
         LsAction lsAction,
         NativeCommand nativeCommand,
         PrebuildAction prebuildAction,
@@ -38,9 +42,13 @@ public class DotenvxRootCommand : LoggingRootCommand
         ValidateAction validateAction
     ) : base("a secure dotenv–from the creator of `dotenv`")
     {
-        UpdateBuiltInCommands([extCommand, lockCommand, doctorAction, nativeCommand]);
+        UpdateBuiltInCommands([extCommand, lockCommand, doctorAction, nativeCommand, armorCommand, curlAction, loginAction, logoutAction]);
 
         // Add Actions
+        Subcommands.Add(armorCommand);
+        Subcommands.Add(curlAction);
+        Subcommands.Add(loginAction);
+        Subcommands.Add(logoutAction);
         Subcommands.Add(decryptAction);
         Subcommands.Add(delAction);
         Subcommands.Add(doctorAction);
