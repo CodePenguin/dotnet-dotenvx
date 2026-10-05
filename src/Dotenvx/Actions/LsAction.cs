@@ -139,6 +139,11 @@ public class LsAction : Command
 
     private static int CountCrawledDirectories(string directory)
     {
+        if (!Directory.Exists(directory))
+        {
+            return 0;
+        }
+
         int count = 0;
         foreach (string subdirectory in Directory.GetDirectories(directory))
         {

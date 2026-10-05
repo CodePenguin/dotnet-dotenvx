@@ -20,7 +20,7 @@ The upstream JS project is a git submodule at `dotenvx/`, used as porting refere
 - The submodule is pinned to the exact tag **`v2.24.1`** (never upstream HEAD, never a commit past the tag). `src/Dotenvx/Dotenvx.csproj` `Version` stays equal to the pinned tag, so `dotenvx --version` states which release this port matches.
 - `src/Dotenvx.Primitives/Dotenvx.Primitives.csproj` `Version` equals the installed `@dotenvx/primitives` version (`dotenvx/node_modules/@dotenvx/primitives/package.json`, currently **3.0.2**).
 - Bump versions only through the "Version bump checklist" below. Do not run `git submodule update --remote`.
-- Out of scope on purpose: Dotenvx Armor/cloud features, 1Password/Bitwarden resolvers, OS-native secret stores. The parity tests pass `--no-native --no-armor` to Node for this reason; keep those flags (past the pin, native storage becomes the default again).
+- Scope rule (decided 2026-10-04): **anything that exists in the targeted version is in scope**, including Dotenvx Armor, native secret stores, 1Password/Bitwarden, `lock`, `login`/`logout`/`curl`/`doctor`/`update`, key providers and dynamic extensions. [docs/parity-checklist.md](docs/parity-checklist.md) lists every component, its status and how it is verified; keep it current. Until a component is ported, the parity tests pass `--no-native --no-armor` to Node for `set`/`encrypt` so both sides use plain `.env.keys` files.
 - `precommit`/`prebuild` are current at the pin but deprecated upstream in favor of `protect`; revisit when the pin passes that change.
 
 ## Commands
@@ -147,8 +147,9 @@ Goal: retarget, run the suites, and let the failures plus a few diffs say exactl
 
 **3. Run the suites; read failures as the to-do list**
 1. `dotnet build`, then `Dotenvx.Primitives.Test`, `Dotenvx.Core.Test`, `Dotenvx.Configuration.Test`, `Dotenvx.Test`, `Dotenvx.ParityTest`, each separately.
-2. Meaning of failures: the two primitives oracle tests = our port drifted (output prints Node vs C# per input; fix the port, add a table row); `ErrorMessageParityTest` = `errors.js` changed (new codes need a `DotenvxException` subtype); `HelpTextParityTest` = flags or descriptions changed (fix the option, or extend its documented exclusion lists with a reason); `GlobalOptionsParityTest.RootVersionFlagMatchesExactly` = version lockstep broken; other `*ParityTest` = CLI drift; Core/Dotenvx unit tests = ported tests encoding old behavior (confirm the new behavior live before rewriting one).
-3. Constructor changes breaking mocks: see "Static seams" above.
+2. Run `node scripts/parity-sweep.js` (about 4 min): ~590 command x flag x fixture scenarios against both CLIs. Differences land in `$TMP/dotenvx-parity-sweep.txt`; only the `ACCEPTED` list in the script may remain, each with a reason.
+3. Meaning of failures: the two primitives oracle tests = our port drifted (output prints Node vs C# per input; fix the port, add a table row); `ErrorMessageParityTest` = `errors.js` changed (new codes need a `DotenvxException` subtype); `HelpTextParityTest` = flags or descriptions changed (fix the option, or extend its documented exclusion lists with a reason); `GlobalOptionsParityTest.RootVersionFlagMatchesExactly` = version lockstep broken; other `*ParityTest` = CLI drift; Core/Dotenvx unit tests = ported tests encoding old behavior (confirm the new behavior live before rewriting one).
+4. Constructor changes breaking mocks: see "Static seams" above.
 
 **4. Close the gaps the suites cannot see**
 1. Re-run the `--help` diff per command, flag-combination and space-separated-vs-repeated multi-value sweeps for any new flag, and a static re-read of every action or service whose upstream file changed.

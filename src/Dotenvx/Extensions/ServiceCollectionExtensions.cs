@@ -19,6 +19,9 @@ public static class ServiceCollectionExtensions
         services.AddTransient<GenexampleAction>();
         services.AddTransient<GetAction>();
         services.AddTransient<GitignoreAction>();
+        services.AddTransient<DoctorAction>();
+        services.AddTransient<global::Dotenvx.Actions.HelpAction>();
+        services.AddTransient<UpdateAction>();
         services.AddTransient<PrebuildAction>();
         services.AddTransient<PrecommitAction>();
         services.AddTransient<ScanAction>();

@@ -89,9 +89,9 @@ Provider, noArmor and onStatus forwarding for the keypair resolver (Armor provid
 - "keypair passes provider by default"
 - "keypair forwards onStatus to providers"
 
-## Whole upstream test files skipped as out of scope
+## Whole upstream test files not yet ported (in scope, tracked per phase in docs/parity-checklist.md)
 
-Dotenvx Armor (cloud key storage), login/logout/doctor/curl/update, the TTY spinner, OS keychains and native key storage, 1Password/Bitwarden secret managers, key providers/decryptors, interactive prompts, pty and dynamic-extension execution. This port does not implement these features, so their tests have nothing to run against:
+These cover features this port does not implement yet: Dotenvx Armor (cloud key storage), login/logout/curl, the TTY spinner, OS keychains and native key storage, 1Password/Bitwarden secret managers, key providers/decryptors, interactive prompts, pty and dynamic-extension execution. Anything in the targeted version is in scope, so each file below must be ported (and removed from this list) in its phase:
 
 - tests/cli/actions/armor/down.test.js
 - tests/cli/actions/armor/move.test.js
@@ -99,11 +99,9 @@ Dotenvx Armor (cloud key storage), login/logout/doctor/curl/update, the TTY spin
 - tests/cli/actions/armor/push.test.js
 - tests/cli/actions/armor/up.test.js
 - tests/cli/actions/curl.test.js
-- tests/cli/actions/doctor.test.js
 - tests/cli/actions/login.test.js
 - tests/cli/actions/logout.test.js
 - tests/cli/actions/spinner-coverage.test.js
-- tests/cli/actions/update.test.js
 - tests/cli/commands/armor.test.js
 - tests/db/session.test.js
 - tests/lib/api/getAccount.test.js
@@ -148,6 +146,5 @@ Dotenvx Armor (cloud key storage), login/logout/doctor/curl/update, the TTY spin
 - tests/lib/services/armorPull.test.js
 - tests/lib/services/armorPush.test.js
 - tests/lib/services/armorUp.test.js
-- tests/lib/services/doctor.test.js
 - tests/lib/services/login.test.js
 - tests/lib/services/logout.test.js

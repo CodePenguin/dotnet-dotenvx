@@ -17,11 +17,13 @@ public class DotenvxRootCommand : LoggingRootCommand
     public DotenvxRootCommand(
         DecryptAction decryptAction,
         DelAction delAction,
+        DoctorAction doctorAction,
         EncryptAction encryptAction,
         ExtCommand extCommand,
         GenexampleAction genexampleAction,
         GetAction getAction,
         GitignoreAction gitignoreAction,
+        global::Dotenvx.Actions.HelpAction helpAction,
         KeyPairAction keyPairAction,
         LsAction lsAction,
         PrebuildAction prebuildAction,
@@ -29,6 +31,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         RotateAction rotateAction,
         RunAction runAction,
         SetAction setAction,
+        UpdateAction updateAction,
         ValidateAction validateAction
     ) : base("a secure dotenv–from the creator of `dotenv`")
     {
@@ -37,10 +40,12 @@ public class DotenvxRootCommand : LoggingRootCommand
         // Add Actions
         Subcommands.Add(decryptAction);
         Subcommands.Add(delAction);
+        Subcommands.Add(doctorAction);
         Subcommands.Add(encryptAction);
         Subcommands.Add(genexampleAction);
         Subcommands.Add(getAction);
         Subcommands.Add(gitignoreAction);
+        Subcommands.Add(helpAction);
         Subcommands.Add(keyPairAction);
         Subcommands.Add(lsAction);
         Subcommands.Add(prebuildAction);
@@ -49,6 +54,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(runAction);
         Subcommands.Add(validateAction);
         Subcommands.Add(setAction);
+        Subcommands.Add(updateAction);
         Subcommands.Add(extCommand);
 
         foreach (Command command in Subcommands)

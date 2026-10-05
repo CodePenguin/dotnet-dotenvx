@@ -35,6 +35,7 @@ public class ExtCommandTest : EnvironmentTestBase
         RootCommand = new DotenvxRootCommand(
             new DecryptAction(MockLogger),
             new DelAction(MockLogger),
+            new DoctorAction(MockLogger),
             new EncryptAction(MockLogger),
             new ExtCommand(
                 new GenexampleAction(MockLogger), new GitignoreAction(MockLogger), new LsAction(MockLogger),
@@ -42,6 +43,7 @@ public class ExtCommandTest : EnvironmentTestBase
             new GenexampleAction(MockLogger),
             new GetAction(MockLogger),
             new GitignoreAction(MockLogger),
+            new global::Dotenvx.Actions.HelpAction(),
             new KeyPairAction(MockLogger),
             new LsAction(MockLogger),
             new PrebuildAction(MockLogger),
@@ -49,6 +51,7 @@ public class ExtCommandTest : EnvironmentTestBase
             new RotateAction(MockLogger),
             new RunAction(MockLogger),
             new SetAction(MockLogger),
+            new UpdateAction(),
             new ValidateAction(MockLogger));
     }
 

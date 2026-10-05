@@ -63,6 +63,12 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
 
     private static IEnumerable<string> EnumerateFiles(string directory)
     {
+        // Fdir crawls a missing directory (or a file given as the directory) as empty: `ls nonexistent` reports 0 files
+        if (!Directory.Exists(directory))
+        {
+            yield break;
+        }
+
         foreach (string file in Directory.GetFiles(directory))
         {
             yield return file;
