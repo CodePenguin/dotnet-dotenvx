@@ -49,7 +49,8 @@ public static class SecretCli
         bool hasDirectory = command.Contains(Path.DirectorySeparatorChar) || command.Contains(Path.AltDirectorySeparatorChar);
         IEnumerable<string> directories = hasDirectory
             ? [""]
-            : [Environment.CurrentDirectory, .. (pathVariable ?? Environment.GetEnvironmentVariable("PATH") ?? "")
+            // libuv searches the current directory first only on Windows; on Unix a file in the cwd must never run
+            : [.. OperatingSystem.IsWindows() ? new[] { Environment.CurrentDirectory } : [], .. (pathVariable ?? Environment.GetEnvironmentVariable("PATH") ?? "")
                 .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)];
 
         foreach (string directory in directories)
@@ -134,7 +135,14 @@ public static class SecretCli
         {
             if (input != null)
             {
-                process.StandardInput.Write(input);
+                try
+                {
+                    process.StandardInput.Write(input);
+                }
+                catch (IOException)
+                {
+                    // the child exited before reading its input: its exit code reports the failure
+                }
             }
 
             process.StandardInput.Close();

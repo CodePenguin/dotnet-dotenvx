@@ -52,6 +52,11 @@ internal static class ArmorTeam
         {
             Prompts.Choice[] choices = ChoicesFromMeta(((ApiException)error).Meta);
 
+            if (choices.Length == 0)
+            {
+                throw error;
+            }
+
             string chosen = choices[0].Value;
             if (choices.Length > 1)
             {

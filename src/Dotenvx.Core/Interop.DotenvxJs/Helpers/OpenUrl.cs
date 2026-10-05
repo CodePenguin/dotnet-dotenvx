@@ -22,6 +22,12 @@ public static class OpenUrl
 
     private static void LaunchBrowser(string url)
     {
+        // the url comes from the Armor server: only ever open web pages
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.Scheme is not ("http" or "https"))
+        {
+            return;
+        }
+
         ProcessStartInfo psi = OperatingSystem.IsWindows()
             ? new ProcessStartInfo(url) { UseShellExecute = true }
             : OperatingSystem.IsMacOS()

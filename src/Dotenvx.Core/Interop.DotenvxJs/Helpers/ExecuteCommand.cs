@@ -10,15 +10,9 @@ using Dotenvx.Interop.DotenvxJs.Shared;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>
-/// Reference source: dotenvx/src/lib/helpers/executeCommand.js. Two deliberate scope reductions
-/// from the real source, neither touched by this port's own tests/parity suite: (1) no pty support
-/// (upstream's `usePty` forces a pseudo-terminal for `--redact` when stdin/stdout/stderr are all
-/// real TTYs, so an interactive child program keeps its normal terminal behavior while still being
-/// redacted - this port always uses plain piped redirection instead, which is fine for scripted/
-/// piped usage but loses some interactive-TTY fidelity for a redacted command); (2) the fuller
-/// signal-forwarding set (SIGHUP/SIGQUIT/etc, grace-period forwarding, double-SIGINT force-kill)
-/// isn't ported - only SIGINT via `Console.CancelKeyPress`, matching this port's pre-existing scope
-/// here (unrelated to the redaction work that touched this file 2026-09-26).
+/// Reference source: dotenvx/src/lib/helpers/executeCommand.js. `--redact` pipes the child's output through the redactor,
+/// wrapped in `script` (<see cref="PtyCommand" />) when stdin, stdout and stderr are all terminals. On Unix the full
+/// signal-forwarding set lives in <see cref="SignalForwarder" />; Windows kills the child (and its tree) on Ctrl+C.
 /// </remarks>
 public static partial class Helpers
 {

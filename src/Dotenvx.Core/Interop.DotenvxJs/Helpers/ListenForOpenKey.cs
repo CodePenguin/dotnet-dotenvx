@@ -129,6 +129,11 @@ public static class ListenForOpenKey
                     }
 
                     ConsoleKeyInfo key = Console.ReadKey(true);
+                    if (token.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
                     string text = key.Key == ConsoleKey.Enter
                         ? CarriageReturn
                         : key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control)

@@ -84,6 +84,11 @@ public static class Prompts
         // enquirer select (verified live against piped stdin): Enter submits the highlighted choice, the down/up arrows
         // move (wrapping), a digit jumps to that index, anything else is ignored; stdin ending first leaves the promise
         // pending (the process exits 0 silently) and Ctrl+C cancels
+        if (choices.Count == 0)
+        {
+            return null;
+        }
+
         int index = 0;
         Render(message, choices, index);
         bool redirected = Console.IsInputRedirected;
