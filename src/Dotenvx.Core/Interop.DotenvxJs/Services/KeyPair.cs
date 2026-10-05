@@ -44,6 +44,9 @@ public class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = null)
     }
 
 
+    /// <summary>--no-native: skip the OS secret store provider.</summary>
+    public bool NoNative { get; set; }
+
     public virtual Dictionary<string, string?> Run()
     {
         Dictionary<string, string?> result = new();
@@ -76,7 +79,8 @@ public class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = null)
                 Ring = ring,
                 Fk = fk,
                 ProcessEnv = EnvironmentHelper.GetEnvironmentVariablesAsDictionary(),
-                ReadFile = path => Fsx.ReadFileX(path)
+                ReadFile = path => Fsx.ReadFileX(path),
+                Provider = Providers.Resolve(NoNative)
             });
 
             result[GuessPublicKeyName(envFilePath)] = publicKey;

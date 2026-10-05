@@ -27,6 +27,9 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
     private readonly List<ProcessedDecrypt> _processedEnvs = [];
     private readonly HashSet<string> _unchangedFilePaths = [];
 
+    /// <summary>--no-native: skip the OS secret store provider.</summary>
+    public bool NoNative { get; set; }
+
     public DecryptResult Run()
     {
         foreach (EnvItem env in _envs)
@@ -63,7 +66,8 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                 Ik = keys,
                 Ek = excludeKeys,
                 Fk = envKeysFilePaths is { Length: > 0 } ? envKeysFilePaths : null,
-                ReadFile = path => Fsx.ReadFileX(path)
+                ReadFile = path => Fsx.ReadFileX(path),
+                Provider = Providers.Resolve(NoNative)
             });
 
             if (result.Errors.Count > 0)

@@ -50,30 +50,7 @@ public class SecretReferenceParityTest(NodeParityFixture fixture) : ParityTestBa
         File.WriteAllText(Path.Combine(VaultDir, "master"), "master-pw");
         File.Delete(Path.Combine(VaultDir, "calls.log"));
 
-        // an apphost looks for the dll named at build time next to itself, so every fake lives in one directory
-        Directory.CreateDirectory(BinDir);
-        string source = AppContext.BaseDirectory;
-        foreach (string file in Directory.GetFiles(source, "Dotenvx.FakeSecretCli.*"))
-        {
-            string name = Path.GetFileName(file);
-            if (name.EndsWith(".exe") || name == "Dotenvx.FakeSecretCli")
-            {
-                string suffix = OperatingSystem.IsWindows() ? ".exe" : "";
-                if (installOp)
-                {
-                    File.Copy(file, Path.Combine(BinDir, "op" + suffix), true);
-                }
-
-                if (installBw)
-                {
-                    File.Copy(file, Path.Combine(BinDir, "bw" + suffix), true);
-                }
-            }
-            else
-            {
-                File.Copy(file, Path.Combine(BinDir, name), true);
-            }
-        }
+        FakeCliInstaller.Install(BinDir, [.. installOp ? new[] { "op" } : [], .. installBw ? new[] { "bw" } : []]);
     }
 
     private string[] Calls()

@@ -47,7 +47,7 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
 
     private static readonly HashSet<string> NodeOnlyAliases =
     [
-        "--no-armor", "--no-native", "--token"
+        "--no-armor", "--token"
     ];
 
     [Theory]

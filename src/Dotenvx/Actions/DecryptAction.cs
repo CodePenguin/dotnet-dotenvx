@@ -52,6 +52,8 @@ public class DecryptAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+
     private readonly Option<bool> _stdoutOption =
         new("--stdout") { Description = "send to stdout" };
 
@@ -74,6 +76,7 @@ public class DecryptAction : Command
         Add(_keysOption);
         Add(_stdoutOption);
         Add(_maskOption);
+        Add(_noNativeOption);
         SetAction(Execute);
     }
 
@@ -105,7 +108,10 @@ public class DecryptAction : Command
         // stdout - should not have a try so that exit codes can surface to stdout
         if (stdout)
         {
-            Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath);
+            Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath)
+            {
+                NoNative = parseResult.GetValue(_noNativeOption)
+            };
             DecryptResult result = decryptService.Run();
 
             foreach (ProcessedDecrypt processedEnv in result.ProcessedEnvs)
@@ -139,7 +145,10 @@ public class DecryptAction : Command
 
         try
         {
-            Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath);
+            Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath)
+            {
+                NoNative = parseResult.GetValue(_noNativeOption)
+            };
             DecryptResult result = decryptService.Run();
 
             IList<ProcessedDecrypt> processedEnvs = result.ProcessedEnvs;

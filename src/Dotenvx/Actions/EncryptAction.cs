@@ -54,6 +54,8 @@ public class EncryptAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+
     private readonly Option<bool> _noCreateOption =
         new("--no-create") { Description = "do not create .env file(s) when missing" };
 
@@ -71,6 +73,7 @@ public class EncryptAction : Command
         Add(_excludeKeyOption);
         Add(_stdoutOption);
         Add(_noCreateOption);
+        Add(_noNativeOption);
         SetAction(Execute);
     }
 

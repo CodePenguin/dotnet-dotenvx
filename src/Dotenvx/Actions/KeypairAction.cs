@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -53,6 +54,8 @@ public class KeyPairAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+
     private readonly Option<bool> _prettyPrintOption =
         new("--pretty-print", "-pp", "--pp") { Description = "pretty print output" };
 
@@ -65,6 +68,7 @@ public class KeyPairAction : Command
         Add(_envKeysFileOption);
         Add(_formatOption);
         Add(_prettyPrintOption);
+        Add(_noNativeOption);
         SetAction(Execute);
     }
 
@@ -99,6 +103,7 @@ public class KeyPairAction : Command
                 }
 
                 KeyPair keyPair = KeyPair.Factory(resolvedEnvFile, envKeysFile is { Length: > 0 } ? envKeysFile : null);
+                keyPair.NoNative = parseResult.GetValue(_noNativeOption);
                 foreach ((string resultKey, string? resultValue) in keyPair.Run())
                 {
                     results[resultKey] = resultValue;

@@ -47,6 +47,7 @@ public class ExtCommandTest : EnvironmentTestBase
             new KeyPairAction(MockLogger),
             new LockCommand(MockLogger),
             new LsAction(MockLogger),
+            new NativeCommand(MockLogger),
             new PrebuildAction(MockLogger),
             new PrecommitAction(MockLogger),
             new RotateAction(MockLogger),

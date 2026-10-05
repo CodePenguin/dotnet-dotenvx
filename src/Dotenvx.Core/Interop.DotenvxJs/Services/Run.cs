@@ -28,6 +28,9 @@ public class Run
     private readonly string[]? _envKeysFilePaths;
     private readonly EnvItem[] _envs;
 
+    /// <summary>--no-native: do not consult the OS secret store for missing private keys (providers/index.js useNative).</summary>
+    public bool NoNative { get; set; }
+
     /// <summary>--no-1password (or DOTENVX_NO_1PASSWORD=true): leave `op://` references unresolved.</summary>
     public bool No1Password { get; set; }
 
@@ -120,7 +123,8 @@ public class Run
             {
                 Overload = _overload,
                 ProcessEnv = new Dictionary<string, string>(_processEnv),
-                Fk = _envKeysFilePaths is { Length: > 0 } ? _envKeysFilePaths : null
+                Fk = _envKeysFilePaths is { Length: > 0 } ? _envKeysFilePaths : null,
+                Provider = Providers.Resolve(NoNative)
             });
             row.Parsed = parsed.Parsed;
             row.Errors = DecryptErrors(parsed);
@@ -231,7 +235,8 @@ public class Run
             {
                 Overload = _overload,
                 ProcessEnv = _processEnv,
-                Fk = fk
+                Fk = fk,
+                Provider = Providers.Resolve(NoNative)
             });
 
             row.Src = src;

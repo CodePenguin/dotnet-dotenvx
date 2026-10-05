@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<GitignoreAction>();
         services.AddTransient<DoctorAction>();
         services.AddTransient<LockCommand>();
+        services.AddTransient<NativeCommand>();
         services.AddTransient<global::Dotenvx.Actions.HelpAction>();
         services.AddTransient<UpdateAction>();
         services.AddTransient<PrebuildAction>();

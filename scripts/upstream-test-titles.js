@@ -16,7 +16,7 @@ const csRaw = walkCs('test').map(f => fs.readFileSync(f, 'utf8')).join('\n') + '
 // join doc-comment continuation lines so a title wrapped over two `///` lines still matches
 const cs = csRaw + '\n' + csRaw.replace(/\s*\r?\n\s*\/\/\/ ?/g, ' ')
 const showMissing = process.argv[2]
-const skip = /armor|login|logout|curl|spinner|session|api[\\/]|keychain|keyring|macos|linuxSecret|windowsCredential|providers|decryptors|prompts|ptyCommand|createSpinner|createElapsed|buildApiError|isNetworkError|isTeam|teamChoices|sanitizeCommand|removeDynamic|removeOptions|login-helpers|deviceValue|executeDynamic|executeExtension|keypairMetadata|native/i
+const skip = /armor|login|logout|curl|spinner|session|api[\\/]|decryptors|prompts|ptyCommand|createSpinner|createElapsed|buildApiError|isNetworkError|isTeam|teamChoices|sanitizeCommand|removeDynamic|removeOptions|login-helpers|deviceValue|executeDynamic|executeExtension|keypairMetadata/i
 const out = []
 for (const f of walk(root).filter(f => f.endsWith('.test.js') && !skip.test(f))) {
   const src = fs.readFileSync(f, 'utf8')

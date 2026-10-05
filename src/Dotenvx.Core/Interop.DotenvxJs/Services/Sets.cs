@@ -36,6 +36,9 @@ public class Sets
 
     private string? _keysSrc;
 
+    /// <summary>--no-native: skip the OS secret store when reading the current value.</summary>
+    public bool NoNative { get; set; }
+
     public Sets(string? key, string? value, EnvItem[] envs, bool encrypt = true, string? envKeysFilePath = null,
         bool noCreate = false)
     {
@@ -156,7 +159,9 @@ public class Sets
             else
             {
                 // expensive additional loop: the current (decrypted) value comes from the get resolver
-                GetResult resolved = Get.Factory(_key, [env], false, true, [fk]).Run();
+                Get getService = Get.Factory(_key, [env], false, true, [fk]);
+                getService.NoNative = NoNative;
+                GetResult resolved = getService.Run();
                 string? before = resolved.Parsed.GetValueOrDefault(_key ?? "");
                 if (_value != before)
                 {

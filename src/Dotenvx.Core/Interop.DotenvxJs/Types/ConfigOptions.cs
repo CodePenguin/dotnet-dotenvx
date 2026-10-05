@@ -14,6 +14,7 @@ public class ConfigOptions
     public List<string>? Ignore { get; set; }
     public bool? Strict { get; set; }
     public string? EnvKeysFile { get; set; }
+    public bool? NoNative { get; set; }
     public bool? No1Password { get; set; }
     public bool? NoBitwarden { get; set; }
 

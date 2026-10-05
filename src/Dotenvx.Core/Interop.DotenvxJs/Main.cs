@@ -49,6 +49,7 @@ public static class Main
 
             Run run = Run.Factory(envs, options.Overload ?? false, processEnv, envKeysFile);
             run.DetermineOnExecute = options.Envs == null;
+            run.NoNative = options.NoNative == true;
             run.No1Password = options.No1Password == true;
             run.NoBitwarden = options.NoBitwarden == true;
             RunResult runResult = run.Execute();
@@ -191,6 +192,7 @@ public static class Main
         EnvItem[] envs = BuildEnvs(options);
         Services.Get getService = Services.Get.Factory(key, envs, options.Overload ?? false, options.All ?? false,
             string.IsNullOrEmpty(options.EnvKeysFile) ? null : [options.EnvKeysFile]);
+        getService.NoNative = options.NoNative == true;
         getService.No1Password = options.No1Password == true;
         getService.NoBitwarden = options.NoBitwarden == true;
         getService.PromptForSecrets = true;
@@ -337,7 +339,9 @@ public static class Main
         EnvItem[] envs = BuildEnvs(options ?? new SetsOptions());
         string? envKeysFilepath = options?.EnvKeysFile;
 
-        SetsResult result = Sets.Factory(key, value, envs, encrypt, envKeysFilepath, noCreate).Run();
+        Sets setsService = Sets.Factory(key, value, envs, encrypt, envKeysFilepath, noCreate);
+        setsService.NoNative = options?.NoNative == true;
+        SetsResult result = setsService.Run();
 
         if (!string.IsNullOrEmpty(result.KeysSrc))
         {

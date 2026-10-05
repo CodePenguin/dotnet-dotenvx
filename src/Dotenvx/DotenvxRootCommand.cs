@@ -28,6 +28,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         KeyPairAction keyPairAction,
         LockCommand lockCommand,
         LsAction lsAction,
+        NativeCommand nativeCommand,
         PrebuildAction prebuildAction,
         PrecommitAction precommitAction,
         RotateAction rotateAction,
@@ -37,7 +38,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         ValidateAction validateAction
     ) : base("a secure dotenv–from the creator of `dotenv`")
     {
-        UpdateBuiltInCommands([extCommand, lockCommand, doctorAction]);
+        UpdateBuiltInCommands([extCommand, lockCommand, doctorAction, nativeCommand]);
 
         // Add Actions
         Subcommands.Add(decryptAction);
@@ -51,6 +52,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(keyPairAction);
         Subcommands.Add(lockCommand);
         Subcommands.Add(lsAction);
+        Subcommands.Add(nativeCommand);
         Subcommands.Add(prebuildAction);
         Subcommands.Add(precommitAction);
         Subcommands.Add(rotateAction);

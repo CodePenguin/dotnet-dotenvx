@@ -29,6 +29,9 @@ public class EnvironmentTestBase : IDisposable
     protected EnvironmentTestBase()
     {
         _existingEnvironmentKeys = _originalEnvironmentVariables.Keys.ToList();
+
+        // unit tests never reach the real OS secret store
+        NativeStore.Current = NSubstitute.Substitute.For<INativeSecretStore>();
     }
 
     public void Dispose()
@@ -57,7 +60,12 @@ public class EnvironmentTestBase : IDisposable
         // Reset Mock Factories
         Del.ResetFactory();
         SecretCli.ResetToDefaults();
+        NativeStore.ResetToDefaults();
         LockUp.ResetFactory();
+        KeychainUp.ResetFactory();
+        KeychainDown.ResetFactory();
+        KeychainPush.ResetFactory();
+        KeychainPull.ResetFactory();
         LockDown.ResetFactory();
         Prompts.ResetToDefaults();
         Doctor.ResetFactory();

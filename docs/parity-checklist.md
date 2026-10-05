@@ -25,8 +25,8 @@ Legend: `done` ported and verified, `partial` some behavior missing, `todo` not 
 | `get` | done | |
 | `set` | partial | interactive hidden-value prompt on a TTY and key-storage selection missing (Phase F) |
 | `del` | done | |
-| `encrypt` (`enc`) | partial | key-storage selection prompt, `--no-armor`/`--no-native` flags missing (Phases D/E/F); `enc` shown in help, hidden upstream |
-| `decrypt` (`dec`) | partial | provider/decryptor (Armor, native) paths missing |
+| `encrypt` (`enc`) | partial | key-storage selection prompt and `--no-armor` missing (Phases E/F); `enc` shown in help, hidden upstream |
+| `decrypt` (`dec`) | partial | Armor provider/decryptor path missing (Phase E) |
 | `keypair` | partial | provider path missing |
 | `ls` | done | file order differs on some filesystems (trap #64) |
 | `validate` | done | |
@@ -38,7 +38,7 @@ Legend: `done` ported and verified, `partial` some behavior missing, `todo` not 
 | `doctor` | done | hidden |
 | `update` | done | always prints the npm commands (never a pkg binary) |
 | `lock` (`up`, `down`) | done | scrypt implemented in `LockCrypto` (no .NET built-in); prompt stderr rendering is not byte-identical to enquirer; the `preAction` Armor update check is Phase E |
-| `native` (`up`, `down`, `push`, `pull`) | todo | Phase D |
+| `native` (`up`, `down`, `push`, `pull`) | done | every store shells out like upstream (`security`, `secret-tool`, `powershell.exe` + upstream script); tested with a fake tool on PATH, real OS stores untested here (Credential Manager writes fail on the dev machine) |
 | `armor` (`up`, `down`, `push`, `pull`, `open`, `move`, `status`, `settings`) | todo | Phase E |
 | `login`, `logout` | todo | Phase E |
 | `curl` | todo | Phase E |
@@ -48,7 +48,7 @@ Legend: `done` ported and verified, `partial` some behavior missing, `todo` not 
 
 ## Flags upstream has that we do not
 
-`--no-armor`, `--no-native`, `--token` on commands that resolve keys (`--no-1password`/`--no-bitwarden` are ported)
+`--no-armor`, `--token` on commands that resolve keys (`--no-native`, `--no-1password`, `--no-bitwarden` are ported; the native provider is consulted by run/get/validate/decrypt/keypair/set)
 (`HelpTextParityTest.NodeOnlyAliases` is the current exclusion list; it must shrink to empty as phases land).
 
 ## Phases

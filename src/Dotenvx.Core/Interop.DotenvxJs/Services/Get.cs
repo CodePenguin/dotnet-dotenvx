@@ -26,6 +26,8 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]?
     /// <summary>resolvers/get.js passes no1Password / noBitwarden through to the envs resolver.</summary>
     public bool No1Password { get; set; }
 
+    public bool NoNative { get; set; }
+
     public bool NoBitwarden { get; set; }
 
     public bool PromptForSecrets { get; set; }
@@ -36,6 +38,7 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]?
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
         Run runService = Services.Run.Factory(envs, overload, processEnv, envKeysFilePaths);
+        runService.NoNative = NoNative;
         runService.No1Password = No1Password;
         runService.NoBitwarden = NoBitwarden;
         runService.PromptForSecrets = PromptForSecrets;

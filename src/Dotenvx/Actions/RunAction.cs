@@ -59,6 +59,8 @@ public class RunAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+
     private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password();
     private readonly Option<bool> _noBitwardenOption = SecretResolverOptions.NoBitwarden();
 
@@ -103,6 +105,7 @@ public class RunAction : Command
         Add(_maskOption);
         Add(_no1PasswordOption);
         Add(_noBitwardenOption);
+        Add(_noNativeOption);
         Add(_args);
         SetAction(async pr => await Execute(pr));
     }
@@ -181,6 +184,7 @@ public class RunAction : Command
             EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
 
             Run runService = Run.Factory(envItems, overload, processEnv, ResolveEnvKeysFile(envKeysFile));
+            runService.NoNative = parseResult.GetValue(_noNativeOption);
             runService.No1Password = parseResult.GetValue(_no1PasswordOption);
             runService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
             runService.PromptForSecrets = true;

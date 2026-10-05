@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -26,6 +27,8 @@ namespace Dotenvx.Actions;
 /// </remarks>
 public class SetAction : Command
 {
+    private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+
     private readonly Option<bool> _encryptOption =
         new("--encrypt", "-c")
         {
@@ -66,6 +69,7 @@ public class SetAction : Command
         Add(_noCreateOption);
         Add(_plainOption);
                 Add(_valueArgument);
+        Add(_noNativeOption);
         SetAction(Execute);
     }
 
@@ -109,6 +113,7 @@ public class SetAction : Command
             string? envKeysFilePath = envKeysFile?.LastOrDefault(); // plain `<path>` option: commander keeps the LAST occurrence
 
             Sets setsService = Sets.Factory(key, value, envItems.ToArray(), encrypt, envKeysFilePath, noCreate);
+            setsService.NoNative = parseResult.GetValue(_noNativeOption);
             SetsResult result = setsService.Run();
 
             if (!string.IsNullOrEmpty(result.KeysSrc))

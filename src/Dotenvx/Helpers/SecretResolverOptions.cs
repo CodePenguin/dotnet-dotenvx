@@ -9,6 +9,11 @@ namespace Dotenvx.Helpers;
 /// </remarks>
 public static class SecretResolverOptions
 {
+    public static Option<bool> NoNative()
+    {
+        return new Option<bool>("--no-native") { Description = "disable OS secret store features" };
+    }
+
     public static Option<bool> No1Password()
     {
         return new Option<bool>("--no-1password") { Description = "disable 1Password secret reference resolution" };

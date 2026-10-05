@@ -4,9 +4,15 @@
 //   op read <ref> --no-newline   -> prints the content of <dir>/op/<ref with non-alphanumerics replaced by _>, no newline
 //   bw get <field> <item>        -> needs BW_SESSION; prints <dir>/bw/<item>_<field> plus "\n"
 //   bw unlock --passwordenv V --raw -> prints <dir>/session when env V equals the content of <dir>/master
+// Native OS secret stores (dotenvx native / the default key provider), keyed by the sanitized target or public key in
+// <dir>/native/:
+//   powershell.exe ... -EncodedCommand <script>   -> reads the JSON payload {action, target, username, secret} from stdin
+//                                                    (action read prints the secret, write stores it, delete removes it)
+//   secret-tool lookup|store|clear service dotenvx public-key <pub>
 // A missing file exits 1. Every call is appended to <dir>/calls.log as `<tool> <args...>` (plus the BW_SESSION value
 // for bw) so tests can assert how the CLIs were invoked.
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 string tool = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "op");
@@ -63,6 +69,62 @@ if (tool == "bw" && args is ["unlock", "--passwordenv", var variable, "--raw"])
 
     Console.Out.Write(File.ReadAllText(Path.Combine(dir, "session")) + "\n");
     return 0;
+}
+
+if (tool == "powershell")
+{
+    using JsonDocument payload = JsonDocument.Parse(Console.In.ReadToEnd());
+    string action = payload.RootElement.GetProperty("action").GetString()!;
+    string file = Path.Combine(dir, "native", Sanitize(payload.RootElement.GetProperty("target").GetString()!));
+    Directory.CreateDirectory(Path.Combine(dir, "native"));
+
+    switch (action)
+    {
+        case "read":
+            if (File.Exists(file))
+            {
+                Console.Out.Write(File.ReadAllText(file));
+            }
+
+            return 0;
+        case "write":
+            File.WriteAllText(file, payload.RootElement.GetProperty("secret").GetString()!);
+            return 0;
+        case "delete":
+            if (!File.Exists(file))
+            {
+                Console.Error.WriteLine("Element not found.");
+                return 1;
+            }
+
+            File.Delete(file);
+            return 0;
+    }
+}
+
+if (tool == "secret-tool" && args.Length >= 1)
+{
+    string publicKey = args[^1];
+    string file = Path.Combine(dir, "native", Sanitize("dotenvx:" + publicKey));
+    Directory.CreateDirectory(Path.Combine(dir, "native"));
+
+    switch (args[0])
+    {
+        case "lookup":
+            if (!File.Exists(file))
+            {
+                return 1;
+            }
+
+            Console.Out.Write(File.ReadAllText(file));
+            return 0;
+        case "store":
+            File.WriteAllText(file, Console.In.ReadToEnd());
+            return 0;
+        case "clear":
+            File.Delete(file);
+            return 0;
+    }
 }
 
 Console.Error.WriteLine($"fake {tool}: unsupported arguments");
