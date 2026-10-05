@@ -1,18 +1,23 @@
+using Dotenvx.Primitives;
+
 using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
-/// <remarks>Reference source: dotenvx/src/lib/helpers/maskEnvSrc.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/lib/helpers/maskEnvSrc.js: `scan` with its defaults (so double-quoted escapes are
+/// expanded before masking, which decides the masked length) and one `upsert` per key with the masked version of
+/// EVERY occurrence, not just the last.
+/// </remarks>
 public static partial class Helpers
 {
     public static string MaskEnvSrc(string envSrc, object? showChar = null)
     {
-        Dictionary<string, object> parsed = ScanToDictionary(envSrc, true, true);
+        ScanResult scanned = Scan(envSrc, new ScanOptions());
 
-        foreach (KeyValuePair<string, object> pair in parsed)
+        foreach ((string key, List<string> values) in scanned.Parsed)
         {
-            string masked = Mask((string)pair.Value, showChar);
-            envSrc = Upsert(envSrc, pair.Key, masked);
+            envSrc = Upsert(envSrc, key, values.Select(value => Mask(value, showChar)).ToArray());
         }
 
         return envSrc;
