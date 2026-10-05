@@ -23,11 +23,11 @@ Legend: `done` ported and verified, `partial` some behavior missing, `todo` not 
 | --- | --- | --- |
 | `run` | done | `--no-1password`/`--no-bitwarden` and `op://`/`bw://` resolution included (Phase C); the "awaiting ..." status text is Phase F |
 | `get` | done | |
-| `set` | partial | interactive hidden-value prompt on a TTY and key-storage selection missing (Phase F) |
+| `set` | done | hidden-value prompt on a TTY, key-storage selection, `--no-armor`/`--no-native` |
 | `del` | done | |
-| `encrypt` (`enc`) | partial | key-storage selection prompt and `--no-armor` missing (Phases E/F); `enc` shown in help, hidden upstream |
-| `decrypt` (`dec`) | partial | Armor provider/decryptor path missing (Phase E) |
-| `keypair` | partial | provider path missing |
+| `encrypt` (`enc`) | done | `enc` is shown in help (hidden upstream; System.CommandLine cannot hide an alias, trap #17) |
+| `decrypt` (`dec`) | done | `dec` shown in help, see `enc` |
+| `keypair` | done | |
 | `ls` | done | file order differs on some filesystems (trap #64) |
 | `validate` | done | |
 | `gitignore` | done | |
@@ -43,25 +43,24 @@ Legend: `done` ported and verified, `partial` some behavior missing, `todo` not 
 | `login`, `logout` | done | OAuth device flow against the fake API |
 | `curl` | done | |
 | `ext` (`ls`, `genexample`, `gitignore`, `prebuild`, `precommit`, `scan`) | done | |
-| `ext <name>` dynamic extensions (`executeExtension`) | partial | ExecuteDynamic.Extension is ported and unit-tested but `ExtCommand` does not call it yet |
-| `rotate` | not upstream | forward-ported ahead of the pin (historical commit `f1ffd157`); hidden from the pin's help is not possible (trap #17) |
+| `ext <name>` dynamic extensions (`executeExtension`) | done | `dotenvx-ext-<name>` from PATH, vault install hint |
+| `rotate` | not upstream | forward-ported ahead of the pin (historical commit `f1ffd157`); cannot be hidden from the pin's help (trap #17) |
 
 ## Flags upstream has that we do not
 
-`--no-armor`, `--token` on commands that resolve keys (`--no-native`, `--no-1password`, `--no-bitwarden` are ported; the native provider is consulted by run/get/validate/decrypt/keypair/set)
-(`HelpTextParityTest.NodeOnlyAliases` is the current exclusion list; it must shrink to empty as phases land).
+None: `--no-armor`, `--no-native`, `--no-1password`, `--no-bitwarden` and `--token` are ported on every command that has them upstream (`HelpTextParityTest` no longer has an exclusion list).
 
 ## Phases
 
 | Phase | Scope | Upstream source | How to verify without a real service |
 | --- | --- | --- | --- |
-| A | `help [command]`, `doctor`, `update`, hidden `enc`/`dec`, root help layout | `cli/actions/{doctor,update}.js`, `services/doctor.js`, `cli/dotenvx.js` | parity tests against Node |
-| B | `lock up/down` (local passphrase) | `cli/actions/lock/*`, `services/lock{Up,Down}.js`, `cli/commands/lock.js` | round trip with Node both ways; `INVALID_PASSPHRASE` |
-| C | 1Password and Bitwarden secret resolution (`op`, `bw`) - DONE | `helpers/resolveOnePassword.js`, `resolveBitwardenPassword.js`, `config-onepassword/bitwarden` tests | fake `op`/`bw` executables on PATH, same for both CLIs |
-| D | Native secret stores and `native` command | `helpers/{macosKeychain,linuxSecretService,windowsCredentialManager}.js`, `services/keychain*.js`, `providers/native`, `cli/actions/keychain/*` | fake `security`/`secret-tool`/PowerShell shims; real Credential Manager on Windows locally |
+| A (DONE) | `help [command]`, `doctor`, `update`, hidden `enc`/`dec`, root help layout | `cli/actions/{doctor,update}.js`, `services/doctor.js`, `cli/dotenvx.js` | parity tests against Node |
+| B (DONE) | `lock up/down` (local passphrase) | `cli/actions/lock/*`, `services/lock{Up,Down}.js`, `cli/commands/lock.js` | round trip with Node both ways; `INVALID_PASSPHRASE` |
+| C (DONE) | 1Password and Bitwarden secret resolution (`op`, `bw`) - DONE | `helpers/resolveOnePassword.js`, `resolveBitwardenPassword.js`, `config-onepassword/bitwarden` tests | fake `op`/`bw` executables on PATH, same for both CLIs |
+| D (DONE) | Native secret stores and `native` command | `helpers/{macosKeychain,linuxSecretService,windowsCredentialManager}.js`, `services/keychain*.js`, `providers/native`, `cli/actions/keychain/*` | fake `security`/`secret-tool`/PowerShell shims; real Credential Manager on Windows locally |
 | E (DONE) | Armor: device and session store, API client, OAuth login/logout, armor commands, providers and decryptors, `curl`, token handling | `db/*`, `lib/api/*`, `services/armor*.js`, `login.js`, `logout.js`, `providers/armor`, `decryptors/armor`, `cli/actions/armor/*`, `curl.js`, `settings` | local fake HTTP server shared by Node and .NET runs, `HOME`/config dir overridden |
-| F | Interactive prompts, spinner and status text, pty for `--redact`, full signal forwarding, dynamic extensions, set/encrypt key-storage selection | `helpers/{prompts,createSpinner,createElapsedStatus,ptyCommand,executeExtension,executeDynamic}.js` | scripted stdin, TTY emulation where possible |
-| G | Remove the out-of-scope notes and exclusion lists; every upstream test titled and ported; sweep extended to the new commands | `docs/upstream-tests-not-ported.md` must become empty | `node scripts/upstream-test-titles.js` prints nothing without the skip pattern |
+| F (DONE) | Interactive prompts, spinner and status text, pty for `--redact`, full signal forwarding, dynamic extensions, set/encrypt key-storage selection | `helpers/{prompts,createSpinner,createElapsedStatus,ptyCommand,executeExtension,executeDynamic}.js` | scripted stdin, TTY emulation where possible |
+| G (DONE) | Remove the out-of-scope notes and exclusion lists; every upstream test titled and ported; sweep extended to the new commands | `docs/upstream-tests-not-ported.md` must become empty | `node scripts/upstream-test-titles.js` prints nothing without the skip pattern |
 
 ## Working method per phase
 
@@ -71,3 +70,12 @@ Legend: `done` ported and verified, `partial` some behavior missing, `todo` not 
 4. Move the phase's test files out of `docs/upstream-tests-not-ported.md` and the skip pattern in
    `scripts/upstream-test-titles.js`.
 5. Update the rows above and the root `--help` comparison; commit.
+
+## Accepted differences (all verified live, none hide a behavior gap)
+
+1. Help text is rendered by System.CommandLine, not commander: layout, wrapping and the hidden `enc`/`dec` aliases differ (trap #17). Options, descriptions and exit codes are compared by `HelpTextParityTest` and the sweep.
+2. Prompt and spinner rendering on stderr (enquirer / yocto-spinner redraw sequences) is not byte-identical; prompt behavior (keys, Enter, EOF, input draining) is.
+3. `debug` output (`-d`, `-l debug`) has a different shape.
+4. Real OS secret stores (macOS Keychain, Linux Secret Service, Windows Credential Manager) are exercised only through fake tools on PATH in tests; the commands and the upstream PowerShell script are the same as Node's.
+5. POSIX signal forwarding (`SignalForwarder`) is unit-tested through seams only; it was written on a Windows machine.
+6. `armor open` and the `login`/`armor` browser opening are tested through the `OpenUrl` seam, never against a real browser.

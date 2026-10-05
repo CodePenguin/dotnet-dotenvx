@@ -59,6 +59,7 @@ public static partial class Helpers
         Process? child = null;
         bool shellFallback = false;
         string? signalSent = null;
+        SignalForwarder? forwarder = null;
 
         // Signal handlers - in C#, use Console.CancelKeyPress for SIGINT
         void SigintHandler(object? sender, ConsoleCancelEventArgs e)
@@ -103,11 +104,15 @@ public static partial class Helpers
 
             bool redact = sensitiveValues.Length > 0;
 
+            // executeCommand.js: `usePty` when redacting with stdin, stdout and stderr all terminals - the child then runs under `script`
+            bool usePty = redact && !Console.IsInputRedirected && !Console.IsOutputRedirected && !Console.IsErrorRedirected;
+            string[] executedArgs = (usePty ? PtyCommand.Wrap(commandArgs) : null) ?? commandArgs;
+
             child = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = commandArgs[0],
+                    FileName = executedArgs[0],
                     UseShellExecute = false,
                     RedirectStandardOutput = redact,
                     RedirectStandardError = redact,
@@ -121,7 +126,7 @@ public static partial class Helpers
                 child.StartInfo.StandardErrorEncoding = new UTF8Encoding(false);
             }
 
-            foreach (string arg in commandArgs.Skip(1))
+            foreach (string arg in executedArgs.Skip(1))
             {
                 child.StartInfo.ArgumentList.Add(arg);
             }
@@ -147,9 +152,20 @@ public static partial class Helpers
             }
 
             // Add signal handlers
-            Console.CancelKeyPress += SigintHandler;
+            if (OperatingSystem.IsWindows())
+            {
+                Console.CancelKeyPress += SigintHandler;
+            }
 
             child.Start();
+
+            if (!OperatingSystem.IsWindows())
+            {
+                Process started = child;
+                forwarder = new SignalForwarder(logger, !Console.IsInputRedirected, _ => !started.HasExited,
+                    signal => SignalForwarder.Send(started, signal), signal => signalSent = signal);
+                forwarder.Register();
+            }
 
             Task stdoutTask = redact
                 ? PumpRedactedAsync(child.StandardOutput, Console.Out, sensitiveValues)
@@ -194,6 +210,7 @@ public static partial class Helpers
         finally
         {
             Console.CancelKeyPress -= SigintHandler;
+            forwarder?.Dispose();
         }
     }
 

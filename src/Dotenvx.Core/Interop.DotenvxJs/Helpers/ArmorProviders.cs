@@ -146,14 +146,33 @@ public static class ParseWithDecryptor
         }
     }
 
+    private static readonly Func<string, PrimitivesParseOptions, PrimitivesParseOutput> DefaultParse =
+        (src, options) => Primitives.Primitives.ParseSync(src, options);
+
+    private static readonly Func<string, PrimitivesParseOptions, PrimitivesParseArraysOutput> DefaultParseArrays =
+        (src, options) => Primitives.Primitives.ParseArraysSync(src, options);
+
+    /// <summary>The primitives `parseSync` (upstream tests swap the package with a stub).</summary>
+    public static Func<string, PrimitivesParseOptions, PrimitivesParseOutput> Parser { get; internal set; } = DefaultParse;
+
+    /// <summary>The primitives `parsearraysSync`.</summary>
+    public static Func<string, PrimitivesParseOptions, PrimitivesParseArraysOutput> ArraysParser { get; internal set; } =
+        DefaultParseArrays;
+
+    internal static void ResetToDefaults()
+    {
+        Parser = DefaultParse;
+        ArraysParser = DefaultParseArrays;
+    }
+
     public static Outcome<PrimitivesParseOutput> Sync(string src, PrimitivesParseOptions options, Decryptor? decryptor)
     {
-        return ParseWith(Primitives.Primitives.ParseSync, src, options, decryptor);
+        return ParseWith(Parser, src, options, decryptor);
     }
 
     public static Outcome<PrimitivesParseArraysOutput> ArraysSync(string src, PrimitivesParseOptions options,
         Decryptor? decryptor)
     {
-        return ParseWith(Primitives.Primitives.ParseArraysSync, src, options, decryptor);
+        return ParseWith(ArraysParser, src, options, decryptor);
     }
 }

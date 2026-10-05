@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
@@ -157,6 +158,8 @@ public class GetAction : Command
 
     private int Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "decrypting");
+
         string? key = parseResult.GetValue(_keyArgument);
         string[]? envs = parseResult.GetValue(_envOption);
         string[]? envFile = parseResult.GetValue(_envFileOption);
@@ -209,7 +212,8 @@ public class GetAction : Command
         try
         {
             Get getService = Get.Factory(key, envItems, overload, all, ResolveEnvKeysFile(envKeysFile));
-            getService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session);
+            getService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session,
+                spinner.OnStatus);
             getService.No1Password = parseResult.GetValue(_no1PasswordOption);
             getService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
             getService.PromptForSecrets = true;
@@ -250,6 +254,7 @@ public class GetAction : Command
             if (key != null)
             {
                 string? single = parsed.TryGetValue(key, out string? val) ? val : null;
+                Spinners.StopActive();
                 Console.WriteLine(single ?? "");
             }
             else
@@ -262,23 +267,27 @@ public class GetAction : Command
                             string prefix = format == "eval-export" ? "export " : "";
                             string inline = string.Join('\n',
                                 parsed.Select(kvp => $"{prefix}{kvp.Key}={Escape(kvp.Value)}"));
+                            Spinners.StopActive();
                             Console.WriteLine(inline);
                             break;
                         }
                     case "shell":
                         {
                             string inline = string.Join(' ', parsed.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                            Spinners.StopActive();
                             Console.WriteLine(inline);
                             break;
                         }
                     case "colon":
                         {
                             string inline = string.Join(' ', parsed.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+                            Spinners.StopActive();
                             Console.WriteLine(inline);
                             break;
                         }
                     default:
                         {
+                            Spinners.StopActive();
                             Console.WriteLine(JsonStringify(parsed, prettyPrint));
                             break;
                         }

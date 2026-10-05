@@ -85,6 +85,8 @@ public class DecryptAction : Command
 
     private int Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "decrypting");
+
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         string[]? excludeKey = parseResult.GetValue(_excludeKeyOption);
@@ -113,7 +115,8 @@ public class DecryptAction : Command
         {
             Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath)
             {
-                KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session)
+                KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session,
+                spinner.OnStatus)
             };
             DecryptResult result = decryptService.Run();
 
@@ -139,6 +142,8 @@ public class DecryptAction : Command
                         envSrc = MaskEnvSrc(envSrc, showChar);
                     }
 
+                    Spinners.StopActive();
+
                     Console.WriteLine(envSrc);
                 }
             }
@@ -150,7 +155,8 @@ public class DecryptAction : Command
         {
             Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath)
             {
-                KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session)
+                KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session,
+                spinner.OnStatus)
             };
             DecryptResult result = decryptService.Run();
 

@@ -1,7 +1,7 @@
 // Lists upstream test titles (dotenvx/tests) that no C# test cites. Run from the repo root: node scripts/upstream-test-titles.js [file-fragment]
 // A title is 'cited' when its exact text appears in test/**/*.cs (a Refer to remark) or in docs/upstream-tests-not-ported.md.
 // Pass a fragment of an upstream test file path to also print its uncited titles.
-// Files for out-of-scope features (see the skip pattern below) are not checked; docs/upstream-tests-not-ported.md lists them.
+// Every upstream test file is checked (nothing is excluded); docs/upstream-tests-not-ported.md lists the few titles that have no C# counterpart, each with its reason.
 const fs = require('fs')
 const path = require('path')
 const root = 'dotenvx/tests'
@@ -16,9 +16,8 @@ const csRaw = walkCs('test').map(f => fs.readFileSync(f, 'utf8')).join('\n') + '
 // join doc-comment continuation lines so a title wrapped over two `///` lines still matches
 const cs = csRaw + '\n' + csRaw.replace(/\s*\r?\n\s*\/\/\/ ?/g, ' ')
 const showMissing = process.argv[2]
-const skip = /spinner|prompts|ptyCommand|createSpinner|createElapsed|sanitizeCommand|removeDynamic|removeOptions|keypairMetadata/i
 const out = []
-for (const f of walk(root).filter(f => f.endsWith('.test.js') && !skip.test(f))) {
+for (const f of walk(root).filter(f => f.endsWith('.test.js'))) {
   const src = fs.readFileSync(f, 'utf8')
   const re = /(?:t\.test|\bit|\btest)\(\s*(['"`])((?:\\.|(?!\1).)*)\1/g
   const titles = []

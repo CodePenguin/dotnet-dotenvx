@@ -180,13 +180,13 @@ public class Run
 
         if (!no1Password)
         {
-            AddErrors(row, ResolveOnePassword.Resolve(injected).Errors);
+            AddErrors(row, ResolveOnePassword.Resolve(injected, PromptForSecrets ? KeyAccess.OnStatus : null).Errors);
             Overlay(parsed, injected);
         }
 
         if (!noBitwarden)
         {
-            AddErrors(row, ResolveBitwardenPassword.Resolve(injected, PromptForSecrets).Errors);
+            AddErrors(row, ResolveBitwardenPassword.Resolve(injected, PromptForSecrets, PromptForSecrets ? KeyAccess.OnStatus : null).Errors);
             Overlay(parsed, injected);
         }
 

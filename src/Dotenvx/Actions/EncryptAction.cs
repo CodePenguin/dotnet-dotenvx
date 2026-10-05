@@ -84,6 +84,8 @@ public class EncryptAction : Command
 
     private int Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "encrypting");
+
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         string[]? key = parseResult.GetValue(_keyOption);
@@ -129,6 +131,7 @@ public class EncryptAction : Command
                 }
                 else if (!string.IsNullOrEmpty(processedEnv.EnvSrc))
                 {
+                    Spinners.StopActive();
                     Console.WriteLine(processedEnv.EnvSrc);
                 }
             }

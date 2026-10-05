@@ -25,8 +25,6 @@ namespace Dotenvx.ParityTest;
 ///   shows them at the root) plus `--file`, a deliberately forward-ported alias for `-f`/
 ///   `--env-file` ahead of this project's v2.24.1 pin (see the ParityTest traps list's very first
 ///   entry).
-/// - `NodeOnlyAliases`: cloud/native/password-manager features explicitly out of scope for this
-///   port (`--no-armor`/`--no-native`/`--no-1password`/`--no-bitwarden`/`--token`).
 /// </remarks>
 public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 {
@@ -44,8 +42,6 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
     // class of HelpBuilder limitation as CLAUDE.md's trap #17). A real, permanent byte-level
     // divergence, but a cosmetic one - the flag works identically on both sides.
     private static readonly HashSet<string> KnownUnrenderedDotnetAliases = ["--pp"];
-
-    private static readonly HashSet<string> NodeOnlyAliases = [];
 
     [Theory]
     [InlineData("run")]
@@ -100,7 +96,7 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
 
         foreach (HelpEntry nodeEntry in nodeEntries)
         {
-            if (nodeEntry.Aliases.All(a => NodeOnlyAliases.Contains(a) || KnownUnrenderedDotnetAliases.Contains(a)))
+            if (nodeEntry.Aliases.All(a => KnownUnrenderedDotnetAliases.Contains(a)))
             {
                 continue;
             }

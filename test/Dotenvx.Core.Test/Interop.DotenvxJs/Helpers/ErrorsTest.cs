@@ -7,10 +7,37 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 /// <remarks>
 /// Reference source: dotenvx/tests/lib/helpers/errors.test.js. The C# errors are typed exception classes (one per
 /// errors.js factory) instead of one `Errors` class, so each upstream assertion block maps onto the matching
-/// exception. The 1Password and Bitwarden factories are out of scope and have no C# counterpart.
+/// exception. The 1Password and Bitwarden factories are `CustomException`s with those codes.
 /// </remarks>
 public class ErrorsTest
 {
+    /// <remarks>Refer to "#errors onePasswordFailed"</remarks>
+    [Fact]
+    public void TestOnePasswordFailed()
+    {
+        CustomException result = new("[1PASSWORD_FAILED] 1Password CLI failed to resolve API_KEY", code: "1PASSWORD_FAILED");
+
+        result.Code.ShouldBe("1PASSWORD_FAILED");
+        result.Message.ShouldBe("[1PASSWORD_FAILED] 1Password CLI failed to resolve API_KEY");
+        result.Help.ShouldBe("fix: [https://www.1password.dev/cli/get-started]");
+        result.MessageWithHelp.ShouldBe(
+            "[1PASSWORD_FAILED] 1Password CLI failed to resolve API_KEY. fix: [https://www.1password.dev/cli/get-started]");
+    }
+
+    /// <remarks>Refer to "#errors bitwardenFailed"</remarks>
+    [Fact]
+    public void TestBitwardenFailed()
+    {
+        CustomException result = new("[BITWARDEN_FAILED] Bitwarden Password Manager CLI failed to resolve API_KEY",
+            code: "BITWARDEN_FAILED");
+
+        result.Code.ShouldBe("BITWARDEN_FAILED");
+        result.Message.ShouldBe("[BITWARDEN_FAILED] Bitwarden Password Manager CLI failed to resolve API_KEY");
+        result.Help.ShouldBe("fix: [https://bitwarden.com/help/cli/]");
+        result.MessageWithHelp.ShouldBe(
+            "[BITWARDEN_FAILED] Bitwarden Password Manager CLI failed to resolve API_KEY. fix: [https://bitwarden.com/help/cli/]");
+    }
+
     /// <remarks>Refer to "#errors custom with code auto-fix and debug"</remarks>
     [Fact]
     public void TestCustomWithCodeAutoFixAndDebug()

@@ -1,28 +1,42 @@
 using System.CommandLine;
 
+using System.Collections.Generic;
+using System.Linq;
+
 using Dotenvx.Actions;
+using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Interop.DotenvxJs.Shared;
 
 namespace Dotenvx;
 
 /// <remarks>
-/// Reference source: dotenvx/src/cli/commands/ext.js. Upstream implements this as a dynamic-
-/// dispatch shim (a catch-all [command] argument routed through executeExtension.js, which
-/// spawns external `dotenvx-ext-&lt;name&gt;` binaries for anything not explicitly registered below,
-/// e.g. `dotenvx ext vault`) plus a custom helpInformation override to hide the dynamically-
-/// dispatched entries from --help. This port deliberately omits that dynamic-loading mechanism -
-/// every subcommand `ext` actually ships with upstream (ls/gitignore/genexample/prebuild/
-/// precommit/scan) is registered explicitly below as a real nested Command, which is simpler and
-/// idiomatic for System.CommandLine. The one user-visible difference: `dotenvx ext vault` (an
-/// unregistered external extension) gets System.CommandLine's generic "unrecognized command"
-/// error here, instead of upstream's vault-specific install hint.
+/// Reference source: dotenvx/src/cli/commands/ext.js. `ext <name> [args...]` for anything that is not one of the registered
+/// subcommands (ls/genexample/gitignore/prebuild/precommit/scan) runs an external `dotenvx-ext-<name>` program
+/// (executeExtension.js, see <see cref="ExecuteDynamic.Extension" />); `ext` alone prints its help and exits 0. Upstream's
+/// helpInformation override that hides the dynamic "Arguments:" section is unnecessary here (System.CommandLine prints
+/// the dynamic arguments only when they have a description).
 /// </remarks>
 public class ExtCommand : Command
 {
     public ExtCommand(
         GenexampleAction genexampleAction, GitignoreAction gitignoreAction, LsAction lsAction,
-        PrebuildAction prebuildAction, PrecommitAction precommitAction, ScanAction scanAction)
+        PrebuildAction prebuildAction, PrecommitAction precommitAction, ScanAction scanAction, IDotenvxLogger logger)
         : base("ext", "🔌 extensions")
     {
+        var commandArgument = new Argument<string?>("command") { Arity = ArgumentArity.ZeroOrOne };
+        var argsArgument = new Argument<string[]>("args") { Arity = ArgumentArity.ZeroOrMore };
+        Add(commandArgument);
+        Add(argsArgument);
+        SetAction(parseResult =>
+        {
+            string? command = parseResult.GetValue(commandArgument);
+            string[] rest = parseResult.GetValue(argsArgument) ?? [];
+            string[] rawArgs = command is null ? [] : [command, .. rest];
+
+            return ExecuteDynamic.Extension(command, rawArgs, logger,
+                () => parseResult.RootCommandResult.Command.Parse(["ext", "--help"]).Invoke());
+        });
+
         // Order matches ext.js's own registration order exactly (ls, genexample, gitignore,
         // prebuild, precommit, scan) - purely a `dotenvx ext --help` listing-order detail, but
         // upstream itself registers this same set in a DIFFERENT order at the top level

@@ -77,6 +77,8 @@ public class KeyPairAction : Command
 
     private int Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "retrieving");
+
         string? key = parseResult.GetValue(_keyArgument);
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
@@ -106,7 +108,8 @@ public class KeyPairAction : Command
                 }
 
                 KeyPair keyPair = KeyPair.Factory(resolvedEnvFile, envKeysFile is { Length: > 0 } ? envKeysFile : null);
-                keyPair.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.FlagOnly);
+                keyPair.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.FlagOnly,
+                spinner.OnStatus);
                 foreach ((string resultKey, string? resultValue) in keyPair.Run())
                 {
                     results[resultKey] = resultValue;
@@ -125,6 +128,7 @@ public class KeyPairAction : Command
                 // printing "null" and exiting 0, confirmed live against Node.
                 if (!results.TryGetValue(key, out string? single))
                 {
+                    Spinners.StopActive();
                     Console.WriteLine("");
                     return 1;
                 }
@@ -132,10 +136,12 @@ public class KeyPairAction : Command
                 string singleText = single ?? "null";
                 if (format == "colon")
                 {
+                    Spinners.StopActive();
                     Console.WriteLine($"{key}:{singleText}");
                 }
                 else
                 {
+                    Spinners.StopActive();
                     Console.WriteLine(singleText);
                 }
             }
@@ -144,15 +150,18 @@ public class KeyPairAction : Command
                 if (format == "shell")
                 {
                     string inline = string.Join(' ', results.Select(kvp => $"{kvp.Key}={kvp.Value ?? ""}"));
+                    Spinners.StopActive();
                     Console.WriteLine(inline);
                 }
                 else if (format == "colon")
                 {
                     string inline = string.Join(' ', results.Select(kvp => $"{kvp.Key}:{kvp.Value ?? ""}"));
+                    Spinners.StopActive();
                     Console.WriteLine(inline);
                 }
                 else
                 {
+                    Spinners.StopActive();
                     Console.WriteLine(JsonStringify(results, prettyPrint));
                 }
             }

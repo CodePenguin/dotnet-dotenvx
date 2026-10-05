@@ -43,6 +43,8 @@ const fixtures = {
   publicOnly: { '.env': `DOTENV_PUBLIC_KEY="${PUB}"\nA=1\n` },
   prodEnc: { '.env.production': encEnv.replace('DOTENV_PUBLIC_KEY=', 'DOTENV_PUBLIC_KEY_PRODUCTION='), '.env.keys': `DOTENV_PRIVATE_KEY_PRODUCTION=${PRIV}\n` },
   dot: { '.env': '.SECRET=hidden\nFOO=bar\nHELLO=World\n' },
+  doctorProj: { 'app.py': 'load_dotenv()\n', 'index.js': "require('dotenv').config()\ndotenv.config()\n", 'sub/main.go': 'godotenv.Load()\n', 'node_modules/x.js': 'dotenv.config()\n', 'README.md': 'load_dotenv()\n' },
+  opRef: { '.env': 'A=op://vault/item/field\nB=bw://x/password\n' },
   gitrepo: { '.env': 'A=1\n', '.gitignore': '', '.dockerignore': '' }
 }
 
@@ -236,11 +238,35 @@ add('get bogus --help', 'plain', ['get', '--bogus', '--help'])
 add('env DOTENV_CONFIG_QUIET', 'plain', ['run', '--', 'node', '-e', '1'], { DOTENV_CONFIG_QUIET: 'true' })
 add('env DOTENV_CONFIG_IGNORE', 'none', ['run', '--', 'node', '-e', '1'], { DOTENV_CONFIG_IGNORE: 'MISSING_ENV_FILE' })
 
+// ---- commands added with the full-parity work (doctor, update, help, ext dispatch, armor settings, lock/native errors)
+add('doctor', 'doctorProj', ['doctor'])
+add('doctor dir', 'doctorProj', ['doctor', 'sub'])
+add('doctor missing dir', 'doctorProj', ['doctor', 'nowhere'])
+add('doctor -q', 'doctorProj', ['doctor', '-q'])
+add('update', 'none', ['update'])
+add('help unknown stdout exit', 'none', ['help', 'bogus'])
+add('ext unknown', 'none', ['ext', 'bogus', '--x'])
+add('ext vault', 'none', ['ext', 'vault'])
+add('armor unknown', 'none', ['armor', 'bogus'])
+add('armor status', 'none', ['armor', 'status'])
+for (const sub of ['username', 'token', 'hostname', 'path', 'on', 'off']) add(`armor settings ${sub}`, 'none', ['armor', 'settings', sub])
+add('lock up no env', 'none', ['lock', 'up'])
+add('lock down no env', 'none', ['lock', 'down'])
+add('lock up no key', 'publicOnly', ['lock', 'up'])
+add('native up no env', 'none', ['native', 'up'], { CI: 'true' })
+add('native pull no key', 'publicOnly', ['native', 'pull'], { CI: 'true' })
+add('curl no token', 'none', ['curl', 'https://armor.dotenvx.com/api/account'])
+add('curl refuses origin', 'none', ['curl', 'https://evil.example/x', '--token', 't'])
+add('get --no-armor --no-native --no-1password --no-bitwarden', 'enc', ['get', '--no-armor', '--no-native', '--no-1password', '--no-bitwarden'])
+add('run --token ignores for plain', 'plain', ['run', '--no-armor', '--', 'node', '-e', 'console.log(process.env.HELLO)'])
+scenarios.push({ name: 'op ref get', fx: 'opRef', args: ['get'], env: {} })
+
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
   /--help$/, /bogus --help$/, /^no args$/, // System.CommandLine renders help differently from commander
   /^global -d$/, /^global -l debug$/, // debug option dumps have a different shape
   /^ls --json /, // absolute paths embed the per-run temp directory (the two sides use different ones)
+  /^(help unknown stdout exit|armor unknown help)$/, // help text comes from different renderers (exit code is still compared)
   /^get convention bad$/ // both crash with an uncaught error; only the stack trace text differs
 ]
 
@@ -264,7 +290,11 @@ function runOne (cliArgs, sc, isNode) {
     let args = [...sc.args]
     if (isNode && ['encrypt', 'set'].includes(args[0])) args = [args[0], ...args.slice(1), '--no-native', '--no-armor']
     const env = { ...process.env, ...sc.env }
-    for (const k of Object.keys(env)) if (k.startsWith('DOTENV') && !(k in sc.env)) delete env[k]
+    // hermetic Armor/device config: a per-run directory unless the scenario names one
+    env.DOTENVX_CONFIG = (sc.env.DOTENVX_CONFIG || '<DIR>/.dxcfg').split('<DIR>').join(dir)
+    env.DOTENVX_NO_ARMOR = sc.env.DOTENVX_NO_ARMOR || ''
+    for (const k of Object.keys(env)) if (k.startsWith('DOTENV') && !(k in sc.env) && k !== 'DOTENVX_CONFIG' && k !== 'DOTENVX_NO_ARMOR') delete env[k]
+    if (!env.DOTENVX_NO_ARMOR) delete env.DOTENVX_NO_ARMOR
     delete env.PUBLIC
     const exe = isNode ? 'node' : 'dotnet'
     execFile(exe, [...(isNode ? NODE_CLI : DOTNET_CLI), ...args], { cwd: dir, env, encoding: 'utf8', timeout: 60000 }, (err, stdout, stderr) => {

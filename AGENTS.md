@@ -20,7 +20,7 @@ The upstream JS project is a git submodule at `dotenvx/`, used as porting refere
 - The submodule is pinned to the exact tag **`v2.24.1`** (never upstream HEAD, never a commit past the tag). `src/Dotenvx/Dotenvx.csproj` `Version` stays equal to the pinned tag, so `dotenvx --version` states which release this port matches.
 - `src/Dotenvx.Primitives/Dotenvx.Primitives.csproj` `Version` equals the installed `@dotenvx/primitives` version (`dotenvx/node_modules/@dotenvx/primitives/package.json`, currently **3.0.2**).
 - Bump versions only through the "Version bump checklist" below. Do not run `git submodule update --remote`.
-- Scope rule (decided 2026-10-04): **anything that exists in the targeted version is in scope**, including Dotenvx Armor, native secret stores, 1Password/Bitwarden, `lock`, `login`/`logout`/`curl`/`doctor`/`update`, key providers and dynamic extensions. [docs/parity-checklist.md](docs/parity-checklist.md) lists every component, its status and how it is verified; keep it current. Until a component is ported, the parity tests pass `--no-native --no-armor` to Node for `set`/`encrypt` so both sides use plain `.env.keys` files.
+- Scope rule (decided 2026-10-04): **anything that exists in the targeted version is in scope**, and by 2026-10-05 all of it is ported: Dotenvx Armor (session/device stores, API client, login/logout/curl/settings/armor commands, key providers and decryptors), native secret stores and `native`, 1Password/Bitwarden resolution, `lock`, `doctor`/`update`/`help`, spinner, pty for `--redact`, signal forwarding and dynamic extensions. [docs/parity-checklist.md](docs/parity-checklist.md) lists every component, its status and the accepted differences; keep it current.
 - `precommit`/`prebuild` are current at the pin but deprecated upstream in favor of `protect`; revisit when the pin passes that change.
 
 ## Commands
@@ -116,7 +116,8 @@ Parity is proven by oracle tests, not ported tests: `test/Dotenvx.ParityTest/Pri
 - Division of labor: `Dotenvx.Test`/`Dotenvx.Core.Test` are the 1:1 ports of upstream's unit tests and stand alone. This suite exists only to catch drift between the two implementations, so add a scenario here only when cross-implementation behavior needs proving.
 - Compare stdout and exit code, not stderr wording, unless the scenario is about stderr. Redact non-deterministic content (fresh keypairs, ECIES ciphertext) with `ParityTestBase.RedactKeyMaterial`.
 - Deterministic structure tests also live here: `HelpTextParityTest` (options per command), `ErrorMessageParityTest` (every error subtype vs `errors.js`), `GlobalOptionsParityTest`.
-- Use `FixedKeypairFixture` for deterministic keypairs; pass `--no-native --no-armor` to Node's `set`/`encrypt` (never in a `RunBothAsync`'s shared args) when the `.env` has no public key yet.
+- Use `FixedKeypairFixture` for deterministic keypairs. Every run gets a hermetic `DOTENVX_CONFIG` (no developer Armor session or device key is ever read); pass `--no-native --no-armor` to Node's `set`/`encrypt` (never in a `RunBothAsync`'s shared args) when the `.env` has no public key yet and no Armor/native behavior is under test.
+- Armor, native-store and secret-manager scenarios run against fakes shared by both CLIs: `test/Dotenvx.FakeSecretCli` (installed as `op`, `bw`, `powershell` or `secret-tool` by `FakeCliInstaller`) and `FakeArmorServer` (`ArmorParityTestBase` wires config dir, device key, secret store and request log; `Compare` asserts identical exit/stdout/stderr/requests/files).
 
 Detailed, numbered lessons from past bugs are in [docs/porting-traps.md](docs/porting-traps.md). Skim its headings before touching parsing, option handling, error output, or file encodings; the most reusable ones:
 

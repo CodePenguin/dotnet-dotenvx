@@ -73,6 +73,9 @@ public class EnvironmentTestBase : IDisposable
         ArmorHttp.ResetToDefaults();
         ExecuteDynamic.ResetToDefaults();
         OpenUrl.ResetToDefaults();
+        PtyCommand.ResetToDefaults();
+        ParseWithDecryptor.ResetToDefaults();
+        Spinners.ResetToDefaults();
         ArmorProviders.ResetToDefaults();
         ListenForOpenKey.ResetToDefaults();
         SystemInformation.ResetToDefaults();

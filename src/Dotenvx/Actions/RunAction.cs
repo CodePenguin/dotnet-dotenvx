@@ -117,6 +117,8 @@ public class RunAction : Command
 
     private async Task<int> Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "injecting");
+
         string[]? envs = parseResult.GetValue(_envOption);
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
@@ -189,7 +191,8 @@ public class RunAction : Command
             EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
 
             Run runService = Run.Factory(envItems, overload, processEnv, ResolveEnvKeysFile(envKeysFile));
-            runService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption), SecretResolverOptions.ArmorMode.SessionUnlessToken);
+            runService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption), SecretResolverOptions.ArmorMode.SessionUnlessToken,
+                spinner.OnStatus);
             runService.No1Password = parseResult.GetValue(_no1PasswordOption);
             runService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
             runService.PromptForSecrets = true;

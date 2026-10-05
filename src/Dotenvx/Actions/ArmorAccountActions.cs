@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
@@ -39,6 +40,7 @@ public class LoginAction : Command
 
     private int Execute(ParseResult parseResult, IDotenvxLogger logger)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "logging in", ["◐", "◓", "◑", "◒"]);
         string? hostnameOption = parseResult.GetValue(_hostnameOption);
         var options = new Dictionary<string, string>();
         if (hostnameOption is not null)
@@ -106,6 +108,7 @@ public class LogoutAction : Command
 
         var session = new Session(logger);
         string hostname = string.IsNullOrEmpty(hostnameOption) ? session.Hostname() : hostnameOption;
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "logging out", ["◐", "◓", "◑", "◒"]);
 
         try
         {

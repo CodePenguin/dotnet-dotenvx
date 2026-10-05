@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Help;
@@ -6,6 +7,7 @@ using System.IO;
 
 using Dotenvx.Actions;
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 using Dotenvx.Logging;
 
@@ -105,7 +107,10 @@ public class DotenvxRootCommand : LoggingRootCommand
 
             try
             {
-                return inner.Invoke(parseResult);
+                int exitCode = inner.Invoke(parseResult);
+                WriteTrailer(parseResult.CommandResult.Command, isRootHelp);
+
+                return exitCode;
             }
             finally
             {
@@ -117,6 +122,48 @@ public class DotenvxRootCommand : LoggingRootCommand
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// `addHelpText('after', ...)`: the "Examples:" trailers of run/set/del/gitignore/precommit/prebuild/curl and the
+    /// "Better Security" / "For Security Teams" lines after the root help (each text is written followed by a newline).
+    /// </summary>
+    private static void WriteTrailer(Command command, bool isRoot)
+    {
+        if (isRoot)
+        {
+            foreach (string line in new[]
+                     {
+                         " ", "Better Security:",
+                         "  lock                     ⊡ lock private keys with a local passphrase",
+                         "  native                   ⌥ move private keys into your OS secret store", " ",
+                         "For Security Teams:",
+                         "  armor                    ⛨ move private keys into Dotenvx Armor [www.dotenvx.com/armor]",
+                         "  curl                     ⛨ call authenticated api Dotenvx Armor [www.dotenvx.com/armor]"
+                     })
+            {
+                Console.Out.Write(line + (char)10);
+            }
+
+            return;
+        }
+
+        string? examples = command.Name switch
+        {
+            "run" => HelpExamples.Run(),
+            "set" => HelpExamples.Set(),
+            "del" => HelpExamples.Del(),
+            "gitignore" => HelpExamples.Gitignore(),
+            "precommit" => HelpExamples.Precommit(),
+            "prebuild" => HelpExamples.Prebuild(),
+            "curl" => HelpExamples.Curl(),
+            _ => null
+        };
+
+        if (examples is not null)
+        {
+            Console.Out.Write(examples + (char)10);
         }
     }
 

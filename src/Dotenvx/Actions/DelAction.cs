@@ -1,3 +1,4 @@
+using Dotenvx.Helpers;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -37,6 +38,8 @@ public class DelAction : Command
 
     private int Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "deleting");
+
         string key = parseResult.GetValue(_keyArgument)!;
         string[]? envFile = parseResult.GetValue(_envFileOption);
 

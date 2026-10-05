@@ -33,27 +33,43 @@ public static class ResolveOnePassword
     }
 
     /// <summary>Replaces every `op://` value in <paramref name="parsed" /> with `op read &lt;ref&gt; --no-newline`.</summary>
-    public static ResolveSecretsResult Resolve(IDictionary<string, string> parsed)
+    public static ResolveSecretsResult Resolve(IDictionary<string, string> parsed, Action<string>? onStatus = null)
     {
         var errors = new List<Exception>();
         var unresolved = new List<string>();
+        // the async variant shows "awaiting 1password" (with elapsed seconds) while `op` runs, then "injecting"
+        Action stopStatus = parsed.Values.Any(IsSecretReference)
+            ? ElapsedStatus.Create(onStatus, "awaiting 1password")
+            : () => { };
+        bool hadReferences = parsed.Values.Any(IsSecretReference);
 
-        foreach ((string key, string value) in parsed.ToList())
+        try
         {
-            if (!IsSecretReference(value))
+            foreach ((string key, string value) in parsed.ToList())
             {
-                continue;
-            }
+                if (!IsSecretReference(value))
+                {
+                    continue;
+                }
 
-            SecretCliResult result = SecretCli.Exec("op", ["read", value, "--no-newline"], null);
-            if (result is { NotFound: false, ExitCode: 0 })
-            {
-                parsed[key] = result.Stdout;
+                SecretCliResult result = SecretCli.Exec("op", ["read", value, "--no-newline"], null);
+                if (result is { NotFound: false, ExitCode: 0 })
+                {
+                    parsed[key] = result.Stdout;
+                }
+                else
+                {
+                    errors.Add(ResolutionError(key, result.NotFound));
+                    unresolved.Add(key);
+                }
             }
-            else
+        }
+        finally
+        {
+            if (hadReferences)
             {
-                errors.Add(ResolutionError(key, result.NotFound));
-                unresolved.Add(key);
+                stopStatus();
+                onStatus?.Invoke("injecting");
             }
         }
 
@@ -139,7 +155,8 @@ public static partial class ResolveBitwardenPassword
     /// variant: with no BW_SESSION and an interactive terminal it asks for the master password and runs `bw unlock`;
     /// the sync variant (and any non-interactive run) reports a locked vault instead.
     /// </summary>
-    public static ResolveSecretsResult Resolve(IDictionary<string, string> parsed, bool allowPrompt)
+    public static ResolveSecretsResult Resolve(IDictionary<string, string> parsed, bool allowPrompt,
+        Action<string>? onStatus = null)
     {
         var errors = new List<Exception>();
         var unresolved = new List<string>();
@@ -149,6 +166,14 @@ public static partial class ResolveBitwardenPassword
             session = null;
         }
 
+        Action? stopStatus = null;
+        void StartStatus()
+        {
+            stopStatus ??= ElapsedStatus.Create(onStatus, "awaiting bitwarden");
+        }
+
+        try
+        {
         foreach ((string key, string value) in parsed.ToList())
         {
             if (!IsSecretReference(value))
@@ -159,7 +184,12 @@ public static partial class ResolveBitwardenPassword
             try
             {
                 (string item, string field) = ParseSecretReference(value);
-                session ??= UnlockSession(allowPrompt);
+                if (session is not null)
+                {
+                    StartStatus();
+                }
+
+                session ??= UnlockSession(allowPrompt, StartStatus);
 
                 SecretCliResult result = SecretCli.Exec("bw", ["get", field, item],
                     new Dictionary<string, string> { ["BW_SESSION"] = session });
@@ -183,14 +213,28 @@ public static partial class ResolveBitwardenPassword
             }
         }
 
+        }
+        finally
+        {
+            if (stopStatus is not null)
+            {
+                stopStatus();
+                onStatus?.Invoke("injecting");
+            }
+        }
+
         return new ResolveSecretsResult(errors, unresolved);
     }
 
-    private static string UnlockSession(bool allowPrompt)
+    private static string UnlockSession(bool allowPrompt, Action startStatus)
     {
         if (allowPrompt && SecretCli.IsInteractive())
         {
+            // createSpinner.pause() / resume() around the prompt, then the status starts
+            Spinners.Pause();
             string password = Prompts.Password("Bitwarden master password", "◇") ?? throw new PromptCancelledException();
+            Spinners.Resume();
+            startStatus();
             SecretCliResult result = SecretCli.Exec("bw", ["unlock", "--passwordenv", PasswordEnv, "--raw"],
                 new Dictionary<string, string> { [PasswordEnv] = password });
             if (result.NotFound || result.ExitCode != 0)

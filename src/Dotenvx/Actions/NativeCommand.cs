@@ -1,6 +1,7 @@
 using System;
 using System.CommandLine;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -53,10 +54,16 @@ public class NativeCommand : Command
             SetAction(parseResult => Execute(parseResult, logger, run, successMessage));
         }
 
+        private static string SpinnerText(string name)
+        {
+            return name switch { "up" => "storing", "down" => "unkeychaining", "push" => "pushing", _ => "pulling" };
+        }
+
         private int Execute(ParseResult parseResult, IDotenvxLogger logger,
             Func<string?, string?, KeychainResult> run,
             Func<KeychainResult, string, (bool Success, string Message)> successMessage)
         {
+            using SpinnerScope spinner = SpinnerScope.Start(parseResult, SpinnerText(parseResult.CommandResult.Command.Name));
             string? envFile = parseResult.GetValue(_envFileOption);
             string envKeysFile = parseResult.GetValue(_envKeysFileOption) ?? ".env.keys";
             logger.Debug($"options: {LockCommand.OptionsJson(envFile, envKeysFile)}");

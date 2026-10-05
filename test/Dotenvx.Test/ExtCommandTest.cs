@@ -3,6 +3,7 @@ using System.CommandLine.Parsing;
 using System.Collections.Generic;
 
 using Dotenvx;
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Actions;
 using Dotenvx.Core.Test;
 using Dotenvx.Interop.DotenvxJs.Services;
@@ -41,7 +42,8 @@ public class ExtCommandTest : EnvironmentTestBase
             new EncryptAction(MockLogger),
             new ExtCommand(
                 new GenexampleAction(MockLogger), new GitignoreAction(MockLogger), new LsAction(MockLogger),
-                new PrebuildAction(MockLogger), new PrecommitAction(MockLogger), new ScanAction(MockLogger)),
+                new PrebuildAction(MockLogger), new PrecommitAction(MockLogger), new ScanAction(MockLogger),
+                MockLogger),
             new GenexampleAction(MockLogger),
             new GetAction(MockLogger),
             new GitignoreAction(MockLogger),
@@ -114,5 +116,46 @@ public class ExtCommandTest : EnvironmentTestBase
     {
         IReadOnlyList<ParseError> topLevelErrors = RootCommand.Parse(["scan"]).Errors;
         topLevelErrors.ShouldNotBeEmpty();
+    }
+
+    /// <remarks>Refer to "ext dynamic action forwards to executeExtension"</remarks>
+    [Fact]
+    public void TestExtDynamicActionForwardsToExecuteExtension()
+    {
+        var spawned = new List<(string Command, string[] Args)>();
+        ExecuteDynamic.SpawnCommand = (command, args, _) =>
+        {
+            spawned.Add((command, args));
+
+            return new SpawnResult(0, false);
+        };
+
+        RootCommand.Parse(["ext", "bogus", "--json"]).Invoke().ShouldBe(0);
+
+        spawned.Single().Command.ShouldBe("dotenvx-ext-bogus");
+        spawned.Single().Args.ShouldBe(["--json"]);
+    }
+
+    /// <remarks>
+    /// Refer to "ext subcommands lazy-load handlers and preserve this context". Upstream lazy-loads each handler with
+    /// <c>require</c> and calls it on the commander command; the equivalent here is that every registered subcommand is its own
+    /// action instance, present on the ext command in ext.js's registration order.
+    /// </remarks>
+    [Fact]
+    public void TestExtSubcommandsLazyLoadHandlersAndPreserveThisContext()
+    {
+        Command ext = RootCommand.Subcommands.Single(command => command.Name == "ext");
+
+        ext.Subcommands.Select(command => command.Name).ShouldBe(
+            ["ls", "genexample", "gitignore", "prebuild", "precommit", "scan"]);
+    }
+
+    /// <remarks>Refer to "ext helpInformation removes dynamic section"</remarks>
+    [Fact]
+    public void TestExtHelpInformationRemovesDynamicSection()
+    {
+        RootCommand.Parse(["ext", "--help"]).Invoke().ShouldBe(0);
+
+        _consoleOutput.ToString().ShouldNotContain("dynamic ext command");
     }
 }

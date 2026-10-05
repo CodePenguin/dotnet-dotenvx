@@ -1,3 +1,4 @@
+using System;
 using System.CommandLine;
 
 using Dotenvx.Interop.DotenvxJs.Db;
@@ -37,7 +38,7 @@ public static class SecretResolverOptions
     }
 
     public static KeyAccessOptions KeyAccess(IDotenvxLogger logger, bool noNative, bool noArmorFlag, string? token,
-        ArmorMode mode)
+        ArmorMode mode, Action<string>? onStatus = null)
     {
         bool noArmor = noArmorFlag;
         if (!noArmor && mode != ArmorMode.FlagOnly &&
@@ -46,7 +47,10 @@ public static class SecretResolverOptions
             noArmor = new Session(logger).NoArmor();
         }
 
-        return new KeyAccessOptions { NoNative = noNative, NoArmor = noArmor, Token = token, Logger = logger };
+        return new KeyAccessOptions
+        {
+            NoNative = noNative, NoArmor = noArmor, Token = token, Logger = logger, OnStatus = onStatus
+        };
     }
 
     public static Option<bool> NoNative()

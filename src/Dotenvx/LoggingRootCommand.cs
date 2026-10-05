@@ -68,6 +68,18 @@ public class LoggingRootCommand : RootCommand
         return parseResult.GetValue(_quietLogLevel);
     }
 
+    /// <summary>`options.verbose` (the -v flag only).</summary>
+    public bool IsVerboseFlag(ParseResult parseResult)
+    {
+        return parseResult.GetValue(_verboseLogLevel);
+    }
+
+    /// <summary>`options.debug` (the -d flag only).</summary>
+    public bool IsDebugFlag(ParseResult parseResult)
+    {
+        return parseResult.GetValue(_debugLogLevel);
+    }
+
     public bool IsVerboseMode(ParseResult parseResult)
     {
         return parseResult.GetValue(_logLevel) == "verbose" || parseResult.GetValue(_verboseLogLevel);

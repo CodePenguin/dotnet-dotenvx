@@ -99,6 +99,8 @@ public class ValidateAction : Command
 
     private int Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "validating");
+
         string[]? envs = parseResult.GetValue(_envOption);
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
@@ -129,7 +131,8 @@ public class ValidateAction : Command
             EnvItem[] envItems = BuildCommandEnvs(explicitEnvItems.ToArray(), convention);
 
             Run runService = Run.Factory(envItems, overload, validateEnv, ResolveEnvKeysFile(envKeysFile));
-            runService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption), SecretResolverOptions.ArmorMode.SessionUnlessToken);
+            runService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption), SecretResolverOptions.ArmorMode.SessionUnlessToken,
+                spinner.OnStatus);
             runService.No1Password = parseResult.GetValue(_no1PasswordOption);
             runService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
             runService.PromptForSecrets = true;

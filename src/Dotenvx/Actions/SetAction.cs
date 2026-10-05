@@ -86,15 +86,27 @@ public class SetAction : Command
         bool plain = parseResult.GetValue(_plainOption);
         bool noCreate = parseResult.GetValue(_noCreateOption);
 
-        // set.js's other branch here - interactively prompting for a hidden password when a real
-        // TTY is attached - isn't implemented anywhere in this port (no interactive-prompt
-        // infrastructure exists at all), so a missing value always takes the non-TTY error path,
-        // matching the realistic scripted/automated usage this port targets.
+        // set.js: without a value, a terminal stdin is prompted for it (hidden); anything else is a MISSING_VALUE error
         if (value == null)
         {
-            CatchAndLog(_logger, new MissingValueException(key));
-            return 1;
+            if (Console.IsInputRedirected)
+            {
+                CatchAndLog(_logger, new MissingValueException(key));
+                return 1;
+            }
+
+            try
+            {
+                value = Prompts.Password(key, plain ? "◇" : "◈");
+            }
+            catch (PromptCancelledException)
+            {
+                return 130;
+            }
         }
+
+        // the spinner starts after the prompt (it would draw over it)
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, plain ? "setting" : "encrypting");
 
         _logger.Debug($"key: {key}");
         _logger.Debug($"value: {value}");

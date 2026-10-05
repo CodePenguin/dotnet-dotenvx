@@ -28,7 +28,8 @@ public static class UnknownOptionGuard
     {
         // dotenvx.js registers `set` with `.allowUnknownOption()`: unknown options (and dash-leading values such as
         // `set KEY -secret`) are accepted there, unlike every other command
-        if (parseResult.CommandResult.Command.Name == "set")
+        // (also `ext`, `armor`, `login` and `logout`, which forward their arguments to external programs / accept them)
+        if (parseResult.CommandResult.Command.Name is "set" or "ext" or "armor" or "login" or "logout")
         {
             return null;
         }

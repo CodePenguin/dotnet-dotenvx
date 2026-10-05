@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 
@@ -78,6 +79,8 @@ public class LsAction : Command
 
     private int Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "traversing");
+
         DateTime startedAt = DateTime.UtcNow;
         string directory = parseResult.GetValue(_directoryArgument) ?? "./";
         string[]? envFile = parseResult.GetValue(_envFileOption);
@@ -99,6 +102,7 @@ public class LsAction : Command
             string cwd = Path.GetFullPath(directory);
             string[] absoluteFilepaths = filepaths.Select(filepath => Path.GetFullPath(Path.Combine(cwd, filepath)))
                 .ToArray();
+            Spinners.StopActive();
             Console.WriteLine(JsonStringify(absoluteFilepaths, true));
         }
         else

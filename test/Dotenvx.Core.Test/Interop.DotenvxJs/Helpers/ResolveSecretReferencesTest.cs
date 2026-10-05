@@ -6,9 +6,7 @@ using Shouldly;
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 
 /// <remarks>
-/// Reference source: dotenvx/src/lib/helpers/resolveOnePassword.js and resolveBitwardenPassword.js. Upstream's
-/// `onStatus` / `createSpinner` assertions belong to the spinner port (Phase F in docs/parity-checklist.md); the
-/// `execFile` vs `execFileSync` split collapses into one process seam here (`SecretCli.Exec`).
+/// Reference source: dotenvx/src/lib/helpers/resolveOnePassword.js and resolveBitwardenPassword.js. /// `execFile` vs `execFileSync` split collapses into one process seam here (`SecretCli.Exec`).
 /// </remarks>
 public class ResolveSecretReferencesTest : EnvironmentTestBase
 {
@@ -47,8 +45,10 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
             ["PLAIN"] = "value"
         };
 
-        ResolveSecretsResult result = ResolveOnePassword.Resolve(parsed);
+        var statuses = new List<string>();
+        ResolveSecretsResult result = ResolveOnePassword.Resolve(parsed, statuses.Add);
 
+        statuses.ShouldBe(["awaiting 1password", "injecting"]);
         parsed["SECRET"].ShouldBe("super-secret");
         parsed["SECOND_SECRET"].ShouldBe("super-secret");
         parsed["PLAIN"].ShouldBe("value");
@@ -120,8 +120,10 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
             ["SECRET"] = $"bw://{ItemId}/password", ["SECOND_SECRET"] = $"bw://{ItemId}/username", ["PLAIN"] = "value"
         };
 
-        ResolveSecretsResult result = ResolveBitwardenPassword.Resolve(parsed, true);
+        var statuses = new List<string>();
+        ResolveSecretsResult result = ResolveBitwardenPassword.Resolve(parsed, true, statuses.Add);
 
+        statuses.ShouldBe(["awaiting bitwarden", "injecting"]);
         parsed["SECRET"].ShouldBe("super-secret");
         parsed["SECOND_SECRET"].ShouldBe("super-secret");
         parsed["PLAIN"].ShouldBe("value");
@@ -147,9 +149,16 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
             ["PASSWORD"] = $"bw://{ItemId}/password", ["URI"] = $"bw://{ItemId}/uri"
         };
 
-        ResolveSecretsResult result = ResolveBitwardenPassword.Resolve(parsed, true);
+        var spinnerCalls = new List<string>();
+        Spinners.Pause = () => spinnerCalls.Add("pause");
+        Spinners.Resume = () => spinnerCalls.Add("resume");
+        var statuses = new List<string>();
+        ResolveSecretsResult result = ResolveBitwardenPassword.Resolve(parsed, true, statuses.Add);
         var nextParsed = new Dictionary<string, string> { ["USERNAME"] = $"bw://{ItemId}/username" };
-        ResolveSecretsResult nextResult = ResolveBitwardenPassword.Resolve(nextParsed, true);
+        ResolveSecretsResult nextResult = ResolveBitwardenPassword.Resolve(nextParsed, true, statuses.Add);
+
+        spinnerCalls.ShouldBe(["pause", "resume", "pause", "resume"]);
+        statuses.ShouldBe(["awaiting bitwarden", "injecting", "awaiting bitwarden", "injecting"]);
 
         parsed.ShouldBe(new Dictionary<string, string> { ["PASSWORD"] = "password-value", ["URI"] = "uri-value" });
         nextParsed.ShouldBe(new Dictionary<string, string> { ["USERNAME"] = "username-value" });

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
@@ -113,10 +114,19 @@ public class ArmorCommand : Command
             SetAction(parseResult => Execute(parseResult, logger, run, success, teamDescription is not null));
         }
 
+        private static string SpinnerText(string name)
+        {
+            return name switch
+            {
+                "up" => "armoring", "down" => "dearmoring", "push" => "pushing", "pull" => "pulling", _ => "moving"
+            };
+        }
+
         private int Execute(ParseResult parseResult, IDotenvxLogger logger,
             Func<string, string?, string, string?, string?, ArmorResult> run, Func<ArmorResult, string, string> success,
             bool hasTeam)
         {
+            using SpinnerScope spinner = SpinnerScope.Start(parseResult, SpinnerText(parseResult.CommandResult.Command.Name));
             string? envFile = parseResult.GetValue(_envFileOption);
             string? tokenOption = parseResult.GetValue(_tokenOption);
             string? team = hasTeam ? parseResult.GetValue(_teamOption) : null;
