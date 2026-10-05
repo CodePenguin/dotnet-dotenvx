@@ -11,7 +11,7 @@ namespace Dotenvx.ParityTest;
 ///   `keypair`. A port that kept only the first `-fk` silently loses the key when the real
 ///   `.env.keys` isn't first - `KeysFor`/`KeyPair`/`Get`/`Run` all take a list.
 /// - a plain `&lt;path&gt;` string (commander keeps the LAST occurrence): `set`, `encrypt`, `del`.
-///   `Sets`/`Encrypt` deliberately unwrap with `.FirstOrDefault()`.
+///   `SetAction`/`EncryptAction`/`RotateAction` unwrap with `.LastOrDefault()`.
 ///
 /// On top of the list itself, only `run`/`get`/`validate` call `resolveEnvKeysFile`, so
 /// `-fk <directory>` means `&lt;directory&gt;/.env.keys` there and stays a literal (nonexistent) path
@@ -173,5 +173,41 @@ public class EnvKeysFileParityTest(NodeParityFixture fixture) : ParityTestBase(f
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
         dotnet.StandardError.ShouldBe(node.StandardError);
         dotnet.ExitCode.ShouldBe(0);
+    }
+
+    /// <remarks>
+    /// Not from a JS test - found by code review: `set`/`encrypt` register `-fk` as a plain `&lt;path&gt;` option, so
+    /// commander keeps the LAST occurrence (the keys file that gets written), and `set` also accepts unknown options.
+    /// </remarks>
+    [Fact]
+    public async Task EncryptWritesTheKeysFileOfTheLastFkOccurrence()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => WriteFile(".env", "A=1\n"), null,
+            "encrypt", "-fk", "one.keys", "-fk", "two.keys");
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        File.Exists(Path.Combine(WorkDir, "two.keys")).ShouldBeTrue();
+        File.Exists(Path.Combine(WorkDir, "one.keys")).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task SetAcceptsUnknownOptionsAndDashLeadingValues()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => WriteFile(".env", ""), null,
+            "set", "A", "-secret", "--whatever", "--plain");
+
+        node.ExitCode.ShouldBe(0);
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        ReadFile(".env").ShouldContain("A=\"-secret\"");
     }
 }

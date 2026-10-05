@@ -114,7 +114,7 @@ public class RotateAction : Command
 
         if (stdout)
         {
-            RotateResult result = Rotate.Factory(envItems.ToArray(), key, excludeKey, envKeysFile?.FirstOrDefault())
+            RotateResult result = Rotate.Factory(envItems.ToArray(), key, excludeKey, envKeysFile?.LastOrDefault())
                 .Run();
 
             foreach (RotateProcessedEnv processedEnv in result.ProcessedEnvs)
@@ -131,7 +131,7 @@ public class RotateAction : Command
         {
             try
             {
-                Rotate rotate = Rotate.Factory(envItems.ToArray(), key, excludeKey, envKeysFile?.FirstOrDefault());
+                Rotate rotate = Rotate.Factory(envItems.ToArray(), key, excludeKey, envKeysFile?.LastOrDefault());
                 RotateResult result = rotate.Run();
 
                 foreach (RotateProcessedEnv processedEnv in result.ProcessedEnvs)

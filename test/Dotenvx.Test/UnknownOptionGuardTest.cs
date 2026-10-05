@@ -64,4 +64,25 @@ public class UnknownOptionGuardTest : EnvironmentTestBase
         UnknownOptionGuard.FindUnknownOption(BuildRoot().Parse(["run", "-e", "A=1", "--", "echo"])).ShouldBeNull();
         UnknownOptionGuard.FindUnknownOption(BuildRoot().Parse(["get", "-f", ".env", "--format", "shell"])).ShouldBeNull();
     }
+
+    /// <remarks>Not from a JS test - dotenvx.js registers `set` with `.allowUnknownOption()`, so unknown options and dash-leading values pass there.</remarks>
+    [Fact]
+    public void TestSetAllowsUnknownOptions()
+    {
+        RootCommand root = new LoggingRootCommand { new SetAction(MockLogger) };
+        foreach (Command command in root.Subcommands)
+        {
+            UnknownOptionGuard.Apply(command);
+        }
+
+        UnknownOptionGuard.FindUnknownOption(root.Parse(["set", "KEY", "-secret"])).ShouldBeNull();
+        UnknownOptionGuard.FindUnknownOption(root.Parse(["set", "KEY", "value", "--whatever"])).ShouldBeNull();
+    }
+
+    /// <remarks>Not from a JS test - commander shows help even when an unknown option comes first.</remarks>
+    [Fact]
+    public void TestHelpWinsOverAnUnknownOption()
+    {
+        UnknownOptionGuard.FindUnknownOption(BuildRoot().Parse(["get", "--bogus", "--help"])).ShouldBeNull();
+    }
 }

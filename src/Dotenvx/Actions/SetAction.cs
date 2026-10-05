@@ -106,7 +106,7 @@ public class SetAction : Command
             envItems.AddRange(
                 SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
 
-            string? envKeysFilePath = envKeysFile?.FirstOrDefault();
+            string? envKeysFilePath = envKeysFile?.LastOrDefault(); // plain `<path>` option: commander keeps the LAST occurrence
 
             Sets setsService = Sets.Factory(key, value, envItems.ToArray(), encrypt, envKeysFilePath, noCreate);
             SetsResult result = setsService.Run();

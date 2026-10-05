@@ -26,6 +26,27 @@ public static class UnknownOptionGuard
     /// <summary>The first token commander would call an unknown option, or null.</summary>
     public static string? FindUnknownOption(ParseResult parseResult)
     {
+        // dotenvx.js registers `set` with `.allowUnknownOption()`: unknown options (and dash-leading values such as
+        // `set KEY -secret`) are accepted there, unlike every other command
+        if (parseResult.CommandResult.Command.Name == "set")
+        {
+            return null;
+        }
+
+        // commander handles help/version eagerly: `get --bogus --help` prints help (exit 0) whatever the order
+        foreach (Token token in parseResult.Tokens)
+        {
+            if (token.Type == TokenType.DoubleDash)
+            {
+                break;
+            }
+
+            if (token.Type == TokenType.Option && token.Value is "--help" or "-h" or "-?" or "--version" or "-V")
+            {
+                return null;
+            }
+        }
+
         foreach (Token token in parseResult.Tokens)
         {
             if (token.Type == TokenType.DoubleDash)

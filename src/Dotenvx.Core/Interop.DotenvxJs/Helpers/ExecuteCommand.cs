@@ -57,6 +57,7 @@ public static partial class Helpers
         logger.Debug($"executing process command [{string.Join(' ', commandArgs)}]");
 
         Process? child = null;
+        bool shellFallback = false;
         string? signalSent = null;
 
         // Signal handlers - in C#, use Console.CancelKeyPress for SIGINT
@@ -70,7 +71,7 @@ public static partial class Helpers
             {
                 logger.Debug("sending SIGINT to command process");
                 signalSent = "SIGINT";
-                child.Kill(); // Send kill to the command process
+                child.Kill(shellFallback); // with the %COMSPEC% fallback the child is cmd.exe: take its tree with it
             }
             else
             {
@@ -81,7 +82,6 @@ public static partial class Helpers
         try
         {
             // Expand only the executable; child arguments and separators pass through unchanged.
-            bool shellFallback = false;
             try
             {
                 string? foundPath = WhichSync(commandArgs[0]);
@@ -212,6 +212,11 @@ public static partial class Helpers
     /// cmd's <c>/s</c> strips exactly that outer pair. So <c>run -- echo ""</c> executes <c>echo ""</c>
     /// and prints <c>""</c>, and <c>run -- echo a&amp;b</c> executes <c>echo "a&amp;b"</c> - the quotes
     /// are what stop <c>&amp;</c> being read as a command separator.
+    ///
+    /// Security note (from code review): cmd.exe does not honor backslash escapes, so an argument containing a double
+    /// quote followed by cmd metacharacters can still break out of the quoting, as in the cross-spawn behavior this
+    /// copies. The arguments are the caller's own command line (same trust domain as typing it in cmd directly), but
+    /// do not feed untrusted text through `dotenvx run` on Windows when the command is a cmd builtin.
     ///
     /// <c>Arguments</c> is set instead of <c>ArgumentList</c> because .NET only quotes values it puts
     /// in <c>ArgumentList</c>; a raw <c>Arguments</c> string is passed to CreateProcess untouched.
