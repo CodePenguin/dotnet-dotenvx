@@ -65,6 +65,9 @@ public class ValidateAction : Command
 
     private readonly IDotenvxLogger _logger;
 
+    private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password();
+    private readonly Option<bool> _noBitwardenOption = SecretResolverOptions.NoBitwarden();
+
     private readonly Option<bool> _overloadOption =
         new("--overload", "-o")
         {
@@ -81,6 +84,8 @@ public class ValidateAction : Command
         Add(_overloadOption);
         Add(_conventionOption);
         Add(_ignoreOption);
+        Add(_no1PasswordOption);
+        Add(_noBitwardenOption);
         SetAction(Execute);
     }
 
@@ -116,6 +121,9 @@ public class ValidateAction : Command
             EnvItem[] envItems = BuildCommandEnvs(explicitEnvItems.ToArray(), convention);
 
             Run runService = Run.Factory(envItems, overload, validateEnv, ResolveEnvKeysFile(envKeysFile));
+            runService.No1Password = parseResult.GetValue(_no1PasswordOption);
+            runService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
+            runService.PromptForSecrets = true;
             RunResult result = runService.Execute();
 
             int errorCount = 0;

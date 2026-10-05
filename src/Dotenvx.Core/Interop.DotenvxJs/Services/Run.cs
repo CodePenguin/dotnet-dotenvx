@@ -28,6 +28,15 @@ public class Run
     private readonly string[]? _envKeysFilePaths;
     private readonly EnvItem[] _envs;
 
+    /// <summary>--no-1password (or DOTENVX_NO_1PASSWORD=true): leave `op://` references unresolved.</summary>
+    public bool No1Password { get; set; }
+
+    /// <summary>--no-bitwarden (or DOTENVX_NO_BITWARDEN=true): leave `bw://` references unresolved.</summary>
+    public bool NoBitwarden { get; set; }
+
+    /// <summary>The async resolver variant (run/get/validate): may prompt for the Bitwarden master password on a TTY.</summary>
+    public bool PromptForSecrets { get; set; }
+
     // main.js config() only runs `determine` when no explicit `envs` option was given; every other caller determines
     public bool DetermineOnExecute { get; set; } = true;
     private readonly bool _opsOn;
@@ -117,6 +126,7 @@ public class Run
             row.Errors = DecryptErrors(parsed);
             row.Injected = parsed.Injected;
             row.PreExisted = parsed.Existed;
+            ResolveSecrets(row);
 
             Inject(row.Parsed);
 
@@ -132,6 +142,55 @@ public class Run
         }
 
         _processedEnvs.Add(row);
+    }
+
+    /// <remarks>
+    /// envs.js: after parsing, `if (!no1Password)` / `if (!noBitwarden)` resolve secret references inside
+    /// `row.injected`, append their errors to `row.errors` and `Object.assign(row.parsed, row.injected)`. The
+    /// flags are `options.noX === true || process.env.DOTENVX_NO_X === 'true'` (the real process environment).
+    /// </remarks>
+    private void ResolveSecrets(RunProcessedEnv row)
+    {
+        bool no1Password = No1Password || Environment.GetEnvironmentVariable("DOTENVX_NO_1PASSWORD") == "true";
+        bool noBitwarden = NoBitwarden || Environment.GetEnvironmentVariable("DOTENVX_NO_BITWARDEN") == "true";
+        if (no1Password && noBitwarden)
+        {
+            return;
+        }
+
+        var injected = new Dictionary<string, string>(row.Injected);
+        var parsed = new Dictionary<string, string>(row.Parsed);
+
+        if (!no1Password)
+        {
+            AddErrors(row, ResolveOnePassword.Resolve(injected).Errors);
+            Overlay(parsed, injected);
+        }
+
+        if (!noBitwarden)
+        {
+            AddErrors(row, ResolveBitwardenPassword.Resolve(injected, PromptForSecrets).Errors);
+            Overlay(parsed, injected);
+        }
+
+        row.Injected = injected;
+        row.Parsed = parsed;
+    }
+
+    private static void AddErrors(RunProcessedEnv row, IEnumerable<Exception> errors)
+    {
+        foreach (Exception error in errors)
+        {
+            row.Errors.Add(error);
+        }
+    }
+
+    private static void Overlay(Dictionary<string, string> target, Dictionary<string, string> source)
+    {
+        foreach ((string key, string value) in source)
+        {
+            target[key] = value;
+        }
     }
 
     private void Inject(IReadOnlyDictionary<string, string> parsed)
@@ -180,6 +239,7 @@ public class Run
             row.Errors = DecryptErrors(parsed);
             row.Injected = parsed.Injected;
             row.PreExisted = parsed.Existed;
+            ResolveSecrets(row);
 
             Inject(row.Parsed.ToDictionary());
 

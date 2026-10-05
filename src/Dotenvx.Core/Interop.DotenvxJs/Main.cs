@@ -49,6 +49,8 @@ public static class Main
 
             Run run = Run.Factory(envs, options.Overload ?? false, processEnv, envKeysFile);
             run.DetermineOnExecute = options.Envs == null;
+            run.No1Password = options.No1Password == true;
+            run.NoBitwarden = options.NoBitwarden == true;
             RunResult runResult = run.Execute();
 
             if (options.Mask != null)
@@ -187,10 +189,12 @@ public static class Main
         options = (GetOptions)NormalizeDotenvConfigIgnore(options);
 
         EnvItem[] envs = BuildEnvs(options);
-        GetResult result = Services.Get
-            .Factory(key, envs, options.Overload ?? false, options.All ?? false,
-                string.IsNullOrEmpty(options.EnvKeysFile) ? null : [options.EnvKeysFile])
-            .Run();
+        Services.Get getService = Services.Get.Factory(key, envs, options.Overload ?? false, options.All ?? false,
+            string.IsNullOrEmpty(options.EnvKeysFile) ? null : [options.EnvKeysFile]);
+        getService.No1Password = options.No1Password == true;
+        getService.NoBitwarden = options.NoBitwarden == true;
+        getService.PromptForSecrets = true;
+        GetResult result = getService.Run();
 
         IReadOnlyDictionary<string, string> parsed = result.Parsed;
         if (options.Mask != null)

@@ -19,6 +19,9 @@ namespace Dotenvx.Actions;
 /// <remarks>Reference source: dotenvx/src/cli/actions/get.js</remarks>
 public class GetAction : Command
 {
+    private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password();
+    private readonly Option<bool> _noBitwardenOption = SecretResolverOptions.NoBitwarden();
+
     private readonly Option<bool> _allOption =
         new("--all", "-a") { Description = "include all machine envs as well" };
 
@@ -129,6 +132,8 @@ public class GetAction : Command
         Add(_maskOption);
         Add(_prettyPrintOption);
         Add(_formatOption);
+        Add(_no1PasswordOption);
+        Add(_noBitwardenOption);
         SetAction(Execute);
     }
 
@@ -198,6 +203,9 @@ public class GetAction : Command
         try
         {
             Get getService = Get.Factory(key, envItems, overload, all, ResolveEnvKeysFile(envKeysFile));
+            getService.No1Password = parseResult.GetValue(_no1PasswordOption);
+            getService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
+            getService.PromptForSecrets = true;
             GetResult result = getService.Run();
             IReadOnlyDictionary<string, string> parsed = FilterKeys(result.Parsed, includeKey, excludeKey);
 

@@ -23,12 +23,23 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]?
         Factory = DefaultFactory;
     }
 
+    /// <summary>resolvers/get.js passes no1Password / noBitwarden through to the envs resolver.</summary>
+    public bool No1Password { get; set; }
+
+    public bool NoBitwarden { get; set; }
+
+    public bool PromptForSecrets { get; set; }
+
     public virtual GetResult Run()
     {
         Dictionary<string, string> processEnv = new(Environment.GetEnvironmentVariables()
             .Cast<DictionaryEntry>()
             .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
-        RunResult runResult = Services.Run.Factory(envs, overload, processEnv, envKeysFilePaths).Execute();
+        Run runService = Services.Run.Factory(envs, overload, processEnv, envKeysFilePaths);
+        runService.No1Password = No1Password;
+        runService.NoBitwarden = NoBitwarden;
+        runService.PromptForSecrets = PromptForSecrets;
+        RunResult runResult = runService.Execute();
 
         List<Exception> errors = [];
         foreach (RunProcessedEnv processedEnv in runResult.ProcessedEnvs)

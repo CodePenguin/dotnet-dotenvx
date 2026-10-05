@@ -32,6 +32,8 @@
              project's output automatically - gives a reliable path to the built CLI
              without any fragile relative-path climbing. -->
         <ProjectReference Include="..\..\src\Dotenvx\Dotenvx.csproj" />
+        <!-- Fake `op`/`bw` executables for the 1Password and Bitwarden parity tests. -->
+        <ProjectReference Include="..\Dotenvx.FakeSecretCli\Dotenvx.FakeSecretCli.csproj" />
     </ItemGroup>
 
 </Project>

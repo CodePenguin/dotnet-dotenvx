@@ -14,6 +14,8 @@ public class ConfigOptions
     public List<string>? Ignore { get; set; }
     public bool? Strict { get; set; }
     public string? EnvKeysFile { get; set; }
+    public bool? No1Password { get; set; }
+    public bool? NoBitwarden { get; set; }
 
     // main.js `options.envs`: explicit env items (files or raw `KEY=value` strings) used as-is, ignoring `Path` and `Convention`
     public EnvItem[]? Envs { get; set; }

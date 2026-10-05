@@ -56,6 +56,7 @@ public class EnvironmentTestBase : IDisposable
 
         // Reset Mock Factories
         Del.ResetFactory();
+        SecretCli.ResetToDefaults();
         LockUp.ResetFactory();
         LockDown.ResetFactory();
         Prompts.ResetToDefaults();

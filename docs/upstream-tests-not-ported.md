@@ -113,8 +113,6 @@ These cover features this port does not implement yet: Dotenvx Armor (cloud key 
 - tests/lib/api/postArmorPush.test.js
 - tests/lib/api/postArmorUp.test.js
 - tests/lib/api/postLogout.test.js
-- tests/lib/config-bitwarden.test.js
-- tests/lib/config-onepassword.test.js
 - tests/lib/decryptors/armor.test.js
 - tests/lib/decryptors/index.test.js
 - tests/lib/helpers/armoredKeyDisplay.test.js
@@ -134,8 +132,6 @@ These cover features this port does not implement yet: Dotenvx Armor (cloud key 
 - tests/lib/helpers/ptyCommand.test.js
 - tests/lib/helpers/removeDynamicHelpSection.test.js
 - tests/lib/helpers/removeOptionsHelpParts.test.js
-- tests/lib/helpers/resolveBitwardenPassword.test.js
-- tests/lib/helpers/resolveOnePassword.test.js
 - tests/lib/helpers/sanitizeCommandForMetadata.test.js
 - tests/lib/helpers/teamChoicesFromMeta.test.js
 - tests/lib/helpers/windowsCredentialManager.test.js
