@@ -39,6 +39,15 @@ public abstract class ArmorParityTestBase(NodeParityFixture fixture) : ParityTes
     /// <summary>Settings written into the config directory's `.env` before the run (null: no settings file at all).</summary>
     protected Dictionary<string, string>? Settings { get; set; }
 
+    /// <summary>Redact key material in the project files (needed when the CLI creates fresh random keys).</summary>
+    protected bool RedactFiles { get; set; }
+
+    /// <summary>False for scenarios with prompts: enquirer's ANSI redraws are not reproduced byte for byte.</summary>
+    protected bool CompareStderr { get; set; } = true;
+
+    /// <summary>Redact key material in the logged request bodies (fresh random keys).</summary>
+    protected bool RedactRequests { get; set; }
+
     /// <summary>The access token placed in the fake secret store before the run.</summary>
     protected string? StoredToken { get; set; }
 
@@ -123,7 +132,7 @@ public abstract class ArmorParityTestBase(NodeParityFixture fixture) : ParityTes
             string path = Path.Combine(WorkDir, name);
             if (File.Exists(path))
             {
-                files[name] = RedactKeyMaterial(File.ReadAllText(path));
+                files[name] = RedactFiles ? RedactKeyMaterial(File.ReadAllText(path)) : File.ReadAllText(path);
             }
         }
 
@@ -163,7 +172,7 @@ public abstract class ArmorParityTestBase(NodeParityFixture fixture) : ParityTes
                 ? await Fixture.RunNodeWithInputAsync(WorkDir, env, input, args)
                 : await Fixture.RunDotnetWithInputAsync(WorkDir, env, input, args);
 
-        return new Outcome(result.ExitCode, result.StandardOutput, result.StandardError, Server.RequestLog(),
+        return new Outcome(result.ExitCode, result.StandardOutput, result.StandardError, [.. Server.RequestLog().Select(line => RedactRequests ? RedactKeyMaterial(line) : line)],
             Snapshot());
     }
 
@@ -178,7 +187,10 @@ public abstract class ArmorParityTestBase(NodeParityFixture fixture) : ParityTes
 
         dotnet.ExitCode.ShouldBe(node.ExitCode, $"stderr: {dotnet.Stderr}\nnode stderr: {node.Stderr}");
         dotnet.Stdout.ShouldBe(node.Stdout);
-        dotnet.Stderr.ShouldBe(node.Stderr);
+        if (CompareStderr)
+        {
+            dotnet.Stderr.ShouldBe(node.Stderr);
+        }
         dotnet.Requests.ShouldBe(node.Requests);
         dotnet.Files.Keys.Order().ShouldBe(node.Files.Keys.Order());
         foreach ((string name, string content) in node.Files)

@@ -155,9 +155,10 @@ public class ArmorPull(string hostname, string? token, string devicePublicKey, s
         JsonNode json = ArmorTeam.Run(team, chosen =>
             ArmorApi.ArmorPull(hostname, token, devicePublicKey, publicKey, chosen));
 
-        UpsertEnvKey(privateKeyName, ArmorTeam.AsString(json["private_key"]) ?? "undefined");
+        UpsertEnvKeyResult upserted = UpsertEnvKey(privateKeyName, ArmorTeam.AsString(json["private_key"]) ?? "undefined");
 
-        return new ArmorResult(ArmorTeam.AsBool(json["changed"]), privateKeyName,
+        // armorPull.js: `changed: result.changed` (the file changed), not the API's own flag
+        return new ArmorResult(upserted.Changed, privateKeyName,
             ArmorTeam.AsString(json["private_key"]), publicKey);
     }
 }

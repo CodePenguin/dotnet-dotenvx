@@ -7,11 +7,9 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 namespace Dotenvx.Interop.DotenvxJs.Api;
 
 /// <summary>An error response from the Armor API (helpers/buildApiError.js and buildOauthError.js).</summary>
-public class ApiException(string code, string message) : Exception(message)
+public class ApiException(string code, string message, string? help = null)
+    : Types.DotenvxException(code, message, help)
 {
-    public string Code { get; } = code;
-    public string? Help { get; init; }
-    public string? MessageWithHelp { get; init; }
     public JsonNode? Meta { get; init; }
     public JsonNode? Json { get; init; }
     public int StatusCode { get; init; }
@@ -78,10 +76,9 @@ public static class ArmorApi
         bool hasHelp = !string.IsNullOrEmpty(helpText);
         string help = hasHelp ? $"fix: [{helpText}]" : $"[{code}] {json.ToJsonString(JsonOptions)}";
 
-        return new ApiException(code, message)
+        // `error.messageWithHelp` only exists when the API sent a help text (so `MessageWithHelp` is the plain message otherwise)
+        return new ApiException(code, message, hasHelp ? help : null)
         {
-            Help = help,
-            MessageWithHelp = hasHelp ? $"{message}. {help}" : null,
             Meta = error["meta"],
             Json = json,
             StatusCode = statusCode
@@ -94,7 +91,7 @@ public static class ArmorApi
 
         return new ApiException(code, $"[{code}] {json["error_description"]}")
         {
-            Help = $"[{code}] {json.ToJsonString(JsonOptions)}", Json = json, StatusCode = statusCode
+            Json = json, StatusCode = statusCode
         };
     }
 

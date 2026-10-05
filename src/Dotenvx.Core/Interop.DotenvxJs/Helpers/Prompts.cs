@@ -32,6 +32,45 @@ public static class Prompts
     /// <summary>(message, choices) => the chosen value, or null when input ended before Enter. Throws <see cref="PromptCancelledException" />.</summary>
     public static Func<string, IReadOnlyList<Choice>, string?> Select { get; internal set; } = DefaultSelect;
 
+    /// <summary>
+    /// enquirer reads a whole stdin chunk per prompt and drops what the prompt did not use (verified live: with
+    /// two keystrokes piped in one write, the first of two consecutive prompts takes the chunk and the second sees only
+    /// the end of input). Piped input is therefore drained after a prompt completes.
+    /// </summary>
+    private static void DrainRedirectedInput()
+    {
+        if (Console.IsInputRedirected)
+        {
+            while (Console.In.Read() != -1)
+            {
+                // discard
+            }
+        }
+    }
+
+    /// <summary>Exits the process silently with 0, as Node does when a prompt can never be answered.</summary>
+    private static string? EndOfInput()
+    {
+        Environment.Exit(0);
+
+        return null;
+    }
+
+    private static bool _utf8Input;
+
+    /// <summary>
+    /// Node reads piped stdin as UTF-8; .NET defaults to the OEM code page on Windows. Set once: assigning
+    /// Console.InputEncoding replaces Console.In, which would drop characters already buffered for a later prompt.
+    /// </summary>
+    private static void UseUtf8Input()
+    {
+        if (!_utf8Input)
+        {
+            Console.InputEncoding = new UTF8Encoding(false);
+            _utf8Input = true;
+        }
+    }
+
     // built from char codes: this file must not contain literal escape characters (see AGENTS.md tooling cautions)
     private static readonly string KeyEscape = ((char)27).ToString();
     private static readonly string KeyDown = KeyEscape + "[B";
@@ -50,7 +89,7 @@ public static class Prompts
         bool redirected = Console.IsInputRedirected;
         if (redirected)
         {
-            Console.InputEncoding = new UTF8Encoding(false);
+            UseUtf8Input();
         }
 
         while (true)
@@ -61,7 +100,8 @@ public static class Prompts
                 int next = Console.In.Read();
                 if (next == -1)
                 {
-                    return null;
+                    // stdin ended before an answer: Node's promise never settles and the process just exits 0
+                    return EndOfInput();
                 }
 
                 key = ((char)next).ToString();
@@ -92,6 +132,8 @@ public static class Prompts
             if (key == KeyEnter || key == KeyReturn)
             {
                 Console.Error.WriteLine();
+                DrainRedirectedInput();
+
                 return choices[index].Value;
             }
 
@@ -131,7 +173,7 @@ public static class Prompts
         if (Console.IsInputRedirected)
         {
             // Node reads piped stdin as UTF-8; .NET defaults to the OEM code page on Windows
-            Console.InputEncoding = new UTF8Encoding(false);
+            UseUtf8Input();
             int next;
             while ((next = Console.In.Read()) != -1)
             {
@@ -204,6 +246,7 @@ public static class Prompts
 
         if (answer is not null)
         {
+            DrainRedirectedInput();
             Console.Error.Write(new string('*', answer.Length));
             Console.Error.WriteLine();
         }
@@ -211,7 +254,8 @@ public static class Prompts
         // prompts.js clearLastLine: move up one line and erase it
         ClearLine(answer is not null);
 
-        return answer;
+        // input ended before Enter: the pending promise lets Node exit 0
+        return answer ?? EndOfInput();
     }
 
     private static void ClearLine(bool moveUp = true)

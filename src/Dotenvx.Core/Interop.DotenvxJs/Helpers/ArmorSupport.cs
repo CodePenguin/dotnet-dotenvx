@@ -79,6 +79,13 @@ public static class ArmorHttp
             request.Content.Headers.ContentType = null;
         }
 
+        // undici sends a Content-Type header even on a body-less GET (getAccount.js does); HttpClient only can through content
+        if (request.Content is null && headers is not null &&
+            headers.Keys.Any(name => name.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)))
+        {
+            request.Content = new ByteArrayContent([]);
+        }
+
         foreach ((string name, string value) in headers ?? new Dictionary<string, string>())
         {
             if (name.Equals("Content-Type", StringComparison.OrdinalIgnoreCase) && request.Content is not null)
