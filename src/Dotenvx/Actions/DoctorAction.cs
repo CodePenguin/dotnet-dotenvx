@@ -24,7 +24,6 @@ public class DoctorAction : Command
     public DoctorAction(IDotenvxLogger logger) : base("doctor", "scan for dotenv loaders")
     {
         _logger = logger;
-        Hidden = true;
         Add(_directoryArgument);
         SetAction(Execute);
     }

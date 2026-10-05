@@ -56,6 +56,9 @@ public class EnvironmentTestBase : IDisposable
 
         // Reset Mock Factories
         Del.ResetFactory();
+        LockUp.ResetFactory();
+        LockDown.ResetFactory();
+        Prompts.ResetToDefaults();
         Doctor.ResetFactory();
         Genexample.ResetFactory();
         Get.ResetFactory();

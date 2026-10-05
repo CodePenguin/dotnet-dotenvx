@@ -45,6 +45,7 @@ public class ExtCommandTest : EnvironmentTestBase
             new GitignoreAction(MockLogger),
             new global::Dotenvx.Actions.HelpAction(),
             new KeyPairAction(MockLogger),
+            new LockCommand(MockLogger),
             new LsAction(MockLogger),
             new PrebuildAction(MockLogger),
             new PrecommitAction(MockLogger),

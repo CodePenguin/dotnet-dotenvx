@@ -105,6 +105,12 @@ public class ErrorMessageParityTest(NodeParityFixture fixture) : ParityTestBase(
             ("wrongPrivateKey",
                 new { key = "KEY", privateKeyName = "DOTENV_PRIVATE_KEY", privateKey = SamplePrivateKey },
                 new WrongPrivateKeyException("KEY", "DOTENV_PRIVATE_KEY", SamplePrivateKey)),
+            ("invalidPassphrase",
+                new { privateKeyName = "DOTENV_PRIVATE_KEY_PRODUCTION" },
+                new InvalidPassphraseException("DOTENV_PRIVATE_KEY_PRODUCTION")),
+            ("invalidPassphrase",
+                new { },
+                new InvalidPassphraseException()),
             ("invalidConvention",
                 new { convention = "bogus" },
                 new InvalidConventionException("bogus"))

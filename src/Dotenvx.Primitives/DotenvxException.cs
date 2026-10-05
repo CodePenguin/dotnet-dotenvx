@@ -240,3 +240,8 @@ public class MispairedPrivateKeyException(string publicKey, string publicKeyExis
     "MISPAIRED_PRIVATE_KEY",
     $"[MISPAIRED_PRIVATE_KEY] private key's derived public key ({Truncate(publicKey)}) does not match the existing public key ({Truncate(publicKeyExisting)})",
     "fix: [https://github.com/dotenvx/dotenvx/issues/752]");
+
+public class InvalidPassphraseException(string? privateKeyName = null) : DotenvxException(
+    "INVALID_PASSPHRASE",
+    $"[INVALID_PASSPHRASE] could not unlock {(string.IsNullOrEmpty(privateKeyName) ? "DOTENV_PRIVATE_KEY" : privateKeyName)} using passphrase",
+    "fix: [try again with the correct passphrase]");

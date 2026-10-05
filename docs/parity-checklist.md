@@ -37,7 +37,7 @@ Legend: `done` ported and verified, `partial` some behavior missing, `todo` not 
 | `help [command]` | done | text is the System.CommandLine renderer (accepted) |
 | `doctor` | done | hidden |
 | `update` | done | always prints the npm commands (never a pkg binary) |
-| `lock` (`up`, `down`) | todo | Phase B |
+| `lock` (`up`, `down`) | done | scrypt implemented in `LockCrypto` (no .NET built-in); prompt stderr rendering is not byte-identical to enquirer; the `preAction` Armor update check is Phase E |
 | `native` (`up`, `down`, `push`, `pull`) | todo | Phase D |
 | `armor` (`up`, `down`, `push`, `pull`, `open`, `move`, `status`, `settings`) | todo | Phase E |
 | `login`, `logout` | todo | Phase E |

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Help;
 using System.CommandLine.Invocation;
@@ -25,6 +26,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         GitignoreAction gitignoreAction,
         global::Dotenvx.Actions.HelpAction helpAction,
         KeyPairAction keyPairAction,
+        LockCommand lockCommand,
         LsAction lsAction,
         PrebuildAction prebuildAction,
         PrecommitAction precommitAction,
@@ -35,7 +37,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         ValidateAction validateAction
     ) : base("a secure dotenv–from the creator of `dotenv`")
     {
-        UpdateBuiltInCommands(extCommand);
+        UpdateBuiltInCommands([extCommand, lockCommand, doctorAction]);
 
         // Add Actions
         Subcommands.Add(decryptAction);
@@ -47,6 +49,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(gitignoreAction);
         Subcommands.Add(helpAction);
         Subcommands.Add(keyPairAction);
+        Subcommands.Add(lockCommand);
         Subcommands.Add(lsAction);
         Subcommands.Add(prebuildAction);
         Subcommands.Add(precommitAction);
@@ -75,7 +78,8 @@ public class DotenvxRootCommand : LoggingRootCommand
     /// restoring it immediately after - `dotenvx ext --help`'s own CommandResult.Command is
     /// extCommand, not the root, so it's untouched.
     /// </remarks>
-    private sealed class FilteringHelpAction(SynchronousCommandLineAction inner, Command root, Command hideFromRootOnly)
+    private sealed class FilteringHelpAction(
+        SynchronousCommandLineAction inner, Command root, IReadOnlyList<Command> hideFromRootOnly)
         : SynchronousCommandLineAction
     {
         public override int Invoke(ParseResult parseResult)
@@ -83,7 +87,10 @@ public class DotenvxRootCommand : LoggingRootCommand
             bool isRootHelp = parseResult.CommandResult.Command == root;
             if (isRootHelp)
             {
-                hideFromRootOnly.Hidden = true;
+                foreach (Command command in hideFromRootOnly)
+                {
+                    command.Hidden = true;
+                }
             }
 
             try
@@ -94,7 +101,10 @@ public class DotenvxRootCommand : LoggingRootCommand
             {
                 if (isRootHelp)
                 {
-                    hideFromRootOnly.Hidden = false;
+                    foreach (Command command in hideFromRootOnly)
+                    {
+                        command.Hidden = false;
+                    }
                 }
             }
         }
@@ -116,7 +126,7 @@ public class DotenvxRootCommand : LoggingRootCommand
         return new DotenvxLoggerOptions { LogLevel = DotenvxLogLevelExtensions.FromString(logLevel) };
     }
 
-    private void UpdateBuiltInCommands(ExtCommand extCommand)
+    private void UpdateBuiltInCommands(IReadOnlyList<Command> hideFromRootOnly)
     {
         // Add alias for Version
         foreach (Option option in Options)
@@ -127,7 +137,7 @@ public class DotenvxRootCommand : LoggingRootCommand
                     option.Description = "display help for command";
                     if (help.Action is SynchronousCommandLineAction defaultHelpAction)
                     {
-                        help.Action = new FilteringHelpAction(defaultHelpAction, this, extCommand);
+                        help.Action = new FilteringHelpAction(defaultHelpAction, this, hideFromRootOnly);
                     }
 
                     break;

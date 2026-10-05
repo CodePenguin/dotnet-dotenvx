@@ -77,6 +77,19 @@ public abstract class ParityTestBase : IDisposable
         return (node, dotnet);
     }
 
+    /// <summary>Like <see cref="RunBothAsync" /> with <paramref name="input" /> piped to both CLIs' stdin.</summary>
+    protected async Task<(CliResult Node, CliResult Dotnet)> RunBothWithInputAsync(Action setupFixtures,
+        IReadOnlyDictionary<string, string>? env, string input, params string[] args)
+    {
+        setupFixtures();
+        CliResult node = await Fixture.RunNodeWithInputAsync(WorkDir, env, input, args);
+
+        setupFixtures();
+        CliResult dotnet = await Fixture.RunDotnetWithInputAsync(WorkDir, env, input, args);
+
+        return (node, dotnet);
+    }
+
     private static readonly Regex HexKeyRegex = new(@"\b[0-9a-f]{40,}\b", RegexOptions.Compiled);
     private static readonly Regex EncryptedValueRegex = new(@"encrypted:[A-Za-z0-9+/=]+", RegexOptions.Compiled);
 

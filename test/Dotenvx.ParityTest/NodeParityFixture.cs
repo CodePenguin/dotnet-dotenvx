@@ -89,6 +89,19 @@ public sealed class NodeParityFixture : IAsyncLifetime
         return RunProcessAsync(_nodePath, [DotenvxJsPath, ..args], workingDirectory, env);
     }
 
+    /// <summary>Runs the Node CLI with <paramref name="input" /> piped to stdin ("" = closed stdin).</summary>
+    public Task<CliResult> RunNodeWithInputAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env,
+        string input, params string[] args)
+    {
+        return RunProcessAsync(_nodePath, [DotenvxJsPath, ..args], workingDirectory, env, input);
+    }
+
+    public Task<CliResult> RunDotnetWithInputAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env,
+        string input, params string[] args)
+    {
+        return RunProcessAsync(_dotnetPath, [DotenvxDllPath, ..args], workingDirectory, env, input);
+    }
+
     public Task<CliResult> RunDotnetAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env,
         params string[] args)
     {
@@ -122,7 +135,7 @@ public sealed class NodeParityFixture : IAsyncLifetime
     }
 
     private static async Task<CliResult> RunProcessAsync(string fileName, IReadOnlyList<string> args,
-        string workingDirectory, IReadOnlyDictionary<string, string>? env = null)
+        string workingDirectory, IReadOnlyDictionary<string, string>? env = null, string? input = null)
     {
         ProcessStartInfo psi = new()
         {
@@ -131,10 +144,16 @@ public sealed class NodeParityFixture : IAsyncLifetime
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            RedirectStandardInput = input != null,
             StandardOutputEncoding = new UTF8Encoding(false),
             StandardErrorEncoding = new UTF8Encoding(false),
             CreateNoWindow = true
         };
+
+        if (input != null)
+        {
+            psi.StandardInputEncoding = new UTF8Encoding(false);
+        }
 
         foreach (string arg in args)
         {
@@ -150,6 +169,12 @@ public sealed class NodeParityFixture : IAsyncLifetime
         }
 
         using Process process = Process.Start(psi)!;
+        if (input != null)
+        {
+            await process.StandardInput.WriteAsync(input);
+            process.StandardInput.Close();
+        }
+
         Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
         Task<string> stderrTask = process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync();
