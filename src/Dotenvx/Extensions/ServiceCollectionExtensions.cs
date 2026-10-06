@@ -34,7 +34,6 @@ public static class ServiceCollectionExtensions
         services.AddTransient<ValidateAction>();
         services.AddTransient<KeyPairAction>();
         services.AddTransient<LsAction>();
-        services.AddTransient<RotateAction>();
         services.AddTransient<RunAction>();
         services.AddTransient<SetAction>();
     }

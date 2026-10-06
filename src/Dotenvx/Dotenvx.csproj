@@ -23,6 +23,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <EmbeddedResource Include="Help/help-spec.json" LogicalName="Dotenvx.Help.help-spec.json"/>
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Dotenvx.Core\Dotenvx.Core.csproj"/>
     </ItemGroup>
 

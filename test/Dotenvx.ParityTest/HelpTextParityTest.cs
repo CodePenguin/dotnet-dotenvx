@@ -28,6 +28,10 @@ namespace Dotenvx.ParityTest;
 /// </remarks>
 public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 {
+    // `--help` normally prints commander's layout from help-spec.json (see HelpExactParityTest); this test checks the
+    // real System.CommandLine option definitions, so it asks the .NET CLI for its own native help text
+    private static readonly Dictionary<string, string> NativeHelp = new() { ["DOTENVX_NATIVE_HELP"] = "1" };
+
     private static readonly HashSet<string> DotnetOnlyAliases =
     [
         "-?", "-V", "--version", "-l", "--log-level", "-q", "--quiet", "-v", "--verbose", "-d", "--debug", "--file"
@@ -64,7 +68,7 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
             return;
         }
 
-        (CliResult node, CliResult dotnet) = await RunBothAsync(() => { }, null, command, "--help");
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => { }, NativeHelp, command, "--help");
 
         AssertOptionsMatch(node.StandardOutput, dotnet.StandardOutput);
     }
@@ -78,7 +82,7 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
             return;
         }
 
-        (CliResult node, CliResult dotnet) = await RunBothAsync(() => { }, null, "ext", "scan", "--help");
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => { }, NativeHelp, "ext", "scan", "--help");
 
         AssertOptionsMatch(node.StandardOutput, dotnet.StandardOutput);
     }
@@ -172,7 +176,7 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
             return;
         }
 
-        (CliResult node, CliResult dotnet) = await RunBothAsync(() => { }, null, command, "--help");
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => { }, NativeHelp, command, "--help");
 
         string nodeDescription = FirstLineAfter(node.StandardOutput, line => line.StartsWith("Usage:"));
         string dotnetDescription = FirstLineAfter(dotnet.StandardOutput, line => line.Trim() == "Description:");

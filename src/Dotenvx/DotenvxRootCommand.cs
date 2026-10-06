@@ -1,3 +1,5 @@
+using System.Linq;
+using Dotenvx.Help;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -37,7 +39,6 @@ public class DotenvxRootCommand : LoggingRootCommand
         NativeCommand nativeCommand,
         PrebuildAction prebuildAction,
         PrecommitAction precommitAction,
-        RotateAction rotateAction,
         RunAction runAction,
         SetAction setAction,
         UpdateAction updateAction,
@@ -65,7 +66,6 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(nativeCommand);
         Subcommands.Add(prebuildAction);
         Subcommands.Add(precommitAction);
-        Subcommands.Add(rotateAction);
         Subcommands.Add(runAction);
         Subcommands.Add(validateAction);
         Subcommands.Add(setAction);
@@ -97,6 +97,20 @@ public class DotenvxRootCommand : LoggingRootCommand
         public override int Invoke(ParseResult parseResult)
         {
             bool isRootHelp = parseResult.CommandResult.Command == root;
+
+            // commands that exist upstream print commander's exact layout; ours without an upstream twin keep the default
+            // (DOTENVX_NATIVE_HELP=1 asks for System.CommandLine's own text: HelpTextParityTest checks the real option definitions)
+            HelpSpec? spec = Environment.GetEnvironmentVariable("DOTENVX_NATIVE_HELP") == "1"
+                ? null
+                : CommanderHelp.Find(CommandPath(parseResult));
+            if (spec is not null)
+            {
+                Console.Out.Write(CommanderHelp.Render(spec, isRootHelp));
+                WriteTrailer(parseResult.CommandResult.Command, isRootHelp);
+
+                return 0;
+            }
+
             if (isRootHelp)
             {
                 foreach (Command command in hideFromRootOnly)
@@ -123,6 +137,19 @@ public class DotenvxRootCommand : LoggingRootCommand
                 }
             }
         }
+    }
+
+    /// <summary>The command names as typed (upstream's `dec`/`enc` are separate commands, here aliases), below the root.</summary>
+    private static List<string> CommandPath(ParseResult parseResult)
+    {
+        var path = new List<string>();
+        for (System.CommandLine.Parsing.CommandResult? current = parseResult.CommandResult; current is not null and not { Command: RootCommand };
+             current = current.Parent as System.CommandLine.Parsing.CommandResult)
+        {
+            path.Insert(0, current.IdentifierToken?.Value ?? current.Command.Name);
+        }
+
+        return path;
     }
 
     /// <summary>

@@ -24,7 +24,7 @@ public class HelpAction : Command
     {
         var root = (RootCommand)parseResult.RootCommandResult.Command;
         string? name = parseResult.GetValue(_commandArgument);
-        bool known = name is not null && root.Subcommands.Any(command => command.Name == name);
+        bool known = name is not null && root.Subcommands.Any(command => command.Name == name || command.Aliases.Contains(name));
 
         root.Parse(known ? [name!, "--help"] : ["--help"]).Invoke();
 

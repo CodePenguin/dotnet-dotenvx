@@ -28,7 +28,8 @@ public static class HostExtensions
 
         // dotenvx.js: the root's `[command] [args...]` action runs executeDynamic: `dotenvx-<command>` from PATH, else
         // `error: unknown command '<command>'` on stdout and exit 0
-        if (ReferenceEquals(parseResult.CommandResult.Command, root) &&
+        // (commander handles -h/--help before the action runs, so `dotenvx foo --help` prints the root help and exits 0)
+        if (ReferenceEquals(parseResult.CommandResult.Command, root) && !RequestsHelp(parseResult) &&
             parseResult.Tokens.FirstOrDefault(t => t.Type == System.CommandLine.Parsing.TokenType.Argument) is { } unknown)
         {
             // `process.argv.slice(3)`: everything after the first user argument
@@ -43,5 +44,12 @@ public static class HostExtensions
         }
 
         return parseResult.Invoke();
+    }
+
+    private static bool RequestsHelp(ParseResult parseResult)
+    {
+        return parseResult.Tokens
+            .TakeWhile(t => t.Value != "--")
+            .Any(t => t.Type == System.CommandLine.Parsing.TokenType.Option && t.Value is "-h" or "--help");
     }
 }

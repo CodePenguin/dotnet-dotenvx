@@ -1,0 +1,1802 @@
+{
+ "name": "dotenvx",
+ "usage": "dotenvx run -- yourcommand",
+ "description": "a secure dotenv–from the creator of `dotenv`",
+ "padWidth": 32,
+ "arguments": [
+  {
+   "term": "command",
+   "description": "dynamic command"
+  },
+  {
+   "term": "args",
+   "description": "dynamic command arguments"
+  }
+ ],
+ "options": [
+  {
+   "term": "-l, --log-level <level>",
+   "description": "set log level (default: \"info\")"
+  },
+  {
+   "term": "-q, --quiet",
+   "description": "sets log level to error"
+  },
+  {
+   "term": "-v, --verbose",
+   "description": "sets log level to verbose"
+  },
+  {
+   "term": "-d, --debug",
+   "description": "sets log level to debug"
+  },
+  {
+   "term": "-V, --version",
+   "description": "output the version number"
+  },
+  {
+   "term": "-h, --help",
+   "description": "display help for command"
+  }
+ ],
+ "commands": [
+  {
+   "term": "run [options]",
+   "description": "inject env at runtime [dotenvx run -- yourcommand]",
+   "name": "run"
+  },
+  {
+   "term": "get [options] [KEY]",
+   "description": "return a single environment variable",
+   "name": "get"
+  },
+  {
+   "term": "set [options] <KEY> [value]",
+   "description": "encrypt a single environment variable",
+   "name": "set"
+  },
+  {
+   "term": "del [options] <KEY>",
+   "description": "delete a single environment variable",
+   "name": "del"
+  },
+  {
+   "term": "encrypt [options]",
+   "description": "encrypt .env file(s)",
+   "name": "encrypt"
+  },
+  {
+   "term": "decrypt [options]",
+   "description": "decrypt .env file(s)",
+   "name": "decrypt"
+  },
+  {
+   "term": "keypair [options] [KEY]",
+   "description": "print public/private keys for .env file(s)",
+   "name": "keypair"
+  },
+  {
+   "term": "ls [options] [directory]",
+   "description": "print all .env files in a tree structure",
+   "name": "ls"
+  },
+  {
+   "term": "validate [options]",
+   "description": "validate .env file(s) against .env.example",
+   "name": "validate"
+  },
+  {
+   "term": "gitignore [options]",
+   "description": "append to .gitignore",
+   "name": "gitignore"
+  },
+  {
+   "term": "genexample [options] [directory]",
+   "description": "generate .env.example",
+   "name": "genexample"
+  },
+  {
+   "term": "precommit [options] [directory]",
+   "description": "prevent committing .env files to code",
+   "name": "precommit"
+  },
+  {
+   "term": "prebuild [directory]",
+   "description": "prevent including .env files in docker",
+   "name": "prebuild"
+  },
+  {
+   "term": "update",
+   "description": "update dotenvx",
+   "name": "update"
+  },
+  {
+   "term": "help [command]",
+   "description": "display help for command",
+   "name": "help"
+  },
+  {
+   "term": "ext [command] [args...]",
+   "description": "🔌 extensions",
+   "name": "ext"
+  }
+ ],
+ "hidden": false,
+ "children": [
+  {
+   "name": "run",
+   "usage": "dotenvx run [options]",
+   "description": "inject env at runtime [dotenvx run -- yourcommand]",
+   "padWidth": 27,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-e, --env <strings...>",
+     "description": "environment variable(s) set as string (example: \"HELLO=World\") (default: [])"
+    },
+    {
+     "term": "-f, --env-file <path>",
+     "description": "path(s) to your env file(s) (default: [])"
+    },
+    {
+     "term": "-fk, --env-keys-file <path>",
+     "description": "path(s) to your .env.keys file(s) (default: same path as your env file)"
+    },
+    {
+     "term": "--redact",
+     "description": "redact injected values except keys ending in _PLAIN (default: false)"
+    },
+    {
+     "term": "-o, --overload",
+     "description": "override existing env variables (by default, existing env vars take precedence over .env files)"
+    },
+    {
+     "term": "--validate",
+     "description": "validate against .env.example (default: false)"
+    },
+    {
+     "term": "--strict",
+     "description": "process.exit(1) on any errors (default: false)"
+    },
+    {
+     "term": "--convention <name>",
+     "description": "load a .env convention (available conventions: ['nextjs', 'flow'])"
+    },
+    {
+     "term": "--ignore <errorCodes...>",
+     "description": "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)"
+    },
+    {
+     "term": "--token <token>",
+     "description": "set Armor ⛨ token"
+    },
+    {
+     "term": "--mask [characters]",
+     "description": "inject masked values, optionally setting visible characters"
+    },
+    {
+     "term": "--no-armor",
+     "description": "disable Dotenvx Armor features"
+    },
+    {
+     "term": "--no-native",
+     "description": "disable OS secret store features"
+    },
+    {
+     "term": "--no-1password",
+     "description": "disable 1Password secret reference resolution"
+    },
+    {
+     "term": "--no-bitwarden",
+     "description": "disable Bitwarden secret reference resolution"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "get",
+   "usage": "dotenvx get [KEY] [options]",
+   "description": "return a single environment variable",
+   "padWidth": 35,
+   "arguments": [
+    {
+     "term": "KEY",
+     "description": "environment variable name"
+    }
+   ],
+   "options": [
+    {
+     "term": "-e, --env <strings...>",
+     "description": "environment variable(s) set as string (example: \"HELLO=World\") (default: [])"
+    },
+    {
+     "term": "-f, --env-file <path>",
+     "description": "path(s) to your env file(s) (default: [])"
+    },
+    {
+     "term": "-fk, --env-keys-file <path>",
+     "description": "path(s) to your .env.keys file(s) (default: same path as your env file)"
+    },
+    {
+     "term": "-o, --overload",
+     "description": "override existing env variables (by default, existing env vars take precedence over .env files)"
+    },
+    {
+     "term": "--strict",
+     "description": "process.exit(1) on any errors (default: false)"
+    },
+    {
+     "term": "--convention <name>",
+     "description": "load a .env convention (available conventions: ['nextjs', 'flow'])"
+    },
+    {
+     "term": "--ignore <errorCodes...>",
+     "description": "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)"
+    },
+    {
+     "term": "-a, --all",
+     "description": "include all machine envs as well"
+    },
+    {
+     "term": "-ik, --include-key <includeKeys...>",
+     "description": "keys(s) to include in output (default: all)"
+    },
+    {
+     "term": "-ek, --exclude-key <excludeKeys...>",
+     "description": "keys(s) to exclude from output (default: none)"
+    },
+    {
+     "term": "--mask [characters]",
+     "description": "mask values, optionally setting visible characters"
+    },
+    {
+     "term": "-pp, --pretty-print",
+     "description": "pretty print output"
+    },
+    {
+     "term": "--pp",
+     "description": "pretty print output (alias)"
+    },
+    {
+     "term": "--format <type>",
+     "description": "format of the output (json, shell, colon, eval, eval-export) (default: \"json\")"
+    },
+    {
+     "term": "--no-armor",
+     "description": "disable Dotenvx Armor features"
+    },
+    {
+     "term": "--no-native",
+     "description": "disable OS secret store features"
+    },
+    {
+     "term": "--no-1password",
+     "description": "disable 1Password secret reference resolution"
+    },
+    {
+     "term": "--no-bitwarden",
+     "description": "disable Bitwarden secret reference resolution"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "set",
+   "usage": "dotenvx set <KEY> [value] [options]",
+   "description": "encrypt a single environment variable",
+   "padWidth": 27,
+   "arguments": [
+    {
+     "term": "KEY",
+     "description": "KEY"
+    },
+    {
+     "term": "value",
+     "description": "value"
+    }
+   ],
+   "options": [
+    {
+     "term": "-f, --env-file <path>",
+     "description": "path(s) to your env file(s) (default: [])"
+    },
+    {
+     "term": "-fk, --env-keys-file <path>",
+     "description": "path to your .env.keys file (default: same path as your env file)"
+    },
+    {
+     "term": "-c, --encrypt",
+     "description": "encrypt value (default: true)"
+    },
+    {
+     "term": "--plain",
+     "description": "store value as plain text (default: false)"
+    },
+    {
+     "term": "--no-create",
+     "description": "do not create .env file(s) when missing"
+    },
+    {
+     "term": "--no-armor",
+     "description": "disable Dotenvx Armor features"
+    },
+    {
+     "term": "--no-native",
+     "description": "disable OS secret store features"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "del",
+   "usage": "dotenvx del <KEY> [options]",
+   "description": "delete a single environment variable",
+   "padWidth": 21,
+   "arguments": [
+    {
+     "term": "KEY",
+     "description": "KEY"
+    }
+   ],
+   "options": [
+    {
+     "term": "-f, --env-file <path>",
+     "description": "path(s) to your env file(s) (default: [])"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "encrypt",
+   "usage": "dotenvx encrypt [options]",
+   "description": "encrypt .env file(s)",
+   "padWidth": 35,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-f, --env-file <path>",
+     "description": "path(s) to your env file(s) (default: [])"
+    },
+    {
+     "term": "-fk, --env-keys-file <path>",
+     "description": "path to your .env.keys file (default: same path as your env file)"
+    },
+    {
+     "term": "-k, --key <keys...>",
+     "description": "keys(s) to encrypt (default: all keys in file)"
+    },
+    {
+     "term": "-ek, --exclude-key <excludeKeys...>",
+     "description": "keys(s) to exclude from encryption (default: none)"
+    },
+    {
+     "term": "--stdout",
+     "description": "send to stdout"
+    },
+    {
+     "term": "--token <token>",
+     "description": "set Armor ⛨ token"
+    },
+    {
+     "term": "--no-create",
+     "description": "do not create .env file(s) when missing"
+    },
+    {
+     "term": "--no-armor",
+     "description": "disable Dotenvx Armor features"
+    },
+    {
+     "term": "--no-native",
+     "description": "disable OS secret store features"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "enc",
+   "usage": "dotenvx enc [options]",
+   "description": "encrypt .env file(s)",
+   "padWidth": 35,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-f, --env-file <path>",
+     "description": "path(s) to your env file(s) (default: [])"
+    },
+    {
+     "term": "-fk, --env-keys-file <path>",
+     "description": "path to your .env.keys file (default: same path as your env file)"
+    },
+    {
+     "term": "-k, --key <keys...>",
+     "description": "keys(s) to encrypt (default: all keys in file)"
+    },
+    {
+     "term": "-ek, --exclude-key <excludeKeys...>",
+     "description": "keys(s) to exclude from encryption (default: none)"
+    },
+    {
+     "term": "--stdout",
+     "description": "send to stdout"
+    },
+    {
+     "term": "--token <token>",
+     "description": "set Armor ⛨ token"
+    },
+    {
+     "term": "--no-create",
+     "description": "do not create .env file(s) when missing"
+    },
+    {
+     "term": "--no-armor",
+     "description": "disable Dotenvx Armor features"
+    },
+    {
+     "term": "--no-native",
+     "description": "disable OS secret store features"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": true,
+   "children": []
+  },
+  {
+   "name": "decrypt",
+   "usage": "dotenvx decrypt [options]",
+   "description": "decrypt .env file(s)",
+   "padWidth": 35,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-f, --env-file <path>",
+     "description": "path(s) to your env file(s) (default: [])"
+    },
+    {
+     "term": "-fk, --env-keys-file <path>",
+     "description": "path(s) to your .env.keys file(s) (default: same path as your env file)"
+    },
+    {
+     "term": "-k, --key <keys...>",
+     "description": "keys(s) to decrypt (default: all keys in file)"
+    },
+    {
+     "term": "-ek, --exclude-key <excludeKeys...>",
+     "description": "keys(s) to exclude from decryption (default: none)"
+    },
+    {
+     "term": "--no-armor",
+     "description": "disable Dotenvx Armor features"
+    },
+    {
+     "term": "--no-native",
+     "description": "disable OS secret store features"
+    },
+    {
+     "term": "--stdout",
+     "description": "send to stdout"
+    },
+    {
+     "term": "--mask [characters]",
+     "description": "mask stdout values, optionally setting visible characters"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "dec",
+   "usage": "dotenvx dec [options]",
+   "description": "decrypt .env file(s)",
+   "padWidth": 35,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-f, --env-file <path>",
+     "description": "path(s) to your env file(s) (default: [])"
+    },
+    {
+     "term": "-fk, --env-keys-file <path>",
+     "description": "path(s) to your .env.keys file(s) (default: same path as your env file)"
+    },
+    {
+     "term": "-k, --key <keys...>",
+     "description": "keys(s) to decrypt (default: all keys in file)"
+    },
+    {
+     "term": "-ek, --exclude-key <excludeKeys...>",
+     "description": "keys(s) to exclude from decryption (default: none)"
+    },
+    {
+     "term": "--no-armor",
+     "description": "disable Dotenvx Armor features"
+    },
+    {
+     "term": "--no-native",
+     "description": "disable OS secret store features"
+    },
+    {
+     "term": "--stdout",
+     "description": "send to stdout"
+    },
+    {
+     "term": "--mask [characters]",
+     "description": "mask stdout values, optionally setting visible characters"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": true,
+   "children": []
+  },
+  {
+   "name": "keypair",
+   "usage": "dotenvx keypair [KEY] [options]",
+   "description": "print public/private keys for .env file(s)",
+   "padWidth": 27,
+   "arguments": [
+    {
+     "term": "KEY",
+     "description": "environment variable key name"
+    }
+   ],
+   "options": [
+    {
+     "term": "-f, --env-file <path>",
+     "description": "path(s) to your env file(s)"
+    },
+    {
+     "term": "-fk, --env-keys-file <path>",
+     "description": "path(s) to your .env.keys file(s) (default: same path as your env file)"
+    },
+    {
+     "term": "--no-armor",
+     "description": "disable Dotenvx Armor features"
+    },
+    {
+     "term": "--no-native",
+     "description": "disable OS secret store features"
+    },
+    {
+     "term": "-pp, --pretty-print",
+     "description": "pretty print output"
+    },
+    {
+     "term": "--pp",
+     "description": "pretty print output (alias)"
+    },
+    {
+     "term": "--format <type>",
+     "description": "format of the output (json, shell, colon) (default: \"json\")"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "ls",
+   "usage": "dotenvx ls [options] [directory]",
+   "description": "print all .env files in a tree structure",
+   "padWidth": 45,
+   "arguments": [
+    {
+     "term": "directory",
+     "description": "directory to list .env files from (default: \".\")"
+    }
+   ],
+   "options": [
+    {
+     "term": "-f, --env-file <filenames...>",
+     "description": "path(s) to your env file(s) (default: \".env*\")"
+    },
+    {
+     "term": "-ef, --exclude-env-file <excludeFilenames...>",
+     "description": "path(s) to exclude from your env file(s) (default: none)"
+    },
+    {
+     "term": "--json",
+     "description": "output a JSON array of absolute filepaths"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "validate",
+   "usage": "dotenvx validate [options]",
+   "description": "validate .env file(s) against .env.example",
+   "padWidth": 27,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-e, --env <strings...>",
+     "description": "environment variable(s) set as string (example: \"HELLO=World\") (default: [])"
+    },
+    {
+     "term": "-f, --env-file <path>",
+     "description": "path(s) to your env file(s) (default: [])"
+    },
+    {
+     "term": "-fk, --env-keys-file <path>",
+     "description": "path(s) to your .env.keys file(s) (default: same path as your env file)"
+    },
+    {
+     "term": "-o, --overload",
+     "description": "override existing env variables (by default, existing env vars take precedence over .env files)"
+    },
+    {
+     "term": "--convention <name>",
+     "description": "load a .env convention (available conventions: ['nextjs', 'flow'])"
+    },
+    {
+     "term": "--ignore <errorCodes...>",
+     "description": "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)"
+    },
+    {
+     "term": "--token <token>",
+     "description": "set Armor ⛨ token"
+    },
+    {
+     "term": "--no-armor",
+     "description": "disable Dotenvx Armor features"
+    },
+    {
+     "term": "--no-native",
+     "description": "disable OS secret store features"
+    },
+    {
+     "term": "--no-1password",
+     "description": "disable 1Password secret reference resolution"
+    },
+    {
+     "term": "--no-bitwarden",
+     "description": "disable Bitwarden secret reference resolution"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "gitignore",
+   "usage": "dotenvx gitignore [options]",
+   "description": "append to .gitignore",
+   "padWidth": 23,
+   "arguments": [],
+   "options": [
+    {
+     "term": "--pattern <patterns...>",
+     "description": "pattern(s) to gitignore (default: [\".env*\"])"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "genexample",
+   "usage": "dotenvx genexample [options] [directory]",
+   "description": "generate .env.example",
+   "padWidth": 25,
+   "arguments": [
+    {
+     "term": "directory",
+     "description": "directory to generate from (default: \".\")"
+    }
+   ],
+   "options": [
+    {
+     "term": "-f, --env-file <paths...>",
+     "description": "path(s) to your env file(s) (default: \".env\")"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "precommit",
+   "usage": "dotenvx precommit [options] [directory]",
+   "description": "prevent committing .env files to code",
+   "padWidth": 13,
+   "arguments": [
+    {
+     "term": "directory",
+     "description": "directory to prevent committing .env files from (default: \".\")"
+    }
+   ],
+   "options": [
+    {
+     "term": "-i, --install",
+     "description": "install to .git/hooks/pre-commit"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "prebuild",
+   "usage": "dotenvx prebuild [options] [directory]",
+   "description": "prevent including .env files in docker",
+   "padWidth": 10,
+   "arguments": [
+    {
+     "term": "directory",
+     "description": "directory to prevent including .env files from (default: \".\")"
+    }
+   ],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "doctor",
+   "usage": "dotenvx doctor [options] [directory]",
+   "description": "scan for dotenv loaders",
+   "padWidth": 10,
+   "arguments": [
+    {
+     "term": "directory",
+     "description": "directory to scan (default: \".\")"
+    }
+   ],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": true,
+   "children": []
+  },
+  {
+   "name": "update",
+   "usage": "dotenvx update [options]",
+   "description": "update dotenvx",
+   "padWidth": 10,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "login",
+   "usage": "dotenvx login [options]",
+   "description": "log in to move keys off-device, share with your team, and audit access",
+   "padWidth": 21,
+   "arguments": [],
+   "options": [
+    {
+     "term": "--hostname <hostname>",
+     "description": "set Armor ⛨ hostname"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": true,
+   "children": []
+  },
+  {
+   "name": "logout",
+   "usage": "dotenvx logout [options]",
+   "description": "log out of connected security features",
+   "padWidth": 21,
+   "arguments": [],
+   "options": [
+    {
+     "term": "--hostname <hostname>",
+     "description": "set Armor ⛨ hostname"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": true,
+   "children": []
+  },
+  {
+   "name": "curl",
+   "usage": "dotenvx curl [options] [url]",
+   "description": "Dotenvx Armor API",
+   "padWidth": 22,
+   "arguments": [
+    {
+     "term": "url",
+     "description": "(run dotenvx curl --help for list of urls)"
+    }
+   ],
+   "options": [
+    {
+     "term": "-X, --request <method>",
+     "description": "HTTP request method"
+    },
+    {
+     "term": "--data <json>",
+     "description": "JSON request body"
+    },
+    {
+     "term": "--token <token>",
+     "description": "set token"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": true,
+   "children": []
+  },
+  {
+   "name": "help",
+   "usage": "dotenvx help [options] [command]",
+   "description": "display help for command",
+   "padWidth": 10,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "children": []
+  },
+  {
+   "name": "native",
+   "usage": "dotenvx native [options] [command]",
+   "description": "move private keys into your OS secret store",
+   "padWidth": 14,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [
+    {
+     "term": "up [options]",
+     "description": "store key in OS secret store",
+     "name": "up"
+    },
+    {
+     "term": "down [options]",
+     "description": "move key from OS secret store to .env.keys",
+     "name": "down"
+    },
+    {
+     "term": "push [options]",
+     "description": "push key to OS secret store from .env.keys",
+     "name": "push"
+    },
+    {
+     "term": "pull [options]",
+     "description": "pull key from OS secret store into .env.keys",
+     "name": "pull"
+    }
+   ],
+   "hidden": true,
+   "children": [
+    {
+     "name": "up",
+     "usage": "dotenvx native up [options]",
+     "description": "store key in OS secret store",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "down",
+     "usage": "dotenvx native down [options]",
+     "description": "move key from OS secret store to .env.keys",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "push",
+     "usage": "dotenvx native push [options]",
+     "description": "push key to OS secret store from .env.keys",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "pull",
+     "usage": "dotenvx native pull [options]",
+     "description": "pull key from OS secret store into .env.keys",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    }
+   ]
+  },
+  {
+   "name": "lock",
+   "usage": "dotenvx lock [options] [command]",
+   "description": "lock private keys with a local passphrase",
+   "padWidth": 14,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [
+    {
+     "term": "up [options]",
+     "description": "lock key in .env.keys",
+     "name": "up"
+    },
+    {
+     "term": "down [options]",
+     "description": "unlock key in .env.keys",
+     "name": "down"
+    }
+   ],
+   "hidden": true,
+   "children": [
+    {
+     "name": "up",
+     "usage": "dotenvx lock up [options]",
+     "description": "lock key in .env.keys",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "down",
+     "usage": "dotenvx lock down [options]",
+     "description": "unlock key in .env.keys",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    }
+   ]
+  },
+  {
+   "name": "armor",
+   "usage": "dotenvx armor [options] [command] [command] [args...]",
+   "description": "move private keys into Dotenvx Armor [www.dotenvx.com/armor]",
+   "padWidth": 16,
+   "arguments": [
+    {
+     "term": "command",
+     "description": "dotenvx-armor command"
+    },
+    {
+     "term": "args",
+     "description": "dotenvx-armor command arguments"
+    }
+   ],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [
+    {
+     "term": "up [options]",
+     "description": "armor key",
+     "name": "up"
+    },
+    {
+     "term": "down [options]",
+     "description": "dearmor key",
+     "name": "down"
+    },
+    {
+     "term": "push [options]",
+     "description": "push armored key (from .env.keys)",
+     "name": "push"
+    },
+    {
+     "term": "pull [options]",
+     "description": "pull armored key (into .env.keys)",
+     "name": "pull"
+    },
+    {
+     "term": "open [options]",
+     "description": "open armored key (in browser)",
+     "name": "open"
+    },
+    {
+     "term": "move [options]",
+     "description": "move armored key (to other team)",
+     "name": "move"
+    },
+    {
+     "term": "login [options]",
+     "description": "log in to Dotenvx Armor",
+     "name": "login"
+    },
+    {
+     "term": "logout [options]",
+     "description": "log out of Dotenvx Armor",
+     "name": "logout"
+    },
+    {
+     "term": "status",
+     "description": "print armor status",
+     "name": "status"
+    },
+    {
+     "term": "settings",
+     "description": "settings",
+     "name": "settings"
+    }
+   ],
+   "hidden": true,
+   "children": [
+    {
+     "name": "up",
+     "usage": "dotenvx armor up [options]",
+     "description": "armor key",
+     "padWidth": 21,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "--token <token>",
+       "description": "set token"
+      },
+      {
+       "term": "--team <team>",
+       "description": "team to armor private key for"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "down",
+     "usage": "dotenvx armor down [options]",
+     "description": "dearmor key",
+     "padWidth": 21,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "--token <token>",
+       "description": "set token"
+      },
+      {
+       "term": "--team <team>",
+       "description": "team to dearmor private key from"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "push",
+     "usage": "dotenvx armor push [options]",
+     "description": "push armored key (from .env.keys)",
+     "padWidth": 21,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "--token <token>",
+       "description": "set token"
+      },
+      {
+       "term": "--team <team>",
+       "description": "team to push armored private key for"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "pull",
+     "usage": "dotenvx armor pull [options]",
+     "description": "pull armored key (into .env.keys)",
+     "padWidth": 21,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "--token <token>",
+       "description": "set token"
+      },
+      {
+       "term": "--team <team>",
+       "description": "team to pull armored private key from"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "open",
+     "usage": "dotenvx armor open [options]",
+     "description": "open armored key (in browser)",
+     "padWidth": 21,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "move",
+     "usage": "dotenvx armor move [options]",
+     "description": "move armored key (to other team)",
+     "padWidth": 21,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --env-file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "--token <token>",
+       "description": "set token"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "login",
+     "usage": "dotenvx armor login [options]",
+     "description": "log in to Dotenvx Armor",
+     "padWidth": 21,
+     "arguments": [],
+     "options": [
+      {
+       "term": "--hostname <hostname>",
+       "description": "set Armor ⛨ hostname"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "logout",
+     "usage": "dotenvx armor logout [options]",
+     "description": "log out of Dotenvx Armor",
+     "padWidth": 21,
+     "arguments": [],
+     "options": [
+      {
+       "term": "--hostname <hostname>",
+       "description": "set Armor ⛨ hostname"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "status",
+     "usage": "dotenvx armor status [options]",
+     "description": "print armor status",
+     "padWidth": 10,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "settings",
+     "usage": "dotenvx armor settings [options] [command]",
+     "description": "settings",
+     "padWidth": 16,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [
+      {
+       "term": "username",
+       "description": "print your username",
+       "name": "username"
+      },
+      {
+       "term": "token [options]",
+       "description": "print your access token (--unmask)",
+       "name": "token"
+      },
+      {
+       "term": "device [options]",
+       "description": "print your device pubkey (--unmask)",
+       "name": "device"
+      },
+      {
+       "term": "hostname",
+       "description": "print hostname",
+       "name": "hostname"
+      },
+      {
+       "term": "path",
+       "description": "print path to settings file",
+       "name": "path"
+      },
+      {
+       "term": "on",
+       "description": "turn armor on",
+       "name": "on"
+      },
+      {
+       "term": "off",
+       "description": "turn armor off",
+       "name": "off"
+      }
+     ],
+     "hidden": false,
+     "children": [
+      {
+       "name": "username",
+       "usage": "dotenvx armor settings username [options]",
+       "description": "print your username",
+       "padWidth": 10,
+       "arguments": [],
+       "options": [
+        {
+         "term": "-h, --help",
+         "description": "display help for command"
+        }
+       ],
+       "commands": [],
+       "hidden": false,
+       "children": []
+      },
+      {
+       "name": "token",
+       "usage": "dotenvx armor settings token [options]",
+       "description": "print your access token (--unmask)",
+       "padWidth": 10,
+       "arguments": [],
+       "options": [
+        {
+         "term": "--unmask",
+         "description": "unmask access token"
+        },
+        {
+         "term": "-h, --help",
+         "description": "display help for command"
+        }
+       ],
+       "commands": [],
+       "hidden": false,
+       "children": []
+      },
+      {
+       "name": "device",
+       "usage": "dotenvx armor settings device [options]",
+       "description": "print your device pubkey (--unmask)",
+       "padWidth": 10,
+       "arguments": [],
+       "options": [
+        {
+         "term": "--unmask",
+         "description": "unmask device pubkey"
+        },
+        {
+         "term": "-h, --help",
+         "description": "display help for command"
+        }
+       ],
+       "commands": [],
+       "hidden": false,
+       "children": []
+      },
+      {
+       "name": "hostname",
+       "usage": "dotenvx armor settings hostname [options]",
+       "description": "print hostname",
+       "padWidth": 10,
+       "arguments": [],
+       "options": [
+        {
+         "term": "-h, --help",
+         "description": "display help for command"
+        }
+       ],
+       "commands": [],
+       "hidden": false,
+       "children": []
+      },
+      {
+       "name": "path",
+       "usage": "dotenvx armor settings path [options]",
+       "description": "print path to settings file",
+       "padWidth": 10,
+       "arguments": [],
+       "options": [
+        {
+         "term": "-h, --help",
+         "description": "display help for command"
+        }
+       ],
+       "commands": [],
+       "hidden": false,
+       "children": []
+      },
+      {
+       "name": "on",
+       "usage": "dotenvx armor settings on [options]",
+       "description": "turn armor on",
+       "padWidth": 10,
+       "arguments": [],
+       "options": [
+        {
+         "term": "-h, --help",
+         "description": "display help for command"
+        }
+       ],
+       "commands": [],
+       "hidden": false,
+       "children": []
+      },
+      {
+       "name": "off",
+       "usage": "dotenvx armor settings off [options]",
+       "description": "turn armor off",
+       "padWidth": 10,
+       "arguments": [],
+       "options": [
+        {
+         "term": "-h, --help",
+         "description": "display help for command"
+        }
+       ],
+       "commands": [],
+       "hidden": false,
+       "children": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "ext",
+   "usage": "dotenvx ext [options] [command] [command] [args...]",
+   "description": "🔌 extensions",
+   "padWidth": 32,
+   "arguments": [
+    {
+     "term": "command",
+     "description": "dynamic ext command"
+    },
+    {
+     "term": "args",
+     "description": "dynamic ext command arguments"
+    }
+   ],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [
+    {
+     "term": "ls [options] [directory]",
+     "description": "print all .env files in a tree structure",
+     "name": "ls"
+    },
+    {
+     "term": "genexample [options] [directory]",
+     "description": "generate .env.example",
+     "name": "genexample"
+    },
+    {
+     "term": "gitignore [options]",
+     "description": "append to .gitignore",
+     "name": "gitignore"
+    },
+    {
+     "term": "prebuild [directory]",
+     "description": "prevent including .env files in docker",
+     "name": "prebuild"
+    },
+    {
+     "term": "precommit [options] [directory]",
+     "description": "prevent committing .env files to code",
+     "name": "precommit"
+    },
+    {
+     "term": "scan",
+     "description": "scan for leaked secrets",
+     "name": "scan"
+    }
+   ],
+   "hidden": false,
+   "children": [
+    {
+     "name": "ls",
+     "usage": "dotenvx ext ls [options] [directory]",
+     "description": "print all .env files in a tree structure",
+     "padWidth": 45,
+     "arguments": [
+      {
+       "term": "directory",
+       "description": "directory to list .env files from (default: \".\")"
+      }
+     ],
+     "options": [
+      {
+       "term": "-f, --env-file <filenames...>",
+       "description": "path(s) to your env file(s) (default: \".env*\")"
+      },
+      {
+       "term": "-ef, --exclude-env-file <excludeFilenames...>",
+       "description": "path(s) to exclude from your env file(s) (default: none)"
+      },
+      {
+       "term": "--json",
+       "description": "output a JSON array of absolute filepaths"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "genexample",
+     "usage": "dotenvx ext genexample [options] [directory]",
+     "description": "generate .env.example",
+     "padWidth": 25,
+     "arguments": [
+      {
+       "term": "directory",
+       "description": "directory to generate from (default: \".\")"
+      }
+     ],
+     "options": [
+      {
+       "term": "-f, --env-file <paths...>",
+       "description": "path(s) to your env file(s) (default: \".env\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "gitignore",
+     "usage": "dotenvx ext gitignore [options]",
+     "description": "append to .gitignore",
+     "padWidth": 23,
+     "arguments": [],
+     "options": [
+      {
+       "term": "--pattern <patterns...>",
+       "description": "pattern(s) to gitignore (default: [\".env*\"])"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "prebuild",
+     "usage": "dotenvx ext prebuild [options] [directory]",
+     "description": "prevent including .env files in docker",
+     "padWidth": 10,
+     "arguments": [
+      {
+       "term": "directory",
+       "description": "directory to prevent including .env files from (default: \".\")"
+      }
+     ],
+     "options": [
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "precommit",
+     "usage": "dotenvx ext precommit [options] [directory]",
+     "description": "prevent committing .env files to code",
+     "padWidth": 13,
+     "arguments": [
+      {
+       "term": "directory",
+       "description": "directory to prevent committing .env files from (default: \".\")"
+      }
+     ],
+     "options": [
+      {
+       "term": "-i, --install",
+       "description": "install to .git/hooks/pre-commit"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    },
+    {
+     "name": "scan",
+     "usage": "dotenvx ext scan [options]",
+     "description": "scan for leaked secrets",
+     "padWidth": 10,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "children": []
+    }
+   ]
+  }
+ ]
+}

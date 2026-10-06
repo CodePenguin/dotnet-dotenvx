@@ -11,7 +11,7 @@ namespace Dotenvx.ParityTest;
 ///   `keypair`. A port that kept only the first `-fk` silently loses the key when the real
 ///   `.env.keys` isn't first - `KeysFor`/`KeyPair`/`Get`/`Run` all take a list.
 /// - a plain `&lt;path&gt;` string (commander keeps the LAST occurrence): `set`, `encrypt`, `del`.
-///   `SetAction`/`EncryptAction`/`RotateAction` unwrap with `.LastOrDefault()`.
+///   `SetAction`/`EncryptAction` unwrap with `.LastOrDefault()`.
 ///
 /// On top of the list itself, only `run`/`get`/`validate` call `resolveEnvKeysFile`, so
 /// `-fk <directory>` means `&lt;directory&gt;/.env.keys` there and stays a literal (nonexistent) path

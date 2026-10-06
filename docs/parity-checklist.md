@@ -44,7 +44,6 @@ Legend: `done` ported and verified, `partial` some behavior missing, `todo` not 
 | `curl` | done | |
 | `ext` (`ls`, `genexample`, `gitignore`, `prebuild`, `precommit`, `scan`) | done | |
 | `ext <name>` dynamic extensions (`executeExtension`) | done | `dotenvx-ext-<name>` from PATH, vault install hint |
-| `rotate` | not upstream | forward-ported ahead of the pin (historical commit `f1ffd157`); cannot be hidden from the pin's help (trap #17) |
 
 ## Flags upstream has that we do not
 
@@ -73,7 +72,7 @@ None: `--no-armor`, `--no-native`, `--no-1password`, `--no-bitwarden` and `--tok
 
 ## Accepted differences (all verified live, none hide a behavior gap)
 
-1. Help text is rendered by System.CommandLine, not commander: layout, wrapping and the hidden `enc`/`dec` aliases differ (trap #17). Options, descriptions and exit codes are compared by `HelpTextParityTest` and the sweep.
+1. (Resolved) `--help` is byte-identical: `src/Dotenvx/Help/CommanderHelp.cs` lays out `help-spec.json` (dumped from the real commander tree) with commander's wrapping, verified for every command path and `help <cmd>` by `HelpExactParityTest`.
 2. Prompt and spinner rendering on stderr (enquirer / yocto-spinner redraw sequences) is not byte-identical; prompt behavior (keys, Enter, EOF, input draining) is.
 3. `debug` output (`-d`, `-l debug`) has a different shape.
 4. Real OS secret stores (macOS Keychain, Linux Secret Service, Windows Credential Manager) are exercised only through fake tools on PATH in tests; the commands and the upstream PowerShell script are the same as Node's.
