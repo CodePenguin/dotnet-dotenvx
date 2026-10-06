@@ -9,8 +9,12 @@ on:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false # one OS failing must not hide the others
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
@@ -20,18 +24,18 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22 # the parity suite and sweep run the real Node CLI: pin it so runner images cannot drift
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
-      # This includes Dotenvx.ParityTest (it's part of Dotenvx.sln), which shells out to the real
-      # Node CLI in the dotenvx/ submodule (checked out above) and diffs output against our built
-      # .NET CLI to catch behavioral drift - see CLAUDE.md's "Node parity test suite" section.
-      # Node/npm are preinstalled on ubuntu-latest; NodeParityFixture handles `npm install` in
-      # dotenvx/ itself on first run. A prior version of this file also ran a separate
-      # continue-on-error `parity` job under the mistaken assumption that kept parity failures
-      # from blocking merges - it didn't: this step already runs (and blocks on) the same tests
-      # as part of the solution-wide `dotnet test` above, so that job was purely redundant.
-      # Removed once the suite proved stable across many repeated runs.
+      # Includes Dotenvx.ParityTest (part of Dotenvx.sln): it shells out to the real Node CLI in the dotenvx/ submodule
+      # and diffs output against the built .NET CLI. NodeParityFixture runs `npm install` in dotenvx/ on first use.
+    - name: Option-syntax sweep
+      run: node scripts/parity-sweep.js
+      # ~1100 command x flag x fixture scenarios against both CLIs (about 5 minutes); exits non-zero on any unexpected difference.

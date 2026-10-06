@@ -31,6 +31,28 @@ public static class EnvironmentHelper
     [DllImport("kernel32.dll")]
     private static extern bool FreeEnvironmentStringsW(IntPtr block);
 
+    [DllImport("libSystem.dylib")]
+    private static extern IntPtr _NSGetEnviron();
+
+    /// <summary>macOS has no /proc: `environ` is reached through _NSGetEnviron (a char***).</summary>
+    private static List<string> MacEnvironOrder()
+    {
+        var names = new List<string>();
+        IntPtr environ = Marshal.ReadIntPtr(_NSGetEnviron());
+        for (int i = 0; ; i++)
+        {
+            IntPtr entry = Marshal.ReadIntPtr(environ, i * IntPtr.Size);
+            if (entry == IntPtr.Zero)
+            {
+                break;
+            }
+
+            names.Add((Marshal.PtrToStringUTF8(entry) ?? "").Split('=', 2)[0]);
+        }
+
+        return names;
+    }
+
     private static IEnumerable<string> InitialEnvironOrder()
     {
         try
@@ -64,6 +86,11 @@ public static class EnvironmentHelper
                 }
 
                 return names;
+            }
+
+            if (OperatingSystem.IsMacOS())
+            {
+                return MacEnvironOrder();
             }
 
             return File.ReadAllText("/proc/self/environ").Split((char)0, StringSplitOptions.RemoveEmptyEntries)
