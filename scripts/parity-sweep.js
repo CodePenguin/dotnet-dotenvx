@@ -331,6 +331,7 @@ const ACCEPTED = [
   /^ls --json /, // absolute paths embed the per-run temp directory (the two sides use different ones)
   /^shape [a-zA-Z]+ get HELLO --convention bogus$/, // both crash with an uncaught error; only the stack trace text differs
   /^shape [a-zA-Z]+ get HELLO --env-file --overload$/, // node itself reads --env-file from anywhere in its argv ("node: --overload: not found")
+  /^opt plain precommit --install$/, // the operating system's own error text ("ENOENT ..." in Node, the .NET message here) is not mirrored
   /^opt plain get --convention/, // both crash/print with an uncaught error whose stack trace text differs
   /^opt plain (ls --json|get --all)$/, // absolute paths embed the per-run temp directory
   /^shape [a-zA-Z]+ run -e (--x|-f) /, // a dash-leading value of a variadic option cannot be passed through System.CommandLine

@@ -72,6 +72,7 @@ None: `--no-armor`, `--no-native`, `--no-1password`, `--no-bitwarden` and `--tok
 
 ## Accepted differences
 
+0. Error text that comes from the operating system or runtime rather than from dotenvx's source (Node's `ENOENT: ...`, `EACCES ...`, uncaught-error stack traces, `'x' is not recognized ...`) stays native to .NET; only dotenvx's own messages and codes are matched.
 0. `run -e --x` / `run -e -f` (a dash-leading value for a variadic option) is rejected as a missing value here; the rest of the option-syntax shapes match (trap #75, `shape` scenarios in the sweep). (all verified live, none hide a behavior gap)
 
 1. (Resolved) `--help` is byte-identical: `src/Dotenvx/Help/CommanderHelp.cs` lays out `help-spec.json` (dumped from the real commander tree) with commander's wrapping, verified for every command path and `help <cmd>` by `HelpExactParityTest`.
