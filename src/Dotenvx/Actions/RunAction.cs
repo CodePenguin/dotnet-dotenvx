@@ -115,6 +115,42 @@ public class RunAction : Command
         SetAction(async pr => await Execute(pr));
     }
 
+    /// <remarks>Reference source: dotenvx/src/cli/actions/run.js's inferCommandArgsFromProcessArgv (`process.argv` here is the program arguments).</remarks>
+    private static string[] InferCommandArgsFromProcessArgv(string[] argv)
+    {
+        int runIndex = Array.IndexOf(argv, "run");
+        if (runIndex == -1)
+        {
+            return [];
+        }
+
+        string[] args = argv[(runIndex + 1)..];
+        int separatorIndex = Array.IndexOf(args, "--");
+        if (separatorIndex != -1)
+        {
+            return args[(separatorIndex + 1)..];
+        }
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i] is "-f" or "--env-file")
+            {
+                i++;
+
+                continue;
+            }
+
+            if (args[i].StartsWith('-'))
+            {
+                continue;
+            }
+
+            return args[i..];
+        }
+
+        return [];
+    }
+
     private async Task<int> Execute(ParseResult parseResult)
     {
         using SpinnerScope spinner = SpinnerScope.Start(parseResult, "injecting");
@@ -127,6 +163,11 @@ public class RunAction : Command
         string? convention = parseResult.GetValue(_conventionOption);
         string[] ignoreList = parseResult.GetValue(_ignoreOption) ?? [];
         string[] commandArgs = parseResult.GetValue(_args) ?? [];
+        string[] processArgs = Environment.GetCommandLineArgs().Skip(1).ToArray();
+        if (commandArgs.Length < 1)
+        {
+            commandArgs = InferCommandArgsFromProcessArgv(processArgs);
+        }
         bool redactEnabled = parseResult.GetValue(_redactOption);
         bool validateEnabled = parseResult.GetValue(_validateOption);
 
@@ -161,7 +202,7 @@ public class RunAction : Command
         _logger.Debug($"options: {JsonStringify(options)}");
 
         // Check for separator '--'
-        bool hasSeparator = parseResult.Tokens.Any(x => x.Type == TokenType.DoubleDash);
+        bool hasSeparator = processArgs.Contains("--") || parseResult.Tokens.Any(x => x.Type == TokenType.DoubleDash);
 
         if (commandArgs.Length < 1)
         {

@@ -29,10 +29,7 @@ public static class Main
         bool useSystemEnv = options.ProcessEnv == null;
         IDictionary<string, string> processEnv =
             options.ProcessEnv ??
-            new Dictionary<string, string>(Environment
-                .GetEnvironmentVariables()
-                .Cast<DictionaryEntry>()
-                .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
+            new Dictionary<string, string>(global::Dotenvx.Helpers.EnvironmentHelper.GetEnvironmentVariablesAsDictionary());
 
         // ignore
         List<string> ignore = options.Ignore ?? [];
@@ -265,10 +262,7 @@ public static class Main
         options ??= new ParseOptions();
         IDotenvxLogger? logger = options.Logger;
         Dictionary<string, string> processEnv = options.ProcessEnv?.ToDictionary() ??
-                                                Environment.GetEnvironmentVariables()
-                                                    .Cast<DictionaryEntry>()
-                                                    .ToDictionary(entry => (string)entry.Key,
-                                                        entry => (string?)entry.Value ?? string.Empty);
+                                                new Dictionary<string, string>(global::Dotenvx.Helpers.EnvironmentHelper.GetEnvironmentVariablesAsDictionary());
 
         // private decryption key
         string? privateKey = string.IsNullOrEmpty(options.PrivateKey) ? null : options.PrivateKey;

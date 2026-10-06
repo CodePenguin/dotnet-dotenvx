@@ -42,9 +42,7 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]?
 
     public virtual GetResult Run()
     {
-        Dictionary<string, string> processEnv = new(Environment.GetEnvironmentVariables()
-            .Cast<DictionaryEntry>()
-            .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
+        Dictionary<string, string> processEnv = new(global::Dotenvx.Helpers.EnvironmentHelper.GetEnvironmentVariablesAsDictionary());
         Run runService = Services.Run.Factory(envs, overload, processEnv, envKeysFilePaths);
         runService.KeyAccess = KeyAccess;
         runService.No1Password = No1Password;

@@ -292,12 +292,47 @@ const shapes = [
 ]
 for (const a of shapes) for (const fx of ['plain', 'multi']) add(`shape ${fx} ${a.join(' ')}`, fx, a)
 
+// ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
+// misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
+const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
+const specTree = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/Dotenvx/Help/help-spec.json'), 'utf8'))
+const walkSpec = (cmd, trail) => {
+  const here = trail.concat(cmd.name)
+  const top = here[1]
+  if (here.length > 1 && !NETWORK.has(top) && !(top === 'native' && here.length === 2) && !['dec', 'enc'].includes(top)) {
+    const pathArgs = here.slice(1)
+    const needsArgs = cmd.usage.includes('<') ? ['K'] : []
+    for (const o of cmd.options) {
+      const flags = o.term.split(/[, ]+/).filter(f => f.startsWith('-'))
+      const long = flags.find(f => f.startsWith('--'))
+      if (!long || long === '--help' || long === '--version') continue
+      const takesValue = /[<[]/.test(o.term)
+      const base = [...pathArgs, ...needsArgs]
+      const key = base.join(' ')
+      for (const fx of ['plain']) {
+        if (takesValue) {
+          add(`opt ${fx} ${key} ${long} v`, fx, [...base, long, 'v'], { CI: 'true' })
+          add(`opt ${fx} ${key} ${long}=v`, fx, [...base, `${long}=v`], { CI: 'true' })
+          add(`opt ${fx} ${key} ${long} (missing)`, fx, [...base, long], { CI: 'true' })
+        } else {
+          add(`opt ${fx} ${key} ${long}`, fx, [...base, long], { CI: 'true' })
+        }
+        add(`opt ${fx} ${key} ${long}z (typo)`, fx, [...base, long + 'z'], { CI: 'true' })
+      }
+    }
+  }
+  for (const child of cmd.children) walkSpec(child, here)
+}
+walkSpec(specTree, [])
+
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
   /^global -d$/, /^global -l debug$/, // debug option dumps have a different shape
   /^ls --json /, // absolute paths embed the per-run temp directory (the two sides use different ones)
   /^shape [a-zA-Z]+ get HELLO --convention bogus$/, // both crash with an uncaught error; only the stack trace text differs
   /^shape [a-zA-Z]+ get HELLO --env-file --overload$/, // node itself reads --env-file from anywhere in its argv ("node: --overload: not found")
+  /^opt plain get --convention/, // both crash/print with an uncaught error whose stack trace text differs
+  /^opt plain (ls --json|get --all)$/, // absolute paths embed the per-run temp directory
   /^shape [a-zA-Z]+ run -e (--x|-f) /, // a dash-leading value of a variadic option cannot be passed through System.CommandLine
   /^shape [a-zA-Z]+ run -f .env .env.local /, // the stray value becomes the command: both fail to start it, with the OS-specific wording of each launcher
   /^shape [a-zA-Z]+ run .*-q$/, // the child is `node` resolved from PATH: only the casing of node.exe differs in its own error
@@ -323,7 +358,9 @@ function runOne (cliArgs, sc, isNode) {
       fs.writeFileSync(path.join(dir, f), c)
     }
     let args = [...sc.args]
-    if (isNode && ['encrypt', 'set'].includes(args[0])) args = [args[0], '--no-native', '--no-armor', ...args.slice(1)] // before the scenario's own arguments, which may end in an option that takes a value
+    if (['encrypt', 'set'].includes(args[0])) args = [args[0], '--no-native', '--no-armor', ...args.slice(1)] // before the scenario's own arguments, which may end in an option that takes a value
+    // the node binary itself consumes --env-file ("node: v: not found") wherever it appears in argv: spell it -f for node only
+    if (isNode) args = args.flatMap(a => a === '--env-file' ? ['-f'] : a.startsWith('--env-file=') ? ['-f', a.slice(11)] : [a])
     const env = { ...process.env, ...sc.env }
     // hermetic Armor/device config: a per-run directory unless the scenario names one
     env.DOTENVX_CONFIG = (sc.env.DOTENVX_CONFIG || '<DIR>/.dxcfg').split('<DIR>').join(dir)

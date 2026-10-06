@@ -68,7 +68,10 @@ public class InstallPrecommitHook
         }
         catch (Exception err)
         {
-            throw new PrecommitHookModifyFailedException(err.Message);
+            // Node reports the errno text: ENOENT: no such file or directory, open '<path>'
+            throw new PrecommitHookModifyFailedException(err is FileNotFoundException or DirectoryNotFoundException
+                ? $"ENOENT: no such file or directory, open '{Path.GetFullPath(HookPath)}'"
+                : err.Message);
         }
     }
 
