@@ -416,8 +416,7 @@ async function main () {
   fs.writeFileSync(path.join(os.tmpdir(), 'dotenvx-parity-sweep.txt'), lines.join('\n'))
   console.log(`${list.length} scenarios, ${diffs.length} differ`)
   if (diffs.length) {
-    console.log(lines.join('
-').slice(0, 20000)) // CI has no access to the temp file
+    console.log(lines.join(String.fromCharCode(10)).slice(0, 20000)) // CI has no access to the temp file
     process.exitCode = 1
   }
 }
