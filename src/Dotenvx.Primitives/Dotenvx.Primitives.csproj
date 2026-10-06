@@ -6,8 +6,7 @@
         <Nullable>enable</Nullable>
         <RootNamespace>Dotenvx</RootNamespace>
         <PackageId>Dotenvx.Primitives</PackageId>
-        <Authors>David Lambert, @motdotla</Authors>
-        <Description>Low-level parse/encrypt/eval primitives ported from the @dotenvx/primitives npm package, consumed by Dotenvx.Core.</Description>
+        <Description>Parse, encrypt, decrypt, keypair, keyring and related primitives for .env files, ported from the @dotenvx/primitives npm package and matching it at the same version.</Description>
         <!-- Tracks the exact @dotenvx/primitives npm package version this is ported from (see
              dotenvx/node_modules/@dotenvx/primitives/package.json) - bump in lockstep with that
              package's own version, not independently, the same way Dotenvx's own Version tracks the

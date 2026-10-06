@@ -1,8 +1,26 @@
 <Project>
-    <!-- Applies to every project; only the packable ones (Dotenvx, Dotenvx.Primitives, ...) put it in their package.
-         The full BSD-3-Clause text with the upstream copyright notice is the LICENSE file at the repository root. -->
+    <!-- Shared package metadata. Only packable projects (Dotenvx, Dotenvx.Core, Dotenvx.Configuration, Dotenvx.Primitives)
+         produce a package; test projects and samples are not packable. Each packable project sets its own PackageId,
+         Description and Version (see CONTRIBUTING.md, "Version bump checklist"). -->
     <PropertyGroup>
-        <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+        <Authors>David Lambert, Scott Motte (@motdotla)</Authors>
         <Copyright>Copyright (c) 2024 Scott Motte; Copyright (c) 2026 David Lambert</Copyright>
+        <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/CodePenguin/dotnet-dotenvx</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/CodePenguin/dotnet-dotenvx.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>dotenv;dotenvx;env;environment;configuration;secrets;encryption</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+
+        <!-- symbol packages and source link, reproducible builds on CI -->
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(IsPackable)' != 'false'">
+        <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="/" Visible="false"/>
+    </ItemGroup>
 </Project>

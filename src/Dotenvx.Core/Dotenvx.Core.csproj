@@ -5,6 +5,10 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>Dotenvx</RootNamespace>
+        <PackageId>Dotenvx.Core</PackageId>
+        <Description>Load, parse, get and set .env values (including encrypted ones) from .NET code: Dotenvx.Config(), Get(), Parse() and Set(), a port of the @dotenvx/dotenvx library API.</Description>
+        <!-- tracks the dotenvx release this port matches, in lockstep with Dotenvx.csproj -->
+        <Version>2.24.1</Version>
     </PropertyGroup>
 
     <ItemGroup>

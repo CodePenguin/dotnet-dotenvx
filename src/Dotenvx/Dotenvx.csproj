@@ -6,8 +6,7 @@
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>dotenvx</ToolCommandName>
         <PackageId>Dotenvx</PackageId>
-        <Authors>David Lambert, @motdotla</Authors>
-        <Description>A CLI tool that loads .env files like Node.js @dotenvx/dotenvx.</Description>
+        <Description>The dotenvx command-line tool for .NET: run any program with its .env files injected, with multiple environments and encrypted .env files. A port of @dotenvx/dotenvx, matching its CLI at the same version.</Description>
         <!-- Tracks the exact upstream dotenvx release this port is pinned to/at parity with (see
              the dotenvx submodule pin and docs/porting-traps.md) - bump this in lockstep with the submodule
              pin, not independently. IncludeSourceRevisionInInformationalVersion false keeps the

@@ -131,7 +131,7 @@ See [`samples/`](samples) for runnable versions.
 | `Dotenvx` | the `dotenvx` .NET tool |
 | `Dotenvx.Core` | the library API above and the ported CLI logic |
 | `Dotenvx.Configuration` | `IConfigurationBuilder.UseDotenvx()` |
-| `Dotenvx.Primitives` | port of the `@dotenvx/primitives` package (parse, encrypt, decrypt, keyring, ...) |
+| `Dotenvx.Primitives` | port of the `@dotenvx/primitives` package (parse, encrypt, decrypt, keyring, ...); versioned like that package (3.0.2), not like the CLI |
 
 ## Compatibility
 

@@ -133,7 +133,7 @@ Goal: retarget, run the suites, and let the failures plus a few diffs say exactl
 
 **1. Retarget**
 1. `cd dotenvx && git fetch --tags && git checkout <new-tag>` (exact tag), then `git add dotenvx` from the repo root.
-2. `src/Dotenvx/Dotenvx.csproj` `Version` = the new dotenvx tag.
+2. `Version` = the new dotenvx tag in `src/Dotenvx/Dotenvx.csproj`, `src/Dotenvx.Core/Dotenvx.Core.csproj` and `src/Dotenvx.Configuration/Dotenvx.Configuration.csproj` (they are released together).
 3. `cd dotenvx && npm install --no-audit --no-fund --omit=dev`, read the installed `@dotenvx/primitives` version, set `src/Dotenvx.Primitives/Dotenvx.Primitives.csproj` `Version` to it, and update the version numbers quoted in this file.
 4. Snapshot primitives function sources before and after the bump, from inside `dotenvx/`: `node -e "const p=require('@dotenvx/primitives');const o={};for(const k of Object.keys(p))o[k]=p[k].toString();require('fs').writeFileSync(process.argv[1],JSON.stringify(o,null,1))" <tmp>/primitives-<ver>.json`.
 
