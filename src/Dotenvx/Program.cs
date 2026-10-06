@@ -29,7 +29,8 @@ Console.Error.NewLine = "\n";
 
 DotenvxLoggerOptions loggerOptions = DotenvxRootCommand.GetDotenvxLoggerConfiguration(args);
 
-IHost host = Host.CreateDefaultBuilder(args)
+// no args: the command line is commander-style, not host configuration (`-f=.env` made the config provider throw)
+IHost host = Host.CreateDefaultBuilder()
     .ConfigureHostConfiguration(builder =>
     {
         builder.AddEnvironmentVariables();

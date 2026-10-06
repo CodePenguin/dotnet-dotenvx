@@ -44,6 +44,9 @@ public static class CommanderHelp
 
     private static readonly Lazy<HelpSpec> Root = new(LoadSpec);
 
+    /// <summary>The whole generated spec tree (the pinned upstream command tree).</summary>
+    public static HelpSpec RootSpec => Root.Value;
+
     /// <summary>The help width: the terminal width on a TTY, else 80. Swappable for tests.</summary>
     public static Func<int> HelpWidth { get; internal set; } = DefaultHelpWidth;
 

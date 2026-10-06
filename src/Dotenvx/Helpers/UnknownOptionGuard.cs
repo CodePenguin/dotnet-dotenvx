@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 
@@ -23,13 +25,19 @@ public static class UnknownOptionGuard
         }
     }
 
+    /// <summary>`set`, `ext`, `armor`, `login` and `logout` accept unknown options.</summary>
+    public static bool AcceptsUnknownOptions(ParseResult parseResult)
+    {
+        return parseResult.CommandResult.Command.Name is "set" or "ext" or "armor" or "login" or "logout";
+    }
+
     /// <summary>The first token commander would call an unknown option, or null.</summary>
     public static string? FindUnknownOption(ParseResult parseResult)
     {
         // dotenvx.js registers `set` with `.allowUnknownOption()`: unknown options (and dash-leading values such as
         // `set KEY -secret`) are accepted there, unlike every other command
         // (also `ext`, `armor`, `login` and `logout`, which forward their arguments to external programs / accept them)
-        if (parseResult.CommandResult.Command.Name is "set" or "ext" or "armor" or "login" or "logout")
+        if (AcceptsUnknownOptions(parseResult))
         {
             return null;
         }
@@ -48,6 +56,24 @@ public static class UnknownOptionGuard
             }
         }
 
+        // dash-leading values of options are values, not unknown options (`get -f --overload`: commander gives the env file "--overload")
+        HashSet<Token> optionValues = [];
+        for (SymbolResult? result = parseResult.CommandResult; result is not null; result = result.Parent)
+        {
+            if (result is not CommandResult commandResult)
+            {
+                continue;
+            }
+
+            foreach (Option option in commandResult.Command.Options)
+            {
+                if (parseResult.GetResult(option) is { } optionResult)
+                {
+                    optionValues.UnionWith(optionResult.Tokens);
+                }
+            }
+        }
+
         foreach (Token token in parseResult.Tokens)
         {
             if (token.Type == TokenType.DoubleDash)
@@ -55,7 +81,7 @@ public static class UnknownOptionGuard
                 return null;
             }
 
-            if (token.Type == TokenType.Argument && token.Value.Length > 1 && token.Value[0] == '-')
+            if (token.Type == TokenType.Argument && !optionValues.Contains(token) && token.Value.Length > 1 && token.Value[0] == '-')
             {
                 return token.Value;
             }

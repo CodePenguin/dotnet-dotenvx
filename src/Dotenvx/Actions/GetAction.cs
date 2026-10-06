@@ -160,7 +160,8 @@ public class GetAction : Command
     {
         using SpinnerScope spinner = SpinnerScope.Start(parseResult, "decrypting");
 
-        string? key = parseResult.GetValue(_keyArgument);
+        // JS `if (key)`: an empty key means "all"
+        string? key = parseResult.GetValue(_keyArgument) is { Length: > 0 } keyValue ? keyValue : null;
         string[]? envs = parseResult.GetValue(_envOption);
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);

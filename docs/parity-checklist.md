@@ -70,7 +70,9 @@ None: `--no-armor`, `--no-native`, `--no-1password`, `--no-bitwarden` and `--tok
    `scripts/upstream-test-titles.js`.
 5. Update the rows above and the root `--help` comparison; commit.
 
-## Accepted differences (all verified live, none hide a behavior gap)
+## Accepted differences
+
+0. `run -e --x` / `run -e -f` (a dash-leading value for a variadic option) is rejected as a missing value here; the rest of the option-syntax shapes match (trap #75, `shape` scenarios in the sweep). (all verified live, none hide a behavior gap)
 
 1. (Resolved) `--help` is byte-identical: `src/Dotenvx/Help/CommanderHelp.cs` lays out `help-spec.json` (dumped from the real commander tree) with commander's wrapping, verified for every command path and `help <cmd>` by `HelpExactParityTest`.
 2. Prompt and spinner rendering on stderr (enquirer / yocto-spinner redraw sequences) is not byte-identical; prompt behavior (keys, Enter, EOF, input draining) is.

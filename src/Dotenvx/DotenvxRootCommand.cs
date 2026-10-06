@@ -102,7 +102,7 @@ public class DotenvxRootCommand : LoggingRootCommand
             // (DOTENVX_NATIVE_HELP=1 asks for System.CommandLine's own text: HelpTextParityTest checks the real option definitions)
             HelpSpec? spec = Environment.GetEnvironmentVariable("DOTENVX_NATIVE_HELP") == "1"
                 ? null
-                : CommanderHelp.Find(CommandPath(parseResult));
+                : CommanderHelp.Find(CommanderErrors.PathOf(parseResult));
             if (spec is not null)
             {
                 Console.Out.Write(CommanderHelp.Render(spec, isRootHelp));
@@ -137,19 +137,6 @@ public class DotenvxRootCommand : LoggingRootCommand
                 }
             }
         }
-    }
-
-    /// <summary>The command names as typed (upstream's `dec`/`enc` are separate commands, here aliases), below the root.</summary>
-    private static List<string> CommandPath(ParseResult parseResult)
-    {
-        var path = new List<string>();
-        for (System.CommandLine.Parsing.CommandResult? current = parseResult.CommandResult; current is not null and not { Command: RootCommand };
-             current = current.Parent as System.CommandLine.Parsing.CommandResult)
-        {
-            path.Insert(0, current.IdentifierToken?.Value ?? current.Command.Name);
-        }
-
-        return path;
     }
 
     /// <summary>
@@ -219,6 +206,14 @@ public class DotenvxRootCommand : LoggingRootCommand
             {
                 case HelpOption help:
                     option.Description = "display help for command";
+
+                    // commander's help flags are only -h/--help; System.CommandLine adds -?, /h and /? (so `get -?` printed
+                    // help instead of `error: unknown option '-?'`)
+                    foreach (string alias in option.Aliases.Where(a => a != "-h").ToList())
+                    {
+                        option.Aliases.Remove(alias);
+                    }
+
                     if (help.Action is SynchronousCommandLineAction defaultHelpAction)
                     {
                         help.Action = new FilteringHelpAction(defaultHelpAction, this, hideFromRootOnly);

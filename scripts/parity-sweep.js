@@ -261,12 +261,47 @@ add('get --no-armor --no-native --no-1password --no-bitwarden', 'enc', ['get', '
 add('run --token ignores for plain', 'plain', ['run', '--no-armor', '--', 'node', '-e', 'console.log(process.env.HELLO)'])
 scenarios.push({ name: 'op ref get', fx: 'opRef', args: ['get'], env: {} })
 
+// ---- option syntax shapes (commander parsing rules): = forms, attached short values, bundling, position, missing values
+const shapes = [
+  ['get', 'HELLO', '--env-file=.env'], ['get', 'HELLO', '-f=.env'], ['get', 'HELLO', '-f.env'], ['get', 'HELLO', '-f', '.env'],
+  ['get', 'HELLO', '--env-f', '.env'], ['get', 'HELLO', '--env-file'], ['get', 'HELLO', '-f'], ['get', '-f', '.env', 'HELLO'],
+  ['-q', 'get', 'HELLO'], ['--quiet', 'get', 'HELLO'], ['-lerror', 'get', 'HELLO'], ['--log-level=debug', 'get', 'HELLO'],
+  ['--log-level', 'get', 'HELLO'], ['-l'], ['-qv', 'get', 'HELLO'], ['-qd', 'get', 'HELLO'], ['get', '-qv', 'HELLO'],
+  ['get', 'HELLO', '--', '-q'], ['get', '--', 'HELLO'], ['get', ''], ['get', 'HELLO', 'FOO'], ['get', 'HELLO', '-V'],
+  ['get', 'HELLO', '--version'], ['-V', 'get', 'HELLO'], ['--version', 'bogus'], ['get', 'HELLO', '--pretty-print'],
+  ['get', 'HELLO', '-pp'], ['get', 'HELLO', '--pp'], ['get', 'HELLO', '--pretty'], ['get', '--all', 'HELLO'],
+  ['get', 'HELLO', '--overload', '--overload'], ['get', 'HELLO', '-o'], ['get', 'HELLO', '--convention=nextjs'],
+  ['get', 'HELLO', '--convention', 'bogus'], ['get', 'HELLO', '-fk'], ['get', 'HELLO', '-fk', '.env.keys'],
+  ['get', 'HELLO', '--env-keys-file=.env.keys'], ['get', 'HELLO', '--strict', '--ignore', 'X'], ['get', 'HELLO', '--ignore=X', '--ignore=Y'],
+  ['keypair', '-f', '.env', '-f', '.env'], ['keypair', '-f', '.env', '.env.keys'], ['keypair', '--pp', '-f', '.env'],
+  ['set', 'A=b'], ['set', 'A', 'b', '-f=.env'], ['set', '--', 'A', 'b'], ['set', 'A', '--', '-b'], ['set', 'A', '-b'],
+  ['encrypt', '-k', 'A', 'B'], ['encrypt', '-k', 'A', '-k', 'B'], ['encrypt', '-k', 'A', '--', 'B'], ['encrypt', '--key=A'],
+  ['encrypt', '-ek', 'A', 'B'], ['decrypt', '-k', 'HELLO', 'FOO'], ['decrypt', '--exclude-key=HELLO'],
+  ['del', '-f', '.env', 'HELLO'], ['del', 'HELLO', '-f', '.env', '.env'], ['ls', '-f', '.env', '.env.local'], ['ls', '-ef', '**/.env'],
+  ['ls', '--exclude-env-file', '*.local', '--', 'sub'], ['validate', '-f', '.env', '.env.local'],
+  ['run', '-f', '.env', '-f', '.env.local', '--', ...show], ['run', '-f', '.env', '.env.local', '--', ...show],
+  ['run', '-e', 'A=1', '-e', 'B=2', '--', ...show], ['run', '-e', 'A=1', 'B=2', '--', ...show], ['run', '--env=A=1', '--', ...show],
+  ['run', '-e', 'A=1', '--', ...show, '-q'], ['run', '--', ...show, '--help'], ['run', ...show], ['run', '-f', '.env', ...show],
+  ['keypair', ''], ['del', ''], ['set', '', 'v'], ['get', 'HELLO', '--env-fil'], ['get', 'HELLO', '--overlod'], ['get', 'HELLO', '--quite'],
+  ['get', 'HELLO', '--log'], ['get', 'HELLO', '--env-keys'], ['get', 'HELLO', '--no-armo'], ['run', '--overlod', '--', ...show], ['-x'], ['--bogus'],
+  ['encrypt', '--key'], ['ls', '--bogus-flag'], ['get', 'HELLO', '--env-file:.env'], ['get', 'HELLO', '-f:.env'], ['run', '-e:A=1', '--', ...show],
+  ['get', 'HELLO', '-f', '--overload'], ['get', 'HELLO', '--env-file', '--overload'], ['get', 'HELLO', '-f', '-q'], ['get', '-f', '--', 'HELLO'],
+  ['-l', 'get', 'HELLO'], ['-l', '--quiet', 'get', 'HELLO'], ['get', 'HELLO', '-k', '--x'], ['run', '-e', '--x', '--', ...show], ['run', '-e', '-f', '--', ...show],
+  ['keypair', '-f=.env'], ['encrypt', '-k=HELLO'], ['get', 'HELLO', '-ek', 'FOO', '--', 'x'],
+  ['run', '--overload', '--', ...show], ['run', '--strict', '--', ...show], ['run', '--log-level', 'debug', '--', ...show]
+]
+for (const a of shapes) for (const fx of ['plain', 'multi']) add(`shape ${fx} ${a.join(' ')}`, fx, a)
+
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
-  /--help$/, /bogus --help$/, /^no args$/, // System.CommandLine renders help differently from commander
   /^global -d$/, /^global -l debug$/, // debug option dumps have a different shape
   /^ls --json /, // absolute paths embed the per-run temp directory (the two sides use different ones)
-  /^(help unknown stdout exit|armor unknown help)$/, // help text comes from different renderers (exit code is still compared)
+  /^shape [a-zA-Z]+ get HELLO --convention bogus$/, // both crash with an uncaught error; only the stack trace text differs
+  /^shape [a-zA-Z]+ get HELLO --env-file --overload$/, // node itself reads --env-file from anywhere in its argv ("node: --overload: not found")
+  /^shape [a-zA-Z]+ run -e (--x|-f) /, // a dash-leading value of a variadic option cannot be passed through System.CommandLine
+  /^shape [a-zA-Z]+ run -f .env .env.local /, // the stray value becomes the command: both fail to start it, with the OS-specific wording of each launcher
+  /^shape [a-zA-Z]+ run .*-q$/, // the child is `node` resolved from PATH: only the casing of node.exe differs in its own error
+  /^shape [a-zA-Z]+ (-qd|--log-level=debug|run --log-level debug)/, // debug option dumps have a different shape
   /^get convention bad$/ // both crash with an uncaught error; only the stack trace text differs
 ]
 
@@ -288,7 +323,7 @@ function runOne (cliArgs, sc, isNode) {
       fs.writeFileSync(path.join(dir, f), c)
     }
     let args = [...sc.args]
-    if (isNode && ['encrypt', 'set'].includes(args[0])) args = [args[0], ...args.slice(1), '--no-native', '--no-armor']
+    if (isNode && ['encrypt', 'set'].includes(args[0])) args = [args[0], '--no-native', '--no-armor', ...args.slice(1)] // before the scenario's own arguments, which may end in an option that takes a value
     const env = { ...process.env, ...sc.env }
     // hermetic Armor/device config: a per-run directory unless the scenario names one
     env.DOTENVX_CONFIG = (sc.env.DOTENVX_CONFIG || '<DIR>/.dxcfg').split('<DIR>').join(dir)
@@ -340,7 +375,7 @@ async function main () {
       else { lines.push(`  ${f} node=${JSON.stringify(x.n[f]).slice(0, 300)}`); lines.push(`  ${f} dotn=${JSON.stringify(x.d[f]).slice(0, 300)}`) }
     }
   }
-  fs.writeFileSync('C:/Users/codep/.claude/scratch/sweep.out.txt', lines.join('\n'))
+  fs.writeFileSync(path.join(os.tmpdir(), 'dotenvx-parity-sweep.txt'), lines.join('\n'))
   console.log(`${list.length} scenarios, ${diffs.length} differ`)
 }
 main()

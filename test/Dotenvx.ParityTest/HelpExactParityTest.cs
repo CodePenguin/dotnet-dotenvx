@@ -38,6 +38,32 @@ public class HelpExactParityTest(NodeParityFixture fixture) : ParityTestBase(fix
         return paths;
     }
 
+    /// <remarks>The checked-in spec must be what `node scripts/gen-help-spec.js` produces from the pinned upstream today.</remarks>
+    [Fact]
+    public async Task HelpSpecIsUpToDate()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        string directory = AppContext.BaseDirectory;
+        while (!File.Exists(Path.Combine(directory, "scripts", "gen-help-spec.js")))
+        {
+            directory = Path.GetDirectoryName(directory) ?? throw new FileNotFoundException("scripts/gen-help-spec.js");
+        }
+
+        string specPath = Path.Combine(directory, "src", "Dotenvx", "Help", "help-spec.json");
+        string before = File.ReadAllText(specPath);
+        CliResult result = await Fixture.RunNodeScriptAsync(
+            $"require({System.Text.Json.JsonSerializer.Serialize(Path.Combine(directory, "scripts", "gen-help-spec.js"))})");
+        string after = File.ReadAllText(specPath);
+        File.WriteAllText(specPath, before);
+
+        result.ExitCode.ShouldBe(0, result.StandardError);
+        after.ShouldBe(before, "help-spec.json is stale: run node scripts/gen-help-spec.js and commit it");
+    }
+
     [Fact]
     public async Task HelpOfEveryCommandIsByteIdentical()
     {

@@ -109,7 +109,15 @@ public static class Fsx
 
     private static byte[] DefaultReadFileSync(string path)
     {
-        return File.ReadAllBytes(path);
+        try
+        {
+            return File.ReadAllBytes(path);
+        }
+        catch (IOException error) when (error.HResult == unchecked((int)0x8007007B))
+        {
+            // Windows ERROR_INVALID_NAME (a path such as ":.env"): Node's ENOENT, i.e. a missing file
+            throw new FileNotFoundException(error.Message, path, error);
+        }
     }
 
     private static void DefaultWriteFileSync(string path, string data)

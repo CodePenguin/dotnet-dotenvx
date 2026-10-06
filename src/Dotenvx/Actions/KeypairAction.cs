@@ -79,7 +79,8 @@ public class KeyPairAction : Command
     {
         using SpinnerScope spinner = SpinnerScope.Start(parseResult, "retrieving");
 
-        string? key = parseResult.GetValue(_keyArgument);
+        // JS `if (key)`: an empty key means "all"
+        string? key = parseResult.GetValue(_keyArgument) is { Length: > 0 } keyValue ? keyValue : null;
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         string? formatValue = parseResult.GetValue(_formatOption);
