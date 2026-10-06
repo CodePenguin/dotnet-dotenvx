@@ -6,9 +6,9 @@ namespace Dotenvx.ParityTest;
 /// This suite found real bugs the first time `ls` was exercised end-to-end: the default
 /// ".env*" pattern was never applied (an empty pattern list silently matched nothing), and the
 /// applied patterns weren't "**/"-prefixed so nested files were invisible even once the default
-/// was fixed. Fixed in Ls.cs - see .claude/plan.md. The "found N .env files..." summary line
+/// was fixed. Fixed in Ls.cs - see docs/porting-traps.md. The "found N .env files..." summary line
 /// upstream prints is on stderr and includes elapsed time, so per this suite's stderr-wording
-/// convention (CLAUDE.md trap #4) it's not compared here - only the deterministic tree/JSON on
+/// convention (docs/porting-traps.md trap #4) it's not compared here - only the deterministic tree/JSON on
 /// stdout is.
 /// </remarks>
 public class LsParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
@@ -86,7 +86,7 @@ public class LsParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
     /// directory to crawl, producing an unhandled `IOException` ("The parameter is incorrect")
     /// instead of listing both files. Fixed by setting `AllowMultipleArgumentsPerToken = true` on
     /// every option whose upstream commander registration is genuinely `&lt;name...&gt;` (see
-    /// CLAUDE.md's trap for the full list this affected across the whole CLI, not just `ls`).
+    /// docs/porting-traps.md, trap for the full list this affected across the whole CLI, not just `ls`).
     /// </remarks>
     [Fact]
     public async Task MultipleSpaceSeparatedEnvFilesInOneFlagOccurrenceMatches()

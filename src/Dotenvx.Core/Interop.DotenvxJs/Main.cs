@@ -362,7 +362,7 @@ public static class Main
             }
         }
 
-        // this port has no native/armor key storage (out of scope - see CLAUDE.md's submodule-pin
+        // this port has no native/armor key storage (out of scope - see docs/porting-traps.md, submodule-pin
         // note), so remotePrivateKeyAdded/the " · armored ⛨" suffix can never apply here.
         ProcessedSet? localKeyAddedEnv = result.ProcessedEnvs.FirstOrDefault(p => p.PrivateKeyAdded);
 

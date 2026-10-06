@@ -13,9 +13,8 @@ public class RunParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         }
 
         // node is used as the child command since it's the one executable guaranteed present by
-        // this fixture, and is real (not a shell builtin) on every OS - see the nested-command
-        // expansion fix earlier this session for why a shell builtin like `echo` isn't a safe
-        // choice here.
+        // this fixture, and is real (not a shell builtin) on every OS, unlike `echo`, whose
+        // behavior depends on the shell.
         (CliResult node, CliResult dotnet) = await RunBothAsync(
             () => WriteFile(".env", "HELLO=World\n"), null,
             "run", "--", "node", "-e", "console.log(process.env.HELLO)");
@@ -104,7 +103,7 @@ public class RunParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
     }
 
     /// <remarks>
-    /// Locks in the `--redact` fix (found via a flag-combination sweep, 2026-09-26 - see CLAUDE.md
+    /// Locks in the `--redact` fix (found via a flag-combination sweep, 2026-09-26 - see docs/porting-traps.md
     /// trap #31): the child process's OWN stdout must have the injected value replaced with
     /// [REDACTED], on both sides identically, while the process still exits 0 (the child genuinely
     /// received the real value in its environment - only what it PRINTS gets filtered).

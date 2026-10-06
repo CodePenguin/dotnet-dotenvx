@@ -10,7 +10,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// <remarks>
 /// Reference source: dotenvx/src/lib/resolvers/keypair.js (moved there from
 /// src/lib/services/keypair.js, which no longer exists at this pin - confirmed 2026-09-24, part of
-/// the same custodian/keyring reorg CLAUDE.md already documents elsewhere).
+/// the same custodian/keyring reorg docs/porting-traps.md already documents elsewhere).
 ///
 /// This class is a dual-purpose seam: the `keypair` CLI command uses it directly (via
 /// KeyPairAction.cs), but `FindPrivateKey.cs`/`FindPublicKey.cs` ALSO use it internally as an

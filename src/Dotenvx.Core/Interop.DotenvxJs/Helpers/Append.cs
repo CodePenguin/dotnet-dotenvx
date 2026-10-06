@@ -32,7 +32,7 @@ public static partial class Helpers
 
             // ([\s\uFEFF]*)? not just (\s*)? so a byte-order-mark surviving at the very start of
             // the decoded source is captured and preserved (not lost) when this key is the FIRST
-            // one in the file - see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md.
+            // one in the file - see Fsx.ReadFileX's BOM-preservation trap in docs/porting-traps.md.
             Regex currentPart = new(
                 "^" + // start of line
                 "([\\s\\uFEFF]*)?" + // spaces

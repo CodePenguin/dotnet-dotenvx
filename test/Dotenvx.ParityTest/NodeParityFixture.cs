@@ -109,7 +109,7 @@ public sealed class NodeParityFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// Runs an inline Node script (the "live oracle" technique - see CLAUDE.md's `@dotenvx/
+    /// Runs an inline Node script (the "live oracle" technique - see docs/porting-traps.md, `@dotenvx/
     /// primitives` section) from within the `dotenvx/` submodule directory, so `require('./src/
     /// lib/...')`-relative paths resolve the same way they would from a real file in that tree.
     /// </summary>

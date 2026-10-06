@@ -87,7 +87,7 @@ public class GlobalOptionsParityTest(NodeParityFixture fixture) : ParityTestBase
     }
 
     /// <remarks>
-    /// Locks in the versioning policy established 2026-10-02 (see CLAUDE.md's submodule-pin note):
+    /// Locks in the versioning policy established 2026-10-02 (see docs/porting-traps.md, submodule-pin note):
     /// `src/Dotenvx/Dotenvx.csproj`'s `Version` is kept in lockstep with the submodule's pinned tag,
     /// so `dotenvx --version` truthfully states which upstream release this port is at parity with -
     /// not just "both sides print something", but the literal same string. A prior version of this

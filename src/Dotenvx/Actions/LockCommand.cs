@@ -17,7 +17,7 @@ namespace Dotenvx.Actions;
 
 /// <remarks>
 /// Reference source: dotenvx/src/cli/commands/lock.js (hidden from the root help by DotenvxRootCommand's FilteringHelpAction, advertised by the "Better Security"
-/// section). Upstream's `preAction` hook also runs the Armor session's update-version check (Phase E, network).
+/// section). Upstream's `preAction` hook also runs the Armor session's update-version check (network).
 /// </remarks>
 public class LockCommand : Command
 {

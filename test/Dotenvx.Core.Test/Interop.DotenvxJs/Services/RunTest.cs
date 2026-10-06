@@ -283,7 +283,7 @@ public class RunTest : EnvironmentTestBase
 
     /// <remarks>
     /// Not from a JS test - regression test for a 2026-09-29 bug found via a code audit, closing out
-    /// the one genuinely-unverified item from CLAUDE.md's Main.cs audit trap. Confirmed by calling
+    /// the one genuinely-unverified item from docs/porting-traps.md, Main.cs audit trap. Confirmed by calling
     /// `@dotenvx/primitives`' `parse()` directly with two simultaneously undecryptable keys: it
     /// returns ONE error whose message comma-joins every failing key ("could not decrypt FOO, BAR"),
     /// not one discrete error per key - live-verified via the real CLI too (`dotenvx get` on a file

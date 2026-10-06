@@ -302,7 +302,7 @@ public class MainTest : EnvironmentTestBase
     /// there's a SEPARATE, still-current "get monorepo/apps/backend/.env AND attempt on directory
     /// frontend --strict it throws" test with the OLD title/behavior, because get() (unlike
     /// config()) never routes through buildCommandEnvs at all (see BuildConfigEnvs.cs's doc comment
-    /// and CLAUDE.md's Main.cs audit trap) - this port's OWN two tests here had been misported
+    /// and docs/porting-traps.md, Main.cs audit trap) - this port's OWN two tests here had been misported
     /// against config()'s now-superseded pre-buildConfigEnvs behavior.
     /// </remarks>
     [Fact]
@@ -601,7 +601,7 @@ public class MainTest : EnvironmentTestBase
     /// Assertion corrected 2026-09-29: real main.js's set() prints exactly ONE combined
     /// `logger.warn(message)` per errored file (message = error.messageWithHelp when available),
     /// not a separate Warn(message) + Help(customText) pair - the "? add one with [echo ...]"
-    /// text has no upstream basis at all (same fabricated-help-text bug class as CLAUDE.md's
+    /// text has no upstream basis at all (same fabricated-help-text bug class as docs/porting-traps.md's
     /// original error-message-printing trap).
     /// </remarks>
     [Fact]
@@ -724,7 +724,7 @@ public class MainTest : EnvironmentTestBase
     /// if (encrypt &amp;&amp; localKeyAddedEnv) {...}` - the two branches are mutually exclusive) - the
     /// separate "✔ key added to .env.keys (...)" success line plus its two "next run [...]" help
     /// lines have no upstream basis at all (same fabricated-message bug class already found in
-    /// RotateAction.cs - see CLAUDE.md trap #27). This port also has no native/armor key storage,
+    /// RotateAction.cs - see docs/porting-traps.md trap #27). This port also has no native/armor key storage,
     /// so the real `localKeyAddedEnv`/" · armored ⛨" branch this test's NAME references is only
     /// reachable here via <see cref="TestSetCallsSetsRunLocalKeyAddedWithNoChangedFiles"/> below,
     /// which actually exercises it (unchanged files, key still freshly added).
@@ -772,7 +772,7 @@ public class MainTest : EnvironmentTestBase
     /// localKeyAddedEnv)` branch (the ONLY currently-reachable path since this port has no
     /// remote/armor key storage): a fresh keypair was generated (PrivateKeyAdded) but the VALUE
     /// itself didn't change (empty ChangedFilePaths, matching Sets.cs's real "identical value" no-op
-    /// - see CLAUDE.md's Sets.cs re-encryption trap), so the success line still needs to report the
+    /// - see docs/porting-traps.md, Sets.cs re-encryption trap), so the success line still needs to report the
     /// file the key was added to, using localKeyAddedEnv.EnvFilePath as the fallback source.
     /// </remarks>
     [Fact]

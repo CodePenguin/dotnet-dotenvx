@@ -194,7 +194,7 @@ public class GetActionTest : EnvironmentTestBase
     }
 
     /// <remarks>
-    /// Not from a JS test - regression test for a 2026-09-27 bug (see CLAUDE.md's trap on
+    /// Not from a JS test - regression test for a 2026-09-27 bug (see docs/porting-traps.md, trap on
     /// `OptionParsers.ParseMultiValue`). `System.CommandLine`'s `AllowMultipleArgumentsPerToken`
     /// (needed for `--include-key`'s genuine variadic syntax) greedily consumed a completely
     /// unregistered flag as just another array value instead of rejecting it, so

@@ -3,7 +3,7 @@ using Shouldly;
 namespace Dotenvx.ParityTest;
 
 /// <remarks>
-/// Locks in the exact discovery from this session: a failing $() command substitution is silently
+/// Locks in a behavior of the real CLI: a failing $() command substitution is silently
 /// left unresolved by the real CLI (no error, exit 0), while other parse-time errors like decryption
 /// failures do surface. If @dotenvx/primitives ever changes this again, these tests catch it.
 /// </remarks>

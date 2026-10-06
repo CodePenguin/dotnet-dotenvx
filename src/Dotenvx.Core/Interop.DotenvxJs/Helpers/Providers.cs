@@ -31,8 +31,8 @@ public class KeyAccessOptions
 /// <remarks>
 /// Reference source: dotenvx/src/lib/providers/index.js and providers/native/index.js. A provider is called with a public
 /// key whose private key could not be found in the process environment or `.env.keys` and returns `{ publicKey:
-/// privateKey }` (empty when it has nothing). The native provider reads the OS secret store; Armor (Phase E in
-/// docs/parity-checklist.md) will be composed after it, in upstream's order.
+/// privateKey }` (empty when it has nothing). The native provider reads the OS secret store; Armor is
+/// composed after it, in upstream's order.
 /// </remarks>
 public static class Providers
 {

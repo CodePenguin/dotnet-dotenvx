@@ -1,6 +1,6 @@
-# AGENTS.md
+# Contributing
 
-Guidance for coding agents (Claude Code, opencode, Codex, ...) working in this repository.
+How this repository is organized and how to change it without breaking parity with the Node CLI. Read the sections you need; [docs/porting-traps.md](docs/porting-traps.md) lists past pitfalls by number (`#NN`), and [docs/parity-checklist.md](docs/parity-checklist.md) lists every component with its status and the accepted differences.
 
 ## What this is
 
@@ -20,7 +20,7 @@ The upstream JS project is a git submodule at `dotenvx/`, used as porting refere
 - The submodule is pinned to the exact tag **`v2.24.1`** (never upstream HEAD, never a commit past the tag). `src/Dotenvx/Dotenvx.csproj` `Version` stays equal to the pinned tag, so `dotenvx --version` states which release this port matches.
 - `src/Dotenvx.Primitives/Dotenvx.Primitives.csproj` `Version` equals the installed `@dotenvx/primitives` version (`dotenvx/node_modules/@dotenvx/primitives/package.json`, currently **3.0.2**).
 - Bump versions only through the "Version bump checklist" below. Do not run `git submodule update --remote`.
-- Scope rule (decided 2026-10-04): **anything that exists in the targeted version is in scope**, and by 2026-10-05 all of it is ported: Dotenvx Armor (session/device stores, API client, login/logout/curl/settings/armor commands, key providers and decryptors), native secret stores and `native`, 1Password/Bitwarden resolution, `lock`, `doctor`/`update`/`help`, spinner, pty for `--redact`, signal forwarding and dynamic extensions. [docs/parity-checklist.md](docs/parity-checklist.md) lists every component, its status and the accepted differences; keep it current.
+- Scope rule: **anything that exists in the targeted version is in scope**, and all of it is ported: Dotenvx Armor (session/device stores, API client, login/logout/curl/settings/armor commands, key providers and decryptors), native secret stores and `native`, 1Password/Bitwarden resolution, `lock`, `doctor`/`update`/`help`, spinner, pty for `--redact`, signal forwarding and dynamic extensions. [docs/parity-checklist.md](docs/parity-checklist.md) lists every component, its status and the accepted differences; keep it current.
 - `precommit`/`prebuild` are current at the pin but deprecated upstream in favor of `protect`; revisit when the pin passes that change.
 
 ## Commands
@@ -135,7 +135,7 @@ Goal: retarget, run the suites, and let the failures plus a few diffs say exactl
 1. `cd dotenvx && git fetch --tags && git checkout <new-tag>` (exact tag), then `git add dotenvx` from the repo root.
 2. `src/Dotenvx/Dotenvx.csproj` `Version` = the new dotenvx tag.
 3. `cd dotenvx && npm install --no-audit --no-fund --omit=dev`, read the installed `@dotenvx/primitives` version, set `src/Dotenvx.Primitives/Dotenvx.Primitives.csproj` `Version` to it, and update the version numbers quoted in this file.
-4. Snapshot primitives function sources before and after the bump, from inside `dotenvx/`: `node -e "const p=require('@dotenvx/primitives');const o={};for(const k of Object.keys(p))o[k]=p[k].toString();require('fs').writeFileSync(process.argv[1],JSON.stringify(o,null,1))" <scratch>/primitives-<ver>.json`.
+4. Snapshot primitives function sources before and after the bump, from inside `dotenvx/`: `node -e "const p=require('@dotenvx/primitives');const o={};for(const k of Object.keys(p))o[k]=p[k].toString();require('fs').writeFileSync(process.argv[1],JSON.stringify(o,null,1))" <tmp>/primitives-<ver>.json`.
 
 **2. Find what upstream changed**
 1. `Object.keys(require('@dotenvx/primitives'))` against the export list above: a new export needs a `Primitives.*` counterpart plus oracle rows; a removed one needs a decision.
@@ -160,13 +160,12 @@ Goal: retarget, run the suites, and let the failures plus a few diffs say exactl
 
 **5. Record it**
 1. Update the pinning notes and primitives version here, and add a numbered trap to `docs/porting-traps.md` for anything non-obvious (what, why, how to apply).
-2. Update `.claude/plan.md` (goal, steps, files touched, branch). Commit only when asked; no attribution lines.
 
 ## CLI logging
 
 `src/Dotenvx/Logging/` is a custom `ILogger`/`ILoggerProvider` (`DotenvxLogger`, `DotenvxCustomLogger*`) wired via `LoggingBuilderExtensions.AddDotenvx(...)`, matching dotenvx's leveled, colored output (quiet/error/info/verbose/debug) through `IDotenvxLogger` (`Interop.DotenvxJs/Shared/IDotenvxLogger.cs`). `DotenvxRootCommand.GetDotenvxLoggerConfiguration` pre-parses `args` once, silently, to pick the level before the host and command run. Only `info` goes to stdout; every other level goes to stderr (keeps stdout script-safe).
 
-## Tooling cautions
+## Source encoding cautions
 
-- The Edit/Write tools rewrite literal Unicode-escape text (backslash, `u`, four hex digits) into the character itself, and raw U+2028 in C# source is a line terminator. Write such text through a shell (`printf`/`sed`) or build it from `(char)` values, and verify with `grep`.
+- Some editors and generators rewrite literal Unicode-escape text (a backslash, `u` and four hex digits) into the character itself, and a raw U+2028 in C# source is a line terminator. Build such text from `(char)` values (or write it with a tool that does not interpret escapes) and verify with `grep`.
 - Shell heredocs can alter backslashes; prefer `(char)92` in C# and token substitution in test tables.

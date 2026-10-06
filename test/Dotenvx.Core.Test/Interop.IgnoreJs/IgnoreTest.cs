@@ -6,7 +6,7 @@ namespace Dotenvx.Core.Test.Interop.IgnoreJs;
 
 /// <remarks>
 /// No upstream `ignore.test.js` exists at this pin (confirmed via find - a stale reference, same
-/// pattern as the 2026-09-24 stale-doc-comment sweep documented elsewhere in CLAUDE.md). `ignore` is
+/// pattern as the 2026-09-24 stale-doc-comment sweep documented elsewhere in docs/porting-traps.md). `ignore` is
 /// a real, live-callable `@dotenvx/tooling` export (`node -e "require('@dotenvx/tooling').ignore()..."`),
 /// used by `prebuild.js`/`precommit.js` to check whether a file is docker/gitignored - this port's
 /// `Ignore`/`IgnoreRule` is a from-scratch reimplementation verified against that live oracle, not a

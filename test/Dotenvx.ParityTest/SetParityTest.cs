@@ -9,8 +9,8 @@ namespace Dotenvx.ParityTest;
 /// against a `.env` with no pre-existing `DOTENV_PUBLIC_KEY` hits fresh key GENERATION, which by
 /// default routes Node's CLI through the native OS credential store (see
 /// EncryptDecryptParityTest.cs's class remarks for the full explanation) - flaky/non-deterministic
-/// on this machine, confirmed 2026-09-26 by several of these tests intermittently failing with
-/// "failed to save private key to Windows Credential Manager" or a structurally-wrong .env (Node
+/// where a native store exists (seen as intermittent failures with
+/// "failed to save private key to Windows Credential Manager" or a structurally-wrong .env: Node
 /// silently skipped writing .env.keys because it went to the native store instead). Fixed the same
 /// way as `EncryptDecryptParityTest`'s own fresh-key tests: pass `--no-native --no-armor` to
 /// Node's call ONLY (this port's `set` has no such flags at all - passing them errors "Unrecognized
@@ -199,7 +199,7 @@ public class SetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
     }
 
     /// <remarks>
-    /// Regression test for the BOM-preservation fix (see CLAUDE.md's trap on this). Node's raw
+    /// Regression test for the BOM-preservation fix (see docs/porting-traps.md, trap on this). Node's raw
     /// Buffer decode never strips a leading byte-order-mark, so it survives a read-modify-write
     /// round-trip - a `.env` file that starts with a UTF-8 BOM keeps that BOM after `set` rewrites
     /// it. This required both decoding `ReadFileX` from raw bytes (preserving the BOM character)

@@ -8,7 +8,7 @@ namespace Dotenvx.ParityTest;
 /// Reference source: dotenvx/src/cli/actions/ext/scan.js. Ext-only (no top-level `dotenvx scan`
 /// exists upstream). Only the "gitleaks not on PATH" scenario is covered here - it's the one
 /// scenario this suite can exercise deterministically without the real `gitleaks` binary
-/// installed (this dev machine and ubuntu-latest CI both lack it by default), and it already
+/// installed (neither a typical developer machine nor ubuntu-latest CI has it by default), and it already
 /// exercises the real subprocess-based CLI end to end (GitleaksHelper's actual Process.Start
 /// failure path, not a mock). The "gitleaks IS installed and produces a real scan" scenario is
 /// deliberately NOT added yet - gitleaks's own output isn't obviously byte-stable across

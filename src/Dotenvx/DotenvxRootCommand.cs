@@ -225,7 +225,7 @@ public class DotenvxRootCommand : LoggingRootCommand
                     option.Description = "output the version number";
                     // Recursive = true so `dotenvx <command> --version` also works, matching
                     // commander's own recursive option behavior - same fix shape as
-                    // LoggingRootCommand's -l/-q/-v/-d (see CLAUDE.md's trap on this).
+                    // LoggingRootCommand's -l/-q/-v/-d (see docs/porting-traps.md, trap on this).
                     option.Recursive = true;
                     break;
             }

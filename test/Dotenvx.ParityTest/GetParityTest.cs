@@ -425,7 +425,7 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
     // --file and DOTENV_FILE (commit 5a28c859) were forward-ported ahead of our v2.24.1 pin - the
     // pinned Node CLI genuinely doesn't support them yet ("error: unknown option '--file'"), so
     // there's no valid parity comparison for them until the pin advances past that commit. See
-    // .claude/plan.md. DOTENV_PATH/DOTENV_F (already in the pin) are covered in
+    // docs/porting-traps.md. DOTENV_PATH/DOTENV_F (already in the pin) are covered in
     // NormalizeDotenvConfigPathTest.cs at the unit level instead.
 
     /// <remarks>
@@ -457,7 +457,7 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
     /// `--include-key HELLO FOO` (space-separated, one flag occurrence) only captured "HELLO" into
     /// the array and let "FOO" fall through to `get`'s own `[KEY]` positional argument - silently
     /// switching into single-key mode and producing empty output instead of the filtered object.
-    /// Fixed by setting `AllowMultipleArgumentsPerToken = true` (see CLAUDE.md's trap for the full
+    /// Fixed by setting `AllowMultipleArgumentsPerToken = true` (see docs/porting-traps.md, trap for the full
     /// list of options this affected across the whole CLI, not just `get`).
     /// </remarks>
     [Fact]

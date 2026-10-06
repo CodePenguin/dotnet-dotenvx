@@ -19,7 +19,7 @@ namespace Dotenvx.ParityTest;
 /// `dotenvx.js` registering `--pp` as a literal separate option in exactly two places. Both fixed
 /// alongside this test landing.
 ///
-/// Known, deliberate exclusions (not bugs - see CLAUDE.md for the full rationale on each):
+/// Known, deliberate exclusions (not bugs - see docs/porting-traps.md for the full rationale on each):
 /// - `DotnetOnlyAliases`: System.CommandLine structural artifacts (`-?` auto-added to `--help`;
 ///   every recursive global option `-l`/`-q`/`-v`/`-d`/`-V` rendered per-subcommand, where Node only
 ///   shows them at the root) plus `--file`, a deliberately forward-ported alias for `-f`/
@@ -43,7 +43,7 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
     // two aliases of an Option in the compact "Options:" listing (confirmed via a scratch probe
     // against the real installed package: a 3-alias Option always shows just 2), so it can never be
     // parsed out of .NET's --help text at all, with no public API to change that rendering (same
-    // class of HelpBuilder limitation as CLAUDE.md's trap #17). A real, permanent byte-level
+    // class of HelpBuilder limitation as docs/porting-traps.md, trap #17). A real, permanent byte-level
     // divergence, but a cosmetic one - the flag works identically on both sides.
     private static readonly HashSet<string> KnownUnrenderedDotnetAliases = ["--pp"];
 

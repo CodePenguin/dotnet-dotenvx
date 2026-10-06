@@ -135,7 +135,7 @@ public class DelTest : EnvironmentTestBase
     /// separate `File.ReadAllText` call (which hit the real, genuinely-missing file directly and
     /// threw), never through this mocked `ReadFileSync` delegate at all. Once `ReadFileX` was fixed
     /// to decode from `Fsx.ReadFileSync`'s own bytes (to preserve a leading BOM the same way Node
-    /// does - see CLAUDE.md's trap on this), the blanket mock started intercepting THIS call too,
+    /// does - see docs/porting-traps.md, trap on this), the blanket mock started intercepting THIS call too,
     /// silently returning `[]` for a "missing" file instead of a real `FileNotFoundException`.
     /// </remarks>
     [Fact]

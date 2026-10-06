@@ -150,7 +150,7 @@ public class DecryptActionTest : EnvironmentTestBase
     /// Refer to "decrypt - MISSING_ENV_FILE". Verified against the real Node CLI: a per-file
     /// MISSING_ENV_FILE error exits 1, matching decrypt.js's errorCount tracking - DecryptAction
     /// previously never checked errorCount in its main branch and always returned 0 (a real,
-    /// independent, pre-existing bug, same shape as EncryptAction's - see .claude/plan.md).
+    /// independent, pre-existing bug, same shape as EncryptAction's - see docs/porting-traps.md).
     /// </remarks>
     [Fact]
     public void TestDecryptMissingEnvFile()

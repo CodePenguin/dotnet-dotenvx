@@ -13,7 +13,7 @@ namespace Dotenvx.Actions;
 /// <remarks>
 /// Reference source: dotenvx/src/cli/commands/native.js and cli/actions/keychain/{up,down,push,pull}.js (hidden in the
 /// root help, advertised by the "Better Security" section). Upstream's `preAction` hook also runs the Armor session's
-/// update-version check (Phase E, network) and each action starts a spinner on a TTY (Phase F).
+/// update-version check (network) and each action starts a spinner on a TTY.
 /// </remarks>
 public class NativeCommand : Command
 {

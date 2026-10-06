@@ -11,7 +11,7 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 /// encoding/args, and separately verifies `writeFileXSync`/`writeFileX` translate EACCES/EPERM
 /// into a friendly `FILE_NOT_WRITABLE` error. This port's `Fsx` statics ARE the file I/O (no
 /// separate translation layer to verify in isolation via mocking - see the delegate-swap-statics
-/// convention in CLAUDE.md), so these tests exercise the real default implementations against
+/// convention in docs/porting-traps.md), so these tests exercise the real default implementations against
 /// real temp files instead of mocking `System.IO` calls.
 ///
 /// UPDATE 2026-09-24: `FILE_NOT_WRITABLE` translation was initially left unported here after an
@@ -81,7 +81,7 @@ public class FsxTest : EnvironmentTestBase
     }
 
     /// <remarks>
-    /// Not from a JS test - regression test for the BOM-preservation fix (see CLAUDE.md's trap on
+    /// Not from a JS test - regression test for the BOM-preservation fix (see docs/porting-traps.md, trap on
     /// this). Node's raw Buffer decode never strips a leading byte-order-mark - it survives as a
     /// literal U+FEFF character in the decoded string, and gets written back out verbatim by any
     /// command that rewrites the file.

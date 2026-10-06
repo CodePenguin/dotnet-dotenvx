@@ -18,7 +18,7 @@ namespace Dotenvx.Actions;
 /// <remarks>
 /// Reference source: dotenvx/src/cli/commands/armor.js and cli/actions/armor/*.js (hidden in the root help, advertised by
 /// the "For Security Teams" section). `armor &lt;other&gt;` runs an external `dotenvx-armor` program (executeDynamic) or
-/// prints the Armor banner. Upstream's spinner text ("armoring", "moving", ...) is the TTY-only spinner (Phase F).
+/// prints the Armor banner. Upstream's spinner text ("armoring", "moving", ...) is the TTY-only spinner.
 /// </remarks>
 public class ArmorCommand : Command
 {

@@ -1,6 +1,6 @@
 # Upstream tests not ported
 
-Every upstream test under `dotenvx/tests` is either ported (cited by an exact `Refer to "<title>"` remark in `test/**`) or listed here with the reason. Generated from the submodule at the pinned tag; regenerate with the title-diff script described in AGENTS.md when the pin moves.
+Every upstream test under `dotenvx/tests` is either ported (cited by an exact `Refer to "<title>"` remark in `test/**`) or listed here with the reason. Generated from the submodule at the pinned tag; regenerate with the title-diff script described in CONTRIBUTING.md when the pin moves.
 
 ## tests/lib/helpers/prompts.test.js
 

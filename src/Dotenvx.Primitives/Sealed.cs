@@ -3,7 +3,7 @@ namespace Dotenvx.Primitives;
 
 /// <remarks>
 /// Reference source: @dotenvx/primitives' `sealed()` export (no readable source exists for this
-/// package - see CLAUDE.md's live-oracle note). Decompiled via
+/// package - see docs/porting-traps.md, live-oracle note). Decompiled via
 /// `node -e "console.log(require('@dotenvx/primitives').sealed.toString())"` from within the
 /// submodule dir, then confirmed behaviorally by calling it directly with concrete inputs
 /// (duplicate keys, DOTENV_PUBLIC_KEY*/​*_PLAIN exemptions, empty content). Real semantics: parses

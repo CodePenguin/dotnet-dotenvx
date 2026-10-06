@@ -9,7 +9,7 @@ namespace Dotenvx.ParityTest;
 /// through the newer keyring/native-store resolver (src/lib/resolvers/keypair.js), which does not
 /// reliably use a plain .env.keys private key for fresh generation and is not deterministic
 /// run-to-run - exactly the custodian/keyring reorg territory this port has deliberately deferred
-/// (see .claude/plan.md). Real cross-compatibility (the actual goal) is proven instead with a
+/// (see docs/porting-traps.md). Real cross-compatibility (the actual goal) is proven instead with a
 /// fixed, pre-verified ciphertext generated once via our own .NET encrypt - if both CLIs can
 /// independently decrypt the exact same bytes, the ECIES/secp256k1 implementations interoperate,
 /// without depending on either side's fresh-key resolution behavior.

@@ -11,7 +11,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// Dotenvx.Core for the same reason, so this one does too, following the Fsx.cs/GitHelper.cs
 /// delegate-swap convention exactly.
 ///
-/// Found via the static code-audit (see CLAUDE.md's "lower-priority findings" note): the original
+/// Found via the static code-audit (see docs/porting-traps.md, "lower-priority findings" note): the original
 /// implementation read stdout and stderr via two separate ReadToEnd() calls and concatenated them,
 /// which loses chronological ordering if gitleaks ever writes to both streams in the same run -
 /// unlike upstream's shell-level `2>&1`, which produces a genuinely interleaved combined stream

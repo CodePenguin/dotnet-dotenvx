@@ -16,7 +16,7 @@ public interface IKeyInput
 /// <remarks>Reference source: dotenvx/src/lib/helpers/listenForOpenKey.js (TTY only).</remarks>
 public static class ListenForOpenKey
 {
-    // built from char codes: this file must not contain literal escape characters (see AGENTS.md tooling cautions)
+    // built from char codes: this file must not contain literal escape characters (see CONTRIBUTING.md tooling cautions)
     private static readonly string CarriageReturn = ((char)13).ToString();
     private static readonly string LineFeed = ((char)10).ToString();
     private static readonly string CtrlC = ((char)3).ToString();

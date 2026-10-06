@@ -67,7 +67,7 @@ public partial class CliBehaviorParityTest(NodeParityFixture fixture) : ParityTe
             .ShouldBe(ElapsedRegex().Replace(node.StandardError, "scanned in Ns"));
     }
 
-    /// <remarks>Not from a JS test - doctor/update/help [command] compared against the real CLI (Phase A).</remarks>
+    /// <remarks>Not from a JS test - doctor/update/help [command] compared against the real CLI.</remarks>
     [Theory]
     [InlineData("doctor")]
     [InlineData("doctor", "sub")]

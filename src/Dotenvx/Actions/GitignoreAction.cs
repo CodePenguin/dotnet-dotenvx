@@ -15,7 +15,7 @@ namespace Dotenvx.Actions;
 /// <remarks>
 /// Reference source: dotenvx/src/cli/actions/ext/gitignore.js. Upstream has NO try/catch at all -
 /// an fsx write failure propagates uncaught (confirmed by reading the file directly) - so this
-/// action deliberately doesn't add one either, matching CLAUDE.md's already-documented lesson
+/// action deliberately doesn't add one either, matching docs/porting-traps.md, already-documented lesson
 /// about not inventing error-handling upstream doesn't have.
 /// </remarks>
 public class GitignoreAction : Command

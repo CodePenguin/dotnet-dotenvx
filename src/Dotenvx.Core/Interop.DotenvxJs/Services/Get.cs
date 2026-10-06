@@ -8,7 +8,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// <remarks>
 /// Reference source: dotenvx/src/lib/resolvers/get.js (moved there from src/lib/services/get.js,
 /// which no longer exists at this pin - confirmed 2026-09-24, part of the same custodian/keyring
-/// reorg CLAUDE.md already documents elsewhere).
+/// reorg docs/porting-traps.md already documents elsewhere).
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]? envKeysFilePaths)

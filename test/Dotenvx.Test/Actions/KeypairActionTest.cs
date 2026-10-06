@@ -154,8 +154,7 @@ public class KeyPairActionTest : EnvironmentTestBase
     }
 
     /// <remarks>
-    /// Refer to "keypair KEY --format colon". Found via this test (opencode delegation,
-    /// 2026-09-22) that KeyPairAction.cs's single-key branch printed only the bare value
+    /// Refer to "keypair KEY --format colon". This test found that KeyPairAction.cs's single-key branch printed only the bare value
     /// regardless of --format, when keypair.js prints `${key}:${results}` specifically for
     /// key+colon - confirmed against the real JS source and fixed in KeyPairAction.cs.
     /// </remarks>
@@ -233,7 +232,7 @@ public class KeyPairActionTest : EnvironmentTestBase
     }
 
     /// <remarks>
-    /// Not from a JS test - regression test for a 2026-09-26 fix (see CLAUDE.md trap #30's "still-
+    /// Not from a JS test - regression test for a 2026-09-26 fix (see docs/porting-traps.md trap #30's "still-
     /// open gap" note). `resolvers/keypair.js`'s own for-loop merges each file's public/private key
     /// pair into one combined result object - this port previously only accepted a single `-f` file
     /// at all; confirmed live against Node that `-f .env -f .env.production` merges both files'

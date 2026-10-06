@@ -5,7 +5,7 @@ namespace Dotenvx.Helpers;
 
 /// <remarks>
 /// `Option&lt;string[]?&gt;.AllowMultipleArgumentsPerToken = true` (needed for genuinely variadic
-/// upstream flags - see CLAUDE.md's trap for that fix) makes the option a greedy token sink: it
+/// upstream flags - see docs/porting-traps.md, trap for that fix) makes the option a greedy token sink: it
 /// keeps consuming every FOLLOWING token as another array value until it hits one that matches an
 /// ALREADY-REGISTERED sibling option - confirmed via a scratch probe against the real installed
 /// package that it does NOT stop at a token that merely LOOKS like an option (starts with `-`) if

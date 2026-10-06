@@ -71,7 +71,7 @@ public static class Prompts
         }
     }
 
-    // built from char codes: this file must not contain literal escape characters (see AGENTS.md tooling cautions)
+    // built from char codes: this file must not contain literal escape characters (see CONTRIBUTING.md tooling cautions)
     private static readonly string KeyEscape = ((char)27).ToString();
     private static readonly string KeyDown = KeyEscape + "[B";
     private static readonly string KeyUp = KeyEscape + "[A";

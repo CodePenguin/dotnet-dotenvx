@@ -92,7 +92,7 @@ public static partial class Primitives
         // Leading [\s\uFEFF]* (not just \s*) so a byte-order-mark surviving at the very start of
         // the decoded source doesn't stop the FIRST key from being recognized, and
         // RegexOptions.ECMAScript makes \w ASCII-only (matching JS's \w exactly) instead of .NET's
-        // default Unicode-aware \w - see Fsx.ReadFileX's BOM-preservation trap in CLAUDE.md.
+        // default Unicode-aware \w - see Fsx.ReadFileX's BOM-preservation trap in docs/porting-traps.md.
         MatchCollection matches = Regex.Matches(lines,
             @"(?:^|^)[\s\uFEFF]*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*""(?:\\""|[^""])*""|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)",
             RegexOptions.Multiline | RegexOptions.ECMAScript);

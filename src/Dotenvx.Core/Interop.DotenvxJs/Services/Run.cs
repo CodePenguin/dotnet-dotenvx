@@ -11,7 +11,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// <remarks>
 /// Reference source: dotenvx/src/lib/resolvers/envs.js (moved there from src/lib/services/run.js -
 /// confirmed 2026-09-24 that services/run.js no longer exists at all at this pin, part of the same
-/// custodian/keyring reorg AGENTS.md already documents for ls.js/keynames.js/environment.js). The
+/// custodian/keyring reorg CONTRIBUTING.md already documents for ls.js/keynames.js/environment.js). The
 /// current resolver adds 1Password/Bitwarden secret-reference resolution and Armor provider/
 /// decryptor support, both confirmed out of scope for this port - the core parse/inject/error-
 /// handling logic this class implements (including ENOENT/EISDIR -&gt; MissingEnvFileException,

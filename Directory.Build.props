@@ -1,0 +1,8 @@
+<Project>
+    <!-- Applies to every project; only the packable ones (Dotenvx, Dotenvx.Primitives, ...) put it in their package.
+         The full BSD-3-Clause text with the upstream copyright notice is the LICENSE file at the repository root. -->
+    <PropertyGroup>
+        <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+        <Copyright>Copyright (c) 2024 Scott Motte; Copyright (c) 2026 David Lambert</Copyright>
+    </PropertyGroup>
+</Project>

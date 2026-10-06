@@ -18,9 +18,8 @@ namespace Dotenvx.Logging;
 /// upstream's own call sites build (`⟐ injected env (N)...` - not the invented
 /// "[dotenvx@version] injecting env (N)..." text this port had instead). All of this went
 /// undetected because the parity test suite deliberately never diffs stderr content (see
-/// CLAUDE.md's parity-suite "traps" list), and every manual live comparison this session
-/// eyeballed rendered text instead of diffing raw bytes as CLAUDE.md itself directs - confirmed via
-/// `xxd` against the real Node CLI once actually checked.
+/// docs/porting-traps.md, parity-suite "traps" list), and visual comparisons of rendered text
+/// missed it because only a raw byte diff (`xxd` against the real Node CLI) shows color codes and prefixes (docs/porting-traps.md #24).
 /// </remarks>
 public class DotenvxLogger(ILogger<DotenvxLogger> logger, DotenvxLoggerOptions options) : IDotenvxLogger
 {
