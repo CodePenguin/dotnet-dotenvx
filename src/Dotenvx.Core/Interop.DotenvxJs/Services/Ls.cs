@@ -62,7 +62,7 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
             .Select(file => Path.GetRelativePath(_cwd, file).Replace(Path.DirectorySeparatorChar, '/'))
             .Where(path => !exclude(path) && include(path))
             .Distinct()
-            .OrderBy(path => path, StringComparer.Ordinal)
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
             .ToArray();
     }
 

@@ -50,6 +50,7 @@ const fixtures = {
 
 const scenarios = []
 const add = (name, fx, args, env = {}) => scenarios.push({ name, fx, args, env })
+const addSteps = (name, fx, steps, env = {}) => scenarios.push({ name, fx, steps, env })
 
 // ---- get
 for (const fx of ['plain', 'dups', 'quotes', 'enc', 'encNoKeys', 'encWrongKey', 'bom', 'crlf', 'dot', 'none']) {
@@ -398,6 +399,102 @@ for (const f of fileArgs) {
   add(`r4 file ${tag} gitignore`, 'spaces', ['gitignore', '--pattern', f])
 }
 
+// ---- round 5: multi-step lifecycles, cross-implementation compatibility, key naming, child process semantics, helper commands.
+const S = (args, extra = {}) => ({ args, ...extra })
+const lifeFixtures = ['plain', 'quotes', 'dups', 'multi', 'synComments', 'synMultiline', 'synEscapes', 'synInterp', 'synUnicode', 'synDupQuotes', 'crlf', 'bom', 'synMixed']
+for (const fx of lifeFixtures) {
+  addSteps(`r5 life encrypt get ${fx}`, fx, [S(['encrypt']), S(['get'])])
+  addSteps(`r5 life roundtrip ${fx}`, fx, [S(['encrypt']), S(['decrypt']), S(['get'])])
+  addSteps(`r5 life twice ${fx}`, fx, [S(['encrypt']), S(['encrypt']), S(['decrypt']), S(['decrypt'])])
+  addSteps(`r5 life set after ${fx}`, fx, [S(['encrypt']), S(['set', 'A', 'changed']), S(['get']), S(['decrypt', '--stdout'])])
+  addSteps(`r5 life set plain after ${fx}`, fx, [S(['encrypt']), S(['set', 'A', 'changed', '--plain']), S(['get', '--format', 'shell'])])
+  addSteps(`r5 life del after ${fx}`, fx, [S(['encrypt']), S(['del', 'A']), S(['get'])])
+  addSteps(`r5 life keys only ${fx}`, fx, [S(['encrypt', '-k', 'A']), S(['get']), S(['decrypt', '-k', 'A']), S(['get'])])
+  addSteps(`r5 life exclude ${fx}`, fx, [S(['encrypt', '-ek', 'A', 'B']), S(['get']), S(['decrypt', '-ek', 'A']), S(['get'])])
+  addSteps(`r5 life stdout ${fx}`, fx, [S(['encrypt', '--stdout']), S(['encrypt']), S(['decrypt', '--stdout']), S(['get', '--mask'])])
+  addSteps(`r5 life keys lost ${fx}`, fx, [S(['encrypt']), { rm: ['.env.keys'] }, S(['get']), S(['decrypt']), S(['run', '--', ...show])])
+  addSteps(`r5 life keys wrong ${fx}`, fx, [S(['encrypt']), { write: { '.env.keys': 'DOTENV_PRIVATE_KEY=' + WRONG + '\n' } }, S(['get']), S(['decrypt']), S(['set', 'A', 'x'])])
+  addSteps(`r5 life custom keys ${fx}`, fx, [S(['encrypt', '-fk', 'k/my.keys']), S(['get', '-fk', 'k/my.keys']), S(['get']), S(['decrypt', '-fk', 'k/my.keys'])])
+  addSteps(`r5 life env key ${fx}`, fx, [S(['encrypt']), { rm: ['.env.keys'] }, S(['get'], { })], { DOTENV_PRIVATE_KEY: PRIV })
+  addSteps(`r5 life keypair ${fx}`, fx, [S(['encrypt']), S(['keypair']), S(['keypair', 'DOTENV_PRIVATE_KEY', '--format', 'colon']), S(['keypair', '--pp'])])
+  addSteps(`r5 life validate ${fx}`, fx, [S(['genexample']), S(['encrypt']), S(['validate']), S(['validate', '--strict'])])
+}
+
+// cross-compatibility: one implementation writes, the other reads (the compared side is the second step)
+for (const fx of lifeFixtures) {
+  for (const writer of ['node', 'dotnet']) {
+    addSteps(`r5 cross ${writer} encrypt then self get ${fx}`, fx, [S(['encrypt'], { cli: writer }), S(['get']), S(['decrypt', '--stdout']), S(['run', '--', ...show])])
+    addSteps(`r5 cross ${writer} encrypt then self decrypt ${fx}`, fx, [S(['encrypt'], { cli: writer }), S(['decrypt']), S(['get'])])
+    addSteps(`r5 cross ${writer} set then self get ${fx}`, fx, [S(['set', 'A', 'hello world'], { cli: writer }), S(['get', 'A']), S(['get'])])
+    addSteps(`r5 cross ${writer} set then self set ${fx}`, fx, [S(['set', 'A', 'one'], { cli: writer }), S(['set', 'B', 'two']), S(['set', 'A', 'three']), S(['get'])])
+    addSteps(`r5 cross ${writer} encrypt then self del ${fx}`, fx, [S(['encrypt'], { cli: writer }), S(['del', 'A']), S(['get']), S(['encrypt'])])
+    addSteps(`r5 cross ${writer} encrypt then self keypair ${fx}`, fx, [S(['encrypt'], { cli: writer }), S(['keypair']), S(['keypair', '--pp'])])
+  }
+}
+
+// key names for private keys: derived from the env file name
+const envNames = ['.env', '.env.production', '.env.local', '.env.staging.local', '.env.my-app', 'config/.env', '.env.v1.0', '.env.CI', '.env.production.local', '.env.Prod', 'x.env', '.env.', 'sub/.env.test', '.env.a_b', '.env.ünï']
+for (const name of envNames) {
+  fixtures['name ' + name] = { [name]: 'HELLO=World\nFOO=bar\n' }
+  const fx = 'name ' + name
+  addSteps(`r5 name ${name} encrypt get`, fx, [S(['encrypt', '-f', name]), S(['get', '-f', name]), S(['keypair', '-f', name]), S(['decrypt', '-f', name])])
+  addSteps(`r5 name ${name} set get`, fx, [S(['set', 'A', 'x', '-f', name]), S(['get', '-f', name])])
+  addSteps(`r5 name ${name} run`, fx, [S(['encrypt', '-f', name]), S(['run', '-f', name, '--', ...show]), S(['ls'])])
+  for (const writer of ['node', 'dotnet']) addSteps(`r5 name ${name} cross ${writer}`, fx, [S(['encrypt', '-f', name], { cli: writer }), S(['get', '-f', name]), S(['decrypt', '-f', name, '--stdout'])])
+}
+addSteps('r5 name several files', 'multi', [S(['encrypt', '-f', '.env', '-f', '.env.local', '-f', '.env.production']), S(['get', '-f', '.env', '-f', '.env.local']), S(['keypair', '-f', '.env', '-f', '.env.local']), S(['decrypt', '-f', '.env.local'])])
+addSteps('r5 name convention nextjs', 'multi', [S(['encrypt', '--convention', 'nextjs']), S(['get', '--convention', 'nextjs']), S(['ls'])])
+addSteps('r5 name convention flow', 'multi', [S(['encrypt', '--convention', 'flow']), S(['get', '--convention', 'flow'])])
+
+// child process semantics of `run`
+const childScripts = {
+  exit0: 'process.exit(0)', exit1: 'process.exit(1)', exit3: 'process.exit(3)', exit255: 'process.exit(255)', exit256: 'process.exit(256)', exitNeg: 'process.exit(-1)',
+  throws: 'throw new Error("boom")', stdoutNoNewline: 'process.stdout.write("no newline")', stderrNoNewline: 'process.stderr.write("err no newline")',
+  both: 'console.log("out1");console.error("err1");console.log("out2");console.error("err2")', bigOut: 'console.log("x".repeat(200000))', manyLines: 'for(let i=0;i<2000;i++)console.log("line "+i)',
+  readStdin: 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>console.log("stdin:"+JSON.stringify(d)))', args: 'console.log(JSON.stringify(process.argv.slice(1)))',
+  env: 'console.log(JSON.stringify({H:process.env.HELLO,PWD:require("path").basename(process.cwd())==="x"}))', redactMe: 'console.log("the secret is World, World again, wor ld")', unicodeOut: 'console.log("héllo 日本語 😀")',
+  selfKill: 'process.kill(process.pid,"SIGTERM");setTimeout(()=>{},1000)', crOnly: 'process.stdout.write("a\\rb\\r")', binaryOut: 'process.stdout.write(Buffer.from([0,1,2,255,254]))'
+}
+for (const [name, code] of Object.entries(childScripts)) {
+  addSteps(`r5 child ${name}`, 'plain', [S(['run', '--', 'node', '-e', code], { stdin: name === 'readStdin' ? 'piped in\nline2\n' : undefined })])
+  addSteps(`r5 child ${name} quiet`, 'plain', [S(['run', '-q', '--', 'node', '-e', code])])
+  addSteps(`r5 child ${name} redact`, 'plain', [S(['run', '--redact', '--', 'node', '-e', code])])
+  addSteps(`r5 child ${name} strict`, 'plain', [S(['run', '--strict', '--', 'node', '-e', code])])
+}
+for (const argv of [['a b', 'c'], ['', 'x'], ['"q"', "'s'"], ['$HOME', '${HELLO}', '$(echo hi)'], ['-n', '--flag', '-x=1'], ['ünï', '日本語'], ['a\nb'], ['--', 'x'], ['%PATH%', '!x!'], ['a&b', 'c|d', 'e>f', 'g<h', '(i)', '^j'], ['\\', '\\\\', 'a\\b'], ['tab\there'], ['*', '?', '[a]']]) {
+  addSteps(`r5 child argv ${JSON.stringify(argv)}`, 'plain', [S(['run', '--', 'node', '-e', 'console.log(JSON.stringify(process.argv.slice(1)))', ...argv])])
+}
+for (const cmd of [['node'], ['node', '--version-not-a-flag'], ['nonexistent-command-xyz'], ['./nope'], ['cmd', '/c', 'echo', 'hi'], ['sh', '-c', 'echo hi'], ['node', '-p', '1+1'], ['echo', 'hi'], ['']]) {
+  addSteps(`r5 child cmd ${JSON.stringify(cmd)}`, 'plain', [S(['run', '--', ...cmd])])
+}
+addSteps('r5 child no separator', 'plain', [S(['run', 'node', '-p', '1+2'])])
+addSteps('r5 child separator twice', 'plain', [S(['run', '--', 'node', '-p', 'process.argv.slice(1).join(",")', '--', 'x'])])
+addSteps('r5 child env inheritance', 'plain', [S(['run', '--', 'node', '-p', 'process.env.HELLO + "|" + process.env.PATH.length'])], { HELLO: 'machine' })
+addSteps('r5 child overload', 'plain', [S(['run', '--overload', '--', 'node', '-p', 'process.env.HELLO'])], { HELLO: 'machine' })
+addSteps('r5 child mask', 'enc', [S(['run', '--mask', '--', 'node', '-p', 'process.env.HELLO']), S(['run', '--mask', '3', '--', 'node', '-p', 'process.env.HELLO'])])
+addSteps('r5 child validate', 'example', [S(['run', '--validate', '--', 'node', '-p', '1']), S(['run', '--validate', '--strict', '--', 'node', '-p', '1'])])
+
+// helper commands: gitignore / genexample / validate / ls with existing content variants
+const ignoreContents = { empty: '', nonl: 'node_modules', nl: 'node_modules\n', crlf: 'node_modules\r\n.env\r\n', patterns: '.env*\n', negated: '!.env\n.env*\n', comments: '# c\n.env.keys\n', spaces: '  .env  \n', dockerLike: '.env\n.git\n' }
+for (const [name, content] of Object.entries(ignoreContents)) {
+  fixtures['ignore ' + name] = { '.env': 'A=1\n', '.gitignore': content, '.dockerignore': content, 'package.json': '{}', '.vercelignore': content, '.npmignore': content }
+  addSteps(`r5 gitignore ${name}`, 'ignore ' + name, [S(['gitignore']), S(['gitignore']), S(['gitignore', '--pattern', '.env*', '--pattern', '*.keys'])])
+  addSteps(`r5 ext gitignore ${name}`, 'ignore ' + name, [S(['ext', 'gitignore', '--pattern', 'x']), S(['ext', 'gitignore'])])
+}
+addSteps('r5 gitignore none', 'plain', [S(['gitignore']), S(['gitignore', '--pattern', '.env*', '*.keys'])])
+const exampleContents = { empty: '', comments: '# header\nA=\n# mid\nB=\n', optional: 'A=\nB= # optional\n', extra: 'A=\nZ_EXTRA=\n', quoted: 'A=""\nB=\'x\'\n', dup: 'A=\nA=\n', spaces: ' A = \n', unicode: 'HÉLLO=\n' }
+for (const [name, content] of Object.entries(exampleContents)) {
+  fixtures['example ' + name] = { '.env': 'A=1\nB=2\nC=3\nHELLO=x\n', '.env.example': content }
+  addSteps(`r5 genexample ${name}`, 'example ' + name, [S(['genexample']), S(['genexample']), S(['validate']), S(['validate', '--strict'])])
+  addSteps(`r5 validate ${name}`, 'example ' + name, [S(['validate']), S(['validate', '--strict']), S(['validate', '-f', '.env', '--ignore', 'MISSING_REQUIRED_KEYS'])])
+}
+addSteps('r5 genexample several', 'multi', [S(['genexample', '-f', '.env', '-f', '.env.local']), S(['genexample', '-f', '.env.production'])])
+addSteps('r5 genexample dir', 'nested', [S(['genexample', 'sub']), S(['genexample', '.']), S(['genexample', 'nowhere'])])
+for (const depthDir of ['.', 'sub', 'sub/deep', 'nowhere']) {
+  fixtures.deep = { '.env': 'A=1', 'sub/.env': 'A=2', 'sub/deep/.env.local': 'A=3', 'sub/deep/node_modules/.env': 'x', 'sub/.git/.env': 'x', 'a.photoslibrary/.env': 'x', '.hidden/.env': 'h', 'sub/.env.example': 'x', 'sub/.env.keys': 'k', 'sub/.env.vault': 'v' }
+  addSteps(`r5 ls ${depthDir}`, 'deep', [S(['ls', depthDir]), S(['ls', depthDir, '-f', '**/.env.local']), S(['ls', depthDir, '-ef', 'sub/**'])])
+}
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
@@ -432,7 +529,7 @@ const walkSpec = (cmd, trail) => {
 walkSpec(specTree, [])
 
 // Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
-const ACCEPTED_STDERR_ONLY = [/^r4 file /]
+const ACCEPTED_STDERR_ONLY = [/^r4 file /, /^r5 life custom keys /, /^r5 child /] // r5 child: the node binary's own messages differ only in the casing of node.exe
 
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
@@ -444,6 +541,8 @@ const ACCEPTED = [
   /^r4 env DOTENV_(CONFIG_)?CONVENTION=bogus /, // both crash with an uncaught error whose stack trace text differs
   /^r4 (set value "-dash"|set value "-dash" )/, // debug option dumps differ (the file content is compared)
   /^r4 file "sub[/]" (encrypt|set) spaces$/, // Node accepts a trailing slash on a missing file name on Windows; .NET rejects the path
+  /^r5 life stdout /, // the masked random public key keeps its first characters, which differ per run
+  /^r5 name .env. /, // Windows strips a trailing dot when .NET creates a file, Node keeps it
   /^opt plain precommit --install$/, // the operating system's own error text ("ENOENT ..." in Node, the .NET message here) is not mirrored
   /^opt plain get --convention/, // both crash/print with an uncaught error whose stack trace text differs
   /^opt plain (ls --json|get --all)$/, // absolute paths embed the per-run temp directory
@@ -464,6 +563,9 @@ const normalize = (s, dir) => {
   return s
 }
 
+// A scenario is one command line (args) or a list of steps run in one directory, in order. A step is
+// { args, cli: 'self'|'node'|'dotnet', stdin } (cli names the CLI that runs it; 'self' is the CLI being compared, so a
+// step run by the OTHER implementation proves cross-compatibility), { write: { file: content } } or { rm: [files] }.
 function runOne (cliArgs, sc, isNode) {
   return new Promise(resolve => {
     const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-'))
@@ -471,10 +573,6 @@ function runOne (cliArgs, sc, isNode) {
       fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true })
       fs.writeFileSync(path.join(dir, f), c)
     }
-    let args = [...sc.args]
-    if (['encrypt', 'set'].includes(args[0])) args = [args[0], '--no-native', '--no-armor', ...args.slice(1)] // before the scenario's own arguments, which may end in an option that takes a value
-    // the node binary itself consumes --env-file ("node: v: not found") wherever it appears in argv: spell it -f for node only
-    if (isNode) args = args.flatMap(a => a === '--env-file' ? ['-f'] : a.startsWith('--env-file=') ? ['-f', a.slice(11)] : [a])
     const env = { ...process.env, ...sc.env }
     // hermetic Armor/device config: a per-run directory unless the scenario names one
     env.DOTENVX_CONFIG = (sc.env.DOTENVX_CONFIG || '<DIR>/.dxcfg').split('<DIR>').join(dir)
@@ -482,14 +580,41 @@ function runOne (cliArgs, sc, isNode) {
     for (const k of Object.keys(env)) if (k.startsWith('DOTENV') && !(k in sc.env) && k !== 'DOTENVX_CONFIG' && k !== 'DOTENVX_NO_ARMOR') delete env[k]
     if (!env.DOTENVX_NO_ARMOR) delete env.DOTENVX_NO_ARMOR
     delete env.PUBLIC
-    const exe = isNode ? 'node' : 'dotnet'
-    execFile(exe, [...(isNode ? NODE_CLI : DOTNET_CLI), ...args], { cwd: dir, env, encoding: 'utf8', timeout: 60000 }, (err, stdout, stderr) => {
+    const steps = sc.steps || [{ args: sc.args }]
+    let stdout = ''
+    let stderr = ''
+    let code = 0
+    const finish = () => {
       const files = {}
       const walk = d => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (fs.statSync(p).isDirectory()) walk(p); else files[path.relative(dir, p).split(path.sep).join('/')] = normalize(fs.readFileSync(p, 'utf8'), dir) } }
       walk(dir)
       try { fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 }) } catch (e2) { /* best effort */ }
-      resolve({ code: err ? (err.code ?? 1) : 0, stdout: normalize(stdout, dir), stderr: normalize(stderr, dir), files })
-    })
+      resolve({ code, stdout: normalize(stdout, dir), stderr: normalize(stderr, dir), files })
+    }
+    const runStep = index => {
+      if (index >= steps.length) return finish()
+      const step = steps[index]
+      if (step.write) { for (const [f, c] of Object.entries(step.write)) { fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true }); fs.writeFileSync(path.join(dir, f), c) } return runStep(index + 1) }
+      if (step.rm) { for (const f of step.rm) fs.rmSync(path.join(dir, f), { recursive: true, force: true }); return runStep(index + 1) }
+      const nodeCli = step.cli === 'node' || (step.cli !== 'dotnet' && isNode)
+      let args = [...step.args]
+      if (['encrypt', 'set'].includes(args[0])) args = [args[0], '--no-native', '--no-armor', ...args.slice(1)] // before the scenario's own arguments, which may end in an option that takes a value
+      // the node binary itself consumes --env-file ("node: v: not found") wherever it appears in argv: spell it -f for node only
+      if (nodeCli) args = args.flatMap(a => a === '--env-file' ? ['-f'] : a.startsWith('--env-file=') ? ['-f', a.slice(11)] : [a])
+      const exe = nodeCli ? 'node' : 'dotnet'
+      const child = execFile(exe, [...(nodeCli ? NODE_CLI : DOTNET_CLI), ...args], { cwd: dir, env, encoding: 'utf8', timeout: 60000, maxBuffer: 64 * 1024 * 1024 }, (err, out, errOut) => {
+        if (steps.length > 1) { stdout += `--- step ${index} exit ${err ? (err.code ?? 1) : 0}
+`; stderr += `--- step ${index}
+` }
+        stdout += out
+        stderr += errOut
+        code = err ? (err.code ?? 1) : 0
+        runStep(index + 1)
+      })
+      if (step.stdin !== undefined) child.stdin.end(step.stdin)
+      else child.stdin.end()
+    }
+    runStep(0)
   })
 }
 
@@ -517,7 +642,7 @@ async function main () {
   diffs.sort((a, b) => a.sc.name.localeCompare(b.sc.name))
   const lines = []
   for (const x of diffs) {
-    lines.push(`### ${x.sc.name} [${x.fields.join(',')}]  args=${JSON.stringify(x.sc.args)} env=${JSON.stringify(x.sc.env)}`)
+    lines.push(`### ${x.sc.name} [${x.fields.join(',')}]  args=${JSON.stringify(x.sc.steps || x.sc.args)} env=${JSON.stringify(x.sc.env)}`)
     for (const f of x.fields) {
       if (f === 'files') {
         lines.push(`  node files: ${JSON.stringify(x.n.files).slice(0, 400)}`)

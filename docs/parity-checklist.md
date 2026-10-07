@@ -8,7 +8,7 @@ The goal is byte-for-byte parity with the Node `@dotenvx/dotenvx` CLI at the pin
 | --- | --- | --- |
 | Unit tests | `dotnet test test/<project>` (Primitives, Core, Configuration, Test) | ported upstream unit tests and our own, including a check that the command tree equals upstream's |
 | Parity tests | `dotnet test test/Dotenvx.ParityTest` (about 10 min) | scripted scenarios run against both real CLIs, including exact `--help` bytes for every command |
-| Differential sweep | `node scripts/parity-sweep.js` (about 12 min) | ~2300 command x flag x fixture combinations, plus every option of every offline command, comparing exit code, stdout, stderr and files |
+| Differential sweep | `node scripts/parity-sweep.js` (about 12 min) | ~2900 command x flag x fixture combinations and multi-step lifecycles, plus every option of every offline command, comparing exit code, stdout, stderr and files |
 | Upstream test titles | `node scripts/upstream-test-titles.js` | every upstream test is ported or listed in `docs/upstream-tests-not-ported.md` |
 | Primitives oracle | `PrimitivesOracleParityTest`, `PrimitivesExportsOracleParityTest` | every `@dotenvx/primitives` export against the real package |
 

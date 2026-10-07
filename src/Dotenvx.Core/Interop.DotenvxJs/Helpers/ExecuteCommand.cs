@@ -246,7 +246,8 @@ public static partial class Helpers
             ? comSpec
             : "cmd.exe";
         startInfo.ArgumentList.Clear();
-        startInfo.Arguments = $"/d /s /c \"{commandArgs[0]} {commandLine}\"";
+        // cross-spawn normalizes the command like path.normalize (empty becomes ".", "./x" becomes "x"), which decides what cmd.exe reports
+        startInfo.Arguments = $"/d /s /c \"{Helpers.NodePathJoin(commandArgs[0], "")} {commandLine}\"";
     }
 
     private static string? WhichSync(string command)
