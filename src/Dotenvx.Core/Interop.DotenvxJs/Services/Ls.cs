@@ -9,7 +9,12 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
     private static readonly Func<string, string[]?, string[]?, Ls> DefaultFactory =
         (directory, envFile, excludeEnvFile) => new Ls(directory, envFile, excludeEnvFile);
 
-    private readonly string _cwd = Path.GetFullPath(directory);
+    // path.resolve: '' is the working directory, and a blank name (" ") is just another, usually missing, directory
+    private readonly string _cwd = directory.Length == 0
+        ? Path.GetFullPath(".")
+        : string.IsNullOrWhiteSpace(directory)
+            ? Path.Combine(Path.GetFullPath("."), directory)
+            : Path.GetFullPath(directory);
     private readonly string[] _ignore = ["node_modules/**", "**/node_modules/**", ".git/**", "**/.git/**"];
 
     // Matches ls.js's DEFAULT_EXCLUDED_DIRECTORY_EXTENSIONS - the Fdir crawler never descends into

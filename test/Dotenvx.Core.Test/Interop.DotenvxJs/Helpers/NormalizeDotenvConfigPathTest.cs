@@ -61,28 +61,6 @@ public class NormalizeDotenvConfigPathTest
         result.ShouldBeEquivalentTo(explicitEnvs);
     }
 
-    /// <remarks>Refer to "DOTENV_FILE takes precedence over older aliases and supports multiple files"</remarks>
-    [Fact]
-    public void TestDotenvFileTakesPrecedenceOverOlderAliasesAndSupportsMultipleFiles()
-    {
-        EnvItem[] result = NormalizeDotenvConfigPath([], new Dictionary<string, string?>
-        {
-            ["DOTENV_FILE"] = ".env.production, .env", ["DOTENV_PATH"] = ".env.old", ["DOTENV_F"] = ".env.older"
-        });
-
-        result.ShouldBeEquivalentTo(new[]
-        {
-            new EnvItem { Type = EnvType.EnvFile, Value = ".env.production" },
-            new EnvItem { Type = EnvType.EnvFile, Value = ".env" }
-        });
-
-        EnvItem[] explicitEnvs = [new EnvItem { Type = EnvType.EnvFile, Value = ".env.explicit" }];
-        EnvItem[] explicitResult = NormalizeDotenvConfigPath(explicitEnvs,
-            new Dictionary<string, string?> { ["DOTENV_FILE"] = ".env.ignored" });
-
-        explicitResult.ShouldBeEquivalentTo(explicitEnvs);
-    }
-
     /// <remarks>Refer to "leaves envs unchanged when unset"</remarks>
     [Fact]
     public void TestLeavesEnvsUnchangedWhenUnset()

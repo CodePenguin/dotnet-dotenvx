@@ -34,7 +34,7 @@ namespace Dotenvx.Actions;
 public class KeyPairAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
-        new("--file", "--env-file", "-f") { Description = "path(s) to your env file(s)", HelpName = "paths..." };
+        new("--env-file", "-f") { Description = "path(s) to your env file(s)", HelpName = "paths..." };
 
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
@@ -98,7 +98,8 @@ public class KeyPairAction : Command
         try
         {
             string[] split = DotenvxJsHelpers.SplitCommaSeparatedEnvFiles(envFile);
-            string[] resolvedEnvFiles = DotenvxJsHelpers.Filepaths(split.Length == 0 ? null : split);
+            string[] resolvedEnvFiles = // -f given but blank (`-f " "`) means no files at all, not the .env default
+            DotenvxJsHelpers.Filepaths(split.Length == 0 && (envFile is null || envFile.Length == 0) ? null : split);
             Dictionary<string, string?> results = [];
             foreach (string resolvedEnvFile in resolvedEnvFiles)
             {

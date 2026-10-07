@@ -22,9 +22,7 @@ namespace Dotenvx.ParityTest;
 /// Known, deliberate exclusions (not bugs - see docs/porting-traps.md for the full rationale on each):
 /// - `DotnetOnlyAliases`: System.CommandLine structural artifacts (`-?` auto-added to `--help`;
 ///   every recursive global option `-l`/`-q`/`-v`/`-d`/`-V` rendered per-subcommand, where Node only
-///   shows them at the root) plus `--file`, a deliberately forward-ported alias for `-f`/
-///   `--env-file` ahead of this project's v2.24.1 pin (see the ParityTest traps list's very first
-///   entry).
+///   shows them at the root).
 /// </remarks>
 public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 {
@@ -34,7 +32,7 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
 
     private static readonly HashSet<string> DotnetOnlyAliases =
     [
-        "-?", "-V", "--version", "-l", "--log-level", "-q", "--quiet", "-v", "--verbose", "-d", "--debug", "--file"
+        "-?", "-V", "--version", "-l", "--log-level", "-q", "--quiet", "-v", "--verbose", "-d", "--debug"
     ];
 
     // "--pp" (a third alias on get/keypair's --pretty-print option, confirmed functionally working

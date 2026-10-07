@@ -21,7 +21,7 @@ namespace Dotenvx.Actions;
 /// error loop, which has no such branch. Also unlike run.js/get.js, validate.js builds its env list
 /// via plain `buildCommandEnvs(this.envs, options.convention)` - NOT wrapped in
 /// normalizeDotenvConfigPath first - so, deliberately reproduced here, `validate` does not fall
-/// back to DOTENV_FILE/DOTENV_PATH/DOTENV_F when no -f/--env is given, while run/get do. Confirmed
+/// back to DOTENV_PATH/DOTENV_F when no -f/--env is given, while run/get do. Confirmed
 /// by direct comparison of all three action files at this pin, 2026-09-24 - not "fixed" toward
 /// consistency, since the project's standing convention is to faithfully reproduce upstream's own
 /// asymmetries rather than smooth them over.
@@ -35,7 +35,7 @@ public class ValidateAction : Command
         };
 
     private readonly Option<string[]?> _envFileOption =
-        new("--file", "--env-file", "-f")
+        new("--env-file", "-f")
         {
             Description = "path(s) to your env file(s) (default: [])", HelpName = "path"
         };

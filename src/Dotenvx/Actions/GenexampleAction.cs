@@ -22,7 +22,7 @@ public class GenexampleAction : Command
         new("directory") { Arity = ArgumentArity.ZeroOrOne, Description = "directory to generate from (default: \".\")" };
 
     private readonly Option<string[]?> _envFileOption =
-        new("--file", "--env-file", "-f")
+        new("--env-file", "-f")
         {
             Description = "path(s) to your env file(s) (default: \".env\")", HelpName = "paths...",
             AllowMultipleArgumentsPerToken = true,

@@ -292,6 +292,112 @@ const shapes = [
 ]
 for (const a of shapes) for (const fx of ['plain', 'multi']) add(`shape ${fx} ${a.join(' ')}`, fx, a)
 
+// ---- round 4: file syntax, environment variables, key/value spellings and file/directory arguments.
+// Appended to scripts/parity-sweep.js (uses its fixtures/add/show helpers).
+const CR = String.fromCharCode(13)
+const syntaxFixtures = {
+  synComments: 'A=1 # c\nB="x # y"\n#full\n\n  C = 3\nD= spaced\nexport E=5\nF:colon\nG=\'a # b\'\nH=`t # u`\n',
+  synMultiline: 'A="line1\nline2"\nB=\'s1\ns2\'\nC=`b1\nb2`\nD=after\n',
+  synEscapes: 'A="a\\nb"\nB=\'a\\nb\'\nC="a\\"b"\nD=\'it\\\'s\'\nE=\\x41\nF="tab\\there"\nG="back\\\\slash"\nH=`bt\\nx`\n',
+  synInterp: 'A=1\nB=${A}x\nC=$A\nD=${NOPE:-def}\nE=${A:+alt}\nF=$(echo hi)\nG=\\${A}\nH=\'${A}\'\nI=${I}\nJ=${K}\nK=${J}\n',
+  synUnicode: 'HÉLLO=x\nK=日本語\nE=emoji😀\n_UNDER=1\na.b-c=2\n9START=3\nlower=l\n',
+  synEmpty: '',
+  synBlank: '\n\n   \n',
+  synOnlyComments: '# just a comment\n# another\n',
+  synWeird: '=novalue\nNOEQ\nA==b\nB=c=d\nC="unclosed\nD=ok\n',
+  synWeird2: 'D=\'unclosed\nE=fine\nF=   \nG=trailing   \n',
+  synLong: 'A=' + 'x'.repeat(5000) + '\n' + Array.from({ length: 300 }, (_, i) => `K${i}=v${i}`).join('\n') + '\n',
+  synCrOnly: 'A=1' + CR + 'B=2' + CR + 'C=3' + CR,
+  synMixed: 'A=1\nB=2' + CR + '\nC=3' + CR + 'D=4\n',
+  synDupQuotes: 'A=1\nA="two"\nA=\'three\'\nB=x\nA=`four`\n',
+  synExportOnly: 'export A=1\nexport B="two words"\nexport\nexport C\n',
+  synBigIndent: '\t\tA=1\n \tB=2\n'
+}
+for (const [name, content] of Object.entries(syntaxFixtures)) fixtures[name] = { '.env': content }
+const keysShown = "console.log(JSON.stringify(Object.fromEntries(Object.entries(process.env).filter(([k]) => /^(A|B|C|D|E|F|G|H|I|J|K|K\\d+|HÉLLO|_UNDER|a\\.b-c|9START|lower)$/.test(k)))))"
+for (const name of Object.keys(syntaxFixtures)) {
+  const fx = name
+  add(`r4 get ${fx}`, fx, ['get'])
+  add(`r4 get -pp ${fx}`, fx, ['get', '--pp'])
+  for (const fmt of ['shell', 'eval', 'eval-export', 'colon']) add(`r4 get ${fmt} ${fx}`, fx, ['get', '--format', fmt])
+  add(`r4 get A ${fx}`, fx, ['get', 'A'])
+  add(`r4 get strict ${fx}`, fx, ['get', '--strict'])
+  add(`r4 run ${fx}`, fx, ['run', '--', 'node', '-e', keysShown])
+  add(`r4 run overload ${fx}`, fx, ['run', '--overload', '--', 'node', '-e', keysShown], { A: 'machine', B: 'machine' })
+  add(`r4 encrypt ${fx}`, fx, ['encrypt'])
+  add(`r4 decrypt ${fx}`, fx, ['decrypt'])
+  add(`r4 decrypt stdout ${fx}`, fx, ['decrypt', '--stdout'])
+  add(`r4 set ${fx}`, fx, ['set', 'A', 'new', '--plain'])
+  add(`r4 set enc ${fx}`, fx, ['set', 'ZZ', 'new'])
+  add(`r4 del ${fx}`, fx, ['del', 'A'])
+  add(`r4 keypair ${fx}`, fx, ['keypair'])
+  add(`r4 validate ${fx}`, fx, ['validate'])
+  add(`r4 genexample ${fx}`, fx, ['genexample'])
+  add(`r4 ls ${fx}`, fx, ['ls', '--json'])
+}
+
+// environment variables read by the CLI and the library
+const envVars = [
+  { DOTENV_CONFIG_QUIET: 'true' }, { DOTENV_CONFIG_QUIET: 'false' }, { DOTENV_CONFIG_IGNORE: 'MISSING_ENV_FILE' }, { DOTENV_IGNORE: 'MISSING_ENV_FILE,WRONG_PRIVATE_KEY' },
+  { DOTENV_CONFIG_PATH: '.env.local' }, { DOTENV_CONFIG_PATH: '.env,.env.local' }, { DOTENV_FILE: '.env.local' }, { DOTENV_PATH: '.env.local' }, { DOTENV_F: '.env.local' },
+  { DOTENV_PATH: '.env.local', DOTENV_FILE: '.env.production' }, { DOTENV_CONFIG_CONVENTION: 'nextjs' }, { DOTENV_CONVENTION: 'flow' }, { DOTENV_CONVENTION: 'bogus' },
+  { DOTENV_PRIVATE_KEY: PRIV }, { DOTENV_PRIVATE_KEY: WRONG }, { DOTENV_PRIVATE_KEY_PRODUCTION: PRIV }, { DOTENV_PRIVATE_KEY_LOCAL: PRIV },
+  { DOTENV_PUBLIC_KEY: PUB }, { DOTENV_KEY: 'dotenv://:key_1234@dotenvx.com/vault/.env.vault?environment=production' },
+  { DOTENV_CONFIG_OVERRIDE: 'true' }, { DOTENV_CONFIG_DEBUG: 'true' }, { DOTENV_CONFIG_STRICT: 'true' }, { NO_COLOR: '1' }, { FORCE_COLOR: '1' }, { CI: 'true' },
+  { DOTENV_PATH: '' }, { DOTENV_CONFIG_PATH: '' }, { DOTENV_PRIVATE_KEY: '' }
+]
+for (const e of envVars) {
+  const tag = Object.entries(e).map(([k, v]) => `${k}=${v.slice(0, 12)}`).join(',')
+  for (const fx of ['multi', 'enc', 'prodEnc']) {
+    add(`r4 env ${tag} get ${fx}`, fx, ['get'], e)
+    add(`r4 env ${tag} run ${fx}`, fx, ['run', '--', ...show], e)
+    add(`r4 env ${tag} decrypt ${fx}`, fx, ['decrypt', '--stdout'], e)
+  }
+  add(`r4 env ${tag} keypair`, 'enc', ['keypair'], e)
+  add(`r4 env ${tag} validate`, 'example', ['validate'], e)
+  add(`r4 env ${tag} ls`, 'multi', ['ls', '--json'], e)
+}
+
+// spellings of keys and values given to set / get / del / keypair
+const keySpellings = ['a.b', 'a-b', 'lower', '9x', 'A B', 'A=B', 'ÄÖ', '$X', '-x', '--x', 'export', 'A_PLAIN', 'DOTENV_PUBLIC_KEY', 'K'.repeat(300)]
+const valueSpellings = ['', ' ', '"', "'", '`', '#', '\\', '=', 'a=b', '$HOME', '${X}', ' lead', 'trail ', 'multi\nline', 'tab\tx', 'ünï😀', 'encrypted:abc', 'x'.repeat(3000), '-dash', '--flaglike']
+for (const k of keySpellings) {
+  for (const fx of ['plain', 'enc']) {
+    add(`r4 set key ${JSON.stringify(k).slice(0, 24)} ${fx}`, fx, ['set', k, 'v'])
+    add(`r4 set key plain ${JSON.stringify(k).slice(0, 24)} ${fx}`, fx, ['set', k, 'v', '--plain'])
+  }
+  add(`r4 get key ${JSON.stringify(k).slice(0, 24)}`, 'synUnicode', ['get', k])
+  add(`r4 del key ${JSON.stringify(k).slice(0, 24)}`, 'synUnicode', ['del', k])
+  add(`r4 keypair key ${JSON.stringify(k).slice(0, 24)}`, 'enc', ['keypair', k])
+}
+for (const v of valueSpellings) {
+  const tag = JSON.stringify(v).slice(0, 24)
+  add(`r4 set value ${tag} plain`, 'plain', ['set', 'NEWKEY', v, '--plain'])
+  add(`r4 set value ${tag} enc`, 'plain', ['set', 'NEWKEY', v])
+  add(`r4 set value ${tag} over enc`, 'enc', ['set', 'HELLO', v])
+}
+
+// files and directories given to -f / positional arguments
+fixtures.spaces = { 'my dir/.env': 'A=spaces\n', 'ünï/.env': 'A=unicode\n', 'emptydir/.keep': '', '.env': 'A=root\n', 'a b.env': 'A=named\n' }
+fixtures.dirAsEnv = { 'sub/x': '', '.env/inner': 'A=1\n', '.env.local': 'A=local\n' }
+const fileArgs = ['my dir/.env', 'my dir', 'ünï', 'ünï/.env', 'emptydir', 'a b.env', '', ' ', ',', '.env,', ',.env', ' .env ', '.', '..', './', './.env', 'sub', 'sub/', '.env.nope', 'emptydir/.env']
+for (const f of fileArgs) {
+  const tag = JSON.stringify(f)
+  for (const fx of ['spaces', 'dirAsEnv']) {
+    add(`r4 file ${tag} get ${fx}`, fx, ['get', '-f', f])
+    add(`r4 file ${tag} run ${fx}`, fx, ['run', '-f', f, '--', ...show])
+    add(`r4 file ${tag} decrypt ${fx}`, fx, ['decrypt', '-f', f])
+    add(`r4 file ${tag} encrypt ${fx}`, fx, ['encrypt', '-f', f])
+    add(`r4 file ${tag} set ${fx}`, fx, ['set', 'A', 'x', '--plain', '-f', f])
+    add(`r4 file ${tag} del ${fx}`, fx, ['del', 'A', '-f', f])
+    add(`r4 file ${tag} keypair ${fx}`, fx, ['keypair', '-f', f])
+    add(`r4 file ${tag} validate ${fx}`, fx, ['validate', '-f', f])
+  }
+  add(`r4 file ${tag} ls`, 'spaces', ['ls', f])
+  add(`r4 file ${tag} genexample`, 'spaces', ['genexample', f])
+  add(`r4 file ${tag} gitignore`, 'spaces', ['gitignore', '--pattern', f])
+}
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
@@ -325,12 +431,19 @@ const walkSpec = (cmd, trail) => {
 }
 walkSpec(specTree, [])
 
+// Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
+const ACCEPTED_STDERR_ONLY = [/^r4 file /]
+
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
   /^global -d$/, /^global -l debug$/, // debug option dumps have a different shape
   /^ls --json /, // absolute paths embed the per-run temp directory (the two sides use different ones)
   /^shape [a-zA-Z]+ get HELLO --convention bogus$/, // both crash with an uncaught error; only the stack trace text differs
   /^shape [a-zA-Z]+ get HELLO --env-file --overload$/, // node itself reads --env-file from anywhere in its argv ("node: --overload: not found")
+  /^r4 (ls |env .* ls$|file .* ls$)/, // absolute paths embed the per-run temp directory
+  /^r4 env DOTENV_(CONFIG_)?CONVENTION=bogus /, // both crash with an uncaught error whose stack trace text differs
+  /^r4 (set value "-dash"|set value "-dash" )/, // debug option dumps differ (the file content is compared)
+  /^r4 file "sub[/]" (encrypt|set) spaces$/, // Node accepts a trailing slash on a missing file name on Windows; .NET rejects the path
   /^opt plain precommit --install$/, // the operating system's own error text ("ENOENT ..." in Node, the .NET message here) is not mirrored
   /^opt plain get --convention/, // both crash/print with an uncaught error whose stack trace text differs
   /^opt plain (ls --json|get --all)$/, // absolute paths embed the per-run temp directory
@@ -398,7 +511,7 @@ async function main () {
     }
   }
   await Promise.all(Array.from({ length: 6 }, worker))
-  const unexpected = diffs.filter(d => !ACCEPTED.some(a => a.test(d.sc.name)))
+  const unexpected = diffs.filter(d => !ACCEPTED.some(a => a.test(d.sc.name)) && !(ACCEPTED_STDERR_ONLY.some(a => a.test(d.sc.name)) && d.fields.every(f => f === 'stderr')))
   diffs.length = 0
   diffs.push(...unexpected)
   diffs.sort((a, b) => a.sc.name.localeCompare(b.sc.name))

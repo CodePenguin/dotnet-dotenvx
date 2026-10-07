@@ -20,7 +20,7 @@ namespace Dotenvx.Actions;
 public class DelAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
-        new("--file", "--env-file", "-f") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
+        new("--env-file", "-f") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
 
     private readonly Argument<string> _keyArgument =
         new("key") { Description = "KEY", HelpName = "KEY" };

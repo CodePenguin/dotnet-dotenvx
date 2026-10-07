@@ -18,9 +18,9 @@ namespace dotnet_dotenvx.Test;
 public class CommandTreeParityTest : EnvironmentTestBase
 {
     // System.CommandLine structural additions: -? on --help, and the recursive global options that commander only
-    // shows at the root, plus --file (a deliberately forward-ported alias of -f/--env-file, see the parity checklist)
+    // shows at the root
     private static readonly HashSet<string> DotnetOnly =
-        ["-?", "-V", "--version", "-l", "--log-level", "-q", "--quiet", "-v", "--verbose", "-d", "--debug", "--file", "-h", "--help"];
+        ["-?", "-V", "--version", "-l", "--log-level", "-q", "--quiet", "-v", "--verbose", "-d", "--debug", "-h", "--help"];
 
     private static readonly HashSet<string> RootOnlyUpstream =
         ["-V", "--version", "-l", "--log-level", "-q", "--quiet", "-v", "--verbose", "-d", "--debug", "-h", "--help"];

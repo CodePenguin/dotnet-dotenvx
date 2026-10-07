@@ -422,12 +422,6 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
     }
 
-    // --file and DOTENV_FILE (commit 5a28c859) were forward-ported ahead of our v2.24.1 pin - the
-    // pinned Node CLI genuinely doesn't support them yet ("error: unknown option '--file'"), so
-    // there's no valid parity comparison for them until the pin advances past that commit. See
-    // docs/porting-traps.md. DOTENV_PATH/DOTENV_F (already in the pin) are covered in
-    // NormalizeDotenvConfigPathTest.cs at the unit level instead.
-
     /// <remarks>
     /// Regression test for a 2026-09-27 bug: `DetectEncoding.cs` returns "utf16le" for a file
     /// starting with a UTF-16LE BOM, matching Node's own encoding name - but `Fsx.ReadFileX`'s

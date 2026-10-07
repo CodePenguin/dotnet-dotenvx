@@ -50,6 +50,17 @@ public static class CommanderArgs
                 continue;
             }
 
+            if (arg.Length > 2 && arg[0] == '-' && arg[1] != '-' && IsRootBoolean(arg[..2]) && !IsKnown(chain[^1], arg))
+            {
+                // commander (root level): a known boolean flag at the start of a cluster is taken out and the rest is
+                // parsed again (`-dash` is -d, then the unknown `-ash`)
+                result.Add(arg[..2]);
+                args = [.. args[..i], "-" + arg[2..], .. args[(i + 1)..]];
+                i--;
+
+                continue;
+            }
+
             if (arg.Length > 1 && arg[0] == '-')
             {
                 string? term = TakesValue(chain, arg);
@@ -98,6 +109,11 @@ public static class CommanderArgs
         }
 
         return [.. result];
+    }
+
+    private static bool IsRootBoolean(string flag)
+    {
+        return CommanderHelp.RootSpec.Options.Any(row => Flags(row).Contains(flag) && !row.Term.Contains('<') && !row.Term.Contains('['));
     }
 
     private static string[] Flags(HelpRow row)
