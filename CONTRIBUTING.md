@@ -149,7 +149,7 @@ Goal: retarget, run the suites, and let the failures plus a few diffs say exactl
 
 **3. Run the suites; read failures as the to-do list**
 1. `dotnet build`, then `Dotenvx.Primitives.Test`, `Dotenvx.Core.Test`, `Dotenvx.Configuration.Test`, `Dotenvx.Test`, `Dotenvx.ParityTest`, each separately.
-2. Run `node scripts/parity-sweep.js` (about 4 min): ~590 command x flag x fixture scenarios against both CLIs. Differences land in `$TMP/dotenvx-parity-sweep.txt`; only the `ACCEPTED` list in the script may remain, each with a reason.
+2. Run `node scripts/parity-sweep.js` (about 12 min): ~2300 command x flag x fixture scenarios against both CLIs. Differences land in `$TMP/dotenvx-parity-sweep.txt`; only the `ACCEPTED` list in the script may remain, each with a reason.
 3. Meaning of failures: the two primitives oracle tests = our port drifted (output prints Node vs C# per input; fix the port, add a table row); `ErrorMessageParityTest` = `errors.js` changed (new codes need a `DotenvxException` subtype); `HelpExactParityTest` = `--help` bytes differ (regenerate the spec, or a command is missing from it); `HelpTextParityTest` = flags or descriptions of the real `System.CommandLine` options changed (it runs the .NET CLI with `DOTENVX_NATIVE_HELP=1` to see them; fix the option, or extend its documented exclusion lists with a reason); `GlobalOptionsParityTest.RootVersionFlagMatchesExactly` = version lockstep broken; other `*ParityTest` = CLI drift; Core/Dotenvx unit tests = ported tests encoding old behavior (confirm the new behavior live before rewriting one).
 4. Constructor changes breaking mocks: see "Static seams" above.
 
