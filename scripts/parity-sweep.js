@@ -3,7 +3,7 @@
 //   node scripts/parity-sweep.js [name-filter]      (build src/Dotenvx first; takes about 4 minutes)
 // Prints a summary and writes the differences to $TMP/dotenvx-parity-sweep.txt. Differences listed in ACCEPTED are known,
 // deliberate and explained there; anything else is a parity bug (or a new scenario that needs a decision).
-const { execFile } = require('child_process')
+const { execFile, execFileSync } = require('child_process')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
@@ -495,6 +495,67 @@ for (const depthDir of ['.', 'sub', 'sub/deep', 'nowhere']) {
   addSteps(`r5 ls ${depthDir}`, 'deep', [S(['ls', depthDir]), S(['ls', depthDir, '-f', '**/.env.local']), S(['ls', depthDir, '-ef', 'sub/**'])])
 }
 
+// ---- round 6: real git repositories (precommit / prebuild / hook install), lock flows with piped passphrases, armor settings.
+const G = (...args) => ({ git: args })
+const repoFixtures = {
+  plainEnv: { '.env': 'A=1\nB=2\n' },
+  encEnv: { '.env': encEnv, '.env.keys': keysFile },
+  mixed: { '.env': encEnv, '.env.keys': keysFile, '.env.local': 'LOCAL=plain\n', '.env.example': 'A=\n', 'sub/.env': 'N=plain\n', 'sub/.env.example': 'N=\n' },
+  plainKey: { '.env': 'A=1\nB_PLAIN=2\nDOTENV_PUBLIC_KEY="' + PUB + '"\n' },
+  dupes: { '.env': 'A=encrypted:abc\nA=plain\n' },
+  production: { '.env.production': encEnv, '.env.test': 'X=1\n', 'test/.env': 'T=1\n', 'tests/.env': 'T=1\n', 'spec/.env.local': 'S=1\n' }
+}
+const ignoreVariants = { none: null, env: '.env\n', wildcard: '.env*\n', keysOnly: '.env.keys\n', negated: '.env*\n!.env.example\n', nested: 'sub/.env\n', dockerEnv: '.env\n.env.local\n' }
+for (const [fxName, files] of Object.entries(repoFixtures)) {
+  for (const [ignName, ign] of Object.entries(ignoreVariants)) {
+    const name = `repo ${fxName} ${ignName}`
+    fixtures[name] = { ...files, ...(ign === null ? {} : { '.gitignore': ign, '.dockerignore': ign }) }
+    const staged = [G('init', '-q'), G('add', '-A', '-f')]
+    const committed = [G('init', '-q'), G('add', '-A', '-f'), G('commit', '-q', '-m', 'm')]
+    addSteps(`r6 ${name} precommit staged`, name, [...staged, S(['precommit']), S(['precommit', '.']), S(['ext', 'precommit']), S(['precommit', 'sub'])])
+    addSteps(`r6 ${name} precommit unstaged`, name, [G('init', '-q'), S(['precommit']), S(['ext', 'precommit', 'sub'])])
+    addSteps(`r6 ${name} precommit committed`, name, [...committed, S(['precommit']), S(['precommit', 'sub'])])
+    addSteps(`r6 ${name} precommit nogit`, name, [S(['precommit']), S(['precommit', 'sub'])])
+    addSteps(`r6 ${name} prebuild`, name, [S(['prebuild']), S(['prebuild', 'sub']), S(['ext', 'prebuild']), ...staged, S(['prebuild'])])
+  }
+}
+for (const fxName of ['plainEnv', 'encEnv', 'mixed']) {
+  const name = `repo ${fxName} none`
+  addSteps(`r6 ${name} hook install`, name, [G('init', '-q'), { write: { '.git/hooks/.keep': '' } }, S(['precommit', '--install']), S(['precommit', '--install']), S(['ext', 'precommit', '--install']), S(['precommit', '-i'])])
+  addSteps(`r6 ${name} hook install existing`, name, [G('init', '-q'), { write: { '.git/hooks/pre-commit': '#!/bin/sh\necho existing\n' } }, S(['precommit', '--install']), S(['precommit', '--install'])])
+  addSteps(`r6 ${name} hook install nogit`, name, [S(['precommit', '--install'])])
+  addSteps(`r6 ${name} hook install dir`, name, [G('init', '-q'), { write: { '.git/hooks/.keep': '' } }, S(['precommit', 'sub', '--install'])])
+}
+for (const [label, content] of Object.entries({ crlfHook: '#!/bin/sh\r\necho x\r\n', noNl: '#!/bin/sh\necho x', hasPrecommit: '#!/bin/sh\ndotenvx precommit\n', hasExt: '#!/bin/sh\ndotenvx ext precommit\n' })) {
+  addSteps(`r6 hook existing ${label}`, 'repo plainEnv none', [G('init', '-q'), { write: { '.git/hooks/pre-commit': content } }, S(['precommit', '--install'])])
+}
+
+// lock: passphrase piped to stdin (salts and IVs are random, payloads are normalized)
+const passphrases = { simple: 'pw\n', unicode: 'pässword 🔑\n', spaces: '  with spaces  \n', long: 'p'.repeat(500) + '\n', crlf: 'pw\r\n', noNewline: 'pw', empty: '\n', two: 'pw\nextra\n', tab: 'a\tb\n', quote: '"q\'s"\n' }
+for (const [name, pass] of Object.entries(passphrases)) {
+  addSteps(`r6 lock ${name}`, 'enc', [S(['lock', 'up'], { stdin: pass }), S(['lock', 'down'], { stdin: pass }), S(['get'])])
+  addSteps(`r6 lock ${name} wrong then right`, 'enc', [S(['lock', 'up'], { stdin: pass }), S(['lock', 'down'], { stdin: 'wrong\n' }), S(['lock', 'down'], { stdin: pass })])
+  for (const writer of ['node', 'dotnet']) addSteps(`r6 lock ${name} cross ${writer}`, 'enc', [S(['lock', 'up'], { cli: writer, stdin: pass }), S(['lock', 'down'], { stdin: pass }), S(['get'])])
+}
+addSteps('r6 lock twice', 'enc', [S(['lock', 'up'], { stdin: 'pw\n' }), S(['lock', 'up'], { stdin: 'pw\n' }), S(['lock', 'down'], { stdin: 'pw\n' }), S(['lock', 'down'], { stdin: 'pw\n' })])
+addSteps('r6 lock then use', 'enc', [S(['lock', 'up'], { stdin: 'pw\n' }), S(['get']), S(['get'], { stdin: 'pw\n' }), S(['run', '--', ...show], { stdin: 'pw\n' }), S(['decrypt', '--stdout'], { stdin: 'pw\n' }), S(['keypair'], { stdin: 'pw\n' }), S(['set', 'A', 'x'], { stdin: 'pw\n' })])
+addSteps('r6 lock several keys', 'prodEnc', [S(['lock', 'up'], { stdin: 'pw\n' }), S(['lock', 'down'], { stdin: 'pw\n' })])
+addSteps('r6 lock multi env files', 'multi', [S(['encrypt', '-f', '.env', '-f', '.env.production']), S(['lock', 'up'], { stdin: 'pw\n' }), S(['lock', 'down'], { stdin: 'pw\n' }), S(['get', '-f', '.env.production'])])
+addSteps('r6 lock custom keys file', 'enc', [S(['lock', 'up', '-fk', '.env.keys'], { stdin: 'pw\n' }), S(['lock', 'down', '-fk', '.env.keys'], { stdin: 'pw\n' })])
+addSteps('r6 lock env file option', 'multi', [S(['encrypt', '-f', '.env.production']), S(['lock', 'up', '-f', '.env.production'], { stdin: 'pw\n' }), S(['lock', 'down', '-f', '.env.production'], { stdin: 'pw\n' })])
+addSteps('r6 lock no keys file', 'plain', [S(['lock', 'up'], { stdin: 'pw\n' }), S(['lock', 'down'], { stdin: 'pw\n' })])
+addSteps('r6 lock env var key', 'encNoKeys', [S(['lock', 'up'], { stdin: 'pw\n' })], { DOTENV_PRIVATE_KEY: PRIV })
+
+// armor settings persist across invocations (hermetic config directory)
+const settingsSteps = [['username'], ['token'], ['token', '--unmask'], ['device'], ['device', '--unmask'], ['hostname'], ['path'], ['on'], ['off'], ['status']]
+for (const sub of settingsSteps) {
+  addSteps(`r6 armor settings ${sub.join(' ')} twice`, 'none', [S(['armor', ...(sub[0] === 'status' ? [] : ['settings']), ...sub]), S(['armor', ...(sub[0] === 'status' ? [] : ['settings']), ...sub])])
+}
+addSteps('r6 armor on off status', 'none', [S(['armor', 'settings', 'on']), S(['armor', 'status']), S(['armor', 'settings', 'off']), S(['armor', 'status']), S(['armor', 'settings', 'on']), S(['armor', 'settings', 'hostname']), S(['armor', 'settings', 'path'])])
+addSteps('r6 armor settings env hostname', 'none', [S(['armor', 'settings', 'hostname']), S(['armor', 'settings', 'path'])], { DOTENVX_CONFIG: '<DIR>/cfg/dir', DOTENV_CONFIG_HOSTNAME: 'x.example' })
+addSteps('r6 armor settings config dir variants', 'none', [S(['armor', 'settings', 'path']), S(['armor', 'settings', 'on']), S(['armor', 'settings', 'path'])], { DOTENVX_CONFIG: '<DIR>/new/nested/dir' })
+addSteps('r6 armor no armor env', 'none', [S(['armor', 'status']), S(['armor', 'settings', 'on']), S(['armor', 'status'])], { DOTENVX_NO_ARMOR: 'true' })
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
@@ -529,7 +590,7 @@ const walkSpec = (cmd, trail) => {
 walkSpec(specTree, [])
 
 // Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
-const ACCEPTED_STDERR_ONLY = [/^r4 file /, /^r5 life custom keys /, /^r5 child /] // r5 child: the node binary's own messages differ only in the casing of node.exe
+const ACCEPTED_STDERR_ONLY = [/^r6 lock /, /^r6 repo .* hook install/, /^r4 file /, /^r5 life custom keys /, /^r5 child /] // r5 child: the node binary's own messages differ only in the casing of node.exe
 
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
@@ -543,6 +604,8 @@ const ACCEPTED = [
   /^r4 file "sub[/]" (encrypt|set) spaces$/, // Node accepts a trailing slash on a missing file name on Windows; .NET rejects the path
   /^r5 life stdout /, // the masked random public key keeps its first characters, which differ per run
   /^r5 name .env. /, // Windows strips a trailing dot when .NET creates a file, Node keeps it
+  /^r6 armor settings device/, // the device key is random per run
+  /^r6 lock tab cross /, // a tab typed into a piped passphrase is handled by enquirer's key handling; not reproduced
   /^opt plain precommit --install$/, // the operating system's own error text ("ENOENT ..." in Node, the .NET message here) is not mirrored
   /^opt plain get --convention/, // both crash/print with an uncaught error whose stack trace text differs
   /^opt plain (ls --json|get --all)$/, // absolute paths embed the per-run temp directory
@@ -556,6 +619,7 @@ const ACCEPTED = [
 // ---- runner
 const normalize = (s, dir) => {
   s = s.split(dir).join('<DIR>').split(dir.split(path.sep).join('/')).join('<DIR>')
+  s = s.replace(/locked:([0-9a-f]+):[A-Za-z0-9_-]+/g, 'locked:$1:<payload>')
   s = s.replace(/encrypted:[A-Za-z0-9+/=]+/g, 'encrypted:ENC')
   s = s.replace(/\b[0-9a-f]{64,}\b/g, 'HEX').replace(/\b0[23][0-9a-f]{64}\b/g, 'PUB')
   s = s.replace(/scanned in \d+s/g, 'scanned in Ns')
@@ -586,7 +650,7 @@ function runOne (cliArgs, sc, isNode) {
     let code = 0
     const finish = () => {
       const files = {}
-      const walk = d => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (fs.statSync(p).isDirectory()) walk(p); else files[path.relative(dir, p).split(path.sep).join('/')] = normalize(fs.readFileSync(p, 'utf8'), dir) } }
+      const walk = d => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (n === '.git') { const hook = path.join(p, 'hooks', 'pre-commit'); if (fs.existsSync(hook)) files['.git/hooks/pre-commit'] = normalize(fs.readFileSync(hook, 'utf8'), dir); continue } if (fs.statSync(p).isDirectory()) walk(p); else files[path.relative(dir, p).split(path.sep).join('/')] = normalize(fs.readFileSync(p, 'utf8'), dir) } }
       walk(dir)
       try { fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 }) } catch (e2) { /* best effort */ }
       resolve({ code, stdout: normalize(stdout, dir), stderr: normalize(stderr, dir), files })
@@ -595,6 +659,11 @@ function runOne (cliArgs, sc, isNode) {
       if (index >= steps.length) return finish()
       const step = steps[index]
       if (step.write) { for (const [f, c] of Object.entries(step.write)) { fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true }); fs.writeFileSync(path.join(dir, f), c) } return runStep(index + 1) }
+      if (step.git) {
+        const gitEnv = { ...process.env, GIT_CONFIG_GLOBAL: os.devNull, GIT_CONFIG_NOSYSTEM: '1', GIT_AUTHOR_NAME: 'n', GIT_AUTHOR_EMAIL: 'n@e', GIT_COMMITTER_NAME: 'n', GIT_COMMITTER_EMAIL: 'n@e' }
+        try { execFileSync('git', step.git, { cwd: dir, env: gitEnv, stdio: 'ignore' }) } catch (e) { /* a failing git step is part of the scenario */ }
+        return runStep(index + 1)
+      }
       if (step.rm) { for (const f of step.rm) fs.rmSync(path.join(dir, f), { recursive: true, force: true }); return runStep(index + 1) }
       const nodeCli = step.cli === 'node' || (step.cli !== 'dotnet' && isNode)
       let args = [...step.args]
