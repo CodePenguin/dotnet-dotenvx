@@ -7,7 +7,7 @@ namespace Dotenvx.ParityTest;
 /// cli/actions/keychain/*.js, lib/services/keychain*.js) and of the native key provider (lib/providers/native) used by
 /// run/get/validate/decrypt/keypair. The OS secret store is faked by test/Dotenvx.FakeSecretCli installed as
 /// `powershell.exe` (Windows) or `secret-tool` (Linux) on PATH, which both CLIs reach through the same upstream
-/// commands; macOS (`/usr/bin/security` is an absolute path) is skipped.
+/// commands. macOS (`/usr/bin/security` is an absolute path) is covered by MacosKeychainParityTest.
 /// </remarks>
 public class NativeStoreParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 {

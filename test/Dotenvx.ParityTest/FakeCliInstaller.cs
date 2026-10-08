@@ -7,15 +7,18 @@ namespace Dotenvx.ParityTest;
 /// </summary>
 public static class FakeCliInstaller
 {
-    public static void Install(string binDirectory, params string[] tools)
+    public static void Install(string binDirectory, params string[] tools) => InstallFrom(binDirectory, "Dotenvx.FakeSecretCli", tools);
+
+    /// <summary>The same for another fake project (for example Dotenvx.FakeSecurity).</summary>
+    public static void InstallFrom(string binDirectory, string fakeProject, params string[] tools)
     {
         Directory.CreateDirectory(binDirectory);
         string suffix = OperatingSystem.IsWindows() ? ".exe" : "";
 
-        foreach (string file in Directory.GetFiles(AppContext.BaseDirectory, "Dotenvx.FakeSecretCli.*"))
+        foreach (string file in Directory.GetFiles(AppContext.BaseDirectory, fakeProject + ".*"))
         {
             string name = Path.GetFileName(file);
-            if (name.EndsWith(".exe") || name == "Dotenvx.FakeSecretCli")
+            if (name.EndsWith(".exe") || name == fakeProject)
             {
                 foreach (string tool in tools)
                 {

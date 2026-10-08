@@ -556,6 +556,154 @@ addSteps('r6 armor settings env hostname', 'none', [S(['armor', 'settings', 'hos
 addSteps('r6 armor settings config dir variants', 'none', [S(['armor', 'settings', 'path']), S(['armor', 'settings', 'on']), S(['armor', 'settings', 'path'])], { DOTENVX_CONFIG: '<DIR>/new/nested/dir' })
 addSteps('r6 armor no armor env', 'none', [S(['armor', 'status']), S(['armor', 'settings', 'on']), S(['armor', 'status'])], { DOTENVX_NO_ARMOR: 'true' })
 
+// ---- round 7: root-level flags (log levels, quiet, verbose, version) placed around subcommands, across fixtures.
+const rootFlags = [['-q'], ['--quiet'], ['-v'], ['--verbose'], ['-l', 'warn'], ['--log-level', 'error'], ['-l', 'verbose'], ['-l', 'bogus'], ['-l'], ['-V'], ['--version'], ['-q', '-v'], ['-v', '-q'], ['-q', '-q']]
+const rootCmds = [['get'], ['get', 'HELLO'], ['get', 'NOPE'], ['set', 'NEW', 'v'], ['del', 'HELLO'], ['keypair'], ['ls'], ['encrypt'], ['decrypt'], ['validate'], ['genexample'], ['gitignore'], ['run', '--', ...show], ['ext', 'ls']]
+for (const fx of ['plain', 'enc', 'none']) {
+  for (const flags of rootFlags) {
+    for (const cmd of rootCmds) {
+      const label = `r7 ${fx} ${flags.join(' ')} | ${cmd.slice(0, 2).join(' ')}`
+      add(`${label} before`, fx, [...flags, ...cmd], { CI: 'true' })
+      if (cmd[0] !== 'run') add(`${label} after`, fx, [...cmd, ...flags], { CI: 'true' })
+    }
+  }
+}
+for (const flags of rootFlags) {
+  add(`r7 flags only ${flags.join(' ')}`, 'plain', flags, { CI: 'true' })
+  add(`r7 flags help ${flags.join(' ')}`, 'plain', [...flags, 'help'], { CI: 'true' })
+  add(`r7 flags help get ${flags.join(' ')}`, 'plain', [...flags, 'help', 'get'], { CI: 'true' })
+  add(`r7 flags unknown ${flags.join(' ')}`, 'plain', [...flags, 'nope'], { CI: 'true' })
+}
+// log level environment variables
+for (const [k, v] of [['DOTENVX_LOG_LEVEL', 'error'], ['DOTENVX_LOG_LEVEL', 'verbose'], ['DOTENVX_LOG_LEVEL', 'bogus'], ['DOTENVX_QUIET', 'true'], ['DOTENVX_VERBOSE', 'true'], ['DOTENVX_DEBUG', 'true'], ['NO_COLOR', '1'], ['FORCE_COLOR', '1']]) {
+  for (const cmd of [['get'], ['set', 'NEW', 'v'], ['get', 'NOPE'], ['encrypt'], ['keypair'], ['run', '--', ...show]]) {
+    add(`r7 env ${k}=${v} ${cmd.slice(0, 2).join(' ')}`, 'plain', cmd, { CI: 'true', [k]: v })
+  }
+}
+
+// ---- round 8: genexample / gitignore / validate / ls depth: directory arguments, multiple env files, pre-existing outputs, patterns.
+const r8Fixtures = {
+  empty: {},
+  one: { '.env': 'A=1\nB=2\n' },
+  two: { '.env': 'A=1\nB=2\n', '.env.local': 'B=3\nC=4\n' },
+  withExample: { '.env': 'A=1\nB=2\n', '.env.example': 'A=\nZ=\n' },
+  exampleOnly: { '.env.example': 'A=\n' },
+  reserved: { '.env': 'A=1\n', '.env.keys': 'K=1\n', '.env.example': 'A=\n', '.env.previous': 'A=0\n', '.env.vault': 'V=1\n', '.env.project': 'P=1\n', '.env.me': 'M=1\n', '.env.x': 'X=1\n' },
+  tree: { '.env': 'A=1\n', 'sub/.env': 'S=1\n', 'sub/.env.local': 'L=1\n', 'sub/deep/.env': 'D=1\n', 'other/.env.production': 'P=1\n' },
+  commented: { '.env': '# top\nA=1 # inline\n\n# gap\nB="x y"\nexport C=3\n' },
+  encrypted: { '.env': encEnv, '.env.keys': keysFile },
+  dirIsFile: { 'sub': 'not a directory' },
+  gi: { '.gitignore': 'node_modules\n', '.env': 'A=1\n' },
+  giNoNl: { '.gitignore': 'node_modules', '.env': 'A=1\n' },
+  giCrlf: { '.gitignore': 'node_modules\r\n.env*\r\n', '.env': 'A=1\n' },
+  giAll: { '.gitignore': '.env*\n', '.dockerignore': '.env*\n', '.npmignore': '.env*\n', '.vercelignore': '.env*\n', '.env': 'A=1\n' },
+  giMixed: { '.gitignore': '.env\n', '.dockerignore': '', '.npmignore': '*.log\n', '.env': 'A=1\n' },
+  giPkg: { 'package.json': '{"name":"x"}\n', '.env': 'A=1\n' },
+  giVercel: { 'vercel.json': '{}\n', '.vercel/project.json': '{}\n', '.env': 'A=1\n' }
+}
+for (const [n, files] of Object.entries(r8Fixtures)) fixtures['r8 ' + n] = files
+const r8 = Object.keys(r8Fixtures)
+const dirArgs = [[], ['.'], ['sub'], ['sub/'], ['./sub'], ['missing'], ['..'], ['sub/deep'], ['-'], ['']]
+for (const fx of r8) {
+  for (const d of dirArgs) {
+    for (const cmd of ['genexample', 'ls', 'prebuild', 'precommit']) {
+      if (d[0] === '..') continue // the parent is the live temp directory, which differs between the two runs
+      const lbl = `r8 ${cmd} ${fx} [${d.join(' ')}]`
+      add(lbl, 'r8 ' + fx, [cmd, ...d], { CI: 'true' })
+    }
+    addSteps(`r8 genexample twice ${fx} [${d.join(' ')}]`, 'r8 ' + fx, [S(['genexample', ...d]), S(['genexample', ...d]), S(['validate'])], { CI: 'true' })
+  }
+  for (const f of [['.env'], ['.env.local'], ['.env', '.env.local'], ['.env.nope'], ['.env', '.env.nope'], ['sub/.env'], ['.env', '.env']]) {
+    add(`r8 genexample -f ${f.join(',')} ${fx}`, 'r8 ' + fx, ['genexample', '-f', ...f], { CI: 'true' })
+    add(`r8 genexample -f each ${f.join(',')} ${fx}`, 'r8 ' + fx, ['genexample', ...f.flatMap(x => ['-f', x])], { CI: 'true' })
+    add(`r8 validate -f ${f.join(',')} ${fx}`, 'r8 ' + fx, ['validate', ...f.flatMap(x => ['-f', x])], { CI: 'true' })
+    add(`r8 ls -f ${f.join(',')} ${fx}`, 'r8 ' + fx, ['ls', '-f', ...f], { CI: 'true' })
+  }
+  for (const p of [['.env*'], ['.env'], ['.env', '.env.keys'], ['*.log'], ['dir/'], ['!x'], ['#c'], [' sp '], ['a b'], ['']]) {
+    add(`r8 gitignore --pattern ${JSON.stringify(p)} ${fx}`, 'r8 ' + fx, ['gitignore', '--pattern', ...p], { CI: 'true' })
+    addSteps(`r8 gitignore twice ${JSON.stringify(p)} ${fx}`, 'r8 ' + fx, [S(['gitignore', '--pattern', ...p]), S(['gitignore', '--pattern', ...p]), S(['gitignore'])], { CI: 'true' })
+  }
+}
+for (const fx of ['r8 withExample', 'r8 exampleOnly', 'r8 reserved', 'r8 two']) {
+  for (const ex of [['validate'], ['validate', '--strict'], ['validate', '-f', '.env.local'], ['validate', '--ignore', 'MISSING_ENV_FILE'], ['ls', '--json'], ['ls', '-ef', '.env.local'], ['ls', '--exclude-env-file', '.env*']]) {
+    add(`r8 ${ex.join(' ')} ${fx}`, fx, ex, { CI: 'true' })
+  }
+}
+
+// ---- round 9: external programs through fakes on PATH (gitleaks): `ext scan` against scripted exit codes and output.
+const glOutputs = { none: '', clean: 'no leaks found\n', crlf: 'no leaks found\r\n', trailing: 'ok\n\n\n', unicode: '✓ ünï 日本語\n', multi: 'a\nb\nc\n', spaces: '  indented  \n', long: 'x'.repeat(5000) + '\n', noNl: 'nonl' }
+const glErrs = { none: '', warn: 'warning: something\n', both: 'e1\ne2\n' }
+for (const [oName, out] of Object.entries(glOutputs)) {
+  for (const [eName, err] of Object.entries(glErrs)) {
+    for (const exit of [0, 1, 2, 126]) {
+      addSteps(`r9 scan out=${oName} err=${eName} exit=${exit}`, 'plain', [S(['ext', 'scan'])], { CI: 'true', FAKEGL_OUT: out, FAKEGL_ERR: err, FAKEGL_EXIT: String(exit) })
+    }
+  }
+}
+for (const v of [1, 2, 127]) addSteps(`r9 scan version exit=${v}`, 'plain', [S(['ext', 'scan'])], { CI: 'true', FAKEGL_VERSION_EXIT: String(v), FAKEGL_OUT: 'leak\n', FAKEGL_EXIT: '1' })
+for (const flag of [['-q'], ['-v'], ['-l', 'debug'], ['-l', 'error']]) {
+  addSteps(`r9 scan root ${flag.join(' ')} clean`, 'plain', [S([...flag, 'ext', 'scan'])], { CI: 'true', FAKEGL_OUT: 'no leaks\n' })
+  addSteps(`r9 scan root ${flag.join(' ')} leak`, 'plain', [S([...flag, 'ext', 'scan'])], { CI: 'true', FAKEGL_OUT: 'leak found\n', FAKEGL_EXIT: '1' })
+}
+for (const extra of [['--bogus'], ['x'], ['--help'], ['-h']]) addSteps(`r9 scan extra ${extra.join(' ')}`, 'plain', [S(['ext', 'scan', ...extra])], { CI: 'true', FAKEGL_OUT: 'ok\n' })
+addSteps('r9 scan in repo', 'repo plainEnv none', [{ git: ['init', '-q'] }, S(['ext', 'scan'])], { CI: 'true', FAKEGL_OUT: 'ok\n' })
+addSteps('r9 scan empty path fake', 'plain', [S(['ext', 'scan'])], { CI: 'true', FAKEGL_OUT: 'ok\n', FAKEGL_EXIT: '3' })
+
+// ---- round 10: external programs through the fake op / bw / powershell / secret-tool (test/Dotenvx.FakeSecretCli): secret references and native key stores.
+const fcSeed = extra => JSON.stringify({
+  ['op/' + fakeSanitize('op://vault/item/field')]: 'op-secret',
+  ['op/' + fakeSanitize('op://vault/item/multi')]: 'line1\nline2\n',
+  ['op/' + fakeSanitize('op://vault/item/space')]: '  padded  ',
+  ['op/' + fakeSanitize('op://vault/item/empty')]: '',
+  ['bw/' + fakeSanitize('github') + '_password']: 'bw-secret',
+  ['bw/' + fakeSanitize('folder') + '_' + 'item']: 'x',
+  ['bw/' + fakeSanitize('folder/item') + '_username']: 'bw-user',
+  session: 'unlocked-session',
+  master: 'master-pw',
+  ...extra
+})
+const refFixtures = {
+  opOne: { '.env': 'A=op://vault/item/field\nB=plain\n' },
+  opAll: { '.env': 'A=op://vault/item/field\nM=op://vault/item/multi\nS=op://vault/item/space\nE=op://vault/item/empty\nMISS=op://vault/item/none\n' },
+  bwOne: { '.env': 'A=bw://github/password\nB=plain\n' },
+  bwAll: { '.env': 'A=bw://github/password\nU=bw://folder/item/username\nMISS=bw://nothing/password\n' },
+  bothRefs: { '.env': 'A=op://vault/item/field\nB=bw://github/password\nC=${A}-ref\n' },
+  quotedRef: { '.env': 'A="op://vault/item/field"\nB=\'bw://github/password\'\nC=x op://vault/item/field\n' },
+  refsMulti: { '.env': 'A=op://vault/item/field\n', '.env.local': 'A=bw://github/password\nB=op://vault/item/multi\n' }
+}
+for (const [n, files] of Object.entries(refFixtures)) fixtures['r10 ' + n] = files
+const envsBw = { session: { BW_SESSION: 'session-token' }, locked: { BW_SESSION: '' }, withMaster: { BW_SESSION: '', BW_PASSWORD: 'master-pw' } }
+for (const fx of Object.keys(refFixtures)) {
+  for (const [eName, e] of Object.entries(envsBw)) {
+    for (const cmd of [['get'], ['get', 'A'], ['get', '--format', 'json'], ['get', '--all'], ['run', '--', ...show], ['validate'], ['get', '--no-1password'], ['get', '--no-bitwarden'], ['get', '--no-1password', '--no-bitwarden'], ['run', '--no-1password', '--', ...show], ['decrypt', '--stdout'], ['ls']]) {
+      addSteps(`r10 ref ${fx} ${eName} ${cmd.join(' ')}`, 'r10 ' + fx, [S(cmd)], { FAKECLI_SEED: fcSeed({}), ...e })
+    }
+  }
+  addSteps(`r10 ref ${fx} no programs`, 'r10 ' + fx, [S(['get'])], { FAKECLI_SEED: JSON.stringify({}), BW_SESSION: 'x' })
+}
+addSteps('r10 ref encrypt then get', 'r10 opOne', [S(['encrypt']), S(['get']), S(['get', 'A'])], { FAKECLI_SEED: fcSeed({}) })
+addSteps('r10 ref set then get', 'r10 opOne', [S(['set', 'C', 'op://vault/item/field']), S(['get']), S(['set', 'D', 'bw://github/password']), S(['get'])], { FAKECLI_SEED: fcSeed({}), BW_SESSION: 'token' })
+
+// native stores: the key lives in the OS store (powershell on Windows, secret-tool on Linux), keyed by the public key
+const nativeKey = 'dotenvx:' + PUB
+const nativeFile = 'native/' + fakeSanitize(nativeKey)
+const nativeFixtures = { inStoreOnly: { '.env': encEnv }, inFileOnly: { '.env': encEnv, '.env.keys': keysFile }, both: { '.env': encEnv, '.env.keys': keysFile }, neither: { '.env': encEnv }, wrongInFile: { '.env': encEnv, '.env.keys': `DOTENV_PRIVATE_KEY=${WRONG}\n` } }
+for (const [n, files] of Object.entries(nativeFixtures)) fixtures['r10 native ' + n] = files
+const storeHas = { inStoreOnly: true, inFileOnly: false, both: true, neither: false, wrongInFile: true }
+for (const [n, has] of Object.entries(storeHas)) {
+  const seed = () => fcSeed(has ? { [nativeFile]: PRIV } : {})
+  const base = { FAKECLI_SEED: seed(), CI: '' }
+  for (const cmd of [['native', 'up'], ['native', 'down'], ['native', 'push'], ['native', 'pull'], ['native', 'up', '-fk', 'other.keys'], ['native', 'down', '-fk', 'other.keys'], ['native', 'push', '-f', '.env'], ['native', 'pull', '-f', '.env'], ['native'], ['get'], ['get', 'HELLO'], ['get', '--no-native'], ['decrypt', '--stdout'], ['decrypt', '--stdout', '--no-native'], ['run', '--', ...show], ['keypair'], ['keypair', '--no-native'], ['ls']]) {
+    addSteps(`r10 native ${n} ${cmd.join(' ')}`, 'r10 native ' + n, [S(cmd)], base)
+  }
+  addSteps(`r10 native ${n} up down up`, 'r10 native ' + n, [S(['native', 'up']), S(['native', 'down']), S(['native', 'up']), S(['get'])], base)
+  addSteps(`r10 native ${n} down up down`, 'r10 native ' + n, [S(['native', 'down']), S(['native', 'up']), S(['native', 'down']), S(['get'])], base)
+  addSteps(`r10 native ${n} push pull`, 'r10 native ' + n, [S(['native', 'push']), S(['native', 'pull']), S(['native', 'push']), S(['get'])], base)
+}
+addSteps('r10 native set stores key', 'none', [S(['set', 'A', '1']), S(['get']), S(['native', 'down']), S(['get'])], { FAKECLI_SEED: JSON.stringify({}), CI: '' })
+addSteps('r10 native encrypt stores key', 'plain', [S(['encrypt']), S(['get']), S(['native', 'down']), S(['get'])], { FAKECLI_SEED: JSON.stringify({}), CI: '' })
+addSteps('r10 native CI disables', 'r10 native inStoreOnly', [S(['get']), S(['native', 'up'])], { FAKECLI_SEED: fcSeed({ [nativeFile]: PRIV }), CI: 'true' })
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
@@ -594,8 +742,11 @@ const ACCEPTED_STDERR_ONLY = [/^r6 lock /, /^r6 repo .* hook install/, /^r4 file
 
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
+  /^r10 ref .* get --all$/, // --all dumps the whole environment, which includes the per-run fake vault directory
+  /^r9 scan root -l debug /, // debug output has a different shape
+  /^r8 ls tree \[/, // directory order follows the filesystem crawl in Node (trap #64) and an ordinal sort here
   /^global -d$/, /^global -l debug$/, // debug option dumps have a different shape
-  /^ls --json /, // absolute paths embed the per-run temp directory (the two sides use different ones)
+  /^(r8 )?ls --json /, // absolute paths embed the per-run temp directory (the two sides use different ones)
   /^shape [a-zA-Z]+ get HELLO --convention bogus$/, // both crash with an uncaught error; only the stack trace text differs
   /^shape [a-zA-Z]+ get HELLO --env-file --overload$/, // node itself reads --env-file from anywhere in its argv ("node: --overload: not found")
   /^r4 (ls |env .* ls$|file .* ls$)/, // absolute paths embed the per-run temp directory
@@ -622,6 +773,7 @@ const normalize = (s, dir) => {
   s = s.replace(/locked:([0-9a-f]+):[A-Za-z0-9_-]+/g, 'locked:$1:<payload>')
   s = s.replace(/encrypted:[A-Za-z0-9+/=]+/g, 'encrypted:ENC')
   s = s.replace(/\b[0-9a-f]{64,}\b/g, 'HEX').replace(/\b0[23][0-9a-f]{64}\b/g, 'PUB')
+  s = s.replace(/no change \(\w{3} \w{3}\)/g, 'no change (KEY)') // a freshly generated public key, shortened
   s = s.replace(/scanned in \d+s/g, 'scanned in Ns')
   s = s.replace(/\[dotenvx@[^\]]+\]/g, '[dotenvx@V]')
   return s
@@ -630,6 +782,37 @@ const normalize = (s, dir) => {
 // A scenario is one command line (args) or a list of steps run in one directory, in order. A step is
 // { args, cli: 'self'|'node'|'dotnet', stdin } (cli names the CLI that runs it; 'self' is the CLI being compared, so a
 // step run by the OTHER implementation proves cross-compatibility), { write: { file: content } } or { rm: [files] }.
+// Fake external programs: a directory with a gitleaks shim (cmd on Windows, sh elsewhere) that runs scripts/fake-gitleaks.js
+const FAKE_BIN = (() => {
+  const bin = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-bin-'))
+  const script = path.join(ROOT, 'scripts', 'fake-gitleaks.js')
+  const CRLF = String.fromCharCode(13, 10)
+  if (process.platform === 'win32') fs.writeFileSync(path.join(bin, 'gitleaks.cmd'), ['@echo off', 'node "' + script + '" %*', ''].join(CRLF))
+  else { fs.writeFileSync(path.join(bin, 'gitleaks'), ['#!/bin/sh', 'exec node "' + script + '" "$@"', ''].join(String.fromCharCode(10))); fs.chmodSync(path.join(bin, 'gitleaks'), 0o755) }
+  process.on('exit', () => { try { fs.rmSync(bin, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
+  return bin
+})()
+
+// Fake op / bw / powershell / secret-tool: test/Dotenvx.FakeSecretCli (build it first) copied under each tool name. A scenario opts in with
+// FAKECLI_SEED in its env: a JSON object of { relative path in the fake vault: content }. The vault directory, including the fake's call log,
+// is compared as pseudo files.
+function fakeSanitize (v) { return v.replace(/[^A-Za-z0-9]/g, "_") }
+let fakeCliBin = null
+const getFakeCliBin = () => {
+  if (fakeCliBin) return fakeCliBin
+  const src = path.join(ROOT, 'test', 'Dotenvx.FakeSecretCli', 'bin', 'Debug', 'net10.0')
+  if (!fs.existsSync(src)) throw new Error('build test/Dotenvx.FakeSecretCli first')
+  const bin = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-fcbin-'))
+  const suffix = process.platform === 'win32' ? '.exe' : ''
+  for (const f of fs.readdirSync(src)) {
+    if (f === 'Dotenvx.FakeSecretCli' + suffix) { for (const tool of ['op', 'bw', 'powershell', 'secret-tool']) fs.copyFileSync(path.join(src, f), path.join(bin, tool + suffix)) }
+    else fs.copyFileSync(path.join(src, f), path.join(bin, f))
+  }
+  process.on('exit', () => { try { fs.rmSync(bin, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
+  fakeCliBin = bin
+  return bin
+}
+
 function runOne (cliArgs, sc, isNode) {
   return new Promise(resolve => {
     const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-'))
@@ -638,6 +821,21 @@ function runOne (cliArgs, sc, isNode) {
       fs.writeFileSync(path.join(dir, f), c)
     }
     const env = { ...process.env, ...sc.env }
+    let fakeVault = null
+    if (sc.env.FAKECLI_SEED !== undefined) {
+      fakeVault = path.join(fs.realpathSync(os.tmpdir()), 'sweep-fc-' + path.basename(dir))
+      for (const [rel, content] of Object.entries(JSON.parse(sc.env.FAKECLI_SEED))) { fs.mkdirSync(path.dirname(path.join(fakeVault, rel)), { recursive: true }); fs.writeFileSync(path.join(fakeVault, rel), content) }
+      fs.mkdirSync(fakeVault, { recursive: true })
+      const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
+      env[pathKey] = getFakeCliBin() + path.delimiter + (env[pathKey] || '')
+      env.FAKE_SECRET_CLI_DIR = fakeVault
+      delete env.FAKECLI_SEED
+    }
+    if (Object.keys(sc.env).some(k => k.startsWith('FAKEGL_'))) {
+      const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
+      env[pathKey] = FAKE_BIN + path.delimiter + (env[pathKey] || '')
+      env.FAKEGL_LOG = path.join(fs.realpathSync(os.tmpdir()), 'sweep-gl-' + path.basename(dir) + '.log')
+    }
     // hermetic Armor/device config: a per-run directory unless the scenario names one
     env.DOTENVX_CONFIG = (sc.env.DOTENVX_CONFIG || '<DIR>/.dxcfg').split('<DIR>').join(dir)
     env.DOTENVX_NO_ARMOR = sc.env.DOTENVX_NO_ARMOR || ''
@@ -652,6 +850,12 @@ function runOne (cliArgs, sc, isNode) {
       const files = {}
       const walk = d => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (n === '.git') { const hook = path.join(p, 'hooks', 'pre-commit'); if (fs.existsSync(hook)) files['.git/hooks/pre-commit'] = normalize(fs.readFileSync(hook, 'utf8'), dir); continue } if (fs.statSync(p).isDirectory()) walk(p); else files[path.relative(dir, p).split(path.sep).join('/')] = normalize(fs.readFileSync(p, 'utf8'), dir) } }
       walk(dir)
+      if (fakeVault) {
+        const walkVault = (d, rel) => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (fs.statSync(p).isDirectory()) walkVault(p, rel + n + '/'); else files['<fake cli>/' + rel + n] = fs.readFileSync(p, 'utf8') } }
+        walkVault(fakeVault, '')
+        fs.rmSync(fakeVault, { recursive: true, force: true })
+      }
+      if (env.FAKEGL_LOG && fs.existsSync(env.FAKEGL_LOG)) { files['<gitleaks calls>'] = fs.readFileSync(env.FAKEGL_LOG, 'utf8'); fs.rmSync(env.FAKEGL_LOG, { force: true }) }
       try { fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 }) } catch (e2) { /* best effort */ }
       resolve({ code, stdout: normalize(stdout, dir), stderr: normalize(stderr, dir), files })
     }
@@ -667,7 +871,7 @@ function runOne (cliArgs, sc, isNode) {
       if (step.rm) { for (const f of step.rm) fs.rmSync(path.join(dir, f), { recursive: true, force: true }); return runStep(index + 1) }
       const nodeCli = step.cli === 'node' || (step.cli !== 'dotnet' && isNode)
       let args = [...step.args]
-      if (['encrypt', 'set'].includes(args[0])) args = [args[0], '--no-native', '--no-armor', ...args.slice(1)] // before the scenario's own arguments, which may end in an option that takes a value
+      if (['encrypt', 'set'].includes(args[0])) args = [args[0], ...(sc.env.FAKECLI_SEED !== undefined ? [] : ['--no-native']), '--no-armor', ...args.slice(1)] // before the scenario's own arguments, which may end in an option that takes a value
       // the node binary itself consumes --env-file ("node: v: not found") wherever it appears in argv: spell it -f for node only
       if (nodeCli) args = args.flatMap(a => a === '--env-file' ? ['-f'] : a.startsWith('--env-file=') ? ['-f', a.slice(11)] : [a])
       const exe = nodeCli ? 'node' : 'dotnet'

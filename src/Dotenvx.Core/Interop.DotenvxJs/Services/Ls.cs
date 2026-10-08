@@ -66,6 +66,9 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
             .ToArray();
     }
 
+    // Fdir skips directories it cannot read
+    private static readonly EnumerationOptions Inaccessible = new() { IgnoreInaccessible = true };
+
     private static IEnumerable<string> EnumerateFiles(string directory)
     {
         // Fdir crawls a missing directory (or a file given as the directory) as empty: `ls nonexistent` reports 0 files
@@ -74,12 +77,12 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
             yield break;
         }
 
-        foreach (string file in Directory.GetFiles(directory))
+        foreach (string file in Directory.GetFiles(directory, "*", Inaccessible))
         {
             yield return file;
         }
 
-        foreach (string subdirectory in Directory.GetDirectories(directory))
+        foreach (string subdirectory in Directory.GetDirectories(directory, "*", Inaccessible))
         {
             string name = Path.GetFileName(subdirectory);
             if (name is "node_modules" or ".git" ||

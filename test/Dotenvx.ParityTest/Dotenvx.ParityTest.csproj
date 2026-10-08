@@ -34,6 +34,8 @@
         <ProjectReference Include="..\..\src\Dotenvx\Dotenvx.csproj" />
         <!-- Fake `op`/`bw` executables for the 1Password and Bitwarden parity tests. -->
         <ProjectReference Include="..\Dotenvx.FakeSecretCli\Dotenvx.FakeSecretCli.csproj" />
+        <!-- Fake macOS `security` for the Keychain parity test. -->
+        <ProjectReference Include="..\Dotenvx.FakeSecurity\Dotenvx.FakeSecurity.csproj" />
     </ItemGroup>
 
 </Project>

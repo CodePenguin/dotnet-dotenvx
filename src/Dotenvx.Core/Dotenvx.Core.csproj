@@ -15,6 +15,7 @@
         <InternalsVisibleTo Include="Dotenvx.Configuration.Test"/>
         <InternalsVisibleTo Include="Dotenvx.Core.Test"/>
         <InternalsVisibleTo Include="Dotenvx.Test"/>
+        <InternalsVisibleTo Include="Dotenvx.ParityTest"/>
     </ItemGroup>
 
     <ItemGroup>

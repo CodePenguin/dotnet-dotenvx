@@ -67,6 +67,14 @@ public static class HostExtensions
             return 1;
         }
 
+        // root options without a command (`dotenvx -q`) behave like no arguments: commander prints the help and exits 1
+        if (ReferenceEquals(parseResult.CommandResult.Command, root) && !RequestsHelpOrVersion(parseResult) &&
+            !parseResult.UnmatchedTokens.Any())
+        {
+            root.Parse(["--help"]).Invoke();
+            return 1;
+        }
+
         return parseResult.Invoke();
     }
 

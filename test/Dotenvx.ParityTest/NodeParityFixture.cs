@@ -113,11 +113,11 @@ public sealed class NodeParityFixture : IAsyncLifetime
     /// primitives` section) from within the `dotenvx/` submodule directory, so `require('./src/
     /// lib/...')`-relative paths resolve the same way they would from a real file in that tree.
     /// </summary>
-    public async Task<CliResult> RunNodeScriptAsync(string script)
+    public async Task<CliResult> RunNodeScriptAsync(string script, IReadOnlyDictionary<string, string>? env = null)
     {
         if (script.Length < 20000)
         {
-            return await RunProcessAsync(_nodePath, ["-e", script], Path.Combine(RepoRoot, "dotenvx"));
+            return await RunProcessAsync(_nodePath, ["-e", script], Path.Combine(RepoRoot, "dotenvx"), env);
         }
 
         // long scripts overflow the Windows command-line limit - run them from a temp file instead

@@ -82,7 +82,7 @@ public class LsAction : Command
         using SpinnerScope spinner = SpinnerScope.Start(parseResult, "traversing");
 
         DateTime startedAt = DateTime.UtcNow;
-        string directory = parseResult.GetValue(_directoryArgument) ?? "./";
+        string directory = parseResult.GetValue(_directoryArgument) is { Length: > 0 } given ? given : "./";
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? excludeEnvFile = parseResult.GetValue(_excludeEnvFileOption);
         bool json = parseResult.GetValue(_jsonOption);
@@ -149,7 +149,7 @@ public class LsAction : Command
         }
 
         int count = 0;
-        foreach (string subdirectory in Directory.GetDirectories(directory))
+        foreach (string subdirectory in Directory.GetDirectories(directory, "*", new EnumerationOptions { IgnoreInaccessible = true }))
         {
             string name = Path.GetFileName(subdirectory);
             if (name is "node_modules" or ".git" ||

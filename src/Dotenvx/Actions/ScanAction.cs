@@ -47,10 +47,8 @@ public class ScanAction : Command
             return 0;
         }
 
-        if (!string.IsNullOrEmpty(output))
-        {
-            _logger.Error(Chomp(output));
-        }
+        // `error.stdout` is a Buffer, which is truthy even when empty: a failure with no output still logs an empty error
+        _logger.Error(Chomp(output));
 
         return 1;
     }
