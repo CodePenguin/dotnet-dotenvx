@@ -704,6 +704,29 @@ addSteps('r10 native set stores key', 'none', [S(['set', 'A', '1']), S(['get']),
 addSteps('r10 native encrypt stores key', 'plain', [S(['encrypt']), S(['get']), S(['native', 'down']), S(['get'])], { FAKECLI_SEED: JSON.stringify({}), CI: '' })
 addSteps('r10 native CI disables', 'r10 native inStoreOnly', [S(['get']), S(['native', 'up'])], { FAKECLI_SEED: fcSeed({ [nativeFile]: PRIV }), CI: 'true' })
 
+// ---- round 12: seeded random operation sequences (the same sequences on every run), each step run by the CLI under test.
+const r12Pool = [
+  ['get'], ['get', 'A'], ['get', 'B'], ['get', 'NEW'], ['get', '--all'], ['get', '--format', 'json'], ['get', '--format', 'shell'], ['get', '--mask'],
+  ['set', 'A', 'one'], ['set', 'B', 'two words'], ['set', 'NEW', '$HOME'], ['set', 'EMPTY', ''], ['set', 'Q', '"quoted"'], ['set', 'A', 'again', '--plain'],
+  ['set', 'P', 'plain value', '--plain'], ['set', 'ML', 'line1\nline2'], ['set', 'U', 'ünï 日本語'],
+  ['del', 'A'], ['del', 'NEW'], ['del', 'MISSING'],
+  ['encrypt'], ['encrypt', '-k', 'A'], ['encrypt', '-ek', 'B'], ['encrypt', '--stdout'], ['encrypt', '-f', '.env.local'],
+  ['decrypt'], ['decrypt', '-k', 'A'], ['decrypt', '-ek', 'B'], ['decrypt', '--stdout'], ['decrypt', '-f', '.env.local'],
+  ['keypair'], ['keypair', 'A'], ['keypair', '-f', '.env.local'],
+  ['ls'], ['validate'], ['genexample'], ['validate'],
+  ['run', '--', ...show], ['run', '--overload', '--', ...show], ['run', '-f', '.env.local', '--', ...show],
+  ['set', 'A', 'local', '-f', '.env.local'], ['set', 'C', 'c', '-f', '.env.local', '--plain'], ['del', 'C', '-f', '.env.local']
+]
+const r12Starts = ['none', 'plain', 'enc', 'multi', 'dups', 'quotes', 'example', 'publicOnly', 'encNoKeys']
+let r12Seed = 20261008
+const r12Rand = () => { r12Seed = (r12Seed * 1103515245 + 12345) & 0x7fffffff; return r12Seed / 0x7fffffff }
+for (let n = 0; n < 450; n++) {
+  const fx = r12Starts[Math.floor(r12Rand() * r12Starts.length)]
+  const length = 3 + Math.floor(r12Rand() * 5)
+  const steps = Array.from({ length }, () => S(r12Pool[Math.floor(r12Rand() * r12Pool.length)]))
+  addSteps(`r12 seq ${String(n).padStart(3, '0')} ${fx}`, fx, steps, { CI: 'true' })
+}
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
@@ -736,6 +759,39 @@ const walkSpec = (cmd, trail) => {
   for (const child of cmd.children) walkSpec(child, here)
 }
 walkSpec(specTree, [])
+
+// ---- round 11: every pair of options of the commands that read or write env files, generated from the help spec.
+const r11Values = {
+  '--env': ['production', 'local'], '-e': ['production'], '--env-file': ['.env.local'], '--env-keys-file': ['.env.keys', 'other.keys'],
+  '--convention': ['nextjs', 'flow'], '--ignore': ['MISSING_ENV_FILE'], '--token': ['dxt_x'], '--mask': ['*'], '--include-key': ['HELLO', 'H*'],
+  '--exclude-key': ['FOO', 'A'], '--format': ['json', 'shell', 'eval'], '--key': ['HELLO', 'A*']
+}
+const r11Skip = new Set(['--help', '--token', '--no-armor', '--no-native', '--no-1password', '--no-bitwarden', '-h'])
+const r11Fixtures = ['plain', 'enc', 'multi']
+const r11Commands = { get: ['get'], set: ['set', 'K', 'v'], encrypt: ['encrypt'], decrypt: ['decrypt'], keypair: ['keypair'], run: ['run'], del: ['del', 'HELLO'] }
+for (const c of specTree.children) {
+  const base = r11Commands[c.name]
+  if (!base) continue
+  const opts = c.options.map(o => {
+    const flags = o.term.split(/[, ]+/).filter(f => f.startsWith('-'))
+    const long = flags.find(f => f.startsWith('--'))
+    const takesRequired = o.term.includes('<')
+    const takesOptional = o.term.includes('[')
+    const vals = takesRequired || takesOptional ? (r11Values[long] || ['x']).slice(0, 2) : [null]
+    return { long, short: flags.find(f => !f.startsWith('--')), vals, optional: takesOptional }
+  }).filter(o => o.long && !r11Skip.has(o.long))
+  const spell = (o, v) => v === null ? [o.long] : [o.long, v]
+  for (let i = 0; i < opts.length; i++) {
+    for (let j = i + 1; j < opts.length; j++) {
+      for (const fx of r11Fixtures) {
+        const a = opts[i], b = opts[j]
+        const va = a.vals[0], vb = b.vals[0]
+        const args = c.name === 'run' ? [...base, ...spell(a, va), ...spell(b, vb), '--', ...show] : [...base, ...spell(a, va), ...spell(b, vb)]
+        add(`r11 ${fx} ${c.name} ${a.long}=${va} ${b.long}=${vb}`, fx, args, { CI: 'true' })
+      }
+    }
+  }
+}
 
 // Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
 const ACCEPTED_STDERR_ONLY = [/^r6 lock /, /^r6 repo .* hook install/, /^r4 file /, /^r5 life custom keys /, /^r5 child /] // r5 child: the node binary's own messages differ only in the casing of node.exe
@@ -774,6 +830,9 @@ const normalize = (s, dir) => {
   s = s.replace(/encrypted:[A-Za-z0-9+/=]+/g, 'encrypted:ENC')
   s = s.replace(/\b[0-9a-f]{64,}\b/g, 'HEX').replace(/\b0[23][0-9a-f]{64}\b/g, 'PUB')
   s = s.replace(/no change \(\w{3} \w{3}\)/g, 'no change (KEY)') // a freshly generated public key, shortened
+  s = s.replace(/"_":"[^"]*"/g, '"_":"LAUNCHER"') // the shell sets `_` to the program that started the CLI (node or dotnet)
+  s = s.replace(/sweep-[A-Za-z0-9]{6}/g, 'sweep-DIR') // the per-run directory, also where it appears JSON-escaped inside a dumped environment
+  s = s.replace(/0[23][0-9a-f]{4}\*{20,}/g, 'PUBMASK') // a masked random public key
   s = s.replace(/scanned in \d+s/g, 'scanned in Ns')
   s = s.replace(/\[dotenvx@[^\]]+\]/g, '[dotenvx@V]')
   return s
@@ -921,7 +980,7 @@ async function main () {
         lines.push(`  node files: ${JSON.stringify(x.n.files).slice(0, 400)}`)
         lines.push(`  dotn files: ${JSON.stringify(x.d.files).slice(0, 400)}`)
       } else if (f === 'exit') lines.push(`  exit node=${x.n.code} dotnet=${x.d.code}`)
-      else { lines.push(`  ${f} node=${JSON.stringify(x.n[f]).slice(0, 300)}`); lines.push(`  ${f} dotn=${JSON.stringify(x.d[f]).slice(0, 300)}`) }
+      else { const [a, b] = [JSON.stringify(x.n[f]), JSON.stringify(x.d[f])]; let p = 0; while (p < a.length && a[p] === b[p]) p++; const from = Math.max(0, Math.min(p - 40, p)); lines.push(`  ${f} node=${a.slice(from, from + 300)}`); lines.push(`  ${f} dotn=${b.slice(from, from + 300)}`) } // the window starts just before the first difference
     }
   }
   fs.writeFileSync(path.join(os.tmpdir(), 'dotenvx-parity-sweep.txt'), lines.join('\n'))
