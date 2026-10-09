@@ -861,6 +861,115 @@ r15Link('link to dir as file', [{ link: ['real', '.env'] }, S(['get']), S(['ls']
 r15Link('link example', [{ link: ['real/.env', '.env.example'] }, S(['genexample']), S(['validate'])])
 r15Link('link gitignore', [{ link: ['real/.env', '.gitignore'] }, S(['gitignore'])])
 
+// ---- round 16: standard streams: piped stdin into children, large and binary output, interleaving, exit codes, a reader that goes away.
+const r16Child = code => ['run', '--', 'node', '-e', code]
+const r16Stdins = { empty: '', short: 'hello', newline: 'a\nb\n', crlf: 'a\r\nb\r\n', unicode: 'ünï 日本語 🔑\n', nul: 'a\u0000b\n', big: 'x'.repeat(1024 * 1024), manyLines: Array.from({ length: 20000 }, (_, i) => 'line' + i).join('\n') + '\n', noNewline: 'no newline at all' }
+const r16Readers = {
+  all: 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>console.log("len:"+d.length+" "+JSON.stringify(d.slice(0,20))))',
+  firstLine: 'process.stdin.once("data",c=>{console.log("first:"+JSON.stringify(String(c).slice(0,10)));process.exit(0)})',
+  ignore: 'console.log("not reading")',
+  closeEarly: 'process.stdin.destroy();console.log("closed")'
+}
+for (const [sName, stdin] of Object.entries(r16Stdins)) {
+  for (const [rName, code] of Object.entries(r16Readers)) {
+    addSteps(`r16 stdin ${sName} reader ${rName}`, 'plain', [S(r16Child(code), { stdin })], { CI: 'true' })
+  }
+}
+// output volume and shape
+const r16Writers = {
+  bigStdout: 'process.stdout.write("x".repeat(5*1024*1024))',
+  bigStderr: 'process.stderr.write("y".repeat(2*1024*1024))',
+  manyLines: 'for(let i=0;i<50000;i++)console.log("line"+i)',
+  noNewline: 'process.stdout.write("no newline")',
+  binary: 'process.stdout.write(Buffer.from([0,1,2,255,254,10]))',
+  unicode: 'console.log("ünï 日本語 🔑")',
+  interleaved: 'for(let i=0;i<200;i++){console.log("out"+i);console.error("err"+i)}',
+  longLine: 'console.log("z".repeat(1000000))',
+  empty: ''
+}
+for (const [name, code] of Object.entries(r16Writers)) {
+  addSteps(`r16 output ${name}`, 'plain', [S(r16Child(code))], { CI: 'true' })
+  addSteps(`r16 output ${name} quiet`, 'plain', [S(['-q', ...r16Child(code)])], { CI: 'true' })
+}
+// exit codes and signals
+for (const code of [0, 1, 2, 126, 127, 128, 129, 255, 256, 257, 511, 1000, -1, -2]) {
+  addSteps(`r16 exit ${code}`, 'plain', [S(r16Child(`process.exit(${code})`))], { CI: 'true' })
+  addSteps(`r16 exitCode ${code}`, 'plain', [S(r16Child(`process.exitCode=${code}`))], { CI: 'true' })
+}
+for (const sig of ['SIGTERM', 'SIGKILL', 'SIGINT', 'SIGHUP', 'SIGUSR1']) {
+  addSteps(`r16 self signal ${sig}`, 'plain', [S(r16Child(`process.kill(process.pid,"${sig}");setTimeout(()=>{},2000)`))], { CI: 'true' })
+}
+addSteps('r16 child throws', 'plain', [S(r16Child('throw new Error("boom")'))], { CI: 'true' })
+addSteps('r16 child unhandled rejection', 'plain', [S(r16Child('Promise.reject(new Error("rej"))'))], { CI: 'true' })
+addSteps('r16 child syntax error', 'plain', [S(r16Child('}{'))], { CI: 'true' })
+addSteps('r16 child runs long then exits', 'plain', [S(r16Child('setTimeout(()=>{console.log("late");process.exit(7)},1500)'))], { CI: 'true' })
+addSteps('r16 child spawns grandchild', 'plain', [S(r16Child('const {spawnSync}=require("child_process");const r=spawnSync(process.execPath,["-e","console.log(process.env.HELLO);process.exit(9)"]);console.log("gc",r.status,String(r.stdout).trim());process.exit(r.status)'))], { CI: 'true' })
+// a reader that goes away
+for (const cmd of [['get'], ['get', '--format', 'json'], ['ls'], ['keypair'], ['decrypt', '--stdout'], ['encrypt', '--stdout']]) {
+  addSteps(`r16 broken stdout ${cmd.join(' ')}`, 'enc', [S(cmd, { breakStdout: true })], { CI: 'true' })
+}
+fixtures['r16 manyKeys'] = { '.env': Array.from({ length: 600 }, (_, i) => `K${i}=value${i}`).join('\n') + '\n' }
+for (const cmd of [['get'], ['get', '--format', 'shell'], ['get', '--format', 'eval'], ['ls'], ['keypair'], ['encrypt', '--stdout'], ['run', '--', 'node', '-e', 'console.log(Object.keys(process.env).filter(k=>k.startsWith("K")).length)']]) {
+  addSteps(`r16 many keys ${cmd.slice(0, 3).join(' ')}`, 'r16 manyKeys', [S(cmd)], { CI: 'true' })
+  addSteps(`r16 many keys broken ${cmd.slice(0, 3).join(' ')}`, 'r16 manyKeys', [S(cmd, { breakStdout: true })], { CI: 'true' })
+}
+
+// ---- round 17: conventions (nextjs, flow) and environment selection crossed with commands, files present and NODE_ENV / DOTENV_ENV.
+const r17Files = {
+  '.env': 'A=base\nB=base\nONLY_BASE=1\n',
+  '.env.local': 'A=local\nC=local\n',
+  '.env.development': 'A=development\nD=development\n',
+  '.env.development.local': 'A=development.local\nE=development.local\n',
+  '.env.test': 'A=test\nF=test\n',
+  '.env.test.local': 'A=test.local\n',
+  '.env.production': 'A=production\nG=production\n',
+  '.env.production.local': 'A=production.local\n',
+  '.env.staging': 'A=staging\nH=staging\n',
+  '.env.staging.local': 'A=staging.local\n',
+  '.env.defaults': 'A=defaults\nB=defaults\nZ=defaults\n'
+}
+fixtures['r17 all'] = r17Files
+fixtures['r17 partial'] = { '.env': r17Files['.env'], '.env.production': r17Files['.env.production'] }
+fixtures['r17 none'] = {}
+fixtures['r17 encrypted'] = { '.env': encEnv, '.env.keys': keysFile, '.env.local': 'A=local\n', '.env.development': 'A=development\n' }
+const r17Envs = [{}, { NODE_ENV: 'development' }, { NODE_ENV: 'test' }, { NODE_ENV: 'production' }, { NODE_ENV: 'staging' }, { NODE_ENV: '' }, { NODE_ENV: 'Production' }, { DOTENV_ENV: 'production' }, { DOTENV_ENV: 'staging', NODE_ENV: 'production' }, { DOTENV_ENV: '', NODE_ENV: 'test' }, { DOTENV_ENV: 'weird env' }]
+const r17Conventions = ['nextjs', 'flow', 'NEXTJS', 'bogus', '', 'next']
+const r17Cmds = [['get'], ['get', 'A'], ['get', '--all'], ['get', '--format', 'shell'], ['run', '--', ...show], ['run', '--overload', '--', ...show], ['validate'], ['get', '-e', 'A=inline'], ['get', '--strict']]
+for (const fx of ['r17 all', 'r17 partial', 'r17 none', 'r17 encrypted']) {
+  for (const conv of r17Conventions) {
+    for (const [i, extra] of r17Envs.entries()) {
+      for (const cmd of r17Cmds) {
+        const withConv = cmd[0] === 'run' ? [cmd[0], ...(cmd[1] === '--overload' ? ['--overload'] : []), '--convention', conv, '--', ...show] : [...cmd, '--convention', conv]
+        add(`r17 ${fx} ${conv} env${i} ${cmd.slice(0, 3).join(' ')}`, fx, withConv, { CI: 'true', ...extra })
+      }
+    }
+  }
+}
+// -f / -e / convention interplay
+for (const [label, extraArgs] of Object.entries({
+  fileThenConv: ['-f', '.env.staging', '--convention', 'nextjs'],
+  convThenFile: ['--convention', 'nextjs', '-f', '.env.staging'],
+  twoFiles: ['-f', '.env.staging', '-f', '.env.local', '--convention', 'flow'],
+  overload: ['--convention', 'flow', '--overload'],
+  overloadFile: ['--convention', 'nextjs', '--overload', '-f', '.env.staging'],
+  envs: ['--convention', 'flow', '-e', 'A=cli', '-e', 'B=cli2'],
+  envFile: ['--convention', 'flow', '-e', 'C=x', '-f', '.env.staging'],
+  keysFile: ['--convention', 'nextjs', '-fk', '.env.keys'],
+  ignore: ['--convention', 'nextjs', '--ignore', 'MISSING_ENV_FILE'],
+  strictConv: ['--convention', 'flow', '--strict']
+})) {
+  for (const extra of [{}, { NODE_ENV: 'production' }, { NODE_ENV: 'staging' }]) {
+    for (const fx of ['r17 all', 'r17 partial']) {
+      add(`r17 combo ${label} ${fx} ${JSON.stringify(extra)}`, fx, ['get', ...extraArgs], { CI: 'true', ...extra })
+      add(`r17 combo ${label} run ${fx} ${JSON.stringify(extra)}`, fx, ['run', ...extraArgs, '--', ...show], { CI: 'true', ...extra })
+    }
+  }
+}
+// the library-style variable names for the same options
+for (const [k, v] of [['DOTENV_CONFIG_CONVENTION', 'nextjs'], ['DOTENV_CONFIG_CONVENTION', 'flow'], ['DOTENV_CONVENTION', 'nextjs'], ['DOTENV_CONFIG_OVERRIDE', 'true'], ['DOTENV_CONFIG_PATH', '.env.staging'], ['DOTENV_CONFIG_PATH', '.env.staging,.env.local'], ['DOTENV_CONFIG_DEBUG', 'true'], ['DOTENV_CONFIG_QUIET', 'true']]) {
+  for (const cmd of [['get'], ['run', '--', ...show]]) add(`r17 var ${k}=${v} ${cmd[0]}`, 'r17 all', cmd, { CI: 'true', [k]: v })
+}
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
@@ -928,7 +1037,8 @@ for (const c of specTree.children) {
 }
 
 // Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
-const ACCEPTED_STDERR_ONLY = [/^r15 link link loop/, // ELOOP in Node, the system message here
+const ACCEPTED_STDERR_ONLY = [/^r17 .* (bogus|next|NEXTJS) env/, // an invalid convention is an uncaught error in both: only the stack trace text differs
+  /^r15 link link loop/, // ELOOP in Node, the system message here
   /^r15 .* (encrypt|set|get|decrypt|keypair|validate|run) -f(k)? .*(deep|nope)/, // a missing file: ENOENT in Node, the .NET wording here
   /^r14 (envIsDir|keysIsDir|exampleIsDir|gitignoreIsDir) /, // a directory read as a file: EISDIR in Node, access denied in .NET
   /^r6 lock /, /^r6 repo .* hook install/, /^r4 file /, /^r5 life custom keys /, /^r5 child /] // r5 child: the node binary's own messages differ only in the casing of node.exe
@@ -1095,6 +1205,9 @@ function runOne (cliArgs, sc, isNode) {
         code = err ? (err.code ?? 1) : 0
         runStep(index + 1)
       })
+      child.stdin.on('error', () => {}) // a child that exits without reading its stdin
+      child.stdout.on('error', () => {})
+      if (step.breakStdout) child.stdout.destroy() // the reader goes away: the CLI's next write to stdout fails
       if (step.stdin !== undefined) child.stdin.end(step.stdin)
       else child.stdin.end()
     }

@@ -150,4 +150,18 @@ public class ConventionsTest : IDisposable
             new() { Type = EnvType.EnvFile, Value = ".env.defaults" }
         });
     }
+
+    /// <remarks>Not an upstream test: `process.env.DOTENV_ENV || process.env.NODE_ENV || 'development'` skips empty values.</remarks>
+    [Theory]
+    [InlineData("", "", ".env.development")]
+    [InlineData("", "production", ".env.production")]
+    [InlineData("staging", "production", ".env.staging")]
+    [InlineData(null, "", ".env.development")]
+    public void TestEmptyEnvironmentValuesFallThrough(string? dotenvEnv, string nodeEnv, string expectedFile)
+    {
+        Environment.SetEnvironmentVariable("DOTENV_ENV", dotenvEnv);
+        Environment.SetEnvironmentVariable("NODE_ENV", nodeEnv);
+
+        Conventions("flow").Select(item => item.Value).ShouldContain(expectedFile);
+    }
 }
