@@ -878,16 +878,29 @@ const normalize = (s, dir) => {
 // A scenario is one command line (args) or a list of steps run in one directory, in order. A step is
 // { args, cli: 'self'|'node'|'dotnet', stdin } (cli names the CLI that runs it; 'self' is the CLI being compared, so a
 // step run by the OTHER implementation proves cross-compatibility), { write: { file: content } } or { rm: [files] }.
-// Fake external programs: a directory with a gitleaks shim (cmd on Windows, sh elsewhere) that runs scripts/fake-gitleaks.js
-const FAKE_BIN = (() => {
+// Fake external programs written as single-file apps (test/fakes/<name>.cs) and published once to a cached directory; the apphost is
+// copied under the name the scenario needs.
+const fakeApps = new Map()
+const publishFake = name => {
+  if (fakeApps.has(name)) return fakeApps.get(name)
+  const out = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-fake-' + name + '-'))
+  execFileSync('dotnet', ['publish', path.join(ROOT, 'test', 'fakes', name + '.cs'), '-o', out], { stdio: 'ignore' })
+  process.on('exit', () => { try { fs.rmSync(out, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
+  fakeApps.set(name, out)
+  return out
+}
+const FAKE_BIN = { get dir () { return fakeBinDir() } }
+let fakeBinCache = null
+const fakeBinDir = () => {
+  if (fakeBinCache) return fakeBinCache
+  const published = publishFake('gitleaks')
+  const suffix = process.platform === 'win32' ? '.exe' : ''
   const bin = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-bin-'))
-  const script = path.join(ROOT, 'scripts', 'fake-gitleaks.js')
-  const CRLF = String.fromCharCode(13, 10)
-  if (process.platform === 'win32') fs.writeFileSync(path.join(bin, 'gitleaks.cmd'), ['@echo off', 'node "' + script + '" %*', ''].join(CRLF))
-  else { fs.writeFileSync(path.join(bin, 'gitleaks'), ['#!/bin/sh', 'exec node "' + script + '" "$@"', ''].join(String.fromCharCode(10))); fs.chmodSync(path.join(bin, 'gitleaks'), 0o755) }
+  for (const f of fs.readdirSync(published)) fs.copyFileSync(path.join(published, f), path.join(bin, f === 'gitleaks' + suffix ? 'gitleaks' + suffix : f))
   process.on('exit', () => { try { fs.rmSync(bin, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
+  fakeBinCache = bin
   return bin
-})()
+}
 
 // Fake op / bw / powershell / secret-tool: test/Dotenvx.FakeSecretCli (build it first) copied under each tool name. A scenario opts in with
 // FAKECLI_SEED in its env: a JSON object of { relative path in the fake vault: content }. The vault directory, including the fake's call log,
@@ -953,7 +966,7 @@ function runOne (cliArgs, sc, isNode) {
     }
     if (Object.keys(sc.env).some(k => k.startsWith('FAKEGL_'))) {
       const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
-      env[pathKey] = FAKE_BIN + path.delimiter + (env[pathKey] || '')
+      env[pathKey] = FAKE_BIN.dir + path.delimiter + (env[pathKey] || '')
       env.FAKEGL_LOG = path.join(fs.realpathSync(os.tmpdir()), 'sweep-gl-' + path.basename(dir) + '.log')
     }
     // hermetic Armor/device config: a per-run directory unless the scenario names one
