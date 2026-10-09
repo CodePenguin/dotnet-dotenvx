@@ -30,4 +30,15 @@ public class CommanderArgsTest
 
         unknown.ShouldBe(expected);
     }
+
+    [Theory]
+    [InlineData(new[] { "genexample", "-f=plain", "zzz" }, new[] { "genexample", "zzz", "-f", "=plain" })]
+    [InlineData(new[] { "genexample", "-fplain", "zzz" }, new[] { "genexample", "zzz", "-f", "plain" })]
+    [InlineData(new[] { "genexample", "-f", "plain", "-fk", "zzz" }, new[] { "genexample", "zzz", "-f", "plain", "-f", "k" })]
+    [InlineData(new[] { "genexample", "d", "-f=plain", "z" }, new[] { "genexample", "d", "z", "-f", "=plain" })]
+    [InlineData(new[] { "genexample", "-f", "plain", "zzz" }, new[] { "genexample", "-f", "plain", "zzz" })]
+    public void AttachedValueEndsAVariadicOption(string[] args, string[] expected)
+    {
+        CommanderArgs.Normalize(args).ShouldBe(expected);
+    }
 }

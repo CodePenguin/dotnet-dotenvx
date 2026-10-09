@@ -40,6 +40,8 @@ public static class CommanderArgs
         var chain = new List<HelpSpec> { CommanderHelp.RootSpec };
         bool positionalSeen = false;
         bool unknownOptionSeen = false;
+        int insertAt = 0; // just after the command and the positional arguments so far
+        bool openVariadic = false; // the previous option takes values until the next option
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -49,6 +51,24 @@ public static class CommanderArgs
                 result.AddRange(args[i..]);
 
                 break;
+            }
+
+            if (InlineVariadic(chain, arg) is { } inline)
+            {
+                // commander: a value attached to a variadic option (`-f=x`, `-fx`, `--env-file=x`) ends its values, so the plain
+                // arguments after it are positional; System.CommandLine would keep adding them to the option
+                result.AddRange(inline);
+                var positionals = new List<string>();
+                while (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                {
+                    positionals.Add(args[++i]);
+                }
+
+                result.InsertRange(insertAt, positionals);
+                insertAt += positionals.Count;
+                openVariadic = false;
+
+                continue;
             }
 
             if (arg.Length > 2 && arg[0] == '-' && char.IsAsciiLetter(arg[1]) && arg[2] is '=' or ':' &&
@@ -77,6 +97,7 @@ public static class CommanderArgs
                 // an unknown option before the command is commander's `unknown option` error, not a dispatch
                 unknownOptionSeen |= chain.Count == 1 && !IsKnown(chain[0], arg);
                 string? term = TakesValue(chain, arg);
+                openVariadic = term is not null && term.Contains("...");
                 int level = LevelOf(chain, arg);
 
                 // commander parses level by level: the options of the levels above (the root's -q, -l, ...) are taken out of
@@ -123,9 +144,39 @@ public static class CommanderArgs
             }
 
             result.Add(arg);
+            if (!openVariadic)
+            {
+                insertAt = result.Count;
+            }
         }
 
         return [.. result];
+    }
+
+    /// <summary>
+    /// The tokens for a variadic option written with its value attached (`-f=x`, `-fx`, `--env-file=x`), or null when
+    /// <paramref name="arg" /> is not that.
+    /// </summary>
+    private static string[]? InlineVariadic(List<HelpSpec> chain, string arg)
+    {
+        if (arg.StartsWith("--"))
+        {
+            int equals = arg.IndexOf('=');
+            if (equals > 2 && TakesValue(chain, arg[..equals]) is { } longTerm && longTerm.Contains("..."))
+            {
+                return [arg];
+            }
+
+            return null;
+        }
+
+        if (arg.Length > 2 && arg[0] == '-' && LevelOf(chain, arg) < 0 && TakesValue(chain, arg[..2]) is { } shortTerm &&
+            shortTerm.Contains("..."))
+        {
+            return [arg[..2], arg[2..]];
+        }
+
+        return null;
     }
 
     private static bool IsRootBoolean(string flag)

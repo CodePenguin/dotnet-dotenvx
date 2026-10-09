@@ -764,6 +764,56 @@ addSteps('r13 ext vault exit codes', 'plain', [S(['ext', 'vault', 'x'])], r13Env
 addSteps('r13 ext foo exit codes', 'plain', [S(['ext', 'foo', 'x'])], r13Env({ FAKEEXT_EXIT: '5' }))
 addSteps('r13 builtin names win', 'plain', [S(['get']), S(['ls']), S(['help'])], r13Env({}))
 
+// ---- round 14: filesystem edge cases: odd file names, directories where files are expected, unusual content and sizes.
+const r14Cmds = [['get'], ['get', 'A'], ['set', 'NEW', 'v'], ['del', 'A'], ['encrypt'], ['decrypt'], ['keypair'], ['ls'], ['validate'], ['genexample'], ['run', '--', ...show]]
+const r14Content = {
+  empty: '',
+  whitespace: '  \n\t\n   \n',
+  onlyComments: '# a\n# b\n',
+  nul: 'A=1\u0000B=2\nC=3\n',
+  binary: Buffer.from([0, 1, 2, 255, 254, 10, 65, 61, 49, 10]).toString('latin1'),
+  invalidUtf8: Buffer.from([65, 61, 0xc3, 0x28, 10, 66, 61, 50, 10]).toString('latin1'),
+  lone: 'A',
+  eqOnly: '=\n==\n=x\n',
+  hugeLine: 'A=' + 'x'.repeat(16 * 1024) + '\nB=2\n',
+  manyKeys: Array.from({ length: 2000 }, (_, i) => `K${i}=v${i}`).join('\n') + '\n',
+  deepValue: 'A=' + '${A}'.repeat(50) + '\nB=${A}\n',
+  trailingSpaces: 'A=1   \nB=2\t\n',
+  noTrailingNewline: 'A=1\nB=2',
+  mixedNewlines: 'A=1\r\nB=2\rC=3\nD=4\n'
+}
+for (const [label, content] of Object.entries(r14Content)) {
+  fixtures['r14 content ' + label] = { '.env': ['binary', 'invalidUtf8'].includes(label) ? Buffer.from(content, 'latin1') : content }
+  for (const cmd of r14Cmds) add(`r14 content ${label} ${cmd.slice(0, 2).join(' ')}`, 'r14 content ' + label, cmd, { CI: 'true' })
+}
+const r14Names = { space: 'my env', unicode: 'ünï日本語', dots: '..env', dash: '-dash', long: 'e'.repeat(150), percent: '%PATH%', dollar: '$HOME', quote: "it's", leadingDot: '.hidden', trailingSpace: 'trail ', semicolon: 'a;b', brackets: '[a]', star: 'a*b' }
+for (const [label, name] of Object.entries(r14Names)) {
+  if (process.platform === 'win32' && /[*"<>|?:]|\s$/.test(name)) continue
+  fixtures['r14 name ' + label] = { [name]: 'A=1\nB=2\n' }
+  for (const cmd of [['get'], ['set', 'NEW', 'v'], ['encrypt'], ['decrypt'], ['keypair'], ['validate'], ['genexample']]) {
+    add(`r14 name ${label} ${cmd[0]}`, 'r14 name ' + label, [...cmd, '-f', name], { CI: 'true' })
+    add(`r14 name ${label} ${cmd[0]} dir`, 'r14 name ' + label, [...cmd, '-f', name, '-fk', name + '.keys'], { CI: 'true' })
+  }
+  fixtures['r14 dirname ' + label] = { [name + '/.env']: 'A=1\n' }
+  add(`r14 dirname ${label} ls`, 'r14 dirname ' + label, ['ls', name], { CI: 'true' })
+  add(`r14 dirname ${label} genexample`, 'r14 dirname ' + label, ['genexample', name], { CI: 'true' })
+  add(`r14 dirname ${label} precommit`, 'r14 dirname ' + label, ['precommit', name], { CI: 'true' })
+}
+// a directory where a file is expected
+fixtures['r14 envIsDir'] = { '.env/inner': 'x\n' }
+fixtures['r14 keysIsDir'] = { '.env': 'A=1\n', '.env.keys/inner': 'x\n' }
+fixtures['r14 exampleIsDir'] = { '.env': 'A=1\n', '.env.example/inner': 'x\n' }
+fixtures['r14 gitignoreIsDir'] = { '.env': 'A=1\n', '.gitignore/inner': 'x\n' }
+for (const fx of ['r14 envIsDir', 'r14 keysIsDir', 'r14 exampleIsDir', 'r14 gitignoreIsDir']) {
+  for (const cmd of r14Cmds.concat([['gitignore'], ['prebuild'], ['precommit'], ['validate', '--strict']])) add(`${fx} ${cmd.slice(0, 2).join(' ')}`, fx, cmd, { CI: 'true' })
+}
+// the keys file in an unexpected state
+const r14Keys = { empty: '', garbage: 'not a key file\n', wrongName: 'FOO=bar\n', duplicate: `DOTENV_PRIVATE_KEY=${PRIV}\nDOTENV_PRIVATE_KEY=${WRONG}\n`, quoted: `DOTENV_PRIVATE_KEY="${PRIV}"\n`, crlf: `DOTENV_PRIVATE_KEY=${PRIV}\r\n`, spaced: `DOTENV_PRIVATE_KEY = ${PRIV}\n`, bom: `﻿DOTENV_PRIVATE_KEY=${PRIV}\n`, shortKey: 'DOTENV_PRIVATE_KEY=abc\n', upper: `DOTENV_PRIVATE_KEY=${PRIV.toUpperCase()}\n`, comment: `# k\nDOTENV_PRIVATE_KEY=${PRIV}\n# end\n` }
+for (const [label, keys] of Object.entries(r14Keys)) {
+  fixtures['r14 keys ' + label] = { '.env': encEnv, '.env.keys': keys }
+  for (const cmd of [['get'], ['decrypt', '--stdout'], ['keypair'], ['run', '--', ...show], ['set', 'NEW', 'v'], ['encrypt'], ['validate']]) add(`r14 keys ${label} ${cmd[0]}`, 'r14 keys ' + label, cmd, { CI: 'true' })
+}
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
@@ -831,10 +881,12 @@ for (const c of specTree.children) {
 }
 
 // Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
-const ACCEPTED_STDERR_ONLY = [/^r6 lock /, /^r6 repo .* hook install/, /^r4 file /, /^r5 life custom keys /, /^r5 child /] // r5 child: the node binary's own messages differ only in the casing of node.exe
+const ACCEPTED_STDERR_ONLY = [/^r14 (envIsDir|keysIsDir|exampleIsDir|gitignoreIsDir) /, // a directory read as a file: EISDIR in Node, access denied in .NET
+  /^r6 lock /, /^r6 repo .* hook install/, /^r4 file /, /^r5 life custom keys /, /^r5 child /] // r5 child: the node binary's own messages differ only in the casing of node.exe
 
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
+  /^r14 (name|dirname) dash /, // `-dash` as an argument is the debug flag plus an unknown option: the debug line is printed before the error here
   /^r10 ref .* get --all$/, // --all dumps the whole environment, which includes the per-run fake vault directory
   /^r9 scan root -l debug /, // debug output has a different shape
   /^r8 ls tree \[/, // directory order follows the filesystem crawl in Node (trap #64) and an ordinal sort here
