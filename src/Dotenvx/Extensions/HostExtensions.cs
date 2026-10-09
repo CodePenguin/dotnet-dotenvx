@@ -27,7 +27,17 @@ public static class HostExtensions
             return 1;
         }
 
-        ParseResult parseResult = root.Parse(CommanderArgs.Normalize(args, out string? missingTerm));
+        string[] normalized = CommanderArgs.Normalize(args, out string? missingTerm, out string? firstUnknown);
+
+        // an unknown first argument is the extension to run, whatever follows it (`dotenvx foo get` runs `dotenvx-foo get`);
+        // commander still handles -h/--help/-V/--version anywhere before the action runs
+        if (firstUnknown is not null && !args.TakeWhile(a => a != "--").Any(a => a is "-h" or "--help" or "-V" or "--version"))
+        {
+            // `process.argv.slice(3)`: everything after the first user argument
+            return ExecuteDynamic.Dynamic(firstUnknown, args[1..], host.Services.GetRequiredService<IDotenvxLogger>());
+        }
+
+        ParseResult parseResult = root.Parse(normalized);
 
         // dotenvx.js: the root's `[command] [args...]` action runs executeDynamic: `dotenvx-<command>` from PATH, else
         // `error: unknown command '<command>'` on stdout and exit 0

@@ -25,10 +25,21 @@ public static class CommanderArgs
     /// </param>
     public static string[] Normalize(string[] args, out string? missingTerm)
     {
+        return Normalize(args, out missingTerm, out _);
+    }
+
+    /// <param name="unknownCommand">
+    /// The first root-level argument that is not a command (`dotenvx foo get`: "foo"), else null. commander hands everything
+    /// after it to `dotenvx-foo`; System.CommandLine would match the later `get` as a subcommand.
+    /// </param>
+    public static string[] Normalize(string[] args, out string? missingTerm, out string? unknownCommand)
+    {
         missingTerm = null;
+        unknownCommand = null;
         var result = new List<string>();
         var chain = new List<HelpSpec> { CommanderHelp.RootSpec };
         bool positionalSeen = false;
+        bool unknownOptionSeen = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -63,6 +74,8 @@ public static class CommanderArgs
 
             if (arg.Length > 1 && arg[0] == '-')
             {
+                // an unknown option before the command is commander's `unknown option` error, not a dispatch
+                unknownOptionSeen |= chain.Count == 1 && !IsKnown(chain[0], arg);
                 string? term = TakesValue(chain, arg);
                 int level = LevelOf(chain, arg);
 
@@ -102,6 +115,10 @@ public static class CommanderArgs
                 {
                     chain.Add(child);
                     positionalSeen = false;
+                }
+                else if (chain.Count == 1 && !unknownOptionSeen)
+                {
+                    unknownCommand = arg;
                 }
             }
 

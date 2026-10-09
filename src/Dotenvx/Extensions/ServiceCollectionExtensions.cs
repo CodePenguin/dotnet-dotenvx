@@ -44,7 +44,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IDotenvxLogger>(serviceProvider =>
         {
             DotenvxLogger logger = new(serviceProvider.GetRequiredService<ILogger<DotenvxLogger>>(), options);
-            logger.Debug($"Setting log level to {options.LogLevel.ToString().ToLower()}");
+            logger.Debug($"setting log level to: {options.LogLevel.ToString().ToLower()}");
             return logger;
         });
     }

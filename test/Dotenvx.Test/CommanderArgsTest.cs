@@ -16,4 +16,18 @@ public class CommanderArgsTest
     {
         CommanderArgs.Normalize(args).ShouldBe(expected);
     }
+
+    [Theory]
+    [InlineData(new[] { "foo", "get" }, "foo")]
+    [InlineData(new[] { "-q", "foo", "help" }, "foo")]
+    [InlineData(new[] { "foo", "-f", "x" }, "foo")]
+    [InlineData(new[] { "get", "foo" }, null)]
+    [InlineData(new[] { "-f", "x" }, null)]
+    [InlineData(new string[0], null)]
+    public void FirstUnknownRootArgumentIsTheExtension(string[] args, string? expected)
+    {
+        CommanderArgs.Normalize(args, out _, out string? unknown);
+
+        unknown.ShouldBe(expected);
+    }
 }

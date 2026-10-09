@@ -727,6 +727,43 @@ for (let n = 0; n < 450; n++) {
   addSteps(`r12 seq ${String(n).padStart(3, '0')} ${fx}`, fx, steps, { CI: 'true' })
 }
 
+// ---- round 13: dynamic extension dispatch (`dotenvx <name>` runs `dotenvx-<name>` from PATH) through test/Dotenvx.FakeExtension.
+const r13Names = 'foo,bar-baz,foo.bar,armor,ext-foo,ext-vault,Upper'
+const r13Env = extra => ({ CI: 'true', FAKEEXT_NAMES: r13Names, ...extra })
+const r13Args = [[], ['a'], ['a', 'b'], ['--x'], ['-x'], ['--x=1'], ['-f', '.env'], ['--'], ['--', 'x'], ['x', '--', 'y'], [''], ['a b', 'c'], ['"q"', "'s'"], ['$HOME', '%PATH%'], ['ünï', '日本語'], ['-h'], ['--help'], ['-V'], ['--version'], ['help'], ['-q'], ['-l', 'debug'], ['get'], ['--file', '.env'], ['-e']]
+for (const name of ['foo', 'bar-baz', 'foo.bar', 'Upper', 'armor', 'missing', 'FOO', 'foo_bar']) {
+  for (const a of r13Args) {
+    addSteps(`r13 dispatch ${name} [${a.join(' ')}]`, 'plain', [S([name, ...a])], r13Env({}))
+  }
+}
+for (const exit of [0, 1, 2, 3, 127, 255]) {
+  addSteps(`r13 exit ${exit}`, 'plain', [S(['foo', 'x'])], r13Env({ FAKEEXT_EXIT: String(exit) }))
+  addSteps(`r13 exit ${exit} then get`, 'plain', [S(['foo']), S(['get'])], r13Env({ FAKEEXT_EXIT: String(exit) }))
+}
+addSteps('r13 stdout and stderr', 'plain', [S(['foo'])], r13Env({ FAKEEXT_OUT: 'out text\n', FAKEEXT_ERR: 'err text\n', FAKEEXT_EXIT: '4' }))
+addSteps('r13 stdout no newline', 'plain', [S(['foo'])], r13Env({ FAKEEXT_OUT: 'no newline' }))
+addSteps('r13 unicode output', 'plain', [S(['foo'])], r13Env({ FAKEEXT_OUT: 'ünï 日本語 🔑\n' }))
+for (const stdin of ['', 'line\n', 'two\nlines\n', 'ünï\n', 'no newline', 'x'.repeat(100000)]) {
+  addSteps(`r13 stdin ${stdin.length}`, 'plain', [S(['foo'], { stdin })], r13Env({ FAKEEXT_STDIN: '1' }))
+}
+addSteps('r13 env passthrough', 'plain', [S(['foo'])], r13Env({ FAKEEXT_ENVVARS: 'HELLO,DOTENV_PRIVATE_KEY,NODE_ENV,NOPE', HELLO: 'machine', NODE_ENV: 'test', DOTENV_PRIVATE_KEY: 'k' }))
+addSteps('r13 env not loaded from .env', 'plain', [S(['foo'])], r13Env({ FAKEEXT_ENVVARS: 'HELLO,FOO' }))
+addSteps('r13 env after run', 'plain', [S(['run', '--', 'node', '-e', '0']), S(['foo'])], r13Env({ FAKEEXT_ENVVARS: 'HELLO,FOO' }))
+for (const flags of [['-q'], ['-v'], ['-l', 'debug'], ['-l', 'error'], ['--quiet'], ['-q', '-v']]) {
+  addSteps(`r13 root ${flags.join(' ')} then dispatch`, 'plain', [S([...flags, 'foo', 'x'])], r13Env({}))
+  addSteps(`r13 root ${flags.join(' ')} missing`, 'plain', [S([...flags, 'missing', 'x'])], r13Env({}))
+}
+addSteps('r13 no programs on PATH', 'plain', [S(['foo']), S(['armor']), S(['ext', 'foo']), S(['ext', 'vault'])], { CI: 'true' })
+for (const sub of [[], ['x'], ['--x'], ['-h'], ['--help'], ['a', 'b']]) {
+  addSteps(`r13 ext foo [${sub.join(' ')}]`, 'plain', [S(['ext', 'foo', ...sub])], r13Env({}))
+  addSteps(`r13 ext vault [${sub.join(' ')}]`, 'plain', [S(['ext', 'vault', ...sub])], r13Env({}))
+  addSteps(`r13 ext missing [${sub.join(' ')}]`, 'plain', [S(['ext', 'nothing', ...sub])], r13Env({}))
+  addSteps(`r13 ext builtin [${sub.join(' ')}]`, 'plain', [S(['ext', 'ls', ...sub])], r13Env({}))
+}
+addSteps('r13 ext vault exit codes', 'plain', [S(['ext', 'vault', 'x'])], r13Env({ FAKEEXT_EXIT: '5' }))
+addSteps('r13 ext foo exit codes', 'plain', [S(['ext', 'foo', 'x'])], r13Env({ FAKEEXT_EXIT: '5' }))
+addSteps('r13 builtin names win', 'plain', [S(['get']), S(['ls']), S(['help'])], r13Env({}))
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
@@ -872,6 +909,25 @@ const getFakeCliBin = () => {
   return bin
 }
 
+// Fake extension programs: test/Dotenvx.FakeExtension (build it first) copied as dotenvx-<name> for each name in a scenario's FAKEEXT_NAMES.
+// dotenvx puts the first PATH entry through a literal-colon join, so the fake directory goes second.
+const fakeExtBins = new Map()
+const getFakeExtBin = names => {
+  const key = names.join(",")
+  if (fakeExtBins.has(key)) return fakeExtBins.get(key)
+  const src = path.join(ROOT, 'test', 'Dotenvx.FakeExtension', 'bin', 'Debug', 'net10.0')
+  if (!fs.existsSync(src)) throw new Error('build test/Dotenvx.FakeExtension first')
+  const bin = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-ext-'))
+  const suffix = process.platform === 'win32' ? '.exe' : ''
+  for (const f of fs.readdirSync(src)) {
+    if (f === 'Dotenvx.FakeExtension' + suffix) { for (const n of names) fs.copyFileSync(path.join(src, f), path.join(bin, 'dotenvx-' + n + suffix)) }
+    else fs.copyFileSync(path.join(src, f), path.join(bin, f))
+  }
+  process.on('exit', () => { try { fs.rmSync(bin, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
+  fakeExtBins.set(key, bin)
+  return bin
+}
+
 function runOne (cliArgs, sc, isNode) {
   return new Promise(resolve => {
     const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-'))
@@ -880,6 +936,11 @@ function runOne (cliArgs, sc, isNode) {
       fs.writeFileSync(path.join(dir, f), c)
     }
     const env = { ...process.env, ...sc.env }
+    if (sc.env.FAKEEXT_NAMES !== undefined) {
+      const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
+      env[pathKey] = os.tmpdir() + path.delimiter + getFakeExtBin(sc.env.FAKEEXT_NAMES.split(',')) + path.delimiter + (env[pathKey] || '')
+      delete env.FAKEEXT_NAMES
+    }
     let fakeVault = null
     if (sc.env.FAKECLI_SEED !== undefined) {
       fakeVault = path.join(fs.realpathSync(os.tmpdir()), 'sweep-fc-' + path.basename(dir))
