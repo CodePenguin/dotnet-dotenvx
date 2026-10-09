@@ -12,7 +12,7 @@ namespace Dotenvx.ParityTest;
 /// on PATH like `secret-tool` or `powershell`. Instead the same sequence of get/set/delete calls is run through
 /// upstream's helpers/macosKeychain.js (with `child_process.execFileSync` redirected to the fake) and through
 /// <see cref="NativeStore.MacosKeychain" /> (with <see cref="SecretCli.Exec" /> redirected the same way), against
-/// test/Dotenvx.FakeSecurity installed as `security`. Both must make the same calls and report the same results, so
+/// test/fakes/security.cs installed as `security`. Both must make the same calls and report the same results, so
 /// the macOS command lines and messages are checked on every platform.
 /// </remarks>
 public class MacosKeychainParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
@@ -51,7 +51,7 @@ public class MacosKeychainParityTest(NodeParityFixture fixture) : ParityTestBase
     private string InstallFake(string name)
     {
         string bin = Path.Combine(FakeDirectory(name), "bin");
-        FakeCliInstaller.InstallFrom(bin, "Dotenvx.FakeSecurity", "security");
+        FakeCliInstaller.InstallFrom(bin, "security", "security");
         Directory.CreateDirectory(Path.Combine(FakeDirectory(name), "vault"));
 
         return Path.Combine(bin, "security" + (OperatingSystem.IsWindows() ? ".exe" : ""));

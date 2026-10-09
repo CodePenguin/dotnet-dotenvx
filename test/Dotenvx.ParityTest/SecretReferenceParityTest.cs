@@ -5,7 +5,7 @@ namespace Dotenvx.ParityTest;
 /// <remarks>
 /// Not from a JS test - end-to-end comparison of `op://` (1Password) and `bw://` (Bitwarden) secret reference
 /// resolution (dotenvx/src/lib/helpers/resolveOnePassword.js, resolveBitwardenPassword.js) in `get`, `run` and
-/// `validate`. `op`/`bw` are replaced by test/Dotenvx.FakeSecretCli on PATH, so Node and .NET talk to the same fake vault
+/// `validate`. `op`/`bw` are replaced by test/fakes/secretcli.cs on PATH, so Node and .NET talk to the same fake vault
 /// and every invocation is recorded in vault/calls.log.
 /// </remarks>
 public class SecretReferenceParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)

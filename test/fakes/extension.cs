@@ -1,3 +1,4 @@
+#:property PublishAot=false
 // Stand-in for a `dotenvx-<name>` extension program (dotenvx dispatches unknown commands to `dotenvx-<command>` on PATH), used by
 // the parity sweep. The apphost is copied under each extension name. It prints what it was given, so both CLIs can be compared:
 //   argv:<json array of its arguments>

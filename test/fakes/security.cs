@@ -1,3 +1,4 @@
+#:property PublishAot=false
 // Stand-in for macOS `/usr/bin/security` (the Keychain command line), used by MacosKeychainParityTest. The parity test copies
 // this app's apphost as `security[.exe]` and points FAKE_SECURITY_DIR at a vault directory:
 //   security find-generic-password -s <service> -a <account> -w         -> prints the password plus "\n"; exit 44 when missing

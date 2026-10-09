@@ -649,7 +649,7 @@ for (const extra of [['--bogus'], ['x'], ['--help'], ['-h']]) addSteps(`r9 scan 
 addSteps('r9 scan in repo', 'repo plainEnv none', [{ git: ['init', '-q'] }, S(['ext', 'scan'])], { CI: 'true', FAKEGL_OUT: 'ok\n' })
 addSteps('r9 scan empty path fake', 'plain', [S(['ext', 'scan'])], { CI: 'true', FAKEGL_OUT: 'ok\n', FAKEGL_EXIT: '3' })
 
-// ---- round 10: external programs through the fake op / bw / powershell / secret-tool (test/Dotenvx.FakeSecretCli): secret references and native key stores.
+// ---- round 10: external programs through the fake op / bw / powershell / secret-tool (test/fakes/secretcli.cs): secret references and native key stores.
 const fcSeed = extra => JSON.stringify({
   ['op/' + fakeSanitize('op://vault/item/field')]: 'op-secret',
   ['op/' + fakeSanitize('op://vault/item/multi')]: 'line1\nline2\n',
@@ -727,7 +727,7 @@ for (let n = 0; n < 450; n++) {
   addSteps(`r12 seq ${String(n).padStart(3, '0')} ${fx}`, fx, steps, { CI: 'true' })
 }
 
-// ---- round 13: dynamic extension dispatch (`dotenvx <name>` runs `dotenvx-<name>` from PATH) through test/Dotenvx.FakeExtension.
+// ---- round 13: dynamic extension dispatch (`dotenvx <name>` runs `dotenvx-<name>` from PATH) through test/fakes/extension.cs.
 const r13Names = 'foo,bar-baz,foo.bar,armor,ext-foo,ext-vault,Upper'
 const r13Env = extra => ({ CI: 'true', FAKEEXT_NAMES: r13Names, ...extra })
 const r13Args = [[], ['a'], ['a', 'b'], ['--x'], ['-x'], ['--x=1'], ['-f', '.env'], ['--'], ['--', 'x'], ['x', '--', 'y'], [''], ['a b', 'c'], ['"q"', "'s'"], ['$HOME', '%PATH%'], ['ünï', '日本語'], ['-h'], ['--help'], ['-V'], ['--version'], ['help'], ['-q'], ['-l', 'debug'], ['get'], ['--file', '.env'], ['-e']]
@@ -878,66 +878,33 @@ const normalize = (s, dir) => {
 // A scenario is one command line (args) or a list of steps run in one directory, in order. A step is
 // { args, cli: 'self'|'node'|'dotnet', stdin } (cli names the CLI that runs it; 'self' is the CLI being compared, so a
 // step run by the OTHER implementation proves cross-compatibility), { write: { file: content } } or { rm: [files] }.
-// Fake external programs written as single-file apps (test/fakes/<name>.cs) and published once to a cached directory; the apphost is
-// copied under the name the scenario needs.
-const fakeApps = new Map()
+// Fake external programs, each a single-file app in test/fakes/<name>.cs (secretcli: op, bw, powershell, secret-tool; security; extension:
+// dotenvx-<name>; gitleaks). A fake is published once to a cached directory and its apphost is copied under every tool name a scenario needs
+// (the apphost finds its dll by its own build-time name, so the other published files are copied unchanged).
+function fakeSanitize (v) { return v.replace(/[^A-Za-z0-9]/g, "_") }
+const publishedFakes = new Map()
+const installedFakes = new Map()
+const cleanupAtExit = dir => process.on("exit", () => { try { fs.rmSync(dir, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
 const publishFake = name => {
-  if (fakeApps.has(name)) return fakeApps.get(name)
+  if (publishedFakes.has(name)) return publishedFakes.get(name)
   const out = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-fake-' + name + '-'))
   execFileSync('dotnet', ['publish', path.join(ROOT, 'test', 'fakes', name + '.cs'), '-o', out], { stdio: 'ignore' })
-  process.on('exit', () => { try { fs.rmSync(out, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
-  fakeApps.set(name, out)
+  cleanupAtExit(out)
+  publishedFakes.set(name, out)
   return out
 }
-const FAKE_BIN = { get dir () { return fakeBinDir() } }
-let fakeBinCache = null
-const fakeBinDir = () => {
-  if (fakeBinCache) return fakeBinCache
-  const published = publishFake('gitleaks')
+const installFake = (name, tools) => {
+  const key = name + ':' + tools.join(',')
+  if (installedFakes.has(key)) return installedFakes.get(key)
+  const published = publishFake(name)
   const suffix = process.platform === 'win32' ? '.exe' : ''
   const bin = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-bin-'))
-  for (const f of fs.readdirSync(published)) fs.copyFileSync(path.join(published, f), path.join(bin, f === 'gitleaks' + suffix ? 'gitleaks' + suffix : f))
-  process.on('exit', () => { try { fs.rmSync(bin, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
-  fakeBinCache = bin
-  return bin
-}
-
-// Fake op / bw / powershell / secret-tool: test/Dotenvx.FakeSecretCli (build it first) copied under each tool name. A scenario opts in with
-// FAKECLI_SEED in its env: a JSON object of { relative path in the fake vault: content }. The vault directory, including the fake's call log,
-// is compared as pseudo files.
-function fakeSanitize (v) { return v.replace(/[^A-Za-z0-9]/g, "_") }
-let fakeCliBin = null
-const getFakeCliBin = () => {
-  if (fakeCliBin) return fakeCliBin
-  const src = path.join(ROOT, 'test', 'Dotenvx.FakeSecretCli', 'bin', 'Debug', 'net10.0')
-  if (!fs.existsSync(src)) throw new Error('build test/Dotenvx.FakeSecretCli first')
-  const bin = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-fcbin-'))
-  const suffix = process.platform === 'win32' ? '.exe' : ''
-  for (const f of fs.readdirSync(src)) {
-    if (f === 'Dotenvx.FakeSecretCli' + suffix) { for (const tool of ['op', 'bw', 'powershell', 'secret-tool']) fs.copyFileSync(path.join(src, f), path.join(bin, tool + suffix)) }
-    else fs.copyFileSync(path.join(src, f), path.join(bin, f))
+  for (const f of fs.readdirSync(published)) {
+    if (f === name + suffix) { for (const tool of tools) fs.copyFileSync(path.join(published, f), path.join(bin, tool + suffix)) }
+    else fs.copyFileSync(path.join(published, f), path.join(bin, f))
   }
-  process.on('exit', () => { try { fs.rmSync(bin, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
-  fakeCliBin = bin
-  return bin
-}
-
-// Fake extension programs: test/Dotenvx.FakeExtension (build it first) copied as dotenvx-<name> for each name in a scenario's FAKEEXT_NAMES.
-// dotenvx puts the first PATH entry through a literal-colon join, so the fake directory goes second.
-const fakeExtBins = new Map()
-const getFakeExtBin = names => {
-  const key = names.join(",")
-  if (fakeExtBins.has(key)) return fakeExtBins.get(key)
-  const src = path.join(ROOT, 'test', 'Dotenvx.FakeExtension', 'bin', 'Debug', 'net10.0')
-  if (!fs.existsSync(src)) throw new Error('build test/Dotenvx.FakeExtension first')
-  const bin = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-ext-'))
-  const suffix = process.platform === 'win32' ? '.exe' : ''
-  for (const f of fs.readdirSync(src)) {
-    if (f === 'Dotenvx.FakeExtension' + suffix) { for (const n of names) fs.copyFileSync(path.join(src, f), path.join(bin, 'dotenvx-' + n + suffix)) }
-    else fs.copyFileSync(path.join(src, f), path.join(bin, f))
-  }
-  process.on('exit', () => { try { fs.rmSync(bin, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
-  fakeExtBins.set(key, bin)
+  cleanupAtExit(bin)
+  installedFakes.set(key, bin)
   return bin
 }
 
@@ -951,7 +918,7 @@ function runOne (cliArgs, sc, isNode) {
     const env = { ...process.env, ...sc.env }
     if (sc.env.FAKEEXT_NAMES !== undefined) {
       const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
-      env[pathKey] = os.tmpdir() + path.delimiter + getFakeExtBin(sc.env.FAKEEXT_NAMES.split(',')) + path.delimiter + (env[pathKey] || '')
+      env[pathKey] = os.tmpdir() + path.delimiter + installFake('extension', sc.env.FAKEEXT_NAMES.split(',').map(n => 'dotenvx-' + n)) + path.delimiter + (env[pathKey] || '')
       delete env.FAKEEXT_NAMES
     }
     let fakeVault = null
@@ -960,13 +927,13 @@ function runOne (cliArgs, sc, isNode) {
       for (const [rel, content] of Object.entries(JSON.parse(sc.env.FAKECLI_SEED))) { fs.mkdirSync(path.dirname(path.join(fakeVault, rel)), { recursive: true }); fs.writeFileSync(path.join(fakeVault, rel), content) }
       fs.mkdirSync(fakeVault, { recursive: true })
       const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
-      env[pathKey] = getFakeCliBin() + path.delimiter + (env[pathKey] || '')
+      env[pathKey] = installFake('secretcli', ['op', 'bw', 'powershell', 'secret-tool']) + path.delimiter + (env[pathKey] || '')
       env.FAKE_SECRET_CLI_DIR = fakeVault
       delete env.FAKECLI_SEED
     }
     if (Object.keys(sc.env).some(k => k.startsWith('FAKEGL_'))) {
       const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
-      env[pathKey] = FAKE_BIN.dir + path.delimiter + (env[pathKey] || '')
+      env[pathKey] = installFake('gitleaks', ['gitleaks']) + path.delimiter + (env[pathKey] || '')
       env.FAKEGL_LOG = path.join(fs.realpathSync(os.tmpdir()), 'sweep-gl-' + path.basename(dir) + '.log')
     }
     // hermetic Armor/device config: a per-run directory unless the scenario names one

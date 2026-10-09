@@ -1,3 +1,4 @@
+#:property PublishAot=false
 // Stand-in for the 1Password (`op`) and Bitwarden (`bw`) CLIs used by the parity tests. The parity fixture copies this
 // app's apphost as `op[.exe]` and `bw[.exe]`; behavior is picked from the executable's own name and driven by files
 // in $FAKE_SECRET_CLI_DIR so the Node and .NET dotenvx runs see exactly the same "vault":
