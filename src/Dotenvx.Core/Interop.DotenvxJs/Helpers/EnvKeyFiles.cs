@@ -67,7 +67,7 @@ public static partial class EnvKeyFiles
     /// <summary>removeEnvKey.js: drop <paramref name="key" /> from the keys file, deleting the file when no keys remain.</summary>
     public static RemoveEnvKeyResult RemoveEnvKey(string key, string keysFilepath = ".env.keys")
     {
-        string resolved = Path.GetFullPath(keysFilepath);
+        string resolved = NodePath.Resolve(keysFilepath);
         if (!Fsx.ExistsSync(resolved))
         {
             return new RemoveEnvKeyResult(false, key, keysFilepath);

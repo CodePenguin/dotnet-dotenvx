@@ -11,11 +11,11 @@ public static partial class Helpers
     public static string MutateSrc(string envSrc, string envFilePath, string keysFilePath, string publicKeyName,
         string publicKeyValue)
     {
-        string filename = Path.GetFileName(envFilePath);
-        string filepath = Path.GetFullPath(envFilePath);
+        string filename = NodePath.Basename(envFilePath);
+        string filepath = NodePath.Resolve(envFilePath);
         string resolvedKeysFilePath = string.IsNullOrEmpty(keysFilePath)
             ? Path.Combine(Path.GetDirectoryName(filepath) ?? "", ".env.keys")
-            : Path.GetFullPath(keysFilePath);
+            : NodePath.Resolve(keysFilePath);
         string relativeFilePath = Path.GetRelativePath(Path.GetDirectoryName(filepath) ?? "", resolvedKeysFilePath);
 
         (string firstLinePreserved, string rest) = PreserveShebang(envSrc);

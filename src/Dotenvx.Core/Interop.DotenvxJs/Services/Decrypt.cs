@@ -64,7 +64,7 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
     {
         ProcessedDecrypt row = new() { Keys = [], Type = EnvType.EnvFile };
 
-        string filePath = Path.GetFullPath(envFilePath);
+        string filePath = NodePath.Resolve(envFilePath);
         row.FilePath = filePath;
         row.EnvFilePath = envFilePath;
 

@@ -65,7 +65,7 @@ public static class Main
                 if (processedEnv.Type == EnvType.EnvFile)
                 {
                     logger?.Verbose(
-                        $"loading env from {processedEnv.FilePath} ({Path.GetFullPath(processedEnv.FilePath)})");
+                        $"loading env from {processedEnv.FilePath} ({NodePath.Resolve(processedEnv.FilePath)})");
                 }
 
                 foreach (Exception error in processedEnv.Errors)

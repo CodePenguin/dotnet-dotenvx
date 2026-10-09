@@ -47,8 +47,24 @@ public static class Fsx
         }
     }
 
+    // libuv on Windows accepts a trailing separator on a file path (`fs.existsSync('.env/')` and a read both succeed); the Win32 file
+    // functions .NET calls do not
+    private static string WithoutTrailingSeparator(string path)
+    {
+        if (!OperatingSystem.IsWindows() || path.Length == 0 || !path.EndsWith('/') && !path.EndsWith('\\'))
+        {
+            return path;
+        }
+
+        string trimmed = path.TrimEnd('/', '\\');
+
+        return trimmed.Length == 0 || trimmed.EndsWith(':') ? path : trimmed;
+    }
+
     private static bool DefaultExistsSync(string path)
     {
+        path = WithoutTrailingSeparator(path);
+
         return File.Exists(path) || Directory.Exists(path);
     }
 
@@ -109,6 +125,7 @@ public static class Fsx
 
     private static byte[] DefaultReadFileSync(string path)
     {
+        path = WithoutTrailingSeparator(path);
         try
         {
             return File.ReadAllBytes(path);

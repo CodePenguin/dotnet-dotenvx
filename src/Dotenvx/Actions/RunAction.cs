@@ -1,3 +1,4 @@
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -290,7 +291,7 @@ public class RunAction : Command
                 {
                     case EnvType.EnvFile:
                         _logger.Verbose(
-                            $"loading env from {processedEnv.FilePath} ({Path.GetFullPath(processedEnv.FilePath)})");
+                            $"loading env from {processedEnv.FilePath} ({NodePath.Resolve(processedEnv.FilePath)})");
                         break;
                     case EnvType.Env:
                         _logger.Verbose($"loading env from string ({processedEnv.String})");

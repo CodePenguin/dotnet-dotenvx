@@ -64,7 +64,7 @@ public class Precommit(string directory = "./", bool install = false)
         {
             count++;
             string file = NodePathJoin(directory, rawFile);
-            string filename = Path.GetFileName(file);
+            string filename = NodePath.Basename(file);
 
             if (!IsFileToBeCommitted(file))
             {

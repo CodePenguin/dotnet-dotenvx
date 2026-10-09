@@ -78,7 +78,7 @@ public class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = null)
             // keypair.js: `fk = options.envKeysFilepath || path.resolve(path.dirname(filepath), '.env.keys')`
             string[] fk = envKeysFilePaths is { Length: > 0 }
                 ? envKeysFilePaths
-                : [Path.Combine(Path.GetDirectoryName(Path.GetFullPath(envFilePath)) ?? "", ".env.keys")];
+                : [Path.Combine(Path.GetDirectoryName(NodePath.Resolve(envFilePath)) ?? "", ".env.keys")];
 
             ring = KeyringSync(new KeyringOptions
             {

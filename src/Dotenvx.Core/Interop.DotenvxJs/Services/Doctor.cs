@@ -54,7 +54,7 @@ public class Doctor
 
     public Doctor(string directory = "./")
     {
-        _cwd = Path.GetFullPath(directory);
+        _cwd = NodePath.Resolve(directory);
         _exclude = Match([
             "**/node_modules/**",
             "**/.git/**",

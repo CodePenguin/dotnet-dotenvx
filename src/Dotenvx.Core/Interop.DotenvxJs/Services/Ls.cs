@@ -1,3 +1,4 @@
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
@@ -11,10 +12,10 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
 
     // path.resolve: '' is the working directory, and a blank name (" ") is just another, usually missing, directory
     private readonly string _cwd = directory.Length == 0
-        ? Path.GetFullPath(".")
+        ? NodePath.Resolve(".")
         : string.IsNullOrWhiteSpace(directory)
-            ? Path.Combine(Path.GetFullPath("."), directory)
-            : Path.GetFullPath(directory);
+            ? Path.Combine(NodePath.Resolve("."), directory)
+            : NodePath.Resolve(directory);
     private readonly string[] _ignore = ["node_modules/**", "**/node_modules/**", ".git/**", "**/.git/**"];
 
     // Matches ls.js's DEFAULT_EXCLUDED_DIRECTORY_EXTENSIONS - the Fdir crawler never descends into
@@ -69,6 +70,11 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
     // Fdir skips directories it cannot read
     private static readonly EnumerationOptions Inaccessible = new() { IgnoreInaccessible = true };
 
+    public static bool IsLink(string directory)
+    {
+        return new DirectoryInfo(directory).Attributes.HasFlag(FileAttributes.ReparsePoint);
+    }
+
     private static IEnumerable<string> EnumerateFiles(string directory)
     {
         // Fdir crawls a missing directory (or a file given as the directory) as empty: `ls nonexistent` reports 0 files
@@ -84,6 +90,14 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
 
         foreach (string subdirectory in Directory.GetDirectories(directory, "*", Inaccessible))
         {
+            // Fdir does not follow symbolic links: a link to a directory is reported like a file and never entered
+            if (IsLink(subdirectory))
+            {
+                yield return subdirectory;
+
+                continue;
+            }
+
             string name = Path.GetFileName(subdirectory);
             if (name is "node_modules" or ".git" ||
                 ExcludedDirectoryExtensions.Contains(Path.GetExtension(subdirectory).ToLowerInvariant()))

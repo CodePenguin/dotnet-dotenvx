@@ -99,8 +99,8 @@ public class LsAction : Command
 
         if (json)
         {
-            string cwd = Path.GetFullPath(directory);
-            string[] absoluteFilepaths = filepaths.Select(filepath => Path.GetFullPath(Path.Combine(cwd, filepath)))
+            string cwd = NodePath.Resolve(directory);
+            string[] absoluteFilepaths = filepaths.Select(filepath => NodePath.Resolve(Path.Combine(cwd, filepath)))
                 .ToArray();
             Spinners.StopActive();
             Console.WriteLine(JsonStringify(absoluteFilepaths, true));
@@ -117,7 +117,7 @@ public class LsAction : Command
         // ls.js: the summary line is skipped when -q/--quiet is set
         if (!(parseResult.RootCommandResult.Command is LoggingRootCommand root && root.IsQuiet(parseResult)))
         {
-            PrintSummary(filepaths, Path.GetFullPath(directory), (int)(DateTime.UtcNow - startedAt).TotalSeconds);
+            PrintSummary(filepaths, NodePath.Resolve(directory), (int)(DateTime.UtcNow - startedAt).TotalSeconds);
         }
 
         return 0;
@@ -151,6 +151,11 @@ public class LsAction : Command
         int count = 0;
         foreach (string subdirectory in Directory.GetDirectories(directory, "*", new EnumerationOptions { IgnoreInaccessible = true }))
         {
+            if (Ls.IsLink(subdirectory))
+            {
+                continue;
+            }
+
             string name = Path.GetFileName(subdirectory);
             if (name is "node_modules" or ".git" ||
                 ExcludedDirectoryExtensions.Contains(Path.GetExtension(subdirectory).ToLowerInvariant()))

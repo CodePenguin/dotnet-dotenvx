@@ -215,13 +215,42 @@ public class IgnoreTests : IDisposable
     }
 
     [Fact]
-    public void Ignores_NullOrEmpty_ShouldReturnFalse()
+    public void Ignores_Empty_ThrowsLikeNodeIgnore_AndWhitespaceIsAPath()
     {
         Ignore ig = new();
         ig.Add("*.log");
 
-        ig.Ignores("").ShouldBeFalse();
+        Should.Throw<InvalidOperationException>(() => ig.Ignores("")).Message.ShouldBe("path must not be empty");
         ig.Ignores("   ").ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData("./.env")]
+    [InlineData("../.env")]
+    [InlineData("/.env")]
+    [InlineData(".")]
+    [InlineData("..")]
+    public void Ignores_NonRelativePath_ThrowsLikeNodeIgnore(string path)
+    {
+        Ignore ig = new();
+        ig.Add(".env*");
+
+        Should.Throw<InvalidOperationException>(() => ig.Ignores(path)).Message
+            .ShouldBe($"path should be a `path.relative()`d string, but got \"{path}\"");
+    }
+
+    [Theory]
+    [InlineData("...")]
+    [InlineData(".x/.env")]
+    [InlineData("sub//.env")]
+    [InlineData("sub/./.env")]
+    [InlineData("sub/../.env")]
+    public void Ignores_OtherDottedPaths_AreAccepted(string path)
+    {
+        Ignore ig = new();
+        ig.Add(".env*");
+
+        Should.NotThrow(() => ig.Ignores(path));
     }
 
     [Fact]

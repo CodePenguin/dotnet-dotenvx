@@ -10,7 +10,7 @@ public static class UpsertEnvKeyHelper
 {
     public static UpsertEnvKeyResult UpsertEnvKey(string key, string value, string keysFilepath = ".env.keys")
     {
-        string resolved = Path.GetFullPath(keysFilepath);
+        string resolved = NodePath.Resolve(keysFilepath);
         string keyValueLine = $"{key}={value}";
         bool created = !Fsx.ExistsSync(resolved);
 

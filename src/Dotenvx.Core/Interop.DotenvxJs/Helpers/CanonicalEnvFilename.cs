@@ -5,7 +5,7 @@ public static partial class Helpers
 {
     public static string CanonicalEnvFilename(string filepath)
     {
-        string filename = Path.GetFileName(filepath).ToLowerInvariant();
+        string filename = NodePath.Basename(filepath).ToLowerInvariant();
 
         if (filename.StartsWith(".env") && filename.EndsWith(".txt"))
         {

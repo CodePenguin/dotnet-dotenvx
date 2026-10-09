@@ -35,7 +35,7 @@ public class Genexample(string directory = ".", string[]? envFile = null)
         Factory = DefaultFactory;
     }
 
-    public string ExampleFilepath => Path.GetFullPath(Path.Combine(directory, ExampleFilename));
+    public string ExampleFilepath => NodePath.Resolve(Path.Combine(directory, ExampleFilename));
 
     public virtual GenexampleResult Run()
     {
@@ -53,7 +53,7 @@ public class Genexample(string directory = ".", string[]? envFile = null)
 
         foreach (string envFilepath in _envFile)
         {
-            string filepath = Path.GetFullPath(Path.Combine(directory, envFilepath));
+            string filepath = NodePath.Resolve(Path.Combine(directory, envFilepath));
             if (!Fsx.ExistsSync(filepath))
             {
                 // genexample.js sets a custom error.help AFTER errors.js's missingEnvFile()

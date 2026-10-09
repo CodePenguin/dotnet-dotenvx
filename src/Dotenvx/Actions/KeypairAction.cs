@@ -106,7 +106,7 @@ public class KeyPairAction : Command
                 if (!Fsx.ExistsSync(resolvedEnvFile))
                 {
                     throw new Exception(
-                        $"ENOENT: no such file or directory, open '{Path.GetFullPath(resolvedEnvFile)}'");
+                        $"ENOENT: no such file or directory, open '{NodePath.Resolve(resolvedEnvFile)}'");
                 }
 
                 KeyPair keyPair = KeyPair.Factory(resolvedEnvFile, envKeysFile is { Length: > 0 } ? envKeysFile : null);

@@ -226,7 +226,7 @@ public class Run
     {
         RunProcessedEnv row = new() { Type = EnvType.EnvFile, FilePath = envFilePath };
 
-        string filepath = Path.GetFullPath(envFilePath);
+        string filepath = NodePath.Resolve(envFilePath);
 
         try
         {

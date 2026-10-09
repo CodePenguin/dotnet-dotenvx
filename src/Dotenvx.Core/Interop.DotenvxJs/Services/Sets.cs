@@ -84,7 +84,7 @@ public class Sets
         _noArmor = NoArmor; // key storage selector below may change it
 
         // set up keysSrc
-        string fkPath = Path.GetFullPath(fk);
+        string fkPath = NodePath.Resolve(fk);
         if (Fsx.ExistsSync(fkPath))
         {
             try
@@ -119,7 +119,7 @@ public class Sets
         string envFilePath = env.Value;
         ProcessedSet row = new() { Key = _key, Value = _value, Type = EnvType.EnvFile };
 
-        string filePath = Path.GetFullPath(envFilePath);
+        string filePath = NodePath.Resolve(envFilePath);
         row.FilePath = filePath;
         row.EnvFilePath = envFilePath;
         row.Changed = false;
@@ -163,7 +163,7 @@ public class Sets
                 envSrc = MutateSrc(envSrc, envFilePath, fk, publicKeyName, publicKey);
                 if (_noArmor)
                 {
-                    _keysSrc = MutateKeysSrc(_keysSrc, privateKeyName, privateKey, Path.GetFileName(envFilePath));
+                    _keysSrc = MutateKeysSrc(_keysSrc, privateKeyName, privateKey, NodePath.Basename(envFilePath));
                 }
                 else
                 {

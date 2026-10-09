@@ -58,7 +58,7 @@ public class Del
             }
 
             string envFilePath = env.Value;
-            string filePath = Path.GetFullPath(envFilePath);
+            string filePath = NodePath.Resolve(envFilePath);
             ProcessedDel row = new() { Key = _key, Type = EnvType.EnvFile, FilePath = filePath, EnvFilePath = envFilePath };
 
             try

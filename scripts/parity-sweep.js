@@ -814,6 +814,53 @@ for (const [label, keys] of Object.entries(r14Keys)) {
   for (const cmd of [['get'], ['decrypt', '--stdout'], ['keypair'], ['run', '--', ...show], ['set', 'NEW', 'v'], ['encrypt'], ['validate']]) add(`r14 keys ${label} ${cmd[0]}`, 'r14 keys ' + label, cmd, { CI: 'true' })
 }
 
+// ---- round 15: path forms for file and directory arguments (relative, absolute, parent, backslash, doubled separators, links).
+fixtures['r15 tree'] = { '.env': 'ROOT=1\n', 'sub/.env': 'SUB=1\nHELLO=sub\n', 'sub/.env.keys': '', 'sub/deep/.env': 'DEEP=1\n', 'other/.env.production': 'P=1\n', '.env.example': 'ROOT=\n', 'sub/.env.example': 'SUB=\n' }
+fixtures['r15 enc'] = { '.env': encEnv, '.env.keys': keysFile, 'sub/.env': encEnv, 'sub/.env.keys': keysFile }
+const r15Spellings = file => {
+  const slash = file.split('/')
+  const out = [file, './' + file, file.replace('/', '//'), file.replace('/', '/./'), 'sub/../' + file, '<DIR>/' + file, file.split('/').join(String.fromCharCode(92)), '<DIR>' + String.fromCharCode(92) + file.split('/').join(String.fromCharCode(92)), file + '/', '../' + '<DIRNAME>' + '/' + file]
+  return [...new Set(out)]
+}
+const dirnameToken = '<DIRNAME>'
+const r15Files = ['sub/.env', 'sub/deep/.env', '.env']
+for (const fx of ['r15 tree', 'r15 enc']) {
+  for (const file of r15Files) {
+    for (const spelled of r15Spellings(file)) {
+      for (const cmd of [['get'], ['get', 'HELLO'], ['decrypt', '--stdout'], ['keypair'], ['validate'], ['run', '--', ...show]]) {
+        add(`r15 ${fx} ${cmd[0]} -f ${spelled}`, fx, [...cmd.slice(0, cmd[0] === 'run' ? 1 : cmd.length), '-f', spelled, ...(cmd[0] === 'run' ? cmd.slice(1) : [])], { CI: 'true' })
+      }
+      add(`r15 ${fx} set -f ${spelled}`, fx, ['set', 'NEWKEY', 'v', '-f', spelled], { CI: 'true' })
+      add(`r15 ${fx} encrypt -f ${spelled}`, fx, ['encrypt', '-f', spelled], { CI: 'true' })
+      add(`r15 ${fx} del -f ${spelled}`, fx, ['del', 'SUB', '-f', spelled], { CI: 'true' })
+    }
+  }
+  for (const keys of ['sub/.env.keys', './sub/.env.keys', '<DIR>/sub/.env.keys', 'sub\\.env.keys', 'nope/.env.keys', '.env.keys']) {
+    add(`r15 ${fx} get -fk ${keys}`, fx, ['get', '-f', 'sub/.env', '-fk', keys], { CI: 'true' })
+    add(`r15 ${fx} encrypt -fk ${keys}`, fx, ['encrypt', '-f', 'sub/.env', '-fk', keys], { CI: 'true' })
+  }
+  for (const d of ['.', './', 'sub', 'sub/', './sub', 'sub//', 'sub/.', 'sub/deep/..', '<DIR>', '<DIR>/sub', '<DIR>/sub/', 'sub\\deep', 'sub/deep', 'other', 'nope', 'sub/.env', 'C:\\nope']) {
+    for (const cmd of ['ls', 'genexample', 'prebuild', 'precommit']) add(`r15 ${fx} ${cmd} dir ${d}`, fx, [cmd, d], { CI: 'true' })
+    addSteps(`r15 ${fx} genexample twice ${d}`, fx, [S(['genexample', d]), S(['genexample', d]), S(['validate'])], { CI: 'true' })
+  }
+}
+// links
+fixtures['r15 links'] = { 'real/.env': 'HELLO=real\nA=1\n', 'real/.env.keys': '' }
+const r15Link = (name, steps) => addSteps('r15 link ' + name, 'r15 links', steps, { CI: 'true' })
+r15Link('file link get', [{ link: ['real/.env', '.env'] }, S(['get'])])
+r15Link('file link set', [{ link: ['real/.env', '.env'] }, S(['set', 'B', '2']), S(['get'])])
+r15Link('file link encrypt decrypt', [{ link: ['real/.env', '.env'] }, S(['encrypt']), S(['get']), S(['decrypt']), S(['get'])])
+r15Link('file link del', [{ link: ['real/.env', '.env'] }, S(['del', 'A']), S(['get'])])
+r15Link('keys link', [{ write: { '.env': 'HELLO=x\n' } }, { link: ['real/.env.keys', '.env.keys'] }, S(['encrypt']), S(['get'])])
+r15Link('dir link ls', [{ link: ['real', 'linked'] }, S(['ls']), S(['ls', 'linked'])])
+r15Link('dir link get', [{ link: ['real', 'linked'] }, S(['get', '-f', 'linked/.env'])])
+r15Link('dir link genexample', [{ link: ['real', 'linked'] }, S(['genexample', 'linked']), S(['validate', '-f', 'linked/.env'])])
+r15Link('dangling link', [{ link: ['missing/.env', '.env'] }, S(['get']), S(['set', 'A', '1']), S(['encrypt']), S(['ls'])])
+r15Link('link loop', [{ link: ['.env', '.env'] }, S(['get'])])
+r15Link('link to dir as file', [{ link: ['real', '.env'] }, S(['get']), S(['ls'])])
+r15Link('link example', [{ link: ['real/.env', '.env.example'] }, S(['genexample']), S(['validate'])])
+r15Link('link gitignore', [{ link: ['real/.env', '.gitignore'] }, S(['gitignore'])])
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
@@ -881,11 +928,14 @@ for (const c of specTree.children) {
 }
 
 // Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
-const ACCEPTED_STDERR_ONLY = [/^r14 (envIsDir|keysIsDir|exampleIsDir|gitignoreIsDir) /, // a directory read as a file: EISDIR in Node, access denied in .NET
+const ACCEPTED_STDERR_ONLY = [/^r15 link link loop/, // ELOOP in Node, the system message here
+  /^r15 .* (encrypt|set|get|decrypt|keypair|validate|run) -f(k)? .*(deep|nope)/, // a missing file: ENOENT in Node, the .NET wording here
+  /^r14 (envIsDir|keysIsDir|exampleIsDir|gitignoreIsDir) /, // a directory read as a file: EISDIR in Node, access denied in .NET
   /^r6 lock /, /^r6 repo .* hook install/, /^r4 file /, /^r5 life custom keys /, /^r5 child /] // r5 child: the node binary's own messages differ only in the casing of node.exe
 
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
+  /^r15 r15 tree ls dir /, // directory order follows the filesystem crawl in Node (trap #64)
   /^r14 (name|dirname) dash /, // `-dash` as an argument is the debug flag plus an unknown option: the debug line is printed before the error here
   /^r10 ref .* get --all$/, // --all dumps the whole environment, which includes the per-run fake vault directory
   /^r9 scan root -l debug /, // debug output has a different shape
@@ -1000,7 +1050,7 @@ function runOne (cliArgs, sc, isNode) {
     let code = 0
     const finish = () => {
       const files = {}
-      const walk = d => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (n === '.git') { const hook = path.join(p, 'hooks', 'pre-commit'); if (fs.existsSync(hook)) files['.git/hooks/pre-commit'] = normalize(fs.readFileSync(hook, 'utf8'), dir); continue } if (fs.statSync(p).isDirectory()) walk(p); else files[path.relative(dir, p).split(path.sep).join('/')] = normalize(fs.readFileSync(p, 'utf8'), dir) } }
+      const walk = d => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (n === '.git') { const hook = path.join(p, 'hooks', 'pre-commit'); if (fs.existsSync(hook)) files['.git/hooks/pre-commit'] = normalize(fs.readFileSync(hook, 'utf8'), dir); continue } const rel = path.relative(dir, p).split(path.sep).join('/'); if (fs.lstatSync(p).isSymbolicLink()) { files[rel] = 'LINK ' + normalize(fs.readlinkSync(p), dir) + (fs.existsSync(p) && fs.statSync(p).isFile() ? ' => ' + normalize(fs.readFileSync(p, 'utf8'), dir) : ''); continue } if (fs.statSync(p).isDirectory()) walk(p); else files[path.relative(dir, p).split(path.sep).join('/')] = normalize(fs.readFileSync(p, 'utf8'), dir) } }
       walk(dir)
       if (fakeVault) {
         const walkVault = (d, rel) => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (fs.statSync(p).isDirectory()) walkVault(p, rel + n + '/'); else files['<fake cli>/' + rel + n] = fs.readFileSync(p, 'utf8') } }
@@ -1020,9 +1070,18 @@ function runOne (cliArgs, sc, isNode) {
         try { execFileSync('git', step.git, { cwd: dir, env: gitEnv, stdio: 'ignore' }) } catch (e) { /* a failing git step is part of the scenario */ }
         return runStep(index + 1)
       }
+      if (step.link) {
+        const [target, at] = step.link
+        const linkPath = path.join(dir, at)
+        const resolved = path.resolve(path.dirname(linkPath), target)
+        fs.mkdirSync(path.dirname(linkPath), { recursive: true })
+        const isDir = fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()
+        try { fs.symlinkSync(isDir ? resolved : target, linkPath, isDir ? 'junction' : 'file') } catch (e) { /* a failing link is part of the scenario */ }
+        return runStep(index + 1)
+      }
       if (step.rm) { for (const f of step.rm) fs.rmSync(path.join(dir, f), { recursive: true, force: true }); return runStep(index + 1) }
       const nodeCli = step.cli === 'node' || (step.cli !== 'dotnet' && isNode)
-      let args = [...step.args]
+      let args = step.args.map(a => a.split('<DIR>').join(dir).split('<DIRNAME>').join(path.basename(dir)))
       if (['encrypt', 'set'].includes(args[0])) args = [args[0], ...(sc.env.FAKECLI_SEED !== undefined ? [] : ['--no-native']), '--no-armor', ...args.slice(1)] // before the scenario's own arguments, which may end in an option that takes a value
       // the node binary itself consumes --env-file ("node: v: not found") wherever it appears in argv: spell it -f for node only
       if (nodeCli) args = args.flatMap(a => a === '--env-file' ? ['-f'] : a.startsWith('--env-file=') ? ['-f', a.slice(11)] : [a])

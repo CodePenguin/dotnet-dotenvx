@@ -98,7 +98,7 @@ public static class KeypairMetadata
     private static string NormalizeFilepath(string envFile)
     {
         string? root = GitRoot();
-        string filepath = Path.GetFullPath(envFile);
+        string filepath = NodePath.Resolve(envFile);
 
         return Path.GetRelativePath(root ?? Directory.GetCurrentDirectory(), filepath).Replace('\\', '/');
     }
