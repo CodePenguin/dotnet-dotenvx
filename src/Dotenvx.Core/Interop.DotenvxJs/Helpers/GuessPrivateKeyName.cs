@@ -16,6 +16,6 @@ public static partial class Helpers
         // .env.ENVIRONMENT
         string environment = GuessEnvironment(envFilePath);
 
-        return $"DOTENV_PRIVATE_KEY_{environment.ToUpperInvariant()}";
+        return $"DOTENV_PRIVATE_KEY_{JsCase.ToUpper(environment)}";
     }
 }

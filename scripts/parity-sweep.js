@@ -988,6 +988,41 @@ for (const name of r18Vars) {
   }
 }
 
+// ---- round 19: Unicode in key names, values and file names: composed and decomposed forms, special casing, surrogate pairs.
+const r19Names = {
+  ascii: 'production', sharp: 'straße', dotless: 'ısı', dotted: 'İstanbul', composed: 'café', decomposed: 'café', greek: 'σίσυφος', final: 'ΟΔΟΣ',
+  ligature: 'ﬁne', dz: 'ǆ', emoji: 'rocket🚀', cjk: '本番', arabic: 'إنتاج', zwj: 'a‍b', combining: 'ạ̈', turkishI: 'ISTANBUL', upper: 'MiXeD', digits: '٣٤', mathBold: '𝐀𝐁', apostrophe: "o'neil"
+}
+for (const [label, name] of Object.entries(r19Names)) {
+  const file = '.env.' + name
+  fixtures['r19 file ' + label] = { [file]: 'A=1\nB=two words\n' }
+  for (const cmd of [['encrypt'], ['set', 'NEW', 'v'], ['keypair'], ['get'], ['decrypt', '--stdout'], ['validate'], ['genexample'], ['ls']]) {
+    const args = cmd[0] === 'ls' || cmd[0] === 'genexample' ? cmd : [...cmd, '-f', file]
+    add(`r19 file ${label} ${cmd[0]}`, 'r19 file ' + label, args, { CI: 'true' })
+  }
+  addSteps(`r19 file ${label} lifecycle`, 'r19 file ' + label, [S(['encrypt', '-f', file]), S(['get', '-f', file]), S(['keypair', '-f', file]), S(['set', 'C', 'ü', '-f', file]), S(['decrypt', '-f', file]), S(['get', '-f', file])], { CI: 'true' })
+  addSteps(`r19 file ${label} env private key`, 'r19 file ' + label, [S(['encrypt', '-f', file]), S(['keypair', '-f', file, '--format', 'shell'])], { CI: 'true' })
+}
+const r19Keys = { composed: 'café', decomposed: 'café', sharp: 'straße', turkish: 'ıİ', emoji: 'k🚀', cjk: '键', greek: 'Σ', zwj: 'a‍b', surrogate: '𝐀', bidi: 'a‮b' }
+const r19Values = { composed: 'café', decomposed: 'café', emoji: '🔑🚀', surrogatePair: '𝐀', rtl: 'שלום', zeroWidth: 'a​b', bom: '﻿x', nbsp: 'a b', lineSep: 'a b', paraSep: 'a b', nel: 'a\u0085b', bell: 'a\u0007b', esc: 'a\u001b[31mb', longUnicode: 'é'.repeat(5000) }
+for (const [kl, key] of Object.entries(r19Keys)) {
+  for (const [vl, value] of Object.entries(r19Values)) {
+    const fx = 'r19 kv ' + kl + ' ' + vl
+    fixtures[fx] = { '.env': `${key}=${value.replace(/\n/g, ' ')}\nPLAIN=1\n` }
+    if (kl === 'composed' || vl === 'composed' || vl === 'emoji') {
+      add(`r19 kv get ${kl} ${vl}`, fx, ['get'], { CI: 'true' })
+      add(`r19 kv get key ${kl} ${vl}`, fx, ['get', key], { CI: 'true' })
+    }
+    addSteps(`r19 kv lifecycle ${kl} ${vl}`, fx, [S(['encrypt']), S(['get']), S(['decrypt']), S(['get', '--format', 'shell']), S(['set', key, value]), S(['get', key]), S(['del', key]), S(['get'])], { CI: 'true' })
+  }
+}
+// time zone and locale must not change anything the CLI prints
+for (const extra of [{ TZ: 'UTC' }, { TZ: 'Asia/Tokyo' }, { TZ: 'America/Los_Angeles' }, { LANG: 'tr_TR.UTF-8', LC_ALL: 'tr_TR.UTF-8' }, { LANG: 'de_DE.UTF-8', LC_ALL: 'de_DE.UTF-8' }, { LANG: 'C', LC_ALL: 'C' }]) {
+  for (const cmd of [['get'], ['ls'], ['encrypt'], ['keypair'], ['validate'], ['run', '--', ...show], ['help'], ['get', '--help']]) {
+    add(`r19 locale ${JSON.stringify(extra)} ${cmd[0]}`, 'enc', cmd, { CI: 'true', ...extra })
+  }
+}
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])

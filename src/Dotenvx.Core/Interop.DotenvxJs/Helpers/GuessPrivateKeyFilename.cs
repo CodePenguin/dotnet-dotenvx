@@ -16,7 +16,8 @@ public static partial class Helpers
         // .env.ENVIRONMENT
         // `substring` clamps to the string's end: DOTENV_PRIVATE_KEYS (no underscore) has an empty suffix
         int start = $"{prefix}_".Length;
-        string suffix = (privateKeyName.Length > start ? privateKeyName[start..] : "").Replace("_", ".").ToLowerInvariant();
+        string suffix = (privateKeyName.Length > start ? privateKeyName[start..] : "").Replace("_", ".");
+        suffix = JsCase.ToLower(suffix);
         return $".env.{suffix}";
     }
 }
