@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
   push:
     tags: ['*']
+    branches: [ "sync0916" ] # TEMPORARY: lets the full sweep run on this branch before the pull request; remove when merged
 
 jobs:
   sweep:
