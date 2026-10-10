@@ -1,6 +1,7 @@
-// Differential parity sweep: runs ~590 CLI scenarios (command x flag combination x fixture) against the real Node
+// Differential parity sweep: runs ~15,000 CLI scenarios (command x flag combination x fixture) against the real Node
 // dotenvx and the built .NET port, and compares exit code, stdout, stderr and the files left behind.
-//   node scripts/parity-sweep.js [name-filter]      (build src/Dotenvx first; takes about 4 minutes)
+//   node scripts/parity-sweep.js [name-filter]      (build src/Dotenvx first; the full sweep takes 30 to 40 minutes;
+//   SWEEP_EVERY=25 runs a sample of every 25th scenario in a few minutes)
 // Prints a summary and writes the differences to $TMP/dotenvx-parity-sweep.txt. Differences listed in ACCEPTED are known,
 // deliberate and explained there; anything else is a parity bug (or a new scenario that needs a decision).
 const { execFile, execFileSync } = require('child_process')
@@ -1329,7 +1330,9 @@ function runOne (cliArgs, sc, isNode) {
 
 async function main () {
   const only = process.argv[2]
-  const list = scenarios.filter(s => !only || s.name.includes(only))
+  // SWEEP_EVERY=N runs every Nth scenario (a fast, repeatable sample for pull requests); the full sweep runs without it
+  const every = Math.max(1, Number(process.env.SWEEP_EVERY) || 1)
+  const list = scenarios.filter(s => !only || s.name.includes(only)).filter((_, index) => index % every === 0)
   const diffs = []
   let i = 0
   const worker = async () => {

@@ -54,7 +54,7 @@ internal static class ArmorTeam
 
             if (choices.Length == 0)
             {
-                throw error;
+                throw;
             }
 
             string chosen = choices[0].Value;

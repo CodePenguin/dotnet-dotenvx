@@ -6,6 +6,7 @@ on:
     tags: ['*']
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch: # run it by hand from the Actions tab on any branch
 
 jobs:
   build:
@@ -36,9 +37,12 @@ jobs:
       run: dotnet test --no-build --verbosity normal
       # Includes Dotenvx.ParityTest (part of Dotenvx.sln): it shells out to the real Node CLI in the dotenvx/ submodule
       # and diffs output against the built .NET CLI. NodeParityFixture runs `npm install` in dotenvx/ on first use.
-    - name: Option-syntax sweep
+    - name: Parity sweep (sample)
       run: node scripts/parity-sweep.js
-      # ~1100 command x flag x fixture scenarios against both CLIs (about 5 minutes); exits non-zero on any unexpected difference.
+      env:
+        SWEEP_EVERY: 25
+      # Every 25th of the ~15,000 command x flag x fixture scenarios, run against both CLIs (a few minutes); exits non-zero on any
+      # unexpected difference. The full sweep (30 to 40 minutes per OS) is in sweep.yml: nightly and on demand.
     - name: Pack NuGet packages
       if: matrix.os == 'ubuntu-latest'
       run: |

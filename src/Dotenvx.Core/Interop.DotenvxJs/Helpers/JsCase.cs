@@ -11,8 +11,8 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// </remarks>
 internal static partial class JsCase
 {
-    private static readonly Lazy<Dictionary<int, string>> Upper = new(() => Parse(UpperData));
-    private static readonly Lazy<Dictionary<int, string>> Lower = new(() => Parse(LowerData));
+    private static readonly Lazy<Dictionary<int, string>> Upper = new(() => Parse(UpperData!));
+    private static readonly Lazy<Dictionary<int, string>> Lower = new(() => Parse(LowerData!));
 
     public static string ToUpper(string value)
     {
