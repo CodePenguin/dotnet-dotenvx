@@ -27,7 +27,7 @@ public static class HostExtensions
             return 1;
         }
 
-        string[] normalized = CommanderArgs.Normalize(args, out string? missingTerm, out string? firstUnknown);
+        string[] normalized = CommanderArgs.Normalize(args, out string? missingTerm, out string? firstUnknown, out string? unknownShort);
 
         // an unknown first argument is the extension to run, whatever follows it (`dotenvx foo get` runs `dotenvx-foo get`);
         // commander still handles -h/--help/-V/--version anywhere before the action runs
@@ -61,6 +61,13 @@ public static class HostExtensions
             args.TakeWhile(a => a != "--").FirstOrDefault(a => ColonLongOption.IsMatch(a)) is { } colonOption)
         {
             Console.Error.WriteLine(CommanderErrors.UnknownOption(colonOption, CommanderErrors.PathOf(parseResult)));
+            return 1;
+        }
+
+        // commander splits `-f=x` only for a single-letter flag: `-ef=x` is an unknown option
+        if (!RequestsHelpOrVersion(parseResult) && !UnknownOptionGuard.AcceptsUnknownOptions(parseResult) && unknownShort is not null)
+        {
+            Console.Error.WriteLine(CommanderErrors.UnknownOption(unknownShort, CommanderErrors.PathOf(parseResult)));
             return 1;
         }
 

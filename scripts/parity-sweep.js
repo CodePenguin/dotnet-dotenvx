@@ -1089,8 +1089,63 @@ for (const c of specTree.children) {
   }
 }
 
+// ---- round 20: `ext` subcommands (every option, value shapes, fixtures), and longer seeded random sequences over several env files.
+const r20Ext = specTree.children.find(c => c.name === 'ext')
+const r20Fixtures = ['plain', 'enc', 'multi', 'example', 'none', 'r15 tree']
+for (const sub of r20Ext ? r20Ext.children : []) {
+  if (sub.name === 'scan') continue
+  const base = ['ext', sub.name]
+  const positional = sub.usage.includes('[directory]') ? [[], ['.'], ['sub'], ['missing']] : [[]]
+  const opts = sub.options.map(o => {
+    const flags = o.term.split(/[, ]+/).filter(f => f.startsWith('-'))
+    return { long: flags.find(f => f.startsWith('--')), short: flags.find(f => !f.startsWith('--')), value: o.term.includes('<') || o.term.includes('['), variadic: o.term.includes('...') }
+  }).filter(o => o.long && !['--help'].includes(o.long))
+  const valuesFor = o => o.long === '--pattern' ? [['.env*'], ['.env', '.env.keys'], ['*.log'], ['!x']] : o.long === '--env-file' ? [['.env'], ['.env.local'], ['.env', '.env.local'], ['nope']] : [['x']]
+  for (const fx of r20Fixtures) {
+    for (const pos of positional) {
+      add(`r20 ext ${sub.name} ${fx} [${pos.join(' ')}]`, fx, [...base, ...pos], { CI: 'true' })
+      for (const o of opts) {
+        if (!o.value) add(`r20 ext ${sub.name} ${fx} [${pos.join(' ')}] ${o.long}`, fx, [...base, ...pos, o.long], { CI: 'true' })
+        else {
+          for (const v of valuesFor(o)) {
+            add(`r20 ext ${sub.name} ${fx} [${pos.join(' ')}] ${o.long} ${v.join(',')}`, fx, [...base, ...pos, o.long, ...v], { CI: 'true' })
+            add(`r20 ext ${sub.name} ${fx} [${pos.join(' ')}] ${o.short || o.long}= ${v.join(',')}`, fx, [...base, ...pos, ...(o.short ? [o.short + '=' + v[0]] : [o.long + '=' + v[0]]), ...v.slice(1)], { CI: 'true' })
+          }
+          add(`r20 ext ${sub.name} ${fx} [${pos.join(' ')}] ${o.long} (missing)`, fx, [...base, ...pos, o.long], { CI: 'true' })
+        }
+      }
+      for (let i = 0; i < opts.length; i++) for (let j = i + 1; j < opts.length; j++) {
+        const spell = o => o.value ? [o.long, valuesFor(o)[0][0]] : [o.long]
+        add(`r20 ext ${sub.name} ${fx} [${pos.join(' ')}] ${opts[i].long} + ${opts[j].long}`, fx, [...base, ...pos, ...spell(opts[i]), ...spell(opts[j])], { CI: 'true' })
+      }
+    }
+  }
+  // the top-level twin must agree with the ext spelling run for run
+  for (const fx of r20Fixtures) addSteps(`r20 ext ${sub.name} twin ${fx}`, fx, [S(['ext', sub.name]), S([sub.name]), S(['ext', sub.name]), S([sub.name])], { CI: 'true' })
+}
+
+// longer sequences over several env files (a different seed and a wider pool than round 12)
+const r20Pool = [
+  ['encrypt'], ['encrypt', '-f', '.env.production'], ['encrypt', '-f', '.env', '-f', '.env.production'], ['decrypt', '-f', '.env.production'], ['decrypt'],
+  ['set', 'A', 'x', '-f', '.env.production'], ['set', 'B', 'y'], ['set', 'C', 'z', '--plain'], ['set', 'D', 'w', '-f', '.env.production', '--plain'], ['del', 'A', '-f', '.env.production'], ['del', 'B'],
+  ['get', '-f', '.env.production'], ['get', '-f', '.env', '-f', '.env.production'], ['get', '--all'], ['get', '-e', 'production'], ['keypair', '-f', '.env.production'], ['keypair'],
+  ['run', '-f', '.env.production', '--', ...show], ['run', '-f', '.env', '-f', '.env.production', '--overload', '--', ...show],
+  ['ext', 'genexample'], ['genexample'], ['validate'], ['ext', 'gitignore'], ['gitignore', '--pattern', '.env*'], ['ls'], ['prebuild'], ['precommit'], ['ext', 'prebuild'],
+  ['lock', 'up'], ['lock', 'down'], ['native', 'up'], ['native', 'down']
+]
+let r20Seed = 20261010
+const r20Rand = () => { r20Seed = (r20Seed * 1103515245 + 12345) & 0x7fffffff; return r20Seed / 0x7fffffff }
+for (let n = 0; n < 250; n++) {
+  const fx = ['multi', 'enc', 'plain', 'none', 'prodEnc'][Math.floor(r20Rand() * 5)]
+  const length = 6 + Math.floor(r20Rand() * 7)
+  const steps = Array.from({ length }, () => { const a = r20Pool[Math.floor(r20Rand() * r20Pool.length)]; return a[0] === 'lock' ? S(a, { stdin: 'pw\n' }) : S(a) })
+  addSteps(`r20 seq ${String(n).padStart(3, '0')} ${fx}`, fx, steps, { CI: '', FAKECLI_SEED: JSON.stringify({}) }) // native stores are the per-run fake, so the sequences never touch the machine's real store
+}
+
 // Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
-const ACCEPTED_STDERR_ONLY = [/^r18 DOTENV(_CONFIG)?_CONVENTION=/, // an invalid convention is an uncaught error in both: only the stack trace text differs
+const ACCEPTED_STDERR_ONLY = [/^r20 seq /, // the lock passphrase prompt redraws differently (accepted difference #3)
+  /^r20 ext precommit .*--install/, // the hook path outside a repository: ENOENT in Node, the .NET wording inside the same dotenvx message
+  /^r18 DOTENV(_CONFIG)?_CONVENTION=/, // an invalid convention is an uncaught error in both: only the stack trace text differs
   /^r17 .* (bogus|next|NEXTJS) env/, // an invalid convention is an uncaught error in both: only the stack trace text differs
   /^r15 link link loop/, // ELOOP in Node, the system message here
   /^r15 .* (encrypt|set|get|decrypt|keypair|validate|run) -f(k)? .*(deep|nope)/, // a missing file: ENOENT in Node, the .NET wording here
@@ -1099,6 +1154,7 @@ const ACCEPTED_STDERR_ONLY = [/^r18 DOTENV(_CONFIG)?_CONVENTION=/, // an invalid
 
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
+  /^r20 ext ls (twin )?r15 tree/, // directory order follows the filesystem crawl in Node (trap #64)
   /^r18 DOTENV_PRIVATE_KEYS=/, // the derived file name is ".env." (trailing dot): Windows file APIs in .NET treat it as ".env", Node does not (documented difference)
   /^r15 r15 tree ls dir /, // directory order follows the filesystem crawl in Node (trap #64)
   /^r14 (name|dirname) dash /, // `-dash` as an argument is the debug flag plus an unknown option: the debug line is printed before the error here
@@ -1133,10 +1189,11 @@ const normalize = (s, dir) => {
   s = s.replace(/locked:([0-9a-f]+):[A-Za-z0-9_-]+/g, 'locked:$1:<payload>')
   s = s.replace(/encrypted:[A-Za-z0-9+/=]+/g, 'encrypted:ENC')
   s = s.replace(/\b[0-9a-f]{64,}\b/g, 'HEX').replace(/\b0[23][0-9a-f]{64}\b/g, 'PUB')
-  s = s.replace(/no change \(\w{3} \w{3}\)/g, 'no change (KEY)') // a freshly generated public key, shortened
+  s = s.replace(/\(([0-9A-F]{3}) ([0-9A-F]{3})\)/g, '(KEY)') // a freshly generated public key, shortened
   s = s.replace(/"_":"[^"]*"/g, '"_":"LAUNCHER"') // the shell sets `_` to the program that started the CLI (node or dotnet)
   s = s.replace(/sweep-[A-Za-z0-9]{6}/g, 'sweep-DIR') // the per-run directory, also where it appears JSON-escaped inside a dumped environment
   s = s.replace(/0[23][0-9a-f]{4}\*{20,}/g, 'PUBMASK') // a masked random public key
+  s = s.replace(/_0[23][0-9a-f]{64}/g, '_PUB') // a public key inside a fake vault file name
   s = s.replace(/scanned in \d+s/g, 'scanned in Ns')
   s = s.replace(/\[dotenvx@[^\]]+\]/g, '[dotenvx@V]')
   return s
@@ -1218,7 +1275,7 @@ function runOne (cliArgs, sc, isNode) {
       const walk = d => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (n === '.git') { const hook = path.join(p, 'hooks', 'pre-commit'); if (fs.existsSync(hook)) files['.git/hooks/pre-commit'] = normalize(fs.readFileSync(hook, 'utf8'), dir); continue } const rel = path.relative(dir, p).split(path.sep).join('/'); if (fs.lstatSync(p).isSymbolicLink()) { files[rel] = 'LINK ' + normalize(fs.readlinkSync(p), dir) + (fs.existsSync(p) && fs.statSync(p).isFile() ? ' => ' + normalize(fs.readFileSync(p, 'utf8'), dir) : ''); continue } if (fs.statSync(p).isDirectory()) walk(p); else files[path.relative(dir, p).split(path.sep).join('/')] = normalize(fs.readFileSync(p, 'utf8'), dir) } }
       walk(dir)
       if (fakeVault) {
-        const walkVault = (d, rel) => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (fs.statSync(p).isDirectory()) walkVault(p, rel + n + '/'); else files['<fake cli>/' + rel + n] = fs.readFileSync(p, 'utf8') } }
+        const walkVault = (d, rel) => { for (const n of fs.readdirSync(d)) { const p = path.join(d, n); if (fs.statSync(p).isDirectory()) walkVault(p, rel + n + '/'); else files[normalize('<fake cli>/' + rel + n, dir)] = normalize(fs.readFileSync(p, 'utf8'), dir) } }
         walkVault(fakeVault, '')
         fs.rmSync(fakeVault, { recursive: true, force: true })
       }
@@ -1297,8 +1354,15 @@ async function main () {
     lines.push(`### ${x.sc.name} [${x.fields.join(',')}]  args=${JSON.stringify(x.sc.steps || x.sc.args)} env=${JSON.stringify(x.sc.env)}`)
     for (const f of x.fields) {
       if (f === 'files') {
-        lines.push(`  node files: ${JSON.stringify(x.n.files).slice(0, 400)}`)
-        lines.push(`  dotn files: ${JSON.stringify(x.d.files).slice(0, 400)}`)
+        for (const name of new Set([...Object.keys(x.n.files), ...Object.keys(x.d.files)])) {
+          const [fa, fb] = [JSON.stringify(x.n.files[name]), JSON.stringify(x.d.files[name])]
+          if (fa === fb) continue
+          let p = 0
+          while (p < (fa || '').length && fa[p] === (fb || '')[p]) p++
+          const from = Math.max(0, p - 60)
+          lines.push(`  node file ${name}: ${fa === undefined ? '(absent)' : fa.slice(from, from + 240)}`)
+          lines.push(`  dotn file ${name}: ${fb === undefined ? '(absent)' : fb.slice(from, from + 240)}`)
+        }
       } else if (f === 'exit') lines.push(`  exit node=${x.n.code} dotnet=${x.d.code}`)
       else { const [a, b] = [JSON.stringify(x.n[f]), JSON.stringify(x.d[f])]; let p = 0; while (p < a.length && a[p] === b[p]) p++; const from = Math.max(0, Math.min(p - 40, p)); lines.push(`  ${f} node=${a.slice(from, from + 300)}`); lines.push(`  ${f} dotn=${b.slice(from, from + 300)}`) } // the window starts just before the first difference
     }

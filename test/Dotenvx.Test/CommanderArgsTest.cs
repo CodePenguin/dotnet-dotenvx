@@ -41,4 +41,16 @@ public class CommanderArgsTest
     {
         CommanderArgs.Normalize(args).ShouldBe(expected);
     }
+
+    [Theory]
+    [InlineData(new[] { "get", "-fk=x" }, new[] { "get", "-f", "k=x" }, null)]
+    [InlineData(new[] { "get", "-fk:x" }, new[] { "get", "-f", "k:x" }, null)]
+    [InlineData(new[] { "get", "-ik=A" }, new[] { "get", "-ik=A" }, "-ik=A")]
+    [InlineData(new[] { "ext", "ls", "-ef=x" }, new[] { "ext", "ls", "-ef=x" }, "-ef=x")]
+    [InlineData(new[] { "get", "-f=x" }, new[] { "get", "-f", "=x" }, null)]
+    public void MultiLetterShortFlagsWithAnAttachedValue(string[] args, string[] expected, string? unknownShort)
+    {
+        CommanderArgs.Normalize(args, out _, out _, out string? unknown).ShouldBe(expected);
+        unknown.ShouldBe(unknownShort);
+    }
 }

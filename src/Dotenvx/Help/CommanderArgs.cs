@@ -34,8 +34,18 @@ public static class CommanderArgs
     /// </param>
     public static string[] Normalize(string[] args, out string? missingTerm, out string? unknownCommand)
     {
+        return Normalize(args, out missingTerm, out unknownCommand, out _);
+    }
+
+    /// <param name="unknownShort">
+    /// The first `-ab=value` / `-ab:value` argument that commander cannot split: it only splits a single-letter flag from an attached
+    /// value, so unless `-a` itself takes a value this is an unknown option (`-ef=x`, `-ik=A`), else null.
+    /// </param>
+    public static string[] Normalize(string[] args, out string? missingTerm, out string? unknownCommand, out string? unknownShort)
+    {
         missingTerm = null;
         unknownCommand = null;
+        unknownShort = null;
         var result = new List<string>();
         var chain = new List<HelpSpec> { CommanderHelp.RootSpec };
         bool positionalSeen = false;
@@ -51,6 +61,25 @@ public static class CommanderArgs
                 result.AddRange(args[i..]);
 
                 break;
+            }
+
+            if (arg.Length > 3 && arg[0] == '-' && arg[1] != '-' && char.IsAsciiLetter(arg[1]) && char.IsAsciiLetter(arg[2]) &&
+                arg.IndexOfAny(['=', ':']) is > 2 and var separator && arg[1..separator].All(char.IsAsciiLetter))
+            {
+                // commander splits `-a=value` only for a single-letter flag: for `-ab=value` it takes `-a` with the value "b=value" when
+                // `-a` takes a value, and otherwise reports an unknown option, even when `-ab` is a flag of its own
+                if (TakesValue(chain, arg[..2]) is null)
+                {
+                    unknownShort ??= arg;
+                }
+                else if (!InlineVariadicWanted(chain, arg))
+                {
+                    result.Add(arg[..2]);
+                    result.Add(arg[2..]);
+                    insertAt = Math.Min(insertAt, result.Count);
+
+                    continue;
+                }
             }
 
             if (InlineVariadic(chain, arg) is { } inline)
@@ -177,6 +206,11 @@ public static class CommanderArgs
         }
 
         return null;
+    }
+
+    private static bool InlineVariadicWanted(List<HelpSpec> chain, string arg)
+    {
+        return InlineVariadic(chain, arg) is not null;
     }
 
     private static bool IsRootBoolean(string flag)
