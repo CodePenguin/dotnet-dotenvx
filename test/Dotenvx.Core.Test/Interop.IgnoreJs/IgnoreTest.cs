@@ -259,7 +259,8 @@ public class IgnoreTests : IDisposable
         Ignore ig = new();
         ig.Add("src/*.js");
 
-        ig.Ignores(@"src\test.js").ShouldBeTrue();
+        // node-ignore converts backslashes only on Windows; elsewhere a backslash is an ordinary character
+        ig.Ignores(@"src\test.js").ShouldBe(OperatingSystem.IsWindows());
         ig.Ignores("src/test.js").ShouldBeTrue();
     }
 

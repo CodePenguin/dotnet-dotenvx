@@ -68,7 +68,7 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
     }
 
     // Fdir skips directories it cannot read
-    private static readonly EnumerationOptions Inaccessible = new() { IgnoreInaccessible = true };
+    private static readonly EnumerationOptions Inaccessible = new() { IgnoreInaccessible = true, AttributesToSkip = 0 }; // AttributesToSkip 0: the default skips Hidden, which on Unix is every dot file
 
     public static bool IsLink(string directory)
     {

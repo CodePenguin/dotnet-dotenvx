@@ -151,7 +151,7 @@ public static class SystemInformation
 
     private static Info Read()
     {
-        string platform = OperatingSystem.IsWindows() ? "Windows" : OperatingSystem.IsMacOS() ? "darwin" : "Linux";
+        string platform = OperatingSystem.IsWindows() ? "Windows" : OperatingSystem.IsMacOS() ? "darwin" : "linux";
         string arch = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture switch
         {
             System.Runtime.InteropServices.Architecture.X64 => "x64",

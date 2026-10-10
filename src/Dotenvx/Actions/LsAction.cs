@@ -149,7 +149,7 @@ public class LsAction : Command
         }
 
         int count = 0;
-        foreach (string subdirectory in Directory.GetDirectories(directory, "*", new EnumerationOptions { IgnoreInaccessible = true }))
+        foreach (string subdirectory in Directory.GetDirectories(directory, "*", new EnumerationOptions { IgnoreInaccessible = true, AttributesToSkip = 0 }))
         {
             if (Ls.IsLink(subdirectory))
             {
