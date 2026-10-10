@@ -970,6 +970,24 @@ for (const [k, v] of [['DOTENV_CONFIG_CONVENTION', 'nextjs'], ['DOTENV_CONFIG_CO
   for (const cmd of [['get'], ['run', '--', ...show]]) add(`r17 var ${k}=${v} ${cmd[0]}`, 'r17 all', cmd, { CI: 'true', [k]: v })
 }
 
+// ---- round 18: every environment variable the CLI reads, with truthy, falsy and odd values, crossed with the commands that consult them.
+const r18Vars = [
+  'DOTENVX_NO_ARMOR', 'DOTENVX_NO_1PASSWORD', 'DOTENVX_NO_BITWARDEN', 'DOTENVX_NO_NATIVE', 'DOTENVX_ARMOR_ON', 'DOTENVX_ARMOR_USER', 'DOTENVX_ARMOR_USERNAME',
+  'DOTENVX_ARMOR_TOKEN', 'DOTENVX_BITWARDEN_PASSWORD', 'DOTENVX_TEAM_REQUIRED', 'DOTENVX_VERSION', 'DOTENVX_VERSION_LAST_CHECK',
+  'DOTENV_QUIET', 'DOTENV_IGNORE', 'DOTENV_ENV', 'DOTENV_CONVENTION', 'DOTENV_CONFIG_QUIET', 'DOTENV_CONFIG_IGNORE', 'DOTENV_CONFIG_CONVENTION',
+  'DOTENV_PRIVATE_KEYS', 'DOTENV_PUBLIC_KEY', 'NO_COLOR', 'FORCE_COLOR', 'TERM', 'COLUMNS', 'LANG', 'LC_ALL', 'TZ', 'CI', 'BW_SESSION', 'NODE_ENV'
+]
+const r18Values = ['true', '1', '0', 'false', '', 'MISSING_ENV_FILE', 'x', 'ünï']
+const r18Cmds = [['get'], ['get', 'NOPE'], ['run', '--', ...show], ['set', 'NEW', 'v'], ['encrypt'], ['decrypt', '--stdout'], ['validate'], ['native']]
+fixtures['r18 enc'] = { '.env': encEnv, '.env.keys': keysFile, '.env.example': 'HELLO=\nFOO=\nPLAIN_PLAIN=\nEMPTY=\n' }
+for (const name of r18Vars) {
+  for (const value of r18Values) {
+    for (const cmd of r18Cmds) {
+      add(`r18 ${name}=${JSON.stringify(value)} ${cmd.slice(0, 2).join(' ')}`, 'r18 enc', cmd, { ...(name === 'CI' ? {} : { CI: 'true' }), DOTENVX_ARMOR_HOSTNAME: 'http://127.0.0.1:9', [name]: value })
+    }
+  }
+}
+
 // ---- every option of every command, generated from the help spec: with a value, as --long=value, without its value, as a
 // misspelled flag (suggestions), and as a lone flag. Commands that reach the network or open prompts are skipped.
 const NETWORK = new Set(['login', 'logout', 'curl', 'update', 'armor', 'help', 'ext'])
@@ -1037,7 +1055,8 @@ for (const c of specTree.children) {
 }
 
 // Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
-const ACCEPTED_STDERR_ONLY = [/^r17 .* (bogus|next|NEXTJS) env/, // an invalid convention is an uncaught error in both: only the stack trace text differs
+const ACCEPTED_STDERR_ONLY = [/^r18 DOTENV(_CONFIG)?_CONVENTION=/, // an invalid convention is an uncaught error in both: only the stack trace text differs
+  /^r17 .* (bogus|next|NEXTJS) env/, // an invalid convention is an uncaught error in both: only the stack trace text differs
   /^r15 link link loop/, // ELOOP in Node, the system message here
   /^r15 .* (encrypt|set|get|decrypt|keypair|validate|run) -f(k)? .*(deep|nope)/, // a missing file: ENOENT in Node, the .NET wording here
   /^r14 (envIsDir|keysIsDir|exampleIsDir|gitignoreIsDir) /, // a directory read as a file: EISDIR in Node, access denied in .NET
@@ -1045,6 +1064,7 @@ const ACCEPTED_STDERR_ONLY = [/^r17 .* (bogus|next|NEXTJS) env/, // an invalid c
 
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
+  /^r18 DOTENV_PRIVATE_KEYS=/, // the derived file name is ".env." (trailing dot): Windows file APIs in .NET treat it as ".env", Node does not (documented difference)
   /^r15 r15 tree ls dir /, // directory order follows the filesystem crawl in Node (trap #64)
   /^r14 (name|dirname) dash /, // `-dash` as an argument is the debug flag plus an unknown option: the debug line is printed before the error here
   /^r10 ref .* get --all$/, // --all dumps the whole environment, which includes the per-run fake vault directory

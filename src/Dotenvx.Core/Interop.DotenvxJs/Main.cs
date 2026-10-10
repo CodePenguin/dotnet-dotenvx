@@ -176,7 +176,7 @@ public static class Main
         // Only log which level it's setting if it's not set to quiet mode
         if (options.Quiet != true || (options.Quiet == true && logLevel != DotenvxLogLevel.Error))
         {
-            logger.Debug($"Setting log level to {logLevel.ToString().ToLower()}");
+            logger.Debug($"Setting log level to {logLevel.ToString().ToLowerInvariant()}");
         }
     }
 

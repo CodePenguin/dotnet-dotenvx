@@ -93,7 +93,7 @@ public static class Fsx
             encoding = Encoding;
         }
 
-        Encoding enc = encoding.ToLower() switch
+        Encoding enc = encoding.ToLowerInvariant() switch
         {
             "ascii" => System.Text.Encoding.ASCII,
             "utf8" => System.Text.Encoding.UTF8,

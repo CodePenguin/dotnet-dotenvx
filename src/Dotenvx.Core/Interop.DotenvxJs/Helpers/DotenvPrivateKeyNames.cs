@@ -6,6 +6,6 @@ public static partial class Helpers
     public static string[] DotenvPrivateKeyNames(IDictionary<string, string> processEnv)
     {
         const string PrivateKeyNameSchema = "DOTENV_PRIVATE_KEY";
-        return processEnv.Keys.Where(key => key.StartsWith(PrivateKeyNameSchema)).ToArray();
+        return processEnv.Keys.Where(key => key.StartsWith(PrivateKeyNameSchema, StringComparison.Ordinal)).ToArray();
     }
 }
