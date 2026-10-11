@@ -29,7 +29,7 @@ public class ExecuteCommandTest
 
     private static string[] Fake(int exitCode, params string[] ops)
     {
-        return ["dotnet", FakeGitleaksDllPath, exitCode.ToString(), .. ops];
+        return [Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? Environment.ProcessPath ?? "dotnet", FakeGitleaksDllPath, exitCode.ToString(), .. ops];
     }
 
     /// <remarks>Refer to "executeCommand - success"</remarks>

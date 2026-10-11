@@ -1144,7 +1144,8 @@ for (let n = 0; n < 250; n++) {
 }
 
 // Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
-const ACCEPTED_STDERR_ONLY = [/^r20 seq /, // the lock passphrase prompt redraws differently (accepted difference #3)
+const ACCEPTED_STDERR_ONLY = [/^r16 self signal SIGUSR1$/, // Node opens its inspector on SIGUSR1: both runs race for port 9229
+  /^r20 seq /, // the lock passphrase prompt redraws differently (accepted difference #3)
   /^r20 ext precommit .*--install/, // the hook path outside a repository: ENOENT in Node, the .NET wording inside the same dotenvx message
   /^r18 DOTENV(_CONFIG)?_CONVENTION=/, // an invalid convention is an uncaught error in both: only the stack trace text differs
   /^r17 .* (bogus|next|NEXTJS) env/, // an invalid convention is an uncaught error in both: only the stack trace text differs
