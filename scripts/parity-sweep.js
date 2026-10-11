@@ -1332,7 +1332,9 @@ async function main () {
   const only = process.argv[2]
   // SWEEP_EVERY=N runs every Nth scenario (a fast, repeatable sample for pull requests); the full sweep runs without it
   const every = Math.max(1, Number(process.env.SWEEP_EVERY) || 1)
-  const list = scenarios.filter(s => !only || s.name.includes(only)).filter((_, index) => index % every === 0)
+  // macOS keeps keys through /usr/bin/security, an absolute path no fake on PATH can replace: scenarios that run `native` stay off the real keychain
+  const usesNative = s => (s.steps || [{ args: s.args }]).some(step => step.args && step.args[0] === 'native' && s.env.FAKECLI_SEED !== undefined)
+  const list = scenarios.filter(s => !only || s.name.includes(only)).filter(s => !(process.platform === 'darwin' && usesNative(s))).filter((_, index) => index % every === 0)
   const diffs = []
   let i = 0
   const worker = async () => {

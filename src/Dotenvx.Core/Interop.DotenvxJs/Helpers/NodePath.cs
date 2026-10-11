@@ -21,6 +21,15 @@ public static class NodePath
         return trimmed.Length < root.Length ? root : trimmed;
     }
 
+    /// <summary>
+    /// The path in a Node fs error message (`ENOENT: no such file or directory, open '<path>'`): libuv makes it absolute on Windows, while
+    /// on Linux and macOS it is the path as it was given.
+    /// </summary>
+    public static string ErrorPath(string path)
+    {
+        return OperatingSystem.IsWindows() ? Path.GetFullPath(path) : path;
+    }
+
     /// <summary>Node's `path.basename`: the last segment, ignoring trailing separators (`.env/` is `.env`).</summary>
     public static string Basename(string path)
     {

@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [ "main", "sync0916" ] # sync0916 is TEMPORARY, until the pull request is merged
+    branches: [ "main" ]
     tags: ['*']
   pull_request:
     branches: [ "main" ]
@@ -18,6 +18,10 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+    - name: Keep LF line endings
+      run: git config --global core.autocrlf false
+      # The Windows runner defaults to core.autocrlf=true, which would turn the dotenvx submodule's fixture files into CRLF (this repo's
+      # own files are pinned to LF by .gitattributes) and break tests that compare them byte for byte.
     - uses: actions/checkout@v4
       with:
         submodules: true

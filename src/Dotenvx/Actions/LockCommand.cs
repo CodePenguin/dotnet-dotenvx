@@ -78,7 +78,7 @@ public class LockCommand : Command
         catch (FileNotFoundException error)
         {
             // fs.readFileSync's raw ENOENT text (the catch block prints error.message, not messageWithHelp)
-            logger.Error($"ENOENT: no such file or directory, open '{Path.GetFullPath(error.FileName ?? "")}'");
+            logger.Error($"ENOENT: no such file or directory, open '{NodePath.ErrorPath(error.FileName ?? "")}'");
             return 1;
         }
         catch (Exception error)

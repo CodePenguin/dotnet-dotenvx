@@ -40,7 +40,7 @@ public static class GitHelper
 
     private static string[] DefaultDiffNameOnlyNulSeparated()
     {
-        using Process process = StartGit("diff HEAD --name-only -z");
+        using Process process = StartGit("diff HEAD --name-only -z", inheritStandardError: true);
         string output = process.StandardOutput.ReadToEnd();
         process.WaitForExit();
         if (process.ExitCode != 0)
@@ -51,7 +51,9 @@ public static class GitHelper
         return output.Split('\0', StringSplitOptions.RemoveEmptyEntries);
     }
 
-    private static Process StartGit(string arguments)
+    // precommit.js: `execSync('git diff HEAD ...')` leaves stderr inherited (git's own error, for example in a repository without commits, reaches
+    // the terminal), while `rev-parse` uses stdio 'ignore'
+    private static Process StartGit(string arguments, bool inheritStandardError = false)
     {
         Process process = new()
         {
@@ -61,7 +63,7 @@ public static class GitHelper
                 Arguments = arguments,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                RedirectStandardError = !inheritStandardError,
                 CreateNoWindow = true
             }
         };

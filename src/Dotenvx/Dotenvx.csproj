@@ -2,6 +2,9 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
+        <!-- No ICU culture data: the tool never formats for a culture, and an invalid LANG / LC_ALL (LANG=0) otherwise terminates .NET at startup
+             with "Argument_CultureNotSupported" on Linux and macOS, where Node ignores it. -->
+        <InvariantGlobalization>true</InvariantGlobalization>
         <TargetFramework>net10.0</TargetFramework>
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>dotenvx</ToolCommandName>
