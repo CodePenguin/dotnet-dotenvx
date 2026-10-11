@@ -59,7 +59,8 @@ public sealed class NodeParityFixture : IAsyncLifetime
             return;
         }
 
-        string? dotnetPath = FindOnPath("dotnet");
+        // the host that is running the tests: a `dotnet` found on PATH can be a broken link (seen on a macOS machine)
+        string? dotnetPath = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") is { Length: > 0 } host && File.Exists(host) ? host : FindOnPath("dotnet");
         if (dotnetPath != null)
         {
             _dotnetPath = dotnetPath;

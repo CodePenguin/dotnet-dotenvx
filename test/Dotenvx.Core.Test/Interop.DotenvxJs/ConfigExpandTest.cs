@@ -386,6 +386,13 @@ public class ConfigExpandTest : EnvironmentTestBase
     [Fact]
     public void TestSingleQuoteExpansionBugTestCases()
     {
+        // the file's values only apply when the machine has none: some CI images (Windows runners) set PGUSER and PGHOST
+        foreach (string suffix in new[] { "", "2", "3", "4", "5", "6", "7", "8", "9" })
+        {
+            Environment.SetEnvironmentVariable("PGUSER" + suffix, null);
+            Environment.SetEnvironmentVariable("PGHOST" + suffix, null);
+        }
+
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
 
