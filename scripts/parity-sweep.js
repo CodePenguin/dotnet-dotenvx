@@ -1193,7 +1193,7 @@ const normalize = (s, dir) => {
   s = s.replace(/\b[0-9a-f]{64,}\b/g, 'HEX').replace(/\b0[23][0-9a-f]{64}\b/g, 'PUB')
   s = s.replace(/\(([0-9A-F]{3}) ([0-9A-F]{3})\)/g, '(KEY)') // a freshly generated public key, shortened
   s = s.replace(/"_":"[^"]*"/g, '"_":"LAUNCHER"') // the shell sets `_` to the program that started the CLI (node or dotnet)
-  s = s.replace(/sweep-[A-Za-z0-9]{6}/g, 'sweep-DIR') // the per-run directory, also where it appears JSON-escaped inside a dumped environment
+  s = s.replace(/sweep-[A-Za-z0-9]{6}/gi, 'sweep-DIR') // the per-run directory, also where it appears JSON-escaped inside a dumped environment
   s = s.replace(/0[23][0-9a-f]{4}\*{20,}/g, 'PUBMASK') // a masked random public key
   s = s.replace(/_0[23][0-9a-f]{64}/g, '_PUB') // a public key inside a fake vault file name
   s = s.replace(/scanned in \d+s/g, 'scanned in Ns')

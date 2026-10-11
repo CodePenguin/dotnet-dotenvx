@@ -188,12 +188,11 @@ public static class SystemInformation
                 return match.Success ? match.Groups[1].Value.ToLowerInvariant() : "";
             }
 
-            foreach (string path in new[] { "/sys/class/dmi/id/product_uuid", "/etc/machine-id" })
+            // systeminformation's system().uuid reads only the DMI product_uuid on Linux (/etc/machine-id belongs to its separate uuid().os):
+            // machines without DMI data (WSL, many containers) report an empty uuid
+            if (File.Exists("/sys/class/dmi/id/product_uuid"))
             {
-                if (File.Exists(path))
-                {
-                    return File.ReadAllText(path).Trim().ToLowerInvariant();
-                }
+                return File.ReadAllText("/sys/class/dmi/id/product_uuid").Trim().ToLowerInvariant();
             }
         }
         catch (Exception)

@@ -130,6 +130,11 @@ public static class Fsx
         {
             return File.ReadAllBytes(path);
         }
+        catch (FileNotFoundException error) when (error.FileName != path)
+        {
+            // .NET reports the full path; Node's message names the path as given (ErrorPath makes it absolute on Windows only)
+            throw new FileNotFoundException(error.Message, path, error);
+        }
         catch (DirectoryNotFoundException error) when (!Directory.Exists(path))
         {
             // a missing parent directory is Node's ENOENT, i.e. a missing file (an existing directory keeps the native error)

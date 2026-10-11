@@ -25,13 +25,21 @@ public static class FakeCliInstaller
             {
                 foreach (string tool in tools)
                 {
-                    File.Copy(file, Path.Combine(binDirectory, tool + suffix), true);
+                    Replace(file, Path.Combine(binDirectory, tool + suffix));
                 }
             }
             else
             {
-                File.Copy(file, Path.Combine(binDirectory, name), true);
+                Replace(file, Path.Combine(binDirectory, name));
             }
         }
+    }
+
+    // copy beside the target and rename over it: writing straight into an apphost that just exited fails with "Text file busy" on Linux
+    private static void Replace(string source, string destination)
+    {
+        string temporary = destination + ".tmp";
+        File.Copy(source, temporary, true);
+        File.Move(temporary, destination, true);
     }
 }

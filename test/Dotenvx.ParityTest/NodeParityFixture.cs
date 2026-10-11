@@ -148,7 +148,7 @@ public sealed class NodeParityFixture : IAsyncLifetime
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            RedirectStandardInput = input != null,
+            RedirectStandardInput = true, // never inherit the test host's stdin: a child that reads it would wait forever
             StandardOutputEncoding = new UTF8Encoding(false),
             StandardErrorEncoding = new UTF8Encoding(false),
             CreateNoWindow = true
@@ -179,8 +179,9 @@ public sealed class NodeParityFixture : IAsyncLifetime
         if (input != null)
         {
             await process.StandardInput.WriteAsync(input);
-            process.StandardInput.Close();
         }
+
+        process.StandardInput.Close();
 
         Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync();
         Task<string> stderrTask = process.StandardError.ReadToEndAsync();
