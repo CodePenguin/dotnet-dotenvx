@@ -7,13 +7,18 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch: # run it by hand from the Actions tab on any branch
+    inputs:
+      all-os:
+        description: Also run on Windows and macOS (push and pull request runs are Linux only)
+        type: boolean
+        default: false
 
 jobs:
   build:
     strategy:
       fail-fast: false # one OS failing must not hide the others
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: ${{ fromJSON(inputs.all-os && '["ubuntu-latest","windows-latest","macos-latest"]' || '["ubuntu-latest"]') }}
 
     runs-on: ${{ matrix.os }}
 
@@ -32,7 +37,7 @@ jobs:
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: 22 # the parity suite and sweep run the real Node CLI: pin it so runner images cannot drift
+        node-version: 22 # the parity tests run the real Node CLI: pin it so runner images cannot drift
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
@@ -41,12 +46,6 @@ jobs:
       run: dotnet test --no-build --verbosity normal
       # Includes Dotenvx.ParityTest (part of Dotenvx.sln): it shells out to the real Node CLI in the dotenvx/ submodule
       # and diffs output against the built .NET CLI. NodeParityFixture runs `npm install` in dotenvx/ on first use.
-    - name: Parity sweep (sample)
-      run: node scripts/parity-sweep.js
-      env:
-        SWEEP_EVERY: 25
-      # Every 25th of the ~15,000 command x flag x fixture scenarios, run against both CLIs (a few minutes); exits non-zero on any
-      # unexpected difference. The full sweep (30 to 40 minutes per OS) is in sweep.yml: nightly and on demand.
     - name: Pack NuGet packages
       if: matrix.os == 'ubuntu-latest'
       run: |

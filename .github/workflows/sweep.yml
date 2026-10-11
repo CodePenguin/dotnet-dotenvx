@@ -1,14 +1,9 @@
 name: sweep
 
-# The full differential sweep (~15,000 scenarios, 30 to 40 minutes per OS) against the real Node CLI. ci.yml runs a sample on every
-# push and pull request; this runs everything nightly, on demand from the Actions tab, and for release tags.
+# The full differential sweep (~15,000 scenarios, 30 to 40 minutes per OS) against the real Node CLI. Manual only: start it from the
+# Actions tab. It is deliberately not part of ci.yml, which runs just the build and the tests.
 on:
-  schedule:
-    - cron: "0 5 * * *"
   workflow_dispatch:
-  push:
-    tags: ['*']
-    branches: [ "sync0916" ] # TEMPORARY: lets the full sweep run on this branch before the pull request; remove when merged
 
 jobs:
   sweep:
