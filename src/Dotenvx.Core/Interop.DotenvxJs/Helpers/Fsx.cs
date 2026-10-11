@@ -64,8 +64,21 @@ public static class Fsx
     private static bool DefaultExistsSync(string path)
     {
         path = WithoutTrailingSeparator(path);
+        if (!File.Exists(path) && !Directory.Exists(path))
+        {
+            return false;
+        }
 
-        return File.Exists(path) || Directory.Exists(path);
+        // .NET counts a dangling symbolic link as an existing file; fs.existsSync follows the link (access(2)) and reports false
+        try
+        {
+            return OperatingSystem.IsWindows() || new FileInfo(path).ResolveLinkTarget(true) is not { } target ||
+                   File.Exists(target.FullName) || Directory.Exists(target.FullName);
+        }
+        catch (IOException)
+        {
+            return false;
+        }
     }
 
     private static bool DefaultIsDirectorySync(string path)
@@ -130,21 +143,68 @@ public static class Fsx
         {
             return File.ReadAllBytes(path);
         }
-        catch (FileNotFoundException error) when (error.FileName != path)
+        catch (IOException error) when (NotADirectoryMessage(path) is { } message)
+        {
+            // Node's raw ENOTDIR, which no caller maps to a missing file (only ENOENT and EISDIR are)
+            throw new IOException(message, error);
+        }
+        catch (FileNotFoundException error)
         {
             // .NET reports the full path; Node's message names the path as given (ErrorPath makes it absolute on Windows only)
-            throw new FileNotFoundException(error.Message, path, error);
+            throw Enoent(path, error);
         }
         catch (DirectoryNotFoundException error) when (!Directory.Exists(path))
         {
             // a missing parent directory is Node's ENOENT, i.e. a missing file (an existing directory keeps the native error)
-            throw new FileNotFoundException(error.Message, path, error);
+            throw Enoent(path, error);
         }
         catch (IOException error) when (error.HResult == unchecked((int)0x8007007B))
         {
             // Windows ERROR_INVALID_NAME (a path such as ":.env"): Node's ENOENT, i.e. a missing file
-            throw new FileNotFoundException(error.Message, path, error);
+            throw Enoent(path, error);
         }
+    }
+
+    // fs.readFileSync's ENOENT, whose message the commands that do not map it to a missing file print raw
+    private static FileNotFoundException Enoent(string path, Exception inner)
+    {
+        return new FileNotFoundException($"ENOENT: no such file or directory, open '{NodePath.ErrorPath(path)}'", path, inner);
+    }
+
+    /// <summary>
+    /// fs.readFileSync's ENOTDIR message when a regular file stands where open() needs a directory (`.env/`, `file/.env`), or null.
+    /// open() walks the path in order, so a missing component first is ENOENT. Windows reports these as ENOENT.
+    /// </summary>
+    public static string? NotADirectoryMessage(string path)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        string[] parts = path.Split('/');
+        int last = Array.FindLastIndex(parts, part => part.Length > 0);
+        string prefix = path.StartsWith('/') ? "/" : "";
+        for (int i = 0; i <= last; i++)
+        {
+            if (parts[i].Length == 0)
+            {
+                continue;
+            }
+
+            prefix = Path.Combine(prefix, parts[i]);
+            if (i == last && !path.EndsWith('/'))
+            {
+                return null;
+            }
+
+            if (!Directory.Exists(prefix))
+            {
+                return File.Exists(prefix) ? $"ENOTDIR: not a directory, open '{path}'" : null;
+            }
+        }
+
+        return null;
     }
 
     private static void DefaultWriteFileSync(string path, string data)
@@ -168,6 +228,11 @@ public static class Fsx
         catch (UnauthorizedAccessException)
         {
             throw new FileNotWritableException(filepath);
+        }
+        catch (IOException error) when (error is FileNotFoundException or DirectoryNotFoundException)
+        {
+            // fs.writeFile's raw ENOENT (a missing directory, or a dangling link into one), which the commands print as given
+            throw new FileNotFoundException($"ENOENT: no such file or directory, open '{NodePath.ErrorPath(filepath)}'", filepath, error);
         }
     }
 

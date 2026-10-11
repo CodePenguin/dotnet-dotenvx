@@ -16,6 +16,9 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
         : string.IsNullOrWhiteSpace(directory)
             ? Path.Combine(NodePath.Resolve("."), directory)
             : NodePath.Resolve(directory);
+
+    // Fdir converts every slash in the crawl root to the platform separator, so `sub\deep` is crawled as sub/deep outside Windows too
+    private string CrawlRoot => OperatingSystem.IsWindows() ? _cwd : _cwd.Replace('\\', '/');
     private readonly string[] _ignore = ["node_modules/**", "**/node_modules/**", ".git/**", "**/.git/**"];
 
     // Matches ls.js's DEFAULT_EXCLUDED_DIRECTORY_EXTENSIONS - the Fdir crawler never descends into
@@ -59,8 +62,8 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
         // filtering, rather than passing each user pattern to Directory.GetFiles as its own OS
         // search pattern - "**/" isn't valid .NET search-pattern syntax, only valid picomatch/glob
         // syntax.
-        return EnumerateFiles(_cwd)
-            .Select(file => Path.GetRelativePath(_cwd, file).Replace(Path.DirectorySeparatorChar, '/'))
+        return EnumerateFiles(CrawlRoot)
+            .Select(file => Path.GetRelativePath(CrawlRoot, file).Replace(Path.DirectorySeparatorChar, '/'))
             .Where(path => !exclude(path) && include(path))
             .Distinct()
             .OrderBy(path => path, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal) // the crawl order Node shows: case-insensitive on Windows, by code unit elsewhere

@@ -105,7 +105,7 @@ public class KeyPairAction : Command
             {
                 if (!Fsx.ExistsSync(resolvedEnvFile))
                 {
-                    throw new Exception(
+                    throw new Exception(Fsx.NotADirectoryMessage(resolvedEnvFile) ??
                         $"ENOENT: no such file or directory, open '{NodePath.ErrorPath(resolvedEnvFile)}'");
                 }
 
