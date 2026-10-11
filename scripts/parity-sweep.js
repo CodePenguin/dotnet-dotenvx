@@ -1156,6 +1156,7 @@ const ACCEPTED_STDERR_ONLY = [/^r16 self signal SIGUSR1$/, // Node opens its ins
 
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
+  ...(process.platform === 'darwin' ? [/^r16 many keys encrypt --stdout$/] : []), // Node on macOS exits before a >64KB write to a pipe drains and cuts the output at ~417 keys; .NET prints it all
   /^r20 ext ls (twin )?r15 tree/, // directory order follows the filesystem crawl in Node (trap #64)
   /^r18 DOTENV_PRIVATE_KEYS=/, // the derived file name is ".env." (trailing dot): Windows file APIs in .NET treat it as ".env", Node does not (documented difference)
   /^r15 r15 tree ls dir /, // directory order follows the filesystem crawl in Node (trap #64)
