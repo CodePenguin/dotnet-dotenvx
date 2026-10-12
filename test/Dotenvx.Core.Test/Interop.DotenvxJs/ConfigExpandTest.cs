@@ -10,6 +10,7 @@ public class ConfigExpandTest : EnvironmentTestBase
 {
     private const string EnvExpandFileName = "tests/.env.expand";
 
+    /// <remarks>Refer to "expands"</remarks>
     [Fact]
     public void TestExpands()
     {
@@ -26,6 +27,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         Environment.GetEnvironmentVariable("MACHINE_EXPAND").ShouldBe("file");
     }
 
+    /// <remarks>Refer to "expands using the machine value first (if it exists)"</remarks>
     [Fact]
     public void TestExpandsUsingMachineValueFirst()
     {
@@ -39,6 +41,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         Environment.GetEnvironmentVariable("MACHINE_EXPAND").ShouldBe("machine");
     }
 
+    /// <remarks>Refer to "expands to bring own processEnv"</remarks>
     [Fact]
     public void TestExpandsToBringOwnProcessEnv()
     {
@@ -59,6 +62,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         Environment.GetEnvironmentVariable("MACHINE_EXPAND").ShouldBeNull();
     }
 
+    /// <remarks>Refer to "expands .env.expand correctly"</remarks>
     [Fact]
     public void TestExpandsEnvExpandCorrectly()
     {
@@ -113,6 +117,7 @@ public class ConfigExpandTest : EnvironmentTestBase
             .ShouldBe("/default/path:with/colon");
     }
 
+    /// <remarks>Refer to "expands .env.expand correctly when MACHINE already set"</remarks>
     [Fact]
     public void TestExpandsEnvExpandCorrectlyWhenMachineAlreadySet()
     {
@@ -185,6 +190,7 @@ public class ConfigExpandTest : EnvironmentTestBase
             .ShouldBe("/default/path:with/colon");
     }
 
+    /// <remarks>Refer to "expands .env.expand correctly when MACHINE already set but overload is true"</remarks>
     [Fact]
     public void TestExpandsEnvExpandCorrectlyWhenMachineAlreadySetButOverloadIsTrue()
     {
@@ -226,6 +232,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         Environment.GetEnvironmentVariable("UNDEFINED_EXPAND_NESTED").ShouldBe("file");
     }
 
+    /// <remarks>Refer to "expands mongo (real world example)"</remarks>
     [Fact]
     public void TestExpandsMongoRealWorldExample()
     {
@@ -241,6 +248,7 @@ public class ConfigExpandTest : EnvironmentTestBase
             .ShouldBe("mongodb://username:password@abcd1234.mongolab.com:12345/heroku_db");
     }
 
+    /// <remarks>Refer to "expands with periods in key name"</remarks>
     [Fact]
     public void TestExpandsWithPeriodsInKeyName()
     {
@@ -250,6 +258,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["POSTGRESQL.MAIN.USER"].ShouldBe("postgres");
     }
 
+    /// <remarks>Refer to "does not expand dollar ($)"</remarks>
     [Fact]
     public void TestDoesNotExpandDollar()
     {
@@ -259,6 +268,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["DOLLAR"].ShouldBe("$");
     }
 
+    /// <remarks>Refer to "handles $one$two"</remarks>
     [Fact]
     public void TestHandlesOneTwoVariables()
     {
@@ -271,6 +281,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["ONETWO_SUPER_SIMPLE"].ShouldBe("onetwo");
     }
 
+    /// <remarks>Refer to "handles two dollar signs followed by digit"</remarks>
     [Fact]
     public void TestHandlesTwoDollarSignsFollowedByDigit()
     {
@@ -280,6 +291,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["TWO_DOLLAR_SIGNS_FOLLOWED_BY_DIGIT"].ShouldBe("abcd$$1234foo");
     }
 
+    /// <remarks>Refer to "handles two dollar signs followed by letter"</remarks>
     [Fact]
     public void TestHandlesTwoDollarSignsFollowedByLetter()
     {
@@ -289,6 +301,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["TWO_DOLLAR_SIGNS_FOLLOWED_BY_LETTER"].ShouldBe("pa$@");
     }
 
+    /// <remarks>Refer to "handles two dollar signs followed by letter but single quoted"</remarks>
     [Fact]
     public void TestHandlesTwoDollarSignsFollowedByLetterButSingleQuoted()
     {
@@ -298,6 +311,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["TWO_DOLLAR_SIGNS_FOLLOWED_BY_LETTER_SINGLE_QUOTE"].ShouldBe("pa$$word@");
     }
 
+    /// <remarks>Refer to "does not choke"</remarks>
     [Fact]
     public void TestDoesNotChoke()
     {
@@ -314,6 +328,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["DONT_CHOKE8"].ShouldBe("@}:[4#g%[R-CFR});bY(Z[KcDQDsVn2_y4cSdU<Mjy!c^F`G<!Ks7]kbS]N1:bP:");
     }
 
+    /// <remarks>Refer to "expands DOMAIN with $HOST"</remarks>
     [Fact]
     public void TestExpandsDomainWithHost()
     {
@@ -324,6 +339,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["DOMAIN"].ShouldBe("https://something");
     }
 
+    /// <remarks>Refer to "does NOT expand SINGLE_QUOTE"</remarks>
     [Fact]
     public void TestDoesNotExpandSingleQuote()
     {
@@ -333,6 +349,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["SINGLE_QUOTE"].ShouldBe("$BASIC");
     }
 
+    /// <remarks>Refer to "handles deep nesting"</remarks>
     [Fact]
     public void TestHandlesDeepNesting()
     {
@@ -343,6 +360,7 @@ public class ConfigExpandTest : EnvironmentTestBase
             .ShouldBe("prefix5-prefix4-prefix3-prefix2-prefix1-basic-suffix1-suffix2-suffix3-suffix4-suffix5");
     }
 
+    /// <remarks>Refer to "handles self referencing"</remarks>
     [Fact]
     public void TestHandlesSelfReferencing()
     {
@@ -354,6 +372,7 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["DEEP_SELF_PRIOR"].ShouldBe("prefix2-foo-suffix2");
     }
 
+    /// <remarks>Refer to "handles progressive updating"</remarks>
     [Fact]
     public void TestHandlesProgressiveUpdating()
     {
@@ -363,9 +382,17 @@ public class ConfigExpandTest : EnvironmentTestBase
         result.Parsed["PROGRESSIVE"].ShouldBe("first-second");
     }
 
+    /// <remarks>Refer to "single quote expansion bug test cases"</remarks>
     [Fact]
     public void TestSingleQuoteExpansionBugTestCases()
     {
+        // the file's values only apply when the machine has none: some CI images (Windows runners) set PGUSER and PGHOST
+        foreach (string suffix in new[] { "", "2", "3", "4", "5", "6", "7", "8", "9" })
+        {
+            Environment.SetEnvironmentVariable("PGUSER" + suffix, null);
+            Environment.SetEnvironmentVariable("PGHOST" + suffix, null);
+        }
+
         ConfigOptions options = new() { Path = [EnvExpandFileName] };
         ConfigResult result = Main.Config(options);
 

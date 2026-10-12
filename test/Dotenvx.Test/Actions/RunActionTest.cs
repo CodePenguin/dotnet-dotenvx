@@ -6,7 +6,8 @@ using Dotenvx.Core.Test;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Types;
 
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Shouldly;
 
@@ -14,7 +15,12 @@ using ParseResult = System.CommandLine.ParseResult;
 
 namespace dotnet_dotenvx.Test.Actions;
 
-/// <remarks>Reference source: dotenvx/tests/cli/actions/run.test.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/tests/cli/actions/run.test.js. No C# counterpart for "run updates spinner from envs resolver status",
+/// "run passes Armor token and wrapped command to envs resolver", "run --no-armor uses armor off", "run --no-1password disables
+/// 1Password resolution" and "run --no-bitwarden disables Bitwarden resolution": spinner, Armor and password-manager features
+/// are out of scope.
+/// </remarks>
 public class RunActionTest : EnvironmentTestBase
 {
     public RunActionTest()
@@ -30,8 +36,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRun()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
@@ -40,22 +46,22 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        mockRun.Received(1).Execute();
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run --convention"</remarks>
     [Fact]
     public void TestRunConventionNextjs()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
@@ -64,22 +70,22 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--convention", "nextjs", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        mockRun.Received(1).Execute();
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run --convention"</remarks>
     [Fact]
     public void TestRunConventionFlow()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs = [],
             ReadableStrings = [],
@@ -88,22 +94,22 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--convention", "flow", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        mockRun.Received(1).Execute();
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run - env"</remarks>
     [Fact]
     public void TestRunEnv()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -122,25 +128,25 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "World" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "-e", "HELLO=World", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
-        MockLogger.InfoMessages.ShouldContain("injecting env (1) from --env flag");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from --env flag");
     }
 
     /// <remarks>Refer to "run - envFile (with errors)"</remarks>
     [Fact]
     public void TestRunEnvFileWithErrors()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -152,9 +158,12 @@ public class RunActionTest : EnvironmentTestBase
                     Injected = new Dictionary<string, string> { { "HELLO", "World" } },
                     Errors =
                     [
+                        // Matches run.test.js's setCode() test helper: help/messageWithHelp are
+                        // derived from Errors.ISSUE_BY_CODE the same way the real DotenvxException
+                        // subclasses are, not a custom per-scenario string.
                         new DotenvxException("DECRYPTION_FAILED",
                             "[DECRYPTION_FAILED] could not decrypt HELLO using private key d607fff…",
-                            "[DECRYPTION_FAILED] ? encrypted data looks malformed")
+                            "fix: [https://github.com/dotenvx/dotenvx/issues/757]")
                     ]
                 }
             ],
@@ -164,28 +173,27 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "encrypted:1234" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
         MockLogger.ErrorMessages.ShouldContain(
-            "[DECRYPTION_FAILED] could not decrypt HELLO using private key d607fff…");
-        MockLogger.ErrorMessages.ShouldContain("[DECRYPTION_FAILED] ? encrypted data looks malformed");
-        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env");
+            "[DECRYPTION_FAILED] could not decrypt HELLO using private key d607fff…. fix: [https://github.com/dotenvx/dotenvx/issues/757]");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env");
     }
 
-    /// <remarks>Refer to "run - envFile"</remarks>
+    /// <remarks>Refer to "run - envFile" and "run - envFile omits armor suffix" (this port has no armor suffix at all)</remarks>
     [Fact]
     public void TestRunEnvFile()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -204,25 +212,25 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "World" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
-        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env");
     }
 
     /// <remarks>Refer to "run - envFile AND env"</remarks>
     [Fact]
     public void TestRunEnvFileAndEnv()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -249,25 +257,25 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "World" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "-e", "HELLO=World", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
-        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env, and --env flag");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env, and --env flag");
     }
 
     /// <remarks>Refer to "run - envFile AND two envs"</remarks>
     [Fact]
     public void TestRunEnvFileAndTwoEnvs()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -302,7 +310,7 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "World" }, { "HOLA", "amigo" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse([
             "run", "-e", "HELLO=World", "-e", "HELLO=World", "-e", "HOLA=amigo", "--", "echo", ""
@@ -310,22 +318,22 @@ public class RunActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HOLA=amigo)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.VerboseMessages.ShouldContain("HOLA set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
         MockLogger.DebugMessages.ShouldContain("HOLA set to amigo");
-        MockLogger.InfoMessages.ShouldContain("injecting env (2) from .env, and --env flags");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (2) from .env, and --env flags");
     }
 
     /// <remarks>Refer to "run - env (two strings)"</remarks>
     [Fact]
     public void TestRunEnvTwoStrings()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -352,26 +360,26 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string> { { "HELLO", "World" }, { "HEY", "there" } }
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "-e", "HELLO=World", "-e", "HEY=there", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HEY=there)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.VerboseMessages.ShouldContain("HEY set");
-        MockLogger.InfoMessages.ShouldContain("injecting env (2) from --env flags");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (2) from --env flags");
     }
 
     /// <remarks>Refer to "run - MISSING_ENV_FILE"</remarks>
     [Fact]
     public void TestRunMissingEnvFile()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -384,9 +392,10 @@ public class RunActionTest : EnvironmentTestBase
                     PreExisted = new Dictionary<string, string>(),
                     Errors =
                     [
+                        // Matches run.test.js's exact "run - MISSING_ENV_FILE" test data.
                         new DotenvxException("MISSING_ENV_FILE",
-                            "Mock Error",
-                            "[MISSING_ENV_FILE] ? add one with [echo \"HELLO=World\" > .env]")
+                            "[MISSING_ENV_FILE] missing file (.env)",
+                            "fix: [echo \"HELLO=World\" > .env]")
                     ]
                 }
             ],
@@ -396,27 +405,111 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain(
             $"loading env from .env ({Path.GetFullPath(".env")})");
-        MockLogger.ErrorMessages.ShouldContain("Mock Error");
         MockLogger.ErrorMessages.ShouldContain(
-            "[MISSING_ENV_FILE] ? add one with [echo \"HELLO=World\" > .env] and re-run [dotenvx run -- echo ]");
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+            "[MISSING_ENV_FILE] missing file (.env). fix: [echo \"HELLO=World\" > .env]");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
+    }
+
+    /// <remarks>
+    /// Refer to "run - MISSING_ENV_FILE fallback filepath". A `--env` string entry (Type == Env,
+    /// no FilePath at all) still gets its error's own message printed as-is - the CLI's own
+    /// per-error print never depends on processedEnv.FilePath, only on the error's own
+    /// MessageWithHelp, so no crash/misformat happens when FilePath is absent.
+    /// </remarks>
+    [Fact]
+    public void TestRunMissingEnvFileFallbackFilepath()
+    {
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs =
+            [
+                new RunProcessedEnv
+                {
+                    Type = EnvType.Env,
+                    String = "HELLO=World",
+                    Parsed = new Dictionary<string, string>(),
+                    Injected = new Dictionary<string, string>(),
+                    PreExisted = new Dictionary<string, string>(),
+                    Errors =
+                    [
+                        new DotenvxException("MISSING_ENV_FILE", "[MISSING_ENV_FILE] missing file (.env)",
+                            "fix: [echo \"HELLO=World\" > .env]")
+                    ]
+                }
+            ],
+            ReadableStrings = [],
+            ReadableFilePaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        mockRun.Received(1).Execute();
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_ENV_FILE] missing file (.env). fix: [echo \"HELLO=World\" > .env]");
+    }
+
+    /// <remarks>Refer to "run - MISSING_ENV_FILE with --convention stays quiet"</remarks>
+    [Fact]
+    public void TestRunMissingEnvFileWithConventionStaysQuiet()
+    {
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs =
+            [
+                new RunProcessedEnv
+                {
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    Parsed = new Dictionary<string, string>(),
+                    Injected = new Dictionary<string, string>(),
+                    PreExisted = new Dictionary<string, string>(),
+                    Errors =
+                    [
+                        new DotenvxException("MISSING_ENV_FILE", "[MISSING_ENV_FILE] missing file (.env)",
+                            "fix: [https://github.com/dotenvx/dotenvx/issues/484]")
+                    ]
+                }
+            ],
+            ReadableStrings = [],
+            ReadableFilePaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        ParseResult parseResult = RootCommand.Parse(["run", "--convention", "nextjs", "--", "echo", ""]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        mockRun.Received(1).Execute();
+        MockLogger.ErrorMessages.ShouldNotContain(s => s.Contains("MISSING_ENV_FILE"));
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run - MISSING_ENV_FILE --strict flag"</remarks>
     [Fact]
     public void TestRunMissingEnvFileStrictFlag()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -429,9 +522,13 @@ public class RunActionTest : EnvironmentTestBase
                     PreExisted = new Dictionary<string, string>(),
                     Errors =
                     [
+                        // Matches run.test.js's exact "run - MISSING_ENV_FILE --strict flag" test
+                        // data. --strict throws, so this is logged via the outer catch's
+                        // CatchAndLog rather than the per-error loop, but the combined message is
+                        // identical either way.
                         new DotenvxException("MISSING_ENV_FILE",
-                            "Mock Error",
-                            "[MISSING_ENV_FILE] ? add one with [echo \"HELLO=World\" > .env]")
+                            "[MISSING_ENV_FILE] missing file (.env)",
+                            "fix: [echo \"HELLO=World\" > .env]")
                     ]
                 }
             ],
@@ -441,16 +538,16 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--strict", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
-        MockLogger.ErrorMessages.ShouldContain("Mock Error");
-        MockLogger.ErrorMessages.ShouldContain("[MISSING_ENV_FILE] ? add one with [echo \"HELLO=World\" > .env]");
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_ENV_FILE] missing file (.env). fix: [echo \"HELLO=World\" > .env]");
         MockLogger.InfoMessages.ShouldBeEmpty();
     }
 
@@ -458,8 +555,8 @@ public class RunActionTest : EnvironmentTestBase
     [Fact]
     public void TestRunMissingEnvFileIgnoreFlag()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -483,7 +580,7 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse([
             "run", "--ignore", "MISSING_ENV_FILE", "--", "echo", ""
@@ -491,21 +588,21 @@ public class RunActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain(
             $"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain(
             "ignored: Mock Error");
         MockLogger.ErrorMessages.ShouldBeEmpty();
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run - MISSING_ENV_FILE --strict flag and MISSING_ENV_FILE --ignore flag"</remarks>
     [Fact]
     public void TestRunMissingEnvFileStrictFlagIgnoreFlag()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -530,7 +627,7 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse([
             "run", "--strict", "--ignore", "MISSING_ENV_FILE", "--", "echo", ""
@@ -538,21 +635,21 @@ public class RunActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain(
             $"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain(
             "ignored: Mock Error");
         MockLogger.ErrorMessages.ShouldBeEmpty();
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
     /// <remarks>Refer to "run - OTHER_ERROR"</remarks>
     [Fact]
     public void TestRunOtherError()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -585,21 +682,198 @@ public class RunActionTest : EnvironmentTestBase
             BeforeEnv = new Dictionary<string, string>(),
             AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockRun.Verify(r => r.Execute(), Times.Once);
+        mockRun.Received(1).Execute();
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain("Mock Error");
-        MockLogger.InfoMessages.ShouldContain("injecting env (0)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
     }
 
-    /// <remarks>Refer to "run - throws error"</remarks>
+    /// <remarks>
+    /// Refer to "run - WRONG_PRIVATE_KEY". Uses the base DotenvxException with the exact literal
+    /// upstream message (including the "…" truncation char already baked into the JS test's
+    /// hardcoded string) rather than WrongPrivateKeyException's own Truncate() call, matching the
+    /// established pattern in <see cref="TestRunEnvFileWithErrors"/> above - feeding a short,
+    /// already-truncated-looking string through Truncate() would not reproduce the "…" the real
+    /// upstream scenario has (a genuinely long key truncated down), and this test only cares about
+    /// message pass-through, not truncation behavior itself.
+    /// </remarks>
     [Fact]
-    public void TestRunThrowsError()
+    public void TestRunWrongPrivateKey()
+    {
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs =
+            [
+                new RunProcessedEnv
+                {
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    Parsed = new Dictionary<string, string>(),
+                    Injected = new Dictionary<string, string>(),
+                    PreExisted = new Dictionary<string, string>(),
+                    Errors =
+                    [
+                        new DotenvxException("WRONG_PRIVATE_KEY",
+                            "[WRONG_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=199bdd6…'",
+                            "fix: [https://github.com/dotenvx/dotenvx/issues/466]")
+                    ]
+                }
+            ],
+            ReadableStrings = [],
+            ReadableFilePaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        mockRun.Received(1).Execute();
+        MockLogger.ErrorMessages.ShouldContain(
+            "[WRONG_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=199bdd6…'. fix: [https://github.com/dotenvx/dotenvx/issues/466]");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
+    }
+
+    /// <remarks>Refer to "run - MISSING_PRIVATE_KEY"</remarks>
+    [Fact]
+    public void TestRunMissingPrivateKey()
+    {
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs =
+            [
+                new RunProcessedEnv
+                {
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    Parsed = new Dictionary<string, string>(),
+                    Injected = new Dictionary<string, string>(),
+                    PreExisted = new Dictionary<string, string>(),
+                    Errors = [new MissingPrivateKeyException("HELLO", "DOTENV_PRIVATE_KEY", "")]
+                }
+            ],
+            ReadableStrings = [],
+            ReadableFilePaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        mockRun.Received(1).Execute();
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY='. fix: [https://github.com/dotenvx/dotenvx/issues/464]");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0)");
+    }
+
+    /// <remarks>
+    /// Refer to "run - preserves punctuated private key messages". Uses the base DotenvxException
+    /// directly for the same reason as TestRunThrowsPunctuatedPrivateKeyErrors above.
+    /// </remarks>
+    [Fact]
+    public void TestRunPreservesPunctuatedPrivateKeyMessages()
+    {
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs =
+            [
+                new RunProcessedEnv
+                {
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    Parsed = new Dictionary<string, string>(),
+                    Injected = new Dictionary<string, string>(),
+                    PreExisted = new Dictionary<string, string>(),
+                    Errors =
+                    [
+                        new DotenvxException("WRONG_PRIVATE_KEY", "[WRONG_PRIVATE_KEY] punctuated",
+                            "fix: [https://github.com/dotenvx/dotenvx/issues/466]"),
+                        new DotenvxException("MISSING_PRIVATE_KEY", "[MISSING_PRIVATE_KEY] punctuated",
+                            "fix: [https://github.com/dotenvx/dotenvx/issues/464]")
+                    ]
+                }
+            ],
+            ReadableStrings = [],
+            ReadableFilePaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
+        parseResult.Invoke();
+
+        MockLogger.ErrorMessages.ShouldContain(
+            "[WRONG_PRIVATE_KEY] punctuated. fix: [https://github.com/dotenvx/dotenvx/issues/466]");
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_PRIVATE_KEY] punctuated. fix: [https://github.com/dotenvx/dotenvx/issues/464]");
+    }
+
+    /// <remarks>Refer to "run - envFile (prexists)"</remarks>
+    [Fact]
+    public void TestRunEnvFilePrexists()
+    {
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs =
+            [
+                new RunProcessedEnv
+                {
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    Parsed = new Dictionary<string, string> { { "HELLO", "World" } },
+                    Injected = new Dictionary<string, string>(),
+                    PreExisted = new Dictionary<string, string> { { "HELLO", "World" } }
+                }
+            ],
+            ReadableStrings = [],
+            ReadableFilePaths = [".env"],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        mockRun.Received(1).Execute();
+        MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
+        MockLogger.VerboseMessages.ShouldContain("HELLO pre-exists (protip: use --overload to override)");
+        MockLogger.DebugMessages.ShouldContain("HELLO pre-exists as World (protip: use --overload to override)");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0) from .env");
+    }
+
+    /// <remarks>
+    /// This does NOT correspond to run.test.js's "run - throws error" (that's a generic
+    /// Run.Execute() failure - see <see cref="TestRunThrowsError"/> below for that one; this
+    /// method previously claimed the wrong title). This one is a CLI-integration check that an
+    /// invalid --convention propagates correctly through `run` - the underlying INVALID_CONVENTION
+    /// behavior itself is unit-tested directly in ConventionsTest.cs, matching
+    /// dotenvx/tests/lib/helpers/conventions.test.js's "#conventions (invalid convention)".
+    /// Mislabeling found via a Node-vs-C# unit test coverage audit, 2026-09-22.
+    /// </remarks>
+    [Fact]
+    public void TestRunInvalidConvention()
     {
         // Mocking not needed here as we are testing CLI argument parsing failure which happens before Run.Execute
         ParseResult parseResult = RootCommand.Parse(["run", "--convention", "invalid", "--", "echo", ""]);
@@ -607,7 +881,93 @@ public class RunActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(1);
         MockLogger.ErrorMessages.ShouldContain(
-            "INVALID_CONVENTION: 'invalid'. permitted conventions: ['nextjs', 'flow']");
+            "[INVALID_CONVENTION] invalid convention (invalid). fix: [https://github.com/dotenvx/dotenvx/issues/761]");
+    }
+
+    /// <remarks>
+    /// Refer to "run - throws error". A plain (non-DotenvxException) exception with no help text
+    /// at all gets logged via just its own Message, through the outer catch's CatchAndLog.
+    /// </remarks>
+    [Fact]
+    public void TestRunThrowsError()
+    {
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Throws(new Exception("Mock Error"));
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(1);
+        MockLogger.ErrorMessages.ShouldContain("Mock Error");
+    }
+
+    /// <remarks>
+    /// Refer to "run - throws WRONG_PRIVATE_KEY". Uses the base DotenvxException with the exact
+    /// literal upstream message for the same reason as <see cref="TestRunWrongPrivateKey"/> above.
+    /// </remarks>
+    [Fact]
+    public void TestRunThrowsWrongPrivateKey()
+    {
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Throws(new DotenvxException("WRONG_PRIVATE_KEY",
+            "[WRONG_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=199bdd6…'",
+            "fix: [https://github.com/dotenvx/dotenvx/issues/466]"));
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(1);
+        MockLogger.ErrorMessages.ShouldContain(
+            "[WRONG_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=199bdd6…'. fix: [https://github.com/dotenvx/dotenvx/issues/466]");
+    }
+
+    /// <remarks>Refer to "run - throws MISSING_PRIVATE_KEY"</remarks>
+    [Fact]
+    public void TestRunThrowsMissingPrivateKey()
+    {
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Throws(new MissingPrivateKeyException("HELLO", "DOTENV_PRIVATE_KEY", ""));
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(1);
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY='. fix: [https://github.com/dotenvx/dotenvx/issues/464]");
+    }
+
+    /// <remarks>
+    /// Refer to "run - throws punctuated private key errors". Uses the base DotenvxException
+    /// directly (not the Wrong/MissingPrivateKeyException subclasses, which always build their own
+    /// fixed message shape) since the JS test constructs a generic error with an arbitrary message
+    /// ("punctuated") and only relies on the error CODE to derive the correct help/fix URL.
+    /// </remarks>
+    [Fact]
+    public void TestRunThrowsPunctuatedPrivateKeyErrors()
+    {
+        Run mockWrongRun = Substitute.For<Run>();
+        mockWrongRun.Execute().Throws(new DotenvxException("WRONG_PRIVATE_KEY", "[WRONG_PRIVATE_KEY] punctuated",
+            "fix: [https://github.com/dotenvx/dotenvx/issues/466]"));
+        Run.Factory = (_, _, _, _) => mockWrongRun;
+
+        RootCommand.Parse(["run", "--", "echo", ""]).Invoke();
+        MockLogger.ErrorMessages.ShouldContain(
+            "[WRONG_PRIVATE_KEY] punctuated. fix: [https://github.com/dotenvx/dotenvx/issues/466]");
+
+        Run mockMissingRun = Substitute.For<Run>();
+        mockMissingRun.Execute().Throws(new DotenvxException("MISSING_PRIVATE_KEY",
+            "[MISSING_PRIVATE_KEY] punctuated", "fix: [https://github.com/dotenvx/dotenvx/issues/464]"));
+        Run.Factory = (_, _, _, _) => mockMissingRun;
+
+        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(1);
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_PRIVATE_KEY] punctuated. fix: [https://github.com/dotenvx/dotenvx/issues/464]");
     }
 
     /// <remarks>Refer to "run - envFile (missing command arguments after --)"</remarks>
@@ -623,30 +983,86 @@ public class RunActionTest : EnvironmentTestBase
             "missing command after [dotenvx run --]. try [dotenvx run -- yourcommand]");
     }
 
-    /// <remarks>Refer to "run - envFile (ambiguous arguments, missing --)"</remarks>
+    /// <remarks>
+    /// Refer to "run - envFile (ambiguous arguments, missing --)". This test previously asserted
+    /// the OPPOSITE of what the real upstream test does - the actual JS test (dotenvx/tests/cli/
+    /// actions/run.test.js) stubs `args: []` and `process.argv` to this exact shape and asserts
+    /// SUCCESS (envsResolver called, verbose/debug/success logged normally) via `run.js`'s
+    /// `inferCommandArgsFromProcessArgv` fallback - it does NOT assert the "ambiguous command"
+    /// error. That error path is real (see the two dedicated tests below for it), but this specific
+    /// scenario - `-f &lt;file&gt; command args` with no `--` at all - is exactly the case the
+    /// fallback exists to handle, matching how real `dotenvx run -f .env node -e "..."` (no `--`)
+    /// behaves live. Ported wrong originally (misread from the test's own name alone, without
+    /// checking what it actually asserts) - fixed 2026-09-29 alongside `RunAction.cs`'s gate.
+    /// </remarks>
     [Fact]
     public void TestRunEnvFileAmbiguousArgumentsMissingDoubleDash()
     {
-        // Mocking not needed as this is CLI parsing error
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs =
+            [
+                new RunProcessedEnv
+                {
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    Parsed = new Dictionary<string, string> { ["HELLO"] = "World" },
+                    Injected = new Dictionary<string, string> { ["HELLO"] = "World" },
+                    PreExisted = new Dictionary<string, string>()
+                }
+            ],
+            ReadableStrings = [],
+            ReadableFilePaths = [".env"],
+            UniqueInjectedKeys = ["HELLO"],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
         ParseResult parseResult = RootCommand.Parse(["run", "-f", ".env.production", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(1);
-        MockLogger.ErrorMessages.ShouldContain(
-            "ambiguous command due to missing \'--\' separator. try [dotenvx run -f .env.production -- yourcommand]");
+        exitCode.ShouldBe(0);
+        mockRun.Received(1).Execute();
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env");
     }
 
-    /// <remarks>Refer to "run - envFile (ambiguous arguments, missing -- and envFile is empty)"</remarks>
+    /// <remarks>
+    /// Refer to "run - envFile (ambiguous arguments, missing -- and envFile is empty)" - same fix
+    /// as the test above, see its remarks for why.
+    /// </remarks>
     [Fact]
     public void TestRunEnvFileAmbiguousArgumentsMissingDoubleDashEnvFileEmpty()
     {
-        // Mocking not needed as this is CLI parsing error
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs =
+            [
+                new RunProcessedEnv
+                {
+                    Type = EnvType.EnvFile,
+                    FilePath = ".env",
+                    Parsed = new Dictionary<string, string> { ["HELLO"] = "World" },
+                    Injected = new Dictionary<string, string> { ["HELLO"] = "World" },
+                    PreExisted = new Dictionary<string, string>()
+                }
+            ],
+            ReadableStrings = [],
+            ReadableFilePaths = [".env"],
+            UniqueInjectedKeys = ["HELLO"],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
         ParseResult parseResult = RootCommand.Parse(["run", "-f", ".env", "echo", ""]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(1);
-        MockLogger.ErrorMessages.ShouldContain(
-            "ambiguous command due to missing \'--\' separator. try [dotenvx run -f .env -- yourcommand]");
+        exitCode.ShouldBe(0);
+        mockRun.Received(1).Execute();
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env");
     }
 
     /// <remarks>
@@ -657,8 +1073,8 @@ public class RunActionTest : EnvironmentTestBase
     public void TestRunEnvFileMissingParsedInjectedPreExistedDoesNotChoke()
     {
         // Mock Run to return incomplete processedEnvs data
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
             ProcessedEnvs =
             [
@@ -675,53 +1091,41 @@ public class RunActionTest : EnvironmentTestBase
             AfterEnv = new Dictionary<string, string>()
         });
         Run.Factory =
-            (_, _, _, _) => mockRun.Object;
+            (_, _, _, _) => mockRun;
 
         ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
 
         parseResult.Invoke();
 
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("injecting env (0) from .env");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0) from .env");
     }
 
-    /// <remarks>Refer to "run - ops.observe throws error but run continues to work"</remarks>
+
+    /// <remarks>
+    /// Refer to "run - envFile - parsed, injected, and existed missing for some reason upstream - it doesn't choke": a
+    /// processed env with no parsed/injected/existed entries is handled without error. (In C# those are never null, so
+    /// the equivalent is empty dictionaries.)
+    /// </remarks>
     [Fact]
-    public void TestRunOpsObserveThrowsErrorButRunContinuesToWork()
+    public void TestRunEnvFileWithNothingParsedDoesNotChoke()
     {
-        Mock<Run> mockRun = new();
-        mockRun.Setup(r => r.Execute()).Returns(new RunResult
+        Run mockRun = Substitute.For<Run>();
+        mockRun.Execute().Returns(new RunResult
         {
-            ProcessedEnvs =
-            [
-                new RunProcessedEnv
-                {
-                    Type = EnvType.EnvFile,
-                    FilePath = ".env",
-                    Parsed = new Dictionary<string, string> { { "HELLO", "World" } },
-                    Injected = new Dictionary<string, string> { { "HELLO", "World" } },
-                    PreExisted = new Dictionary<string, string>()
-                }
-            ],
+            ProcessedEnvs = [new RunProcessedEnv { Type = EnvType.EnvFile, FilePath = ".env" }],
             ReadableStrings = [],
             ReadableFilePaths = [".env"],
-            UniqueInjectedKeys = ["HELLO"],
+            UniqueInjectedKeys = [],
             BeforeEnv = new Dictionary<string, string>(),
-            AfterEnv = new Dictionary<string, string> { { "HELLO", "World" } }
+            AfterEnv = new Dictionary<string, string>()
         });
-        Run.Factory = (_, _, _, _) => mockRun.Object;
+        Run.Factory = (_, _, _, _) => mockRun;
 
-        Mock<Ops> mockOps = new();
-        mockOps.Setup(o => o.Observe(It.IsAny<OpsPayload>())).Throws(new Exception("Ops service unavailable"));
-        Ops.Factory = _ => mockOps.Object;
-
-        ParseResult parseResult = RootCommand.Parse(["run", "--", "echo", ""]);
-        int exitCode = parseResult.Invoke();
+        int exitCode = RootCommand.Parse(["run", "--", "echo", ""]).Invoke();
 
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"loading env from .env ({Path.GetFullPath(".env")})");
-        MockLogger.VerboseMessages.ShouldContain("HELLO set");
-        MockLogger.DebugMessages.ShouldContain("HELLO set to World");
-        MockLogger.InfoMessages.ShouldContain("injecting env (1) from .env");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (0) from .env");
     }
 }

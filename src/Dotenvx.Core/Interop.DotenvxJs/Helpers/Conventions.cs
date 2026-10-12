@@ -9,8 +9,9 @@ public static partial class Helpers
 
     public static EnvItem[] Conventions(string convention)
     {
-        string env = Environment.GetEnvironmentVariable("DOTENV_ENV") ??
-                     Environment.GetEnvironmentVariable("NODE_ENV") ?? "development";
+        // `process.env.DOTENV_ENV || process.env.NODE_ENV || 'development'`: an empty value is skipped like an unset one
+        string env = new[] { Environment.GetEnvironmentVariable("DOTENV_ENV"), Environment.GetEnvironmentVariable("NODE_ENV") }
+            .FirstOrDefault(value => !string.IsNullOrEmpty(value)) ?? "development";
 
         switch (convention)
         {
@@ -40,7 +41,7 @@ public static partial class Helpers
                     new EnvItem { Type = EnvType.EnvFile, Value = ".env.defaults" }
                 ];
             default:
-                throw new Exception($"INVALID_CONVENTION: '{convention}'. permitted conventions: ['nextjs', 'flow']");
+                throw new InvalidConventionException(convention);
         }
     }
 }

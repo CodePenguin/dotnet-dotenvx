@@ -4,11 +4,14 @@ using System.CommandLine;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 using ParseResult = System.CommandLine.ParseResult;
 
@@ -17,10 +20,15 @@ namespace Dotenvx.Actions;
 /// <remarks>Reference source: dotenvx/src/cli/actions/get.js</remarks>
 public class GetAction : Command
 {
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+
+    private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+
+    private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password();
+    private readonly Option<bool> _noBitwardenOption = SecretResolverOptions.NoBitwarden();
+
     private readonly Option<bool> _allOption =
         new("--all", "-a") { Description = "include all machine envs as well" };
-
-    private readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
 
     private readonly Option<string> _conventionOption =
         new("--convention")
@@ -34,32 +42,62 @@ public class GetAction : Command
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
         {
-            Description = "path to your .env.keys file (default: same path as your env file)", HelpName = "path"
+            Description = "path(s) to your .env.keys file(s) (default: same path as your env file)",
+            HelpName = "path"
         };
 
     private readonly Option<string[]?> _envOption =
         new("--env", "-e")
         {
             Description = "environment variable(s) set as string (example: \"HELLO=World\") (default: [])",
-            HelpName = "strings..."
+            HelpName = "strings...",
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
+        };
+
+    private readonly Option<string[]?> _excludeKeyOption =
+        new("--exclude-key", "-ek")
+        {
+            Description = "keys(s) to exclude from output (default: none)", HelpName = "excludeKeys...",
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<string> _formatOption =
         new("--format")
         {
-            Description = "format of the output (json, shell, eval) (default: \"json\")", HelpName = "type"
+            Description = "format of the output (json, shell, colon, eval, eval-export) (default: \"json\")",
+            HelpName = "type"
         };
 
     private readonly Option<string[]?> _ignoreOption =
         new("--ignore")
         {
-            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes..."
+            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes...",
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
+        };
+
+    private readonly Option<string[]?> _includeKeyOption =
+        new("--include-key", "-ik")
+        {
+            Description = "keys(s) to include in output (default: all)", HelpName = "includeKeys...",
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Argument<string?> _keyArgument =
         new("key") { Arity = ArgumentArity.ZeroOrOne, Description = "environment variable name", HelpName = "KEY" };
 
     private readonly IDotenvxLogger _logger;
+
+    private readonly Option<string?> _maskOption =
+        new("--mask")
+        {
+            Arity = ArgumentArity.ZeroOrOne,
+            Description = "mask values, optionally setting visible characters",
+            HelpName = "characters"
+        };
 
     private readonly Option<bool> _overloadOption =
         new("--overload", "-o")
@@ -68,13 +106,18 @@ public class GetAction : Command
                 "override existing env variables (by default, existing env vars take precedence over .env files)"
         };
 
-    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true };
-
+    // dotenvx.js registers `--pp` as a SEPARATE commander option (`.option('--pp', 'pretty print
+    // output (alias)')`) alongside `-pp, --pretty-print` - the same shape already correctly ported
+    // for keypair (KeyPairAction.cs), but missing here: `get --pp` fell through to the `[KEY]`
+    // positional and failed with MISSING_KEY instead of pretty-printing, confirmed live.
     private readonly Option<bool> _prettyPrintOption =
-        new("--pretty-print", "-pp") { Description = "pretty print output" };
+        new("--pretty-print", "-pp", "--pp") { Description = "pretty print output" };
 
     private readonly Option<bool> _strictOption =
-        new("--strict") { Description = "process.exit(1) on any errors", DefaultValueFactory = _ => false };
+        new("--strict")
+        {
+            Description = "process.exit(1) on any errors (default: false)", DefaultValueFactory = _ => false
+        };
 
     public GetAction(IDotenvxLogger logger) : base("get",
         "return a single environment variable")
@@ -89,14 +132,36 @@ public class GetAction : Command
         Add(_conventionOption);
         Add(_ignoreOption);
         Add(_allOption);
+        Add(_includeKeyOption);
+        Add(_excludeKeyOption);
+        Add(_maskOption);
         Add(_prettyPrintOption);
         Add(_formatOption);
+        Add(_no1PasswordOption);
+        Add(_noBitwardenOption);
+        Add(_noNativeOption);
+        Add(_noArmorOption);
         SetAction(Execute);
+    }
+
+    private static IReadOnlyDictionary<string, string> FilterKeys(
+        IReadOnlyDictionary<string, string> parsed, string[]? includeKeys, string[]? excludeKeys)
+    {
+        Func<string, bool> include = Picomatch(includeKeys);
+        Func<string, bool> exclude = Picomatch(excludeKeys);
+
+        return parsed.Where(kvp =>
+                !(includeKeys?.Length > 0 && !include(kvp.Key)) &&
+                !(excludeKeys?.Length > 0 && exclude(kvp.Key)))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }
 
     private int Execute(ParseResult parseResult)
     {
-        string? key = parseResult.GetValue(_keyArgument);
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "decrypting");
+
+        // JS `if (key)`: an empty key means "all"
+        string? key = parseResult.GetValue(_keyArgument) is { Length: > 0 } keyValue ? keyValue : null;
         string[]? envs = parseResult.GetValue(_envOption);
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
@@ -104,6 +169,17 @@ public class GetAction : Command
         bool strict = parseResult.GetValue(_strictOption);
         string? convention = parseResult.GetValue(_conventionOption);
         string[] ignoreList = parseResult.GetValue(_ignoreOption) ?? [];
+        string[]? includeKey = parseResult.GetValue(_includeKeyOption);
+        string[]? excludeKey = parseResult.GetValue(_excludeKeyOption);
+
+        ConfigOptions normalizedOptions =
+            NormalizeDotenvConfigIgnore(NormalizeDotenvConfigConvention(new ConfigOptions
+            {
+                Convention = convention, Ignore = ignoreList.ToList()
+            }));
+        convention = normalizedOptions.Convention;
+        ignoreList = normalizedOptions.Ignore?.ToArray() ?? [];
+
         bool all = parseResult.GetValue(_allOption);
         string? formatValue = parseResult.GetValue(_formatOption);
         string format = formatValue ?? "json";
@@ -127,30 +203,37 @@ public class GetAction : Command
             format,
             prettyPrint
         };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
-        List<EnvItem> envItems = [];
-        // handle shorthand conventions - like --convention=nextjs
-        if (!string.IsNullOrEmpty(convention))
-        {
-            envItems.AddRange(Conventions(convention));
-        }
+        List<EnvItem> explicitEnvItems =
+            EnvItemOrdering.BuildExplicitEnvItemsInOrder(parseResult, _envOption, _envFileOption);
 
-        if (envs != null)
-        {
-            envItems.AddRange(envs.Select(e => new EnvItem { Type = EnvType.Env, Value = e }));
-        }
-
-        if (envFile != null)
-        {
-            envItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
-        }
+        EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
 
         try
         {
-            Get getService = Get.Factory(key, envItems.ToArray(), overload, all, envKeysFile?.FirstOrDefault());
+            Get getService = Get.Factory(key, envItems, overload, all, ResolveEnvKeysFile(envKeysFile));
+            getService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session,
+                spinner.OnStatus);
+            getService.No1Password = parseResult.GetValue(_no1PasswordOption);
+            getService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
+            getService.PromptForSecrets = true;
             GetResult result = getService.Run();
+            IReadOnlyDictionary<string, string> parsed = FilterKeys(result.Parsed, includeKey, excludeKey);
 
+            System.CommandLine.Parsing.OptionResult? maskResult = parseResult.GetResult(_maskOption);
+            if (maskResult != null)
+            {
+                object? showChar = parseResult.GetValue(_maskOption);
+                if (showChar is null)
+                {
+                    showChar = 6;
+                }
+
+                parsed = parsed.ToDictionary(kvp => kvp.Key, kvp => Mask(kvp.Value, showChar));
+            }
+
+            int errorCount = 0;
             foreach (Exception error in result.Errors)
             {
                 DotenvxException? dotenvError = error as DotenvxException;
@@ -165,16 +248,14 @@ public class GetAction : Command
                     continue;
                 }
 
-                _logger.Error(error.Message);
-                if (!string.IsNullOrEmpty(dotenvError?.Help))
-                {
-                    _logger.Error(dotenvError.Help);
-                }
+                errorCount++;
+                _logger.Error(dotenvError?.MessageWithHelp ?? error.Message);
             }
 
             if (key != null)
             {
-                string? single = result.Parsed.TryGetValue(key, out string? val) ? val : null;
+                string? single = parsed.TryGetValue(key, out string? val) ? val : null;
+                Spinners.StopActive();
                 Console.WriteLine(single ?? "");
             }
             else
@@ -182,29 +263,39 @@ public class GetAction : Command
                 switch (format)
                 {
                     case "eval":
+                    case "eval-export":
                         {
+                            string prefix = format == "eval-export" ? "export " : "";
                             string inline = string.Join('\n',
-                                result.Parsed.Select(kvp => $"{kvp.Key}={JsonSerializer.Serialize(kvp.Value)}"));
+                                parsed.Select(kvp => $"{prefix}{kvp.Key}={Escape(kvp.Value)}"));
+                            Spinners.StopActive();
                             Console.WriteLine(inline);
                             break;
                         }
                     case "shell":
                         {
-                            string inline = string.Join(' ', result.Parsed.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                            string inline = string.Join(' ', parsed.Select(kvp => $"{kvp.Key}={kvp.Value}"));
+                            Spinners.StopActive();
+                            Console.WriteLine(inline);
+                            break;
+                        }
+                    case "colon":
+                        {
+                            string inline = string.Join(' ', parsed.Select(kvp => $"{kvp.Key}:{kvp.Value}"));
+                            Spinners.StopActive();
                             Console.WriteLine(inline);
                             break;
                         }
                     default:
                         {
-                            JsonSerializerOptions jsonOptions =
-                                prettyPrint ? _prettyPrintJsonOptions : _compactJsonOptions;
-                            Console.WriteLine(JsonSerializer.Serialize(result.Parsed, jsonOptions));
+                            Spinners.StopActive();
+                            Console.WriteLine(JsonStringify(parsed, prettyPrint));
                             break;
                         }
                 }
             }
 
-            return 0;
+            return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {

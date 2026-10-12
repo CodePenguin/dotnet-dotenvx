@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -15,7 +16,15 @@ using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
 
-/// <remarks>Reference source: dotenvx/src/cli/actions/encrypt.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/cli/actions/encrypt.js. Fixed 2026-09-25: the success message
+/// used "✔ encrypted"/"no changes" instead of the real "◈ encrypted"/"○ no change", and printed
+/// two entirely fabricated "✔ key added to .env.keys"/"⮕ next run..." hint lines - current
+/// encrypt.js has ONLY commented-out (`// logger.success(...)`) code for an "· armored" suffix, no
+/// separate hint lines at all, confirming these were never real. Also fixed the per-file loop's
+/// "no change" branch to be unconditional verbose logging (matching `} else { logger.verbose(...)
+/// }` exactly), not gated on an unrelated `unchangedFilepaths.Count > 0` check.
+/// </remarks>
 public class EncryptAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
@@ -30,36 +39,59 @@ public class EncryptAction : Command
     private readonly Option<string[]?> _excludeKeyOption =
         new("--exclude-key", "-ek")
         {
-            Description = "keys(s) to exclude from encryption (default: none)", HelpName = "excludeKeys..."
+            Description = "keys(s) to exclude from encryption (default: none)", HelpName = "excludeKeys...",
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<string[]?> _keyOption =
-        new("--key", "-k") { Description = "keys(s) to encrypt (default: all keys in file)", HelpName = "keys..." };
+        new("--key", "-k")
+        {
+            Description = "keys(s) to encrypt (default: all keys in file)", HelpName = "keys...",
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
+        };
 
     private readonly IDotenvxLogger _logger;
+
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+    private readonly Option<string?> _tokenOption = SecretResolverOptions.Token();
+
+    private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+
+    private readonly Option<bool> _noCreateOption =
+        new("--no-create") { Description = "do not create .env file(s) when missing" };
 
     private readonly Option<bool> _stdoutOption =
         new("--stdout") { Description = "send to stdout" };
 
     public EncryptAction(IDotenvxLogger logger) : base("encrypt",
-        "convert .env file(s) to encrypted .env file(s)")
+        "encrypt .env file(s)")
     {
+        Aliases.Add("enc"); // shorthand
         _logger = logger;
         Add(_envFileOption);
         Add(_envKeysFileOption);
         Add(_keyOption);
         Add(_excludeKeyOption);
         Add(_stdoutOption);
+        Add(_noCreateOption);
+        Add(_noNativeOption);
+        Add(_noArmorOption);
+        Add(_tokenOption);
         SetAction(Execute);
     }
 
     private int Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "encrypting");
+
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         string[]? key = parseResult.GetValue(_keyOption);
         string[]? excludeKey = parseResult.GetValue(_excludeKeyOption);
         bool stdout = parseResult.GetValue(_stdoutOption);
+        bool noCreate = parseResult.GetValue(_noCreateOption);
 
         var options = new
         {
@@ -67,63 +99,74 @@ public class EncryptAction : Command
             envKeysFile,
             key,
             excludeKey,
-            stdout
+            stdout,
+            noCreate
         };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         List<EnvItem> envItems = [];
+        envItems.AddRange(
+            SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
 
-        if (envFile != null)
-        {
-            envItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
-        }
-
-        string? envKeysFilePath = envKeysFile?.FirstOrDefault();
+        string? envKeysFilePath = envKeysFile?.LastOrDefault(); // plain `<path>` option: commander keeps the LAST occurrence
 
         // stdout - should not have a try so that exit codes can surface to stdout
         if (stdout)
         {
-            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath);
+            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate)
+            {
+                NoArmor = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption),
+                    parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption),
+                    SecretResolverOptions.ArmorMode.SessionUnlessToken).NoArmor
+            };
             EncryptResult result = encryptService.Run();
 
+            int stdoutErrorCount = 0;
             foreach (EncryptProcessedEnv processedEnv in result.ProcessedEnvs)
             {
-                Console.WriteLine(processedEnv.EnvSrc);
+                if (processedEnv.Error != null)
+                {
+                    stdoutErrorCount++;
+                    _logger.Error((processedEnv.Error as DotenvxException)?.MessageWithHelp ?? processedEnv.Error.Message);
+                }
+                else if (!string.IsNullOrEmpty(processedEnv.EnvSrc))
+                {
+                    Spinners.StopActive();
+                    Console.WriteLine(processedEnv.EnvSrc);
+                }
             }
 
-            return 0; // exit early
+            return stdoutErrorCount > 0 ? 1 : 0; // exit early
         }
 
         try
         {
-            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath);
+            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate)
+            {
+                NoArmor = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption),
+                    parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption),
+                    SecretResolverOptions.ArmorMode.SessionUnlessToken).NoArmor
+            };
             EncryptResult result = encryptService.Run();
+
+            if (!string.IsNullOrEmpty(result.KeysSrc))
+            {
+                Fsx.WriteFileX(envKeysFilePath ?? ".env.keys", result.KeysSrc);
+            }
 
             IList<EncryptProcessedEnv> processedEnvs = result.ProcessedEnvs;
             IList<string> changedFilePaths = result.ChangedFilePaths;
             IList<string> unchangedFilePaths = result.UnchangedFilePaths;
+            int errorCount = 0;
 
             foreach (EncryptProcessedEnv processedEnv in processedEnvs)
             {
                 _logger.Verbose($"encrypting {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                 if (processedEnv.Error != null)
                 {
+                    errorCount++;
                     Exception? error = processedEnv.Error;
-                    string code = (error as DotenvxException)?.Code ?? "UNKNOWN";
-                    _logger.Warn(error.Message);
-                    if (code == "MISSING_ENV_FILE")
-                    {
-                        _logger.Help(
-                            $"? add one with [echo \"HELLO=World\" > {processedEnv.EnvFilePath}] and re-run [dotenvx encrypt]");
-                    }
-                    else
-                    {
-                        string? help = (error as DotenvxException)?.Help;
-                        if (!string.IsNullOrEmpty(help))
-                        {
-                            _logger.Help(help);
-                        }
-                    }
+                    _logger.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
                 }
                 else if (processedEnv.Changed)
                 {
@@ -131,42 +174,22 @@ public class EncryptAction : Command
 
                     _logger.Verbose($"encrypted {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                 }
-                else if (unchangedFilePaths.Count > 0)
+                else
                 {
-                    _logger.Verbose($"no changes {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
+                    _logger.Verbose($"no change {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                 }
-                // do nothing - scenario when no .env files found
             }
 
             if (changedFilePaths.Count > 0)
             {
-                _logger.Success($"✔ encrypted ({string.Join(',', changedFilePaths)})");
+                _logger.Success($"◈ encrypted ({string.Join(',', changedFilePaths)})");
             }
             else if (unchangedFilePaths.Count > 0)
             {
-                _logger.Info($"no changes ({string.Join(',', unchangedFilePaths)})");
+                _logger.Info($"○ no change ({string.Join(',', unchangedFilePaths)})");
             }
 
-            // do nothing - scenario when no .env files found
-            foreach (EncryptProcessedEnv processedEnv in processedEnvs)
-            {
-                if (!processedEnv.PrivateKeyAdded)
-                {
-                    continue;
-                }
-
-                _logger.Success($"✔ key added to .env.keys ({processedEnv.PrivateKeyName})");
-
-                if (!IsIgnoringDotenvKeys())
-                {
-                    _logger.Help("⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
-                }
-
-                _logger.Help(
-                    $"⮕  next run [{processedEnv.PrivateKeyName}='{processedEnv.PrivateKey}' dotenvx run -- yourcommand] to test decryption locally");
-            }
-
-            return 0;
+            return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {

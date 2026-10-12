@@ -4,12 +4,21 @@ using Dotenvx.Interop.DotenvxJs.Types;
 using Shouldly;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Services;
 
 /// <remarks>Reference source: dotenvx/tests/lib/services/decrypt.test.js</remarks>
 public class DecryptTest : EnvironmentTestBase
 {
+    // the real transform reads keys from `fk` (default `.env.keys` in the working directory), not from the env file directory.
+    // `fk` is a list at this pin: decrypt.js passes `options.envKeysFile` straight through, which `collectEnvKeys` fills with
+    // one entry per repeated -fk.
+    private static string[] KeysFor(string envFile)
+    {
+        return [Path.Combine(Path.GetDirectoryName(envFile)!, ".env.keys").Replace((char)92, (char)47)];
+    }
+
     public DecryptTest()
     {
         ClearEnvironment();
@@ -21,7 +30,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         DecryptResult result = new Decrypt([], null, null, null).Run();
 
-        MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
+        MissingEnvFileException exampleError = new(".env");
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -41,7 +50,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         DecryptResult result = new Decrypt([], null, null, null).Run();
 
-        MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
+        MissingEnvFileException exampleError = new(".env");
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -78,7 +87,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/encrypted/.env";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, null, null, null).Run();
+        DecryptResult result = new Decrypt(envs, null, null, KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -88,28 +97,32 @@ public class DecryptTest : EnvironmentTestBase
         result.UnchangedFilePaths.ShouldBeEmpty();
 
         // Parse the envSrc
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldBe("encrypted");
     }
 
-    /// <remarks>Refer to "#run (finds .env file with multiline value)"</remarks>
+    /// <remarks>
+    /// Refer to "#run (finds .env file with multiline value)". Live-verified against the real Node CLI:
+    /// `decrypt` upserts every parsed value, so the double-quoted backslash-n escapes in ALOHA come back
+    /// as real newlines (HELLO is already multiline and unchanged).
+    /// </remarks>
     [Fact]
     public void TestRunFindsEnvFileWithMultilineValue()
     {
         const string envFile = "tests/monorepo/apps/multiline/.env";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, null, null, null).Run();
+        DecryptResult result = new Decrypt(envs, null, null, KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
-        p.Keys.ShouldBeEmpty();
+        p.Keys.ShouldBe(["ALOHA"]);
         p.EnvFilePath.ShouldBe(envFile);
-        result.ChangedFilePaths.ShouldBeEmpty();
-        result.UnchangedFilePaths.ShouldBe([envFile]);
+        result.ChangedFilePaths.ShouldBe([envFile]);
+        result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["HELLO", "ALOHA"]);
         (parsed["HELLO"] as string).ShouldBe(
             """
@@ -127,7 +140,11 @@ public class DecryptTest : EnvironmentTestBase
             EFGH
             IJKL
             -----END RSA PRIVATE KEY-----"
-            ALOHA="-----BEGIN RSA PRIVATE KEY-----\nABCD\nEFGH\nIJKL\n-----END RSA PRIVATE KEY-----"
+            ALOHA="-----BEGIN RSA PRIVATE KEY-----
+            ABCD
+            EFGH
+            IJKL
+            -----END RSA PRIVATE KEY-----"
 
             """);
     }
@@ -138,7 +155,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, ["HELLO2"], null, null).Run();
+        DecryptResult result = new Decrypt(envs, ["HELLO2"], null, KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -147,7 +164,7 @@ public class DecryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY_PRODUCTION", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY_PRODUCTION"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -161,7 +178,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, ["HELLO2"], null, null).Run();
+        DecryptResult result = new Decrypt(envs, ["HELLO2"], null, KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -170,7 +187,7 @@ public class DecryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY_PRODUCTION", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY_PRODUCTION"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -184,7 +201,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, ["HE*"], null, null).Run();
+        DecryptResult result = new Decrypt(envs, ["HE*"], null, KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -193,7 +210,7 @@ public class DecryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY_PRODUCTION", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY_PRODUCTION"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldBe("one");
@@ -207,7 +224,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, null, ["HELLO2"], null).Run();
+        DecryptResult result = new Decrypt(envs, null, ["HELLO2"], KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -216,7 +233,7 @@ public class DecryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY_PRODUCTION", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY_PRODUCTION"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldBe("one");
@@ -230,7 +247,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, null, ["HELLO2"], null).Run();
+        DecryptResult result = new Decrypt(envs, null, ["HELLO2"], KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -239,12 +256,54 @@ public class DecryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY_PRODUCTION", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY_PRODUCTION"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldBe("one");
         (parsed["HELLO2"] as string).ShouldStartWith("encrypted:");
         (parsed["HELLO3"] as string).ShouldBe("three");
+    }
+
+    /// <remarks>
+    /// Refer to "#decrypt - partially decrypts when another encrypted value is bad" - from
+    /// dotenvx/tests/e2e/decrypt.test.js, not this file's usual lib/services/decrypt.test.js (that
+    /// upstream file has no equivalent scenario). Verified live against the real Node CLI, 2026-09-22:
+    /// found and fixed two real bugs while porting this - Decrypt.cs's per-key loop had no try/catch,
+    /// so one malformed value aborted decryption of every other (successfully-decryptable) key in the
+    /// same file, and DecryptAction.cs's `else if (Changed)` made Error/Changed mutually exclusive,
+    /// silently dropping the partially-decrypted output whenever any key failed. Also: the specific
+    /// underlying failure reason (malformed data, wrong key, missing key) is NOT surfaced here - it's
+    /// unconditionally the generic "could not decrypt {key}", confirmed by calling
+    /// @dotenvx/primitives' parsearrays() (used only by the `decrypt` command) directly with a
+    /// missing key, a wrong-but-validly-shaped key, and malformed ciphertext - all three produced the
+    /// exact same generic message. This is different from run/get/set, which use primitives' singular
+    /// parse() and DO surface the specific WRONG_PRIVATE_KEY/MISSING_PRIVATE_KEY cause (see
+    /// RunActionTest.cs's TestRunWrongPrivateKey/TestRunMissingPrivateKey).
+    /// </remarks>
+    [Fact]
+    public void TestRunPartiallyDecryptsWhenAnotherEncryptedValueIsBad()
+    {
+        File.Copy("tests/monorepo/apps/encrypted/.env.keys", ".env.keys");
+        File.Copy("tests/monorepo/apps/encrypted/.env", ".env");
+        File.AppendAllText(".env", "FAKE=\"encrypted:fake123345343434\"\n");
+
+        EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = ".env" }];
+        DecryptResult result = new Decrypt(envs, null, null, null).Run();
+
+        result.ProcessedEnvs.ShouldHaveSingleItem();
+        ProcessedDecrypt p = result.ProcessedEnvs[0];
+        p.Keys.ShouldBe(["HELLO"]);
+        p.Changed.ShouldBeTrue();
+        p.Error.ShouldNotBeNull();
+        p.Error.ShouldBeOfType<DecryptionFailedException>();
+        ((DotenvxException)p.Error).MessageWithHelp.ShouldBe(
+            "[DECRYPTION_FAILED] could not decrypt FAKE. fix: [https://github.com/dotenvx/dotenvx/issues/757]");
+
+        result.ChangedFilePaths.ShouldBe([".env"]);
+        result.UnchangedFilePaths.ShouldBeEmpty();
+
+        p.EnvSrc.ShouldContain("HELLO=\"encrypted\"");
+        p.EnvSrc.ShouldContain("FAKE=\"encrypted:fake123345343434\"");
     }
 
     /// <remarks>Refer to "#run (finds .env file with excluded key glob string)"</remarks>
@@ -253,7 +312,7 @@ public class DecryptTest : EnvironmentTestBase
     {
         const string envFile = "tests/monorepo/apps/multiple/.env.production";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
-        DecryptResult result = new Decrypt(envs, null, ["HE*"], null).Run();
+        DecryptResult result = new Decrypt(envs, null, ["HE*"], KeysFor(envFile)).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         ProcessedDecrypt p = result.ProcessedEnvs[0];
@@ -262,7 +321,7 @@ public class DecryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBeEmpty();
         result.UnchangedFilePaths.ShouldBe([envFile]);
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY_PRODUCTION", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY_PRODUCTION"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");

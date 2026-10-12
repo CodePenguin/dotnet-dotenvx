@@ -7,7 +7,6 @@ public interface IDotenvxLogger
     void Error(string message);
     void Warn(string message);
     void Success(string message);
-    void SuccessV(string message);
     void Info(string message);
     void Help(string message);
     void Verbose(string message);

@@ -7,7 +7,8 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Types;
 
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Shouldly;
 
@@ -42,8 +43,8 @@ public class SetActionTest : EnvironmentTestBase
             HELLO="encrypted:BJU61uy0qwXlfUDntOFnsRsA9YmP2s4QURmfyFiJv9PhiBtsYPq09LIBEIBFqEUxS0XEyOO0N3k2n5pn8+GWCX3Gi9bid5I1dKLMQOy9g8qicJQT5bWmfNu5+Eyiq53+zhPrXDkd"
             """;
 
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
@@ -60,14 +61,14 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [],
             UnchangedFilePaths = [".env"]
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
-        MockLogger.InfoMessages.ShouldContain("no changes (.env)");
+        mockSets.Received(1).Run();
+        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
     }
 
     /// <remarks>Refer to "set - changes"</remarks>
@@ -75,8 +76,8 @@ public class SetActionTest : EnvironmentTestBase
     public void TestSetChanges()
     {
         Fsx.WriteFileX = (_, _) => { };
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
@@ -94,60 +95,69 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
+        mockSets.Received(1).Run();
+        MockLogger.InfoMessages.ShouldContain("◈ encrypted HELLO (.env)");
     }
 
     /// <remarks>Refer to "set - no changes and no unchanged"</remarks>
     [Fact]
     public void TestSetNoChangesAndNoUnchanged()
     {
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
+        mockSets.Received(1).Run();
     }
 
-    /// <remarks>Refer to "set - MISSING_ENV_FILE"</remarks>
+    /// <remarks>
+    /// Refer to "set - MISSING_ENV_FILE". Rewritten to throw the real MissingEnvFileException
+    /// type (previously a hand-rolled DotenvxException with invented help text matching a
+    /// per-code special case that no longer exists in SetAction.cs - it now uses the same
+    /// universal MessageWithHelp pattern for every error code, matching set.js's
+    /// `logger.error(processedEnv.error.messageWithHelp || processedEnv.error.message)`).
+    /// </remarks>
     [Fact]
     public void TestSetMissingEnvFile()
     {
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Throws(new DotenvxException("MISSING_ENV_FILE",
-            $"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})",
-            "? add one with [echo \"HELLO=value\" > .env] and re-run [dotenvx set]"));
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Throws(new MissingEnvFileException(".env"));
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-        mockSets.Verify(s => s.Run(), Times.Once);
-        MockLogger.ErrorMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("? add one with [echo \"HELLO=value\" > .env] and re-run [dotenvx set]");
+        mockSets.Received(1).Run();
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_ENV_FILE] missing file (.env). fix: [https://github.com/dotenvx/dotenvx/issues/484]");
     }
 
-    /// <remarks>Refer to "set - OTHER_ERROR"</remarks>
+    /// <remarks>
+    /// Refer to "set - OTHER_ERROR". Verified against the real Node CLI (a generic per-file
+    /// error, e.g. EISDIR, exits 1) that SetAction's errorCount fix (Task D) is correct here -
+    /// this test previously locked in the same unconditional-exit-0 bug found and fixed in
+    /// EncryptAction/DecryptAction.
+    /// </remarks>
     [Fact]
     public void TestSetOtherError()
     {
         Fsx.WriteFileX = (_, _) => { };
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
@@ -165,24 +175,23 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [],
             UnchangedFilePaths = [".env"]
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
-        MockLogger.InfoMessages.ShouldContain("no changes (.env)");
-        MockLogger.WarningMessages.ShouldContain("Mock Error");
-        MockLogger.InfoMessages.ShouldContain("some help");
+        exitCode.ShouldBe(1);
+        mockSets.Received(1).Run();
+        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
+        MockLogger.ErrorMessages.ShouldContain("Mock Error. some help");
     }
 
     /// <remarks>Refer to "set - changes --plain"</remarks>
     [Fact]
     public void TestSetChangesPlain()
     {
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
@@ -199,114 +208,94 @@ public class SetActionTest : EnvironmentTestBase
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World", "--plain"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO (.env)");
+        mockSets.Received(1).Run();
+        MockLogger.InfoMessages.ShouldContain("◇ set HELLO (.env)");
     }
 
-    /// <remarks>Refer to "set - privateKeyAdded"</remarks>
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-26 bug. `set.js` registers `-c`/
+    /// `--encrypt` as a bare boolean commander flag defaulting to true with no `--no-encrypt`
+    /// negation - `options.plain` is the ONLY thing that can ever turn encryption off, so
+    /// `--plain` always wins even when `-c`/`--encrypt` is ALSO explicitly passed. This port's
+    /// `encrypt = encrypt || !plain` gave `-c`'s explicit `true` priority over `--plain` instead,
+    /// silently encrypting when it should have stored plain text - confirmed live against Node.
+    /// </remarks>
     [Fact]
-    public void TestSetPrivateKeyAdded()
+    public void TestSetPlainWinsOverExplicitEncryptFlag()
     {
-        Fsx.WriteFileX = (_, _) => { };
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        bool? capturedEncrypt = null;
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Returns(new SetsResult
         {
             ProcessedEnvs =
             [
                 new ProcessedSet
                 {
-                    Type = EnvType.EnvFile,
                     Key = "HELLO",
                     Value = "World",
+                    Type = EnvType.EnvFile,
                     FilePath = ".env",
-                    EnvFilePath = ".env",
-                    EnvKeysFilePath = ".env.keys",
                     EnvSrc = "HELLO=World",
-                    PrivateKeyAdded = true,
-                    PrivateKeyName = "DOTENV_PRIVATE_KEY",
-                    PrivateKey = "1234"
+                    Changed = true
                 }
             ],
             ChangedFilePaths = [".env"],
             UnchangedFilePaths = []
         });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
-
-        ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
-        int exitCode = parseResult.Invoke();
-
-        exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
-        MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
-        MockLogger.InfoMessages.ShouldContain(
-            @"⮕  next run [DOTENV_PRIVATE_KEY='1234' dotenvx get HELLO] to test decryption locally");
-    }
-
-    /// <remarks>Refer to "set - privateKeyAdded and not ignoring .env.keys"</remarks>
-    [Fact]
-    public void TestSetPrivateKeyAddedAndNotIgnoringDotenvKeys()
-    {
-        // Assuming the default mock environment doesn't have .env.keys ignored.
-        Fsx.WriteFileX = (_, _) => { };
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Returns(new SetsResult
+        Sets.Factory = (_, _, _, encrypt, _, _) =>
         {
-            ProcessedEnvs =
-            [
-                new ProcessedSet
-                {
-                    Type = EnvType.EnvFile,
-                    Key = "HELLO",
-                    Value = "World",
-                    FilePath = ".env",
-                    EnvFilePath = ".env",
-                    EnvKeysFilePath = ".env.keys",
-                    EnvSrc = "HELLO=World",
-                    PrivateKeyAdded = true,
-                    PrivateKeyName = "DOTENV_PRIVATE_KEY",
-                    PrivateKey = "1234"
-                }
-            ],
-            ChangedFilePaths = [".env"],
-            UnchangedFilePaths = []
-        });
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+            capturedEncrypt = encrypt;
+            return mockSets;
+        };
 
-        ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
+        ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World", "--plain", "-c"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        mockSets.Verify(s => s.Run(), Times.Once);
-        MockLogger.InfoMessages.ShouldContain("✔ set HELLO with encryption (.env)");
-        MockLogger.InfoMessages.ShouldContain("✔ key added to .env.keys (DOTENV_PRIVATE_KEY)");
-        MockLogger.InfoMessages.ShouldContain(
-            "⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
-        MockLogger.InfoMessages.ShouldContain(
-            @"⮕  next run [DOTENV_PRIVATE_KEY='1234' dotenvx get HELLO] to test decryption locally");
+        capturedEncrypt.ShouldBe(false);
+        MockLogger.InfoMessages.ShouldContain("◇ set HELLO (.env)");
     }
 
     /// <remarks>Refer to "set - catch error"</remarks>
     [Fact]
     public void TestSetCatchError()
     {
-        Mock<Sets> mockSets = new();
-        mockSets.Setup(s => s.Run()).Throws(new DotenvxException("500", "Mock Error", "Mock Help"));
-        Sets.Factory = (_, _, _, _, _) => mockSets.Object;
+        Sets mockSets = Substitute.For<Sets>();
+        mockSets.Run().Throws(new DotenvxException("500", "Mock Error", "Mock Help"));
+        Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
         ParseResult parseResult = RootCommand.Parse(["set", "HELLO", "World"]);
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-        mockSets.Verify(s => s.Run(), Times.Once);
-        MockLogger.ErrorMessages.ShouldContain("Mock Error");
-        MockLogger.InfoMessages.ShouldContain("Mock Help");
+        mockSets.Received(1).Run();
+        MockLogger.ErrorMessages.ShouldContain("Mock Error. Mock Help");
         MockLogger.DebugMessages.ShouldContain("ERROR_CODE: 500");
+    }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-29 bug found via a code audit. `set.js`
+    /// throws `[MISSING_VALUE] missing value (KEY)` (exit 1) when no value is given and stdin isn't
+    /// a TTY - this port had NO handling for a missing value at all (the value argument was
+    /// required at the System.CommandLine parse level, producing a generic parser error instead).
+    /// Interactive TTY password-prompting (set.js's OTHER branch for this case) isn't implemented
+    /// anywhere in this port - deliberately out of scope, matching the project's general lack of any
+    /// interactive-prompt infrastructure - so a missing value always takes this error path.
+    /// </remarks>
+    [Fact]
+    public void TestSetMissingValue()
+    {
+        ParseResult parseResult = RootCommand.Parse(["set", "HELLO"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(1);
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_VALUE] missing value (HELLO). fix: [https://github.com/dotenvx/dotenvx/issues/864]");
     }
 }

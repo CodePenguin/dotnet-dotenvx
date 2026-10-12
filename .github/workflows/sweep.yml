@@ -1,0 +1,41 @@
+name: sweep
+
+# The full differential sweep (~15,000 scenarios, 30 to 40 minutes per OS) against the real Node CLI. Manual only: start it from the
+# Actions tab. It is deliberately not part of ci.yml, which runs just the build and the tests.
+on:
+  workflow_dispatch:
+
+jobs:
+  sweep:
+    strategy:
+      fail-fast: false # one OS failing must not hide the others
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+
+    steps:
+    - name: Keep LF line endings
+      run: git config --global core.autocrlf false
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 10.0.x
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Build
+      run: dotnet build src/Dotenvx
+    - name: Install the Node CLI's dependencies
+      run: npm install --prefix dotenvx
+    - name: Full parity sweep
+      run: node scripts/parity-sweep.js
+    - name: Differences
+      if: failure()
+      shell: bash
+      run: cat "${TMPDIR:-${RUNNER_TEMP:-/tmp}}/dotenvx-parity-sweep.txt" || true

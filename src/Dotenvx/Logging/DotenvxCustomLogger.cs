@@ -34,13 +34,19 @@ public class DotenvxCustomLogger(DotenvxCustomLoggerConfiguration configuration)
             message = $"{message}\n{exception}";
         }
 
-        if (logLevel is LogLevel.Error or LogLevel.Critical)
+        // upstream stops the spinner before it prints anything
+        Interop.DotenvxJs.Helpers.Spinners.StopActive();
+
+        // Only "info" goes to stdout upstream (dotenvx/src/shared/logger.js) - everything else
+        // (error, infoerror, warn, success, help, verbose, debug) goes to stderr, keeping stdout
+        // reserved for actual data (e.g. `get`'s returned values) so it stays script-safe.
+        if (eventId.Id == DotenvxLogEvents.Info.Id)
         {
-            Console.Error.WriteLine(message);
+            Console.WriteLine(message);
         }
         else
         {
-            Console.WriteLine(message);
+            Console.Error.WriteLine(message);
         }
     }
 }

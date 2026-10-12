@@ -5,7 +5,7 @@ public static partial class Helpers
 {
     public static string GuessPrivateKeyName(string envFilePath)
     {
-        string filename = Path.GetFileName(envFilePath).ToLower();
+        string filename = CanonicalEnvFilename(envFilePath);
 
         // .env
         if (filename == ".env")
@@ -16,6 +16,6 @@ public static partial class Helpers
         // .env.ENVIRONMENT
         string environment = GuessEnvironment(envFilePath);
 
-        return $"DOTENV_PRIVATE_KEY_{environment.ToUpper()}";
+        return $"DOTENV_PRIVATE_KEY_{JsCase.ToUpper(environment)}";
     }
 }

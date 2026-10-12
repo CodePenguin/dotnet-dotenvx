@@ -1,3 +1,4 @@
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -36,26 +37,36 @@ public class RunAction : Command
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
         {
-            Description = "path to your .env.keys file (default: same path as your env file)", HelpName = "path"
+            Description = "path(s) to your .env.keys file(s) (default: same path as your env file)",
+            HelpName = "path"
         };
 
     private readonly Option<string[]?> _envOption =
         new("--env", "-e")
         {
             Description = "environment variable(s) set as string (example: \"HELLO=World\") (default: [])",
-            HelpName = "strings..."
+            HelpName = "strings...",
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<string[]?> _ignoreOption =
         new("--ignore")
         {
-            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes..."
+            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes...",
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly IDotenvxLogger _logger;
 
-    private readonly Option<bool> _opsOffOption =
-        new("--ops-off") { Description = "disable dotenvx-ops features (default: false)" };
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+    private readonly Option<string?> _tokenOption = SecretResolverOptions.Token();
+
+    private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+
+    private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password();
+    private readonly Option<bool> _noBitwardenOption = SecretResolverOptions.NoBitwarden();
 
     private readonly Option<bool> _overloadOption =
         new("--overload", "-o")
@@ -64,8 +75,22 @@ public class RunAction : Command
                 "override existing env variables (by default, existing env vars take precedence over .env files)"
         };
 
+    private readonly Option<bool> _redactOption =
+        new("--redact") { Description = "redact injected values except keys ending in _PLAIN (default: false)" };
+
     private readonly Option<bool> _strictOption =
         new("--strict") { Description = "process.exit(1) on any errors (default: false)" };
+
+    private readonly Option<bool> _validateOption =
+        new("--validate") { Description = "validate against .env.example (default: false)" };
+
+    private readonly Option<string?> _maskOption =
+        new("--mask")
+        {
+            Arity = ArgumentArity.ZeroOrOne,
+            Description = "inject masked values, optionally setting visible characters",
+            HelpName = "characters"
+        };
 
     public RunAction(IDotenvxLogger logger) : base("run",
         "inject env at runtime [dotenvx run -- yourcommand]")
@@ -75,17 +100,62 @@ public class RunAction : Command
         Add(_envOption);
         Add(_envFileOption);
         Add(_envKeysFileOption);
+        Add(_redactOption);
         Add(_overloadOption);
+        Add(_validateOption);
         Add(_strictOption);
         Add(_conventionOption);
         Add(_ignoreOption);
-        Add(_opsOffOption);
+        Add(_maskOption);
+        Add(_no1PasswordOption);
+        Add(_noBitwardenOption);
+        Add(_noNativeOption);
+        Add(_noArmorOption);
+        Add(_tokenOption);
         Add(_args);
         SetAction(async pr => await Execute(pr));
     }
 
+    /// <remarks>Reference source: dotenvx/src/cli/actions/run.js's inferCommandArgsFromProcessArgv (`process.argv` here is the program arguments).</remarks>
+    private static string[] InferCommandArgsFromProcessArgv(string[] argv)
+    {
+        int runIndex = Array.IndexOf(argv, "run");
+        if (runIndex == -1)
+        {
+            return [];
+        }
+
+        string[] args = argv[(runIndex + 1)..];
+        int separatorIndex = Array.IndexOf(args, "--");
+        if (separatorIndex != -1)
+        {
+            return args[(separatorIndex + 1)..];
+        }
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i] is "-f" or "--env-file")
+            {
+                i++;
+
+                continue;
+            }
+
+            if (args[i].StartsWith('-'))
+            {
+                continue;
+            }
+
+            return args[i..];
+        }
+
+        return [];
+    }
+
     private async Task<int> Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "injecting");
+
         string[]? envs = parseResult.GetValue(_envOption);
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
@@ -94,29 +164,48 @@ public class RunAction : Command
         string? convention = parseResult.GetValue(_conventionOption);
         string[] ignoreList = parseResult.GetValue(_ignoreOption) ?? [];
         string[] commandArgs = parseResult.GetValue(_args) ?? [];
-        bool opsOff = parseResult.GetValue(_opsOffOption);
+        string[] processArgs = Environment.GetCommandLineArgs().Skip(1).ToArray();
+        if (commandArgs.Length < 1)
+        {
+            commandArgs = InferCommandArgsFromProcessArgv(processArgs);
+        }
+        bool redactEnabled = parseResult.GetValue(_redactOption);
+        bool validateEnabled = parseResult.GetValue(_validateOption);
 
-        // dotenvx-ops related
-        bool opsOn = !opsOff;
+        System.CommandLine.Parsing.OptionResult? maskResult = parseResult.GetResult(_maskOption);
+        bool maskEnabled = maskResult != null;
+        object showChar = 6;
+        if (maskEnabled)
+        {
+            showChar = parseResult.GetValue(_maskOption) ?? (object)6;
+        }
+
+        ConfigOptions normalizedOptions =
+            NormalizeDotenvConfigIgnore(NormalizeDotenvConfigConvention(new ConfigOptions
+            {
+                Convention = convention, Ignore = ignoreList.ToList()
+            }));
+        convention = normalizedOptions.Convention;
+        ignoreList = normalizedOptions.Ignore?.ToArray() ?? [];
 
         _logger.Debug($"process command [{string.Join(' ', commandArgs)}]");
 
         var options = new
         {
-            envs,
+            envs = maskEnabled ? envs?.Select(e => MaskEnvSrc(e, showChar)).ToArray() : envs,
             envFile,
+            envKeysFile,
             overload,
             strict,
             convention,
-            ignoreList,
-            opsOff
+            ignoreList
         };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         // Check for separator '--'
-        bool hasSeparator = parseResult.Tokens.Any(x => x.Type == TokenType.DoubleDash);
+        bool hasSeparator = processArgs.Contains("--") || parseResult.Tokens.Any(x => x.Type == TokenType.DoubleDash);
 
-        if (commandArgs.Length < 1 || !hasSeparator)
+        if (commandArgs.Length < 1)
         {
             if (hasSeparator)
             {
@@ -133,27 +222,22 @@ public class RunAction : Command
         }
 
         IDictionary<string, string> processEnv = EnvironmentHelper.GetEnvironmentVariablesAsDictionary();
+        IDictionary<string, string> commandEnv = processEnv;
+        string[] sensitiveValues = [];
 
         try
         {
-            List<EnvItem> envItems = [];
-            // handle shorthand conventions - like --convention=nextjs
-            if (!string.IsNullOrEmpty(convention))
-            {
-                envItems.AddRange(Conventions(convention));
-            }
+            List<EnvItem> explicitEnvItems =
+                EnvItemOrdering.BuildExplicitEnvItemsInOrder(parseResult, _envOption, _envFileOption);
 
-            if (envs != null)
-            {
-                envItems.AddRange(envs.Select(e => new EnvItem { Type = EnvType.Env, Value = e }));
-            }
+            EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
 
-            if (envFile != null)
-            {
-                envItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
-            }
-
-            Run runService = Run.Factory(envItems.ToArray(), overload, processEnv, envKeysFile?.FirstOrDefault());
+            Run runService = Run.Factory(envItems, overload, processEnv, ResolveEnvKeysFile(envKeysFile));
+            runService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption), SecretResolverOptions.ArmorMode.SessionUnlessToken,
+                spinner.OnStatus);
+            runService.No1Password = parseResult.GetValue(_no1PasswordOption);
+            runService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
+            runService.PromptForSecrets = true;
             RunResult result = runService.Execute();
 
             IList<RunProcessedEnv> processedEnvs = result.ProcessedEnvs;
@@ -161,20 +245,43 @@ public class RunAction : Command
             IList<string> readableFilePaths = result.ReadableFilePaths;
             IList<string> uniqueInjectedKeys = result.UniqueInjectedKeys;
 
-            if (opsOn)
+            if (redactEnabled)
             {
-                try
+                sensitiveValues = RedactedValues(processedEnvs);
+            }
+
+            if (maskEnabled)
+            {
+                commandEnv = new Dictionary<string, string>(processEnv);
+                foreach (RunProcessedEnv processedEnv in processedEnvs)
                 {
-                    Ops.Factory(_logger).Observe(new OpsPayload
+                    foreach (string key in processedEnv.Parsed.Keys)
                     {
-                        BeforeEnv = result.BeforeEnv,
-                        ProcessedEnvs = result.ProcessedEnvs,
-                        AfterEnv = result.AfterEnv
-                    });
+                        if (commandEnv.TryGetValue(key, out string? existingValue))
+                        {
+                            commandEnv[key] = Mask(existingValue, showChar);
+                        }
+                    }
                 }
-                catch
+            }
+
+            if (validateEnabled)
+            {
+                DotenvxException? validationError = ValidateEnvExample(result.AfterEnv);
+                if (validationError != null)
                 {
-                    // ignore
+                    if (ignoreList.Contains(validationError.Code))
+                    {
+                        _logger.Verbose($"ignored: {validationError.Message}");
+                    }
+                    else if (strict)
+                    {
+                        throw validationError;
+                    }
+                    else
+                    {
+                        _logger.Error(validationError.MessageWithHelp ?? validationError.Message);
+                    }
                 }
             }
 
@@ -184,7 +291,7 @@ public class RunAction : Command
                 {
                     case EnvType.EnvFile:
                         _logger.Verbose(
-                            $"loading env from {processedEnv.FilePath} ({Path.GetFullPath(processedEnv.FilePath)})");
+                            $"loading env from {processedEnv.FilePath} ({NodePath.Resolve(processedEnv.FilePath)})");
                         break;
                     case EnvType.Env:
                         _logger.Verbose($"loading env from string ({processedEnv.String})");
@@ -208,49 +315,49 @@ public class RunAction : Command
                         throw error; // throw if strict and not ignored
                     }
 
-                    if (code == "MISSING_ENV_FILE")
+                    if (code == "MISSING_ENV_FILE" && !string.IsNullOrEmpty(convention))
                     {
-                        if (!string.IsNullOrEmpty(convention)) // do not output error for conventions (too noisy)
-                        {
-                            continue;
-                        }
-
-                        _logger.Error(error.Message);
-                        if (!string.IsNullOrEmpty(dotenvError?.Help))
-                        {
-                            _logger.Error(
-                                $"{dotenvError.Help} and re-run [dotenvx run -- {string.Join(' ', commandArgs)}]");
-                        }
+                        // do not output error for conventions (too noisy)
                     }
                     else
                     {
-                        _logger.Error(error.Message);
-                        if (!string.IsNullOrEmpty(dotenvError?.Help))
-                        {
-                            _logger.Error(dotenvError.Help);
-                        }
+                        _logger.Error(dotenvError?.MessageWithHelp ?? error.Message);
                     }
                 }
 
+                IReadOnlyDictionary<string, string> parsedForDisplay = processedEnv.Parsed;
+                IReadOnlyDictionary<string, string> injectedForDisplay = processedEnv.Injected;
+                IReadOnlyDictionary<string, string> preExistedForDisplay = processedEnv.PreExisted;
+                if (maskEnabled)
+                {
+                    parsedForDisplay = MaskDict(processedEnv.Parsed, showChar);
+                    injectedForDisplay = MaskDict(processedEnv.Injected, showChar);
+                    preExistedForDisplay = MaskDict(processedEnv.PreExisted, showChar);
+                }
+
                 // debug parsed
-                _logger.Debug($"parsed: {JsonSerializer.Serialize(processedEnv.Parsed)}");
+                Dictionary<string, string> debugParsed = redactEnabled
+                    ? RedactOutputDict(parsedForDisplay, sensitiveValues)
+                    : parsedForDisplay.ToDictionary();
+                _logger.Debug($"parsed: {JsonStringify(debugParsed)}");
 
                 // verbose/debug injected key/value
-                foreach (KeyValuePair<string, string> kvp in processedEnv.Injected)
+                foreach (KeyValuePair<string, string> kvp in injectedForDisplay)
                 {
                     _logger.Verbose($"{kvp.Key} set");
-                    _logger.Debug($"{kvp.Key} set to {kvp.Value}");
+                    _logger.Debug(RedactOutputText($"{kvp.Key} set to {kvp.Value}", sensitiveValues)!);
                 }
 
                 // verbose/debug preExisted key/value
-                foreach (KeyValuePair<string, string> kvp in processedEnv.PreExisted)
+                foreach (KeyValuePair<string, string> kvp in preExistedForDisplay)
                 {
                     _logger.Verbose($"{kvp.Key} pre-exists (protip: use --overload to override)");
-                    _logger.Debug($"{kvp.Key} pre-exists as {kvp.Value} (protip: use --overload to override)");
+                    _logger.Debug(RedactOutputText(
+                        $"{kvp.Key} pre-exists as {kvp.Value} (protip: use --overload to override)", sensitiveValues)!);
                 }
             }
 
-            string msg = $"injecting env ({uniqueInjectedKeys.Count})";
+            string msg = $"injected env ({uniqueInjectedKeys.Count})";
             switch (readableFilePaths.Count)
             {
                 case > 0 when readableStrings.Count > 0:
@@ -271,20 +378,20 @@ public class RunAction : Command
                     }
             }
 
-            _logger.SuccessV(msg);
+            _logger.Success($"⟐ {msg}");
         }
         catch (Exception error)
         {
-            _logger.Error(error.Message);
-            if (error is DotenvxException dotenvxException && !string.IsNullOrEmpty(dotenvxException.Help))
-            {
-                _logger.Error(dotenvxException.Help);
-            }
-
+            CatchAndLog(_logger, error);
             return 1;
         }
 
         // Execute the command
-        return await ExecuteCommand(_logger, commandArgs, processEnv);
+        return await ExecuteCommand(_logger, commandArgs, commandEnv, sensitiveValues);
+    }
+
+    private static Dictionary<string, string> MaskDict(IReadOnlyDictionary<string, string> value, object showChar)
+    {
+        return value.ToDictionary(kvp => kvp.Key, kvp => Mask(kvp.Value, showChar));
     }
 }

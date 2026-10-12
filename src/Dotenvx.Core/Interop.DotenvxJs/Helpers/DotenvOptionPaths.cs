@@ -7,6 +7,12 @@ public static partial class Helpers
 {
     private static string[] DotenvOptionPaths(ConfigOptions options)
     {
-        return options.Path?.Select(ResolveHome).ToArray() ?? [];
+        if (options.Path != null)
+        {
+            return options.Path.Select(ResolveHome).ToArray();
+        }
+
+        return options.PathString?.Split(',').Select(filepath => filepath.Trim()).Where(filepath => filepath.Length > 0)
+            .Select(ResolveHome).ToArray() ?? [];
     }
 }

@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -15,11 +16,26 @@ using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
 
-/// <remarks>Reference source: dotenvx/src/cli/actions/set.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/cli/actions/set.js. Fixed 2026-09-25: the success message used
+/// "✔ set {key} with encryption"/"no changes" instead of the real "◈ encrypted {key}"/"◇ set
+/// {key}"/"○ no change", and printed two entirely fabricated "✔ key added to .env.keys"/"⮕ next
+/// run..." hint lines that don't exist anywhere in current OR older visible upstream source (not a
+/// deprecated feature - never existed here at all). Also fixed the per-file loop to check
+/// processedEnv.Changed (previously always treated a non-error result as "changed", skipping the
+/// "no change" verbose line and unconditionally rewriting the file even when nothing changed).
+/// </remarks>
 public class SetAction : Command
 {
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+
+    private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+
     private readonly Option<bool> _encryptOption =
-        new("--encrypt", "-c") { Description = "encrypt value (default: true)" };
+        new("--encrypt", "-c")
+        {
+            Description = "encrypt value (default: true)", DefaultValueFactory = _ => true
+        };
 
     private readonly Option<string[]?> _envFileOption =
         new("--env-file", "-f") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
@@ -36,54 +52,90 @@ public class SetAction : Command
     private readonly IDotenvxLogger _logger;
 
     private readonly Option<bool> _plainOption =
-        new("--plain", "-p") { Description = "store value as plain text (default: false)" };
+        new("--plain") { Description = "store value as plain text (default: false)" };
 
-    private readonly Argument<string> _valueArgument =
-        new("value") { Description = "value" };
+    private readonly Option<bool> _noCreateOption =
+        new("--no-create") { Description = "do not create .env file(s) when missing" };
+
+    private readonly Argument<string?> _valueArgument =
+        new("value") { Description = "value", Arity = ArgumentArity.ZeroOrOne };
 
     public SetAction(IDotenvxLogger logger) : base("set",
-        "set a single environment variable")
+        "encrypt a single environment variable")
     {
         _logger = logger;
         Add(_encryptOption);
         Add(_envFileOption);
         Add(_envKeysFileOption);
         Add(_keyArgument);
+        Add(_noCreateOption);
         Add(_plainOption);
-        Add(_valueArgument);
+                Add(_valueArgument);
+        Add(_noNativeOption);
+        Add(_noArmorOption);
         SetAction(Execute);
     }
 
     private int Execute(ParseResult parseResult)
     {
         string key = parseResult.GetValue(_keyArgument)!;
-        string value = parseResult.GetValue(_valueArgument)!;
+        string? value = parseResult.GetValue(_valueArgument);
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         bool encrypt = parseResult.GetValue(_encryptOption);
         bool plain = parseResult.GetValue(_plainOption);
+        bool noCreate = parseResult.GetValue(_noCreateOption);
+
+        // set.js: without a value, a terminal stdin is prompted for it (hidden); anything else is a MISSING_VALUE error
+        if (value == null)
+        {
+            if (Console.IsInputRedirected)
+            {
+                CatchAndLog(_logger, new MissingValueException(key));
+                return 1;
+            }
+
+            try
+            {
+                value = Prompts.Password(key, plain ? "◇" : "◈");
+            }
+            catch (PromptCancelledException)
+            {
+                return 130;
+            }
+        }
+
+        // the spinner starts after the prompt (it would draw over it)
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, plain ? "setting" : "encrypting");
 
         _logger.Debug($"key: {key}");
         _logger.Debug($"value: {value}");
 
-        var options = new { envFile, envKeysFile, plain };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        var options = new { envFile, envKeysFile, encrypt, plain };
+        _logger.Debug($"options: {JsonStringify(options)}");
 
-        encrypt = encrypt || !plain;
+        // `-c`/`--encrypt` has no real "off" state upstream (commander registers it as a bare
+        // boolean flag defaulting to true, with no --no-encrypt negation) - `--plain` is the only
+        // thing that can ever turn encryption off, regardless of whether -c was explicitly passed.
+        encrypt = !plain;
 
         try
         {
             List<EnvItem> envItems = [];
+            envItems.AddRange(
+                SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
 
-            if (envFile != null)
-            {
-                envItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
-            }
+            string? envKeysFilePath = envKeysFile?.LastOrDefault(); // plain `<path>` option: commander keeps the LAST occurrence
 
-            string? envKeysFilePath = envKeysFile?.FirstOrDefault();
-
-            Sets setsService = Sets.Factory(key, value, envItems.ToArray(), encrypt, envKeysFilePath);
+            Sets setsService = Sets.Factory(key, value, envItems.ToArray(), encrypt, envKeysFilePath, noCreate);
+            setsService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.SessionUnlessToken);
+            setsService.NoArmor = setsService.KeyAccess.NoArmor;
             SetsResult result = setsService.Run();
+
+            if (!string.IsNullOrEmpty(result.KeysSrc))
+            {
+                Fsx.WriteFileX(envKeysFilePath ?? ".env.keys", result.KeysSrc);
+            }
 
             IList<ProcessedSet> processedEnvs = result.ProcessedEnvs;
             IList<string> changedFilePaths = result.ChangedFilePaths;
@@ -91,67 +143,43 @@ public class SetAction : Command
 
             string withEncryption = encrypt ? " with encryption" : "";
 
+            int errorCount = 0;
+
             foreach (ProcessedSet processedEnv in processedEnvs)
             {
                 _logger.Verbose($"setting for {processedEnv.EnvFilePath}");
 
                 if (processedEnv.Error != null)
                 {
+                    errorCount++;
                     Exception? error = processedEnv.Error;
-                    string code = (error as DotenvxException)?.Code ?? "UNKNOWN";
-                    _logger.Warn(error.Message);
-                    if (code == "MISSING_ENV_FILE")
-                    {
-                        _logger.Help(
-                            $"? add one with [echo \"{key}=value\" > {processedEnv.EnvFilePath}] and re-run [dotenvx set]");
-                    }
-                    else
-                    {
-                        string? help = (error as DotenvxException)?.Help;
-                        if (!string.IsNullOrEmpty(help))
-                        {
-                            _logger.Help(help);
-                        }
-                    }
+                    _logger.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
                 }
-                else
+                else if (processedEnv.Changed)
                 {
                     Fsx.WriteFileX(processedEnv.FilePath, processedEnv.EnvSrc);
 
                     _logger.Verbose($"{processedEnv.Key} set{withEncryption} ({processedEnv.EnvFilePath})");
-                    _logger.Debug(
-                        $"{processedEnv.Key} set{withEncryption} to {processedEnv.Value} ({processedEnv.EnvFilePath})");
+                }
+                else
+                {
+                    _logger.Verbose($"no change {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                 }
             }
 
             if (changedFilePaths.Count > 0)
             {
-                _logger.Success($"✔ set {key}{withEncryption} ({string.Join(',', changedFilePaths)})");
+                string msg = encrypt
+                    ? $"◈ encrypted {key} ({string.Join(',', changedFilePaths)})"
+                    : $"◇ set {key} ({string.Join(',', changedFilePaths)})";
+                _logger.Success(msg);
             }
             else if (unchangedFilePaths.Count > 0)
             {
-                _logger.Info($"no changes ({string.Join(',', unchangedFilePaths)})");
+                _logger.Info($"○ no change ({string.Join(',', unchangedFilePaths)})");
             }
 
-            foreach (ProcessedSet processedEnv in processedEnvs)
-            {
-                if (!processedEnv.PrivateKeyAdded)
-                {
-                    continue;
-                }
-
-                _logger.Success($"✔ key added to {processedEnv.EnvKeysFilePath} ({processedEnv.PrivateKeyName})");
-
-                if (!IsIgnoringDotenvKeys())
-                {
-                    _logger.Help("⮕  next run [dotenvx ext gitignore --pattern .env.keys] to gitignore .env.keys");
-                }
-
-                _logger.Help(
-                    $"⮕  next run [{processedEnv.PrivateKeyName}='{processedEnv.PrivateKey}' dotenvx get {key}] to test decryption locally");
-            }
-
-            return 0;
+            return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {

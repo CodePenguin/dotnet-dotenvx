@@ -4,6 +4,7 @@ using System.CommandLine;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -15,7 +16,13 @@ using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
 
-/// <remarks>Reference source: dotenvx/src/cli/actions/decrypt.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/cli/actions/decrypt.js. Fixed 2026-09-25: the success message
+/// used "✔ decrypted"/"no changes" instead of the real "◇ decrypted"/"○ no change", and the
+/// per-file "no change" line was logged at Info level instead of Verbose (decrypt.js's own
+/// `logger.verbose('no change ...')`) - so it printed unconditionally on every decrypt, not just
+/// with --verbose.
+/// </remarks>
 public class DecryptAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
@@ -24,37 +31,62 @@ public class DecryptAction : Command
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
         {
-            Description = "path to your .env.keys file (default: all keys in file)", HelpName = "path"
+            Description = "path(s) to your .env.keys file(s) (default: same path as your env file)", HelpName = "path"
         };
 
     private readonly Option<string[]?> _excludeKeyOption =
         new("--exclude-key", "-ek")
         {
-            Description = "keys(s) to exclude from decryption (default: none)", HelpName = "excludeKeys..."
+            Description = "keys(s) to exclude from decryption (default: none)", HelpName = "excludeKeys...",
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
         };
 
     private readonly Option<string[]?> _keysOption =
-        new("--key", "-k") { Description = "keys(s) to decrypt (default: all keys in file)", HelpName = "keys..." };
+        new("--key", "-k")
+        {
+            Description = "keys(s) to decrypt (default: all keys in file)", HelpName = "keys...",
+            AllowMultipleArgumentsPerToken = true,
+            CustomParser = OptionParsers.ParseMultiValue
+        };
 
     private readonly IDotenvxLogger _logger;
+
+    private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
+
+    private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
 
     private readonly Option<bool> _stdoutOption =
         new("--stdout") { Description = "send to stdout" };
 
+    private readonly Option<string?> _maskOption =
+        new("--mask")
+        {
+            Arity = ArgumentArity.ZeroOrOne,
+            Description = "mask stdout values, optionally setting visible characters",
+            HelpName = "characters"
+        };
+
     public DecryptAction(IDotenvxLogger logger) : base("decrypt",
-        "convert encrypted .env file(s) to plain .env file(s)")
+        "decrypt .env file(s)")
     {
+        Aliases.Add("dec"); // shorthand
         _logger = logger;
         Add(_envFileOption);
         Add(_envKeysFileOption);
         Add(_excludeKeyOption);
         Add(_keysOption);
         Add(_stdoutOption);
+        Add(_maskOption);
+        Add(_noNativeOption);
+        Add(_noArmorOption);
         SetAction(Execute);
     }
 
     private int Execute(ParseResult parseResult)
     {
+        using SpinnerScope spinner = SpinnerScope.Start(parseResult, "decrypting");
+
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         string[]? excludeKey = parseResult.GetValue(_excludeKeyOption);
@@ -69,22 +101,23 @@ public class DecryptAction : Command
             keys,
             stdout
         };
-        _logger.Debug($"options: {JsonSerializer.Serialize(options)}");
+        _logger.Debug($"options: {JsonStringify(options)}");
 
         List<EnvItem> envItems = [];
+        envItems.AddRange(
+            SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
 
-        if (envFile != null)
-        {
-            envItems.AddRange(envFile.Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
-        }
-
-        string? envKeysFilePath = envKeysFile?.FirstOrDefault();
+        string[]? envKeysFilePath = envKeysFile is { Length: > 0 } ? envKeysFile : null; // decrypt passes `fk` straight through (no directory resolution)
         int errorCount = 0;
 
         // stdout - should not have a try so that exit codes can surface to stdout
         if (stdout)
         {
-            Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath);
+            Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath)
+            {
+                KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session,
+                spinner.OnStatus)
+            };
             DecryptResult result = decryptService.Run();
 
             foreach (ProcessedDecrypt processedEnv in result.ProcessedEnvs)
@@ -92,11 +125,26 @@ public class DecryptAction : Command
                 if (processedEnv.Error is not null)
                 {
                     errorCount += 1;
-                    _logger.Error(processedEnv.Error.Message);
+                    _logger.Error((processedEnv.Error as DotenvxException)?.MessageWithHelp ?? processedEnv.Error.Message);
                 }
                 else
                 {
-                    Console.WriteLine(processedEnv.EnvSrc);
+                    string envSrc = processedEnv.EnvSrc;
+                    System.CommandLine.Parsing.OptionResult? maskResult = parseResult.GetResult(_maskOption);
+                    if (maskResult != null)
+                    {
+                        object? showChar = parseResult.GetValue(_maskOption);
+                        if (showChar is null)
+                        {
+                            showChar = 6;
+                        }
+
+                        envSrc = MaskEnvSrc(envSrc, showChar);
+                    }
+
+                    Spinners.StopActive();
+
+                    Console.WriteLine(envSrc);
                 }
             }
 
@@ -105,7 +153,11 @@ public class DecryptAction : Command
 
         try
         {
-            Decrypt decryptService = new(envItems.ToArray(), null, excludeKey, envKeysFilePath);
+            Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath)
+            {
+                KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session,
+                spinner.OnStatus)
+            };
             DecryptResult result = decryptService.Run();
 
             IList<ProcessedDecrypt> processedEnvs = result.ProcessedEnvs;
@@ -115,27 +167,19 @@ public class DecryptAction : Command
             foreach (ProcessedDecrypt processedEnv in processedEnvs)
             {
                 _logger.Verbose($"decrypting {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
+
+                // Error and Changed are independent, not mutually exclusive: a per-key decryption
+                // failure doesn't stop the file's other successfully-decrypted keys from being
+                // written (matches decrypt.js exactly - confirmed live, this used to be an
+                // `else if` that silently dropped partially-decrypted output on any error).
                 if (processedEnv.Error != null)
                 {
                     errorCount += 1;
-                    Exception? error = processedEnv.Error;
-                    string code = (error as DotenvxException)?.Code ?? "UNKNOWN";
-                    _logger.Error(error.Message);
-                    if (code == "MISSING_ENV_FILE")
-                    {
-                        _logger.Help(
-                            $"? add one with [echo \"HELLO=World\" > {processedEnv.EnvFilePath}] and re-run [Dotenvx decrypt]");
-                    }
-                    else
-                    {
-                        string? help = (error as DotenvxException)?.Help;
-                        if (!string.IsNullOrEmpty(help))
-                        {
-                            _logger.Error(help);
-                        }
-                    }
+                    Exception error = processedEnv.Error;
+                    _logger.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
                 }
-                else if (processedEnv.Changed)
+
+                if (processedEnv.Changed)
                 {
                     Fsx.WriteFileX(processedEnv.FilePath, processedEnv.EnvSrc);
 
@@ -143,20 +187,20 @@ public class DecryptAction : Command
                 }
                 else
                 {
-                    _logger.Info($"no changes {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
+                    _logger.Verbose($"no change {processedEnv.EnvFilePath} ({processedEnv.FilePath})");
                 }
             }
 
             if (changedFilePaths.Count > 0)
             {
-                _logger.Success($"✔ decrypted ({string.Join(',', changedFilePaths)})");
+                _logger.Success($"◇ decrypted ({string.Join(',', changedFilePaths)})");
             }
             else if (unchangedFilePaths.Count > 0)
             {
-                _logger.Info($"no changes ({string.Join(',', unchangedFilePaths)})");
+                _logger.Info($"○ no change ({string.Join(',', unchangedFilePaths)})");
             }
 
-            return 0;
+            return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {

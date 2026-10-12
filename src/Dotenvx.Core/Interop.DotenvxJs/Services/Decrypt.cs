@@ -2,14 +2,21 @@ using System.Collections;
 
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Primitives;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
-using static Dotenvx.Interop.PicomatchJs.IndexJs;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-/// <remarks>Reference source: dotenvx/src/lib/services/decrypt.js</remarks>
-public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath)
+/// <remarks>
+/// Reference source: dotenvx/src/lib/transforms/decrypt.js. Like the original, this parses with primitives'
+/// `parsearrays` (keyring from `fk`, default `.env.keys` in the working directory, plus the process
+/// environment; `ik`/`ek` choose which keys to decrypt) and upserts every parsed value that differs from
+/// the source, so a failed key leaves its ciphertext and reports one combined DECRYPTION_FAILED error
+/// without stopping the rest of the file.
+/// </remarks>
+public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string[]? envKeysFilePaths)
 {
     private readonly HashSet<string> _changedFilePaths = [];
 
@@ -20,13 +27,22 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
     private readonly List<ProcessedDecrypt> _processedEnvs = [];
     private readonly HashSet<string> _unchangedFilePaths = [];
 
-    private Func<string, bool> _exclude = _ => false;
-    private Func<string, bool> _include = _ => true;
+    /// <summary>How missing private keys are looked up: --no-native, --no-armor, --token (providers/index.js options).</summary>
+    public KeyAccessOptions KeyAccess { get; set; } = new();
+
+    public bool NoNative
+    {
+        get => KeyAccess.NoNative;
+        set => KeyAccess.NoNative = value;
+    }
+
+    private Func<string, IDictionary<string, string>?>? _provider;
+    private Decryptor? _decryptor;
 
     public DecryptResult Run()
     {
-        _exclude = Picomatch(excludeKeys);
-        _include = Picomatch(keys);
+        _provider = Providers.Resolve(KeyAccess);
+        _decryptor = Providers.ResolveDecryptor(KeyAccess);
 
         foreach (EnvItem env in _envs)
         {
@@ -48,53 +64,49 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
     {
         ProcessedDecrypt row = new() { Keys = [], Type = EnvType.EnvFile };
 
-        string filePath = Path.GetFullPath(envFilePath);
+        string filePath = NodePath.Resolve(envFilePath);
         row.FilePath = filePath;
         row.EnvFilePath = envFilePath;
 
         try
         {
             string encoding = DetectEncoding(filePath);
-            string envSrc = Fsx.ReadFileX(filePath, encoding);
-            Dictionary<string, object> envParsed = DotenvParse(envSrc);
+            row.EnvSrc = Fsx.ReadFileX(filePath, encoding);
 
-            string? privateKey = FindPrivateKey(envFilePath, envKeysFilePath);
-            string privateKeyName = GuessPrivateKeyName(envFilePath);
-
-            row.PrivateKey = privateKey;
-            row.PrivateKeyName = privateKeyName;
-            row.Changed = false;
-
-            foreach ((string envKey, object envValue) in envParsed)
+            ParseWithDecryptor.Outcome<PrimitivesParseArraysOutput> outcome = ParseWithDecryptor.ArraysSync(row.EnvSrc,
+                new PrimitivesParseOptions
             {
-                string value = envValue as string ?? "";
+                Ik = keys,
+                Ek = excludeKeys,
+                Fk = envKeysFilePaths is { Length: > 0 } ? envKeysFilePaths : null,
+                ReadFile = path => Fsx.ReadFileX(path),
+                Provider = _provider
+            }, _decryptor);
+            PrimitivesParseArraysOutput result = outcome.Output;
 
-                if (_exclude(envKey))
-                {
-                    continue;
-                }
-
-                if (keys?.Length > 0 && !_include(envKey))
-                {
-                    continue;
-                }
-
-                bool encrypted = IsEncrypted(value);
-                if (!encrypted)
-                {
-                    continue;
-                }
-
-                row.Keys.Add(envKey);
-
-                string decryptedValue = DecryptKeyValue(envKey, value, privateKeyName, privateKey);
-
-                envSrc = Replace(envSrc, envKey, decryptedValue);
-
-                row.Changed = true;
+            if (outcome.LeadingError is not null)
+            {
+                row.Error = outcome.LeadingError;
+            }
+            else if (result.Errors.Count > 0)
+            {
+                row.Error = CustomError(result.Errors[0]);
             }
 
-            row.EnvSrc = envSrc;
+            foreach ((string key, List<string> values) in result.Parsed)
+            {
+                string before = row.EnvSrc;
+                string after = Upsert(before, key, values.ToArray());
+                if (after == before)
+                {
+                    continue;
+                }
+
+                row.EnvSrc = after;
+                row.Changed = true;
+                row.Keys.Add(key);
+            }
+
             if (row.Changed)
             {
                 _changedFilePaths.Add(envFilePath);
@@ -106,7 +118,7 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
         }
         catch (Exception e)
         {
-            row.Error = e is FileNotFoundException ? new MissingEnvFileException(envFilePath, filePath) : e;
+            row.Error = e is FileNotFoundException ? new MissingEnvFileException(envFilePath) : e;
         }
 
         _processedEnvs.Add(row);

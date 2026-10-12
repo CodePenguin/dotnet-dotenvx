@@ -8,17 +8,20 @@ public static partial class Helpers
 {
     public static void CatchAndLog(IDotenvxLogger logger, Exception error)
     {
-        logger.Error(error.Message);
-        if (error is not DotenvxException ex)
+        string msg = error is DotenvxException dx ? dx.MessageWithHelp : error.Message;
+        if (!string.IsNullOrEmpty(msg))
         {
-            return;
+            logger.Error(msg);
         }
 
-        if (!string.IsNullOrEmpty(ex.Help))
+        if (error is DotenvxException { Debug: { Length: > 0 } debug })
         {
-            logger.Help(ex.Help);
+            logger.Debug(debug);
         }
 
-        logger.Debug($"ERROR_CODE: {ex.Code}");
+        if (error is DotenvxException { Code.Length: > 0 } ex)
+        {
+            logger.Debug($"ERROR_CODE: {ex.Code}");
+        }
     }
 }

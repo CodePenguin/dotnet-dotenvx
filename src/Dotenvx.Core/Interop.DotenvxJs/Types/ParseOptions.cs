@@ -8,4 +8,5 @@ public class ParseOptions
     public string? PrivateKey { get; set; }
     public IReadOnlyDictionary<string, string>? ProcessEnv { get; set; }
     public bool? Overload { get; set; } = false;
+    public string[]? Ignore { get; set; }
 }

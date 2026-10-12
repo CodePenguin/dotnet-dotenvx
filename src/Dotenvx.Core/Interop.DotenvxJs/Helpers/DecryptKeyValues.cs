@@ -1,12 +1,18 @@
-using System.Text;
+using System.Text.RegularExpressions;
 
 using Dotenvx.Interop.DotenvxJs.Types;
 
-using Org.BouncyCastle.Crypto;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
-/// <remarks>Reference source: dotenvx/src/lib/helpers/decryptKeyValue.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/lib/helpers/cryptography/decryptKeyValue.js, a thin wrapper around
+/// @dotenvx/primitives' `decrypt()` export (the actual decryption is `Primitives.Decrypt`). It checks for a
+/// missing private key first, tries each comma-separated key in turn, and turns primitives' code-only errors
+/// into the key-aware INVALID_PRIVATE_KEY / WRONG_PRIVATE_KEY / MALFORMED_ENCRYPTED_DATA / DECRYPTION_FAILED
+/// errors.
+/// </remarks>
 public static partial class Helpers
 {
     public static string DecryptKeyValue(string key, string value, string privateKeyName, string? privateKey)
@@ -16,54 +22,45 @@ public static partial class Helpers
             return value;
         }
 
-        string encoded = value[Prefix.Length..];
-        byte[] cipherText = Convert.FromBase64String(encoded);
-
-        if (string.IsNullOrEmpty(encoded))
-        {
-            throw new DecryptionFailedException("second arg must be public key");
-        }
-
-        if (string.IsNullOrEmpty(privateKey))
-        {
-            throw new MissingPrivateKeyException(key, privateKeyName, privateKey ?? string.Empty);
-        }
-
-        string decryptedValue = string.Empty;
+        privateKey ??= "";
+        string decryptedValue = "";
         Exception? decryptionError = null;
 
-        string[] privateKeys = privateKey.Split(',');
-        foreach (string privateKeyHex in privateKeys)
+        if (privateKey.Length <= 0)
         {
-            try
+            decryptionError = new MissingPrivateKeyException(key, privateKeyName, privateKey);
+        }
+        else
+        {
+            foreach (string privKey in privateKey.Split(','))
             {
-                byte[] decryptedBytes = EciesJs.EciesJs.Decrypt(privateKeyHex, cipherText);
-                decryptedValue = Encoding.UTF8.GetString(decryptedBytes);
-                decryptionError = null;
-                break;
-            }
-            catch (ArgumentException ex)
-            {
-                decryptionError = ex.ParamName switch
+                try
                 {
-                    nameof(privateKey) => new InvalidPrivateKeyException(key, privateKeyName, privateKey),
-                    _ => new MalformedEncryptedDataException(key)
-                };
-            }
-            catch (FormatException)
-            {
-                decryptionError = new InvalidPrivateKeyException(key, privateKeyName, privateKey);
-            }
-            catch (InvalidCipherTextException)
-            {
-                decryptionError = new WrongPrivateKeyException(key, privateKeyName, privateKey);
-            }
-            catch (Exception ex)
-            {
-                decryptionError = new DecryptionFailedException(ex.Message);
+                    decryptedValue = Decrypt(privKey, value);
+                    decryptionError = null; // reset to null error (scenario for multiple private keys)
+                    break;
+                }
+                catch (DotenvxException e)
+                {
+                    decryptionError = e.Code switch
+                    {
+                        "INVALID_PRIVATE_KEY" => new InvalidPrivateKeyException(key, privateKeyName, privateKey),
+                        "WRONG_PRIVATE_KEY" => new WrongPrivateKeyException(key, privateKeyName, privateKey),
+                        "MALFORMED_ENCRYPTED_DATA" => new MalformedEncryptedDataException(key),
+                        _ => new DecryptionFailedException(PrimitiveMessage(e), key)
+                    };
+                }
             }
         }
 
         return decryptionError != null ? throw decryptionError : decryptedValue;
     }
+
+    private static string PrimitiveMessage(Exception error)
+    {
+        return PrimitiveCodePrefix().Replace(error.Message, "");
+    }
+
+    [GeneratedRegex(@"^\[[A-Z_]+\] ")]
+    private static partial Regex PrimitiveCodePrefix();
 }

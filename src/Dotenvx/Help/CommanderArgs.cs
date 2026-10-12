@@ -1,0 +1,273 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Dotenvx.Help;
+
+/// <remarks>
+/// Reference source: commander's Command.parseOptions (bundled in @dotenvx/tooling). Two shapes differ from
+/// System.CommandLine and are normalized before parsing, using the option terms in help-spec.json:
+/// 1. an option with a required value takes the NEXT argument as its value even when that starts with a dash
+///    (`get -f --overload` sets the env file to "--overload"); System.CommandLine would read it as an option;
+/// 2. `-f=.env` / `-f:x` keep the separator in the value (commander: "=.env"), where System.CommandLine strips it.
+/// </remarks>
+public static class CommanderArgs
+{
+    public static string[] Normalize(string[] args)
+    {
+        return Normalize(args, out _);
+    }
+
+    /// <param name="args">The command line.</param>
+    /// <param name="missingTerm">
+    /// The upstream term (`-f, --env-file &lt;path&gt;`) of an option whose value commander would find missing because the
+    /// next argument belongs to a level above (`get -f -q`), else null.
+    /// </param>
+    public static string[] Normalize(string[] args, out string? missingTerm)
+    {
+        return Normalize(args, out missingTerm, out _);
+    }
+
+    /// <param name="unknownCommand">
+    /// The first root-level argument that is not a command (`dotenvx foo get`: "foo"), else null. commander hands everything
+    /// after it to `dotenvx-foo`; System.CommandLine would match the later `get` as a subcommand.
+    /// </param>
+    public static string[] Normalize(string[] args, out string? missingTerm, out string? unknownCommand)
+    {
+        return Normalize(args, out missingTerm, out unknownCommand, out _);
+    }
+
+    /// <param name="unknownShort">
+    /// The first `-ab=value` / `-ab:value` argument that commander cannot split: it only splits a single-letter flag from an attached
+    /// value, so unless `-a` itself takes a value this is an unknown option (`-ef=x`, `-ik=A`), else null.
+    /// </param>
+    public static string[] Normalize(string[] args, out string? missingTerm, out string? unknownCommand, out string? unknownShort)
+    {
+        missingTerm = null;
+        unknownCommand = null;
+        unknownShort = null;
+        var result = new List<string>();
+        var chain = new List<HelpSpec> { CommanderHelp.RootSpec };
+        bool positionalSeen = false;
+        bool unknownOptionSeen = false;
+        int insertAt = 0; // just after the command and the positional arguments so far
+        bool openVariadic = false; // the previous option takes values until the next option
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            string arg = args[i];
+            if (arg == "--")
+            {
+                result.AddRange(args[i..]);
+
+                break;
+            }
+
+            if (arg.Length > 3 && arg[0] == '-' && arg[1] != '-' && char.IsAsciiLetter(arg[1]) && char.IsAsciiLetter(arg[2]) &&
+                arg.IndexOfAny(['=', ':']) is > 2 and var separator && arg[1..separator].All(char.IsAsciiLetter))
+            {
+                // commander splits `-a=value` only for a single-letter flag: for `-ab=value` it takes `-a` with the value "b=value" when
+                // `-a` takes a value, and otherwise reports an unknown option, even when `-ab` is a flag of its own
+                if (TakesValue(chain, arg[..2]) is null)
+                {
+                    unknownShort ??= arg;
+                }
+                else if (!InlineVariadicWanted(chain, arg))
+                {
+                    result.Add(arg[..2]);
+                    result.Add(arg[2..]);
+                    insertAt = Math.Min(insertAt, result.Count);
+
+                    continue;
+                }
+            }
+
+            if (InlineVariadic(chain, arg) is { } inline)
+            {
+                // commander: a value attached to a variadic option (`-f=x`, `-fx`, `--env-file=x`) ends its values, so the plain
+                // arguments after it are positional; System.CommandLine would keep adding them to the option
+                result.AddRange(inline);
+                var positionals = new List<string>();
+                while (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                {
+                    positionals.Add(args[++i]);
+                }
+
+                result.InsertRange(insertAt, positionals);
+                insertAt += positionals.Count;
+                openVariadic = false;
+
+                continue;
+            }
+
+            if (arg.Length > 2 && arg[0] == '-' && char.IsAsciiLetter(arg[1]) && arg[2] is '=' or ':' &&
+                TakesValue(chain, arg[..2]) is not null)
+            {
+                // commander: -f=.env is option -f with the value "=.env"
+                result.Add(arg[..2]);
+                result.Add(arg[2..]);
+
+                continue;
+            }
+
+            if (arg.Length > 2 && arg[0] == '-' && arg[1] != '-' && IsRootBoolean(arg[..2]) && !IsKnown(chain[^1], arg))
+            {
+                // commander (root level): a known boolean flag at the start of a cluster is taken out and the rest is
+                // parsed again (`-dash` is -d, then the unknown `-ash`)
+                result.Add(arg[..2]);
+                args = [.. args[..i], "-" + arg[2..], .. args[(i + 1)..]];
+                i--;
+
+                continue;
+            }
+
+            if (arg.Length > 1 && arg[0] == '-')
+            {
+                // an unknown option before the command is commander's `unknown option` error, not a dispatch
+                unknownOptionSeen |= chain.Count == 1 && !IsKnown(chain[0], arg);
+                string? term = TakesValue(chain, arg);
+                openVariadic = term is not null && term.Contains("...");
+                int level = LevelOf(chain, arg);
+
+                // commander parses level by level: the options of the levels above (the root's -q, -l, ...) are taken out of
+                // the arguments first, so they are never the value of a deeper option (`get -f -q`: "argument missing")
+                bool valueIsAncestorOption = i + 1 < args.Length && Enumerable.Range(0, Math.Max(level, 0))
+                    .Any(above => IsKnown(chain[above], args[i + 1]));
+                if (term is not null && term.Contains('<') && valueIsAncestorOption)
+                {
+                    missingTerm ??= term;
+                }
+
+                if (term is not null && term.Contains('<') && i + 1 < args.Length && !valueIsAncestorOption)
+                {
+                    // a required value is taken whatever it looks like (and is never a command name)
+                    result.Add(args[i + 1].StartsWith('-') ? $"{arg}={args[i + 1]}" : arg);
+                    if (!args[i + 1].StartsWith('-'))
+                    {
+                        result.Add(args[i + 1]);
+                    }
+
+                    i++;
+
+                    continue;
+                }
+
+                result.Add(arg);
+
+                continue;
+            }
+
+            if (!positionalSeen)
+            {
+                positionalSeen = true;
+                HelpSpec? child = chain[^1].Children.FirstOrDefault(c => c.Name == arg);
+                if (child is not null)
+                {
+                    chain.Add(child);
+                    positionalSeen = false;
+                }
+                else if (chain.Count == 1 && !unknownOptionSeen)
+                {
+                    unknownCommand = arg;
+                }
+            }
+
+            result.Add(arg);
+            if (!openVariadic)
+            {
+                insertAt = result.Count;
+            }
+        }
+
+        return [.. result];
+    }
+
+    /// <summary>
+    /// The tokens for a variadic option written with its value attached (`-f=x`, `-fx`, `--env-file=x`), or null when
+    /// <paramref name="arg" /> is not that.
+    /// </summary>
+    private static string[]? InlineVariadic(List<HelpSpec> chain, string arg)
+    {
+        if (arg.StartsWith("--"))
+        {
+            int equals = arg.IndexOf('=');
+            if (equals > 2 && TakesValue(chain, arg[..equals]) is { } longTerm && longTerm.Contains("..."))
+            {
+                return [arg];
+            }
+
+            return null;
+        }
+
+        if (arg.Length > 2 && arg[0] == '-' && LevelOf(chain, arg) < 0 && TakesValue(chain, arg[..2]) is { } shortTerm &&
+            shortTerm.Contains("..."))
+        {
+            return [arg[..2], arg[2..]];
+        }
+
+        return null;
+    }
+
+    private static bool InlineVariadicWanted(List<HelpSpec> chain, string arg)
+    {
+        return InlineVariadic(chain, arg) is not null;
+    }
+
+    private static bool IsRootBoolean(string flag)
+    {
+        return CommanderHelp.RootSpec.Options.Any(row => Flags(row).Contains(flag) && !row.Term.Contains('<') && !row.Term.Contains('['));
+    }
+
+    private static string[] Flags(HelpRow row)
+    {
+        return row.Term.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries).Where(part => part.StartsWith('-')).ToArray();
+    }
+
+    /// <summary>The shallowest level (0 = root) whose options contain exactly <paramref name="flag" />, or -1.</summary>
+    private static int LevelOf(List<HelpSpec> chain, string flag)
+    {
+        for (int level = 0; level < chain.Count; level++)
+        {
+            if (chain[level].Options.Any(row => Flags(row).Contains(flag)))
+            {
+                return level;
+            }
+        }
+
+        return -1;
+    }
+
+    /// <summary>commander's _findOption plus the single-dash cluster rule (`-qd` starts with the known `-q`).</summary>
+    private static bool IsKnown(HelpSpec level, string token)
+    {
+        if (!token.StartsWith('-') || token == "--")
+        {
+            return false;
+        }
+
+        if (level.Options.Any(row => Flags(row).Contains(token)))
+        {
+            return true;
+        }
+
+        return token.Length > 2 && token[1] != '-' && level.Options.Any(row => Flags(row).Contains(token[..2]));
+    }
+
+    /// <summary>The upstream option term when <paramref name="flag" /> is exactly one of its flags and it takes a value.</summary>
+    private static string? TakesValue(List<HelpSpec> chain, string flag)
+    {
+        for (int i = chain.Count - 1; i >= 0; i--)
+        {
+            foreach (HelpRow row in chain[i].Options)
+            {
+                string[] parts = row.Term.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Contains(flag) && (row.Term.Contains('<') || row.Term.Contains('[')))
+                {
+                    return row.Term;
+                }
+            }
+        }
+
+        return null;
+    }
+}

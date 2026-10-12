@@ -9,6 +9,11 @@ namespace Dotenvx.Configuration.Test;
 
 public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
 {
+    public ConfigurationBuilderExtensionsTest()
+    {
+        ClearEnvironmentExceptPath();
+    }
+
     [Fact]
     public void TestUseDotenvxAddsDotenvxConfigurationSourceToList()
     {
@@ -37,7 +42,7 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
         }).Build();
         configuration["BASIC"].ShouldBe("basic");
         MockLogger.DebugMessages.ShouldContain("BASIC set to basic");
-        MockLogger.InfoMessages.ShouldContain("injecting env (35) from .env");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (35) from .env");
         MockLogger.VerboseMessages.ShouldContain("BASIC set");
     }
 

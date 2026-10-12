@@ -6,23 +6,56 @@ on:
     tags: ['*']
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch: # run it by hand from the Actions tab on any branch
+    inputs:
+      all-os:
+        description: Also run on Windows and macOS (push and pull request runs are Linux only)
+        type: boolean
+        default: false
 
 jobs:
   build:
+    strategy:
+      fail-fast: false # one OS failing must not hide the others
+      matrix:
+        os: ${{ fromJSON(inputs.all-os && '["ubuntu-latest","windows-latest","macos-latest"]' || '["ubuntu-latest"]') }}
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
+    - name: Keep LF line endings
+      run: git config --global core.autocrlf false
+      # The Windows runner defaults to core.autocrlf=true, which would turn the dotenvx submodule's fixture files into CRLF (this repo's
+      # own files are pinned to LF by .gitattributes) and break tests that compare them byte for byte.
     - uses: actions/checkout@v4
       with:
         submodules: true
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22 # the parity tests run the real Node CLI: pin it so runner images cannot drift
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
+      # Includes Dotenvx.ParityTest (part of Dotenvx.sln): it shells out to the real Node CLI in the dotenvx/ submodule
+      # and diffs output against the built .NET CLI. NodeParityFixture runs `npm install` in dotenvx/ on first use.
+    - name: Pack NuGet packages
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        dotnet pack src/Dotenvx -c Release -o artifacts
+        dotnet pack src/Dotenvx.Primitives -c Release -o artifacts
+        dotnet pack src/Dotenvx.Core -c Release -o artifacts
+        dotnet pack src/Dotenvx.Configuration -c Release -o artifacts
+    - name: Upload packages
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: artifacts/*

@@ -1,17 +1,22 @@
 using System.Collections;
 
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-/// <remarks>Reference source: dotenvx/src/lib/services/get.js</remarks>
+/// <remarks>
+/// Reference source: dotenvx/src/lib/resolvers/get.js (moved there from src/lib/services/get.js,
+/// which no longer exists at this pin - confirmed 2026-09-24, part of the same custodian/keyring
+/// reorg docs/porting-traps.md already documents elsewhere).
+/// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class Get(string? key, EnvItem[] envs, bool overload, bool all, string? envKeysFilePath)
+public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]? envKeysFilePaths)
 {
-    private static readonly Func<string?, EnvItem[], bool, bool, string?, Get> DefaultFactory =
+    private static readonly Func<string?, EnvItem[], bool, bool, string[]?, Get> DefaultFactory =
         (key, envs, overload, all, envKeysFile) => new Get(key, envs, overload, all, envKeysFile);
 
-    public static Func<string?, EnvItem[], bool, bool, string?, Get>
+    public static Func<string?, EnvItem[], bool, bool, string[]?, Get>
         Factory { get; internal set; } = DefaultFactory;
 
     internal static void ResetFactory()
@@ -19,12 +24,31 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string? e
         Factory = DefaultFactory;
     }
 
+    /// <summary>resolvers/get.js passes no1Password / noBitwarden through to the envs resolver.</summary>
+    public bool No1Password { get; set; }
+
+    /// <summary>How missing private keys are looked up: --no-native, --no-armor, --token (providers/index.js options).</summary>
+    public KeyAccessOptions KeyAccess { get; set; } = new();
+
+    public bool NoNative
+    {
+        get => KeyAccess.NoNative;
+        set => KeyAccess.NoNative = value;
+    }
+
+    public bool NoBitwarden { get; set; }
+
+    public bool PromptForSecrets { get; set; }
+
     public virtual GetResult Run()
     {
-        Dictionary<string, string> processEnv = new(Environment.GetEnvironmentVariables()
-            .Cast<DictionaryEntry>()
-            .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
-        RunResult runResult = Services.Run.Factory(envs, overload, processEnv, envKeysFilePath).Execute();
+        Dictionary<string, string> processEnv = new(global::Dotenvx.Helpers.EnvironmentHelper.GetEnvironmentVariablesAsDictionary());
+        Run runService = Services.Run.Factory(envs, overload, processEnv, envKeysFilePaths);
+        runService.KeyAccess = KeyAccess;
+        runService.No1Password = No1Password;
+        runService.NoBitwarden = NoBitwarden;
+        runService.PromptForSecrets = PromptForSecrets;
+        RunResult runResult = runService.Execute();
 
         List<Exception> errors = [];
         foreach (RunProcessedEnv processedEnv in runResult.ProcessedEnvs)
@@ -32,7 +56,7 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string? e
             errors.AddRange(processedEnv.Errors);
         }
 
-        if (key != null)
+        if (!string.IsNullOrEmpty(key)) // resolvers/get.js: `if (key)`, an empty key is the no-key branch
         {
             Dictionary<string, string> parsed = [];
             if (processEnv.TryGetValue(key, out string? value))

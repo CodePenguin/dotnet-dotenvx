@@ -4,7 +4,14 @@ using Shouldly;
 
 namespace Dotenvx.Core.Test.Interop.IgnoreJs;
 
-/// <remarks>Reference source: dotenvx/tests/lib/ignore.test.js</remarks>
+/// <remarks>
+/// No upstream `ignore.test.js` exists at this pin (confirmed via find - a stale reference, same
+/// pattern as the 2026-09-24 stale-doc-comment sweep documented elsewhere in docs/porting-traps.md). `ignore` is
+/// a real, live-callable `@dotenvx/tooling` export (`node -e "require('@dotenvx/tooling').ignore()..."`),
+/// used by `prebuild.js`/`precommit.js` to check whether a file is docker/gitignored - this port's
+/// `Ignore`/`IgnoreRule` is a from-scratch reimplementation verified against that live oracle, not a
+/// port of a readable upstream test file.
+/// </remarks>
 public class IgnoreTests : IDisposable
 {
     private readonly List<string> _tempFiles = [];
@@ -44,6 +51,12 @@ public class IgnoreTests : IDisposable
         ig.Ignores("test.txt").ShouldBeFalse();
     }
 
+    /// <remarks>
+    /// Rewritten 2026-10-02 - the old assertion (`ig.Ignores("node_modules").ShouldBeTrue()`) locked
+    /// in a bug: confirmed live via `require('@dotenvx/tooling').ignore().add('node_modules/')` that
+    /// a directory-only (trailing-slash) pattern does NOT match the bare name itself, only paths
+    /// actually nested inside it - see `IgnoreRule.ConvertToRegex`'s own doc comment.
+    /// </remarks>
     [Fact]
     public void Add_DirectoryPattern_ShouldIgnoreDirectory()
     {
@@ -51,7 +64,7 @@ public class IgnoreTests : IDisposable
         ig.Add("node_modules/");
 
         ig.Ignores("node_modules/").ShouldBeTrue();
-        ig.Ignores("node_modules").ShouldBeTrue();
+        ig.Ignores("node_modules").ShouldBeFalse();
         ig.Ignores("node_modules/package.json").ShouldBeTrue();
         ig.Ignores("src/").ShouldBeFalse();
     }
@@ -202,13 +215,42 @@ public class IgnoreTests : IDisposable
     }
 
     [Fact]
-    public void Ignores_NullOrEmpty_ShouldReturnFalse()
+    public void Ignores_Empty_ThrowsLikeNodeIgnore_AndWhitespaceIsAPath()
     {
         Ignore ig = new();
         ig.Add("*.log");
 
-        ig.Ignores("").ShouldBeFalse();
+        Should.Throw<InvalidOperationException>(() => ig.Ignores("")).Message.ShouldBe("path must not be empty");
         ig.Ignores("   ").ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData("./.env")]
+    [InlineData("../.env")]
+    [InlineData("/.env")]
+    [InlineData(".")]
+    [InlineData("..")]
+    public void Ignores_NonRelativePath_ThrowsLikeNodeIgnore(string path)
+    {
+        Ignore ig = new();
+        ig.Add(".env*");
+
+        Should.Throw<InvalidOperationException>(() => ig.Ignores(path)).Message
+            .ShouldBe($"path should be a `path.relative()`d string, but got \"{path}\"");
+    }
+
+    [Theory]
+    [InlineData("...")]
+    [InlineData(".x/.env")]
+    [InlineData("sub//.env")]
+    [InlineData("sub/./.env")]
+    [InlineData("sub/../.env")]
+    public void Ignores_OtherDottedPaths_AreAccepted(string path)
+    {
+        Ignore ig = new();
+        ig.Add(".env*");
+
+        Should.NotThrow(() => ig.Ignores(path));
     }
 
     [Fact]
@@ -217,7 +259,8 @@ public class IgnoreTests : IDisposable
         Ignore ig = new();
         ig.Add("src/*.js");
 
-        ig.Ignores(@"src\test.js").ShouldBeTrue();
+        // node-ignore converts backslashes only on Windows; elsewhere a backslash is an ordinary character
+        ig.Ignores(@"src\test.js").ShouldBe(OperatingSystem.IsWindows());
         ig.Ignores("src/test.js").ShouldBeTrue();
     }
 
@@ -356,6 +399,58 @@ public class IgnoreTests : IDisposable
         ig.Add("   \n   \t   ");
 
         ig.Ignores("anything.txt").ShouldBeFalse();
+    }
+
+    /// <remarks>
+    /// Not from a JS test - found 2026-10-02 via a static audit cross-checking this reimplementation
+    /// against the real `@dotenvx/tooling` `ignore` export. A bare (no `/`) non-anchored pattern must
+    /// match as a whole path segment at any depth, including nested content under it - confirmed live
+    /// that the old regex (`(?:^|\/){pattern}`, no trailing boundary) failed `node_modules/foo`.
+    /// </remarks>
+    [Fact]
+    public void Ignores_BasenamePattern_MatchesNestedContentUnderIt()
+    {
+        Ignore ig = new();
+        ig.Add("node_modules");
+
+        ig.Ignores("node_modules").ShouldBeTrue();
+        ig.Ignores("node_modules/foo").ShouldBeTrue();
+        ig.Ignores("a/node_modules/b").ShouldBeTrue();
+        ig.Ignores("anode_modules").ShouldBeFalse();
+    }
+
+    /// <remarks>
+    /// Not from a JS test - found 2026-10-02, same audit as above. An anchored pattern (containing
+    /// `/` anywhere except as a single trailing character) must ALSO match everything nested under
+    /// it, not just the exact path - confirmed live that the old regex had no such suffix, so
+    /// `/build` failed to match `build/file`.
+    /// </remarks>
+    [Fact]
+    public void Ignores_AnchoredPattern_MatchesNestedContentUnderIt()
+    {
+        Ignore ig = new();
+        ig.Add("/build");
+
+        ig.Ignores("build").ShouldBeTrue();
+        ig.Ignores("build/file").ShouldBeTrue();
+        ig.Ignores("sub/build").ShouldBeFalse();
+        ig.Ignores("buildx").ShouldBeFalse();
+    }
+
+    /// <remarks>
+    /// Not from a JS test - found 2026-10-02, same audit as above. `dir/**` requires a literal,
+    /// mandatory slash before the wildcard - confirmed live that the old regex's optional `(?:/.*)?`
+    /// wrongly matched the bare `dir` itself.
+    /// </remarks>
+    [Fact]
+    public void Ignores_TrailingDoubleAsterisk_RequiresLiteralSlashNotBareDirectory()
+    {
+        Ignore ig = new();
+        ig.Add("foo/**");
+
+        ig.Ignores("foo").ShouldBeFalse();
+        ig.Ignores("foo/a").ShouldBeTrue();
+        ig.Ignores("sub/foo/a").ShouldBeFalse();
     }
 
     [Fact]

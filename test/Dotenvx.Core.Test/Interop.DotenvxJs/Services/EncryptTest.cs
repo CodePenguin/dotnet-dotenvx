@@ -5,12 +5,20 @@ using Dotenvx.Interop.DotenvxJs.Types;
 using Shouldly;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Services;
 
 /// <remarks>Reference source: dotenvx/tests/lib/services/encrypt.test.js</remarks>
 public class EncryptTest : EnvironmentTestBase
 {
+    // mutateSrc.js: the public key header notes the keys file (default .env.keys in the working directory) relative to the env file
+    private static string FkComment(string envFile)
+    {
+        string relative = Path.GetRelativePath(Path.GetDirectoryName(Path.GetFullPath(envFile))!, Path.GetFullPath(".env.keys"));
+        return relative == ".env.keys" ? "" : $" # -fk {relative}";
+    }
+
     public EncryptTest()
     {
         ClearEnvironment();
@@ -23,13 +31,37 @@ public class EncryptTest : EnvironmentTestBase
         base.TearDown();
     }
 
-    /// <remarks>Refer to "#run (no arguments)"</remarks>
+    /// <remarks>
+    /// Refer to "#run (no arguments)". Verified against the real Node CLI: a missing .env file is
+    /// NOT an error by default - it gets replaced with the sample kit (HELLO="World") and
+    /// encrypted, per dotenvx/src/lib/transforms/encrypt.js's `if (!fileExists &amp;&amp; !noCreate)`
+    /// branch. The original MISSING_ENV_FILE-error assertion moved to
+    /// <see cref="TestRunNoArgumentsWithNoCreate"/>, which passes noCreate: true to reproduce it.
+    /// </remarks>
     [Fact]
     public void TestRunNoArguments()
     {
         EncryptResult result = new Encrypt([], null, null, null).Run();
 
-        MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
+        result.ProcessedEnvs.ShouldHaveSingleItem();
+        EncryptProcessedEnv p = result.ProcessedEnvs[0];
+        p.Keys.ShouldBe(["HELLO"]);
+        p.Type.ShouldBe(EnvType.EnvFile);
+        p.FilePath.ShouldBe(Path.GetFullPath(".env"));
+        p.EnvFilePath.ShouldBe(".env");
+        p.Error.ShouldBeNull();
+
+        result.ChangedFilePaths.ShouldBe([".env"]);
+        result.UnchangedFilePaths.ShouldBeEmpty();
+    }
+
+    /// <remarks>Refer to "#run (no arguments)", noCreate variant - see remarks on <see cref="TestRunNoArguments"/>.</remarks>
+    [Fact]
+    public void TestRunNoArgumentsWithNoCreate()
+    {
+        EncryptResult result = new Encrypt([], null, null, null, noCreate: true).Run();
+
+        MissingEnvFileException exampleError = new(".env");
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         EncryptProcessedEnv p = result.ProcessedEnvs[0];
@@ -43,13 +75,13 @@ public class EncryptTest : EnvironmentTestBase
         result.UnchangedFilePaths.ShouldBeEmpty();
     }
 
-    /// <remarks>Refer to "#run (no env file)"</remarks>
+    /// <remarks>Refer to "#run (no env file)" - noCreate variant, see remarks on <see cref="TestRunNoArguments"/>.</remarks>
     [Fact]
     public void TestRunNoEnvFile()
     {
-        EncryptResult result = new Encrypt([], null, null, null).Run();
+        EncryptResult result = new Encrypt([], null, null, null, noCreate: true).Run();
 
-        MissingEnvFileException exampleError = new(".env", Path.GetFullPath(".env"));
+        MissingEnvFileException exampleError = new(".env");
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         EncryptProcessedEnv p = result.ProcessedEnvs[0];
@@ -63,14 +95,18 @@ public class EncryptTest : EnvironmentTestBase
         result.UnchangedFilePaths.ShouldBeEmpty();
     }
 
-    /// <remarks>Refer to "#run (no arguments and some other error)"</remarks>
+    /// <remarks>
+    /// Refer to "#run (no arguments and some other error)". noCreate: true so the missing-file
+    /// short-circuit doesn't bypass the mocked Fsx.ReadFileX before it gets a chance to throw -
+    /// see remarks on <see cref="TestRunNoArguments"/>.
+    /// </remarks>
     [Fact]
     public void TestRunNoArgumentsAndSomeOtherError()
     {
         Fsx.ReadFileX = (_, _) => throw new Exception("Mock Error");
         Fsx.ReadFileSync = _ => []; // Default to utf8 for DetectEncoding
 
-        EncryptResult result = new Encrypt([], null, null, null).Run();
+        EncryptResult result = new Encrypt([], null, null, null, noCreate: true).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         EncryptProcessedEnv p = result.ProcessedEnvs[0];
@@ -96,7 +132,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -117,7 +153,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "ALOHA"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -128,7 +164,7 @@ public class EncryptTest : EnvironmentTestBase
             "#/            public-key encryption for .env files          /\n",
             "#/       [how it works](https://dotenvx.com/encryption)     /\n",
             "#/----------------------------------------------------------/\n",
-            $"DOTENV_PUBLIC_KEY=\"{parsed["DOTENV_PUBLIC_KEY"]}\"\n\n",
+            $"DOTENV_PUBLIC_KEY=\"{parsed["DOTENV_PUBLIC_KEY"]}\"{FkComment(envFile)}\n\n",
             "# .env\n",
             $"HELLO=\"{parsed["HELLO"]}\"\n",
             $"ALOHA=\"{parsed["ALOHA"]}\"\n"
@@ -150,7 +186,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY_CRLF", "HELLO", "ALOHA"]);
         (parsed["DOTENV_PUBLIC_KEY_CRLF"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -161,7 +197,7 @@ public class EncryptTest : EnvironmentTestBase
             "#/            public-key encryption for .env files          /\n",
             "#/       [how it works](https://dotenvx.com/encryption)     /\n",
             "#/----------------------------------------------------------/\n",
-            $"DOTENV_PUBLIC_KEY_CRLF=\"{parsed["DOTENV_PUBLIC_KEY_CRLF"]}\"\n\n",
+            $"DOTENV_PUBLIC_KEY_CRLF=\"{parsed["DOTENV_PUBLIC_KEY_CRLF"]}\"{FkComment(envFile)}\n\n",
             "# .env.crlf\n",
             $"HELLO=\"{parsed["HELLO"]}\"\r\n",
             $"ALOHA=\"{parsed["ALOHA"]}\"\r\n"
@@ -198,7 +234,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldBe("one");
@@ -219,7 +255,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldBe("one");
@@ -241,7 +277,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -263,7 +299,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -286,7 +322,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
@@ -308,7 +344,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBeEmpty();
         result.UnchangedFilePaths.ShouldBe([envFile]);
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO", "HELLO2", "HELLO3"]);
         (parsed["DOTENV_PUBLIC_KEY"] as string).ShouldNotBeNullOrEmpty();
         (parsed["HELLO"] as string).ShouldBe("one");
@@ -331,7 +367,7 @@ public class EncryptTest : EnvironmentTestBase
         result.ChangedFilePaths.ShouldBe([envFile]);
         result.UnchangedFilePaths.ShouldBeEmpty();
 
-        Dictionary<string, object> parsed = DotenvParse(p.EnvSrc);
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
         parsed.Keys.ShouldBe(["DOTENV_PUBLIC_KEY_EXPORT", "KEY"]);
         (parsed["DOTENV_PUBLIC_KEY_EXPORT"] as string).ShouldNotBeNullOrEmpty();
         (parsed["KEY"] as string).ShouldStartWith("encrypted:");
@@ -343,7 +379,7 @@ public class EncryptTest : EnvironmentTestBase
              #/            public-key encryption for .env files          /
              #/       [how it works](https://dotenvx.com/encryption)     /
              #/----------------------------------------------------------/
-             DOTENV_PUBLIC_KEY_EXPORT="{parsed["DOTENV_PUBLIC_KEY_EXPORT"] as string}"
+             DOTENV_PUBLIC_KEY_EXPORT="{parsed["DOTENV_PUBLIC_KEY_EXPORT"] as string}"{FkComment(envFile)}
 
              # .env.export
              export KEY={parsed["KEY"] as string}
@@ -351,9 +387,17 @@ public class EncryptTest : EnvironmentTestBase
              """);
     }
 
-    /// <remarks>Refer to "#run (finds .env and .env.keys file) but derived public key does not match configured public key"</remarks>
+    /// <remarks>
+    /// No longer a distinct current upstream scenario - no test with this title exists anywhere in
+    /// the submodule at this pin. Rewritten 2026-10-02 after a code audit found and fixed a real bug
+    /// in SmartDotenvPublicKey.cs: a stray DOTENV_PUBLIC_KEY in the process environment used to be
+    /// checked BEFORE the target file's own public key, so it could look like a "mismatch" against
+    /// an already-correctly-paired file. Live-verified against the real pinned Node CLI that the
+    /// correct behavior is to ignore the process-env value entirely - "○ no change", no error -
+    /// since the file's own DOTENV_PUBLIC_KEY already matches its own .env.keys private key.
+    /// </remarks>
     [Fact]
-    public void TestRunFindsEnvAndEnvKeysFileButDerivedPublicKeyDoesNotMatchConfiguredPublicKey()
+    public void TestRunIgnoresStrayProcessEnvPublicKeyWhenFileIsAlreadyCorrectlyPaired()
     {
         Environment.SetEnvironmentVariable("DOTENV_PUBLIC_KEY", "12345");
 
@@ -363,7 +407,8 @@ public class EncryptTest : EnvironmentTestBase
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         EncryptProcessedEnv p = result.ProcessedEnvs[0];
-        p.Error.ShouldBeOfType<InvalidDotenvPrivateKeyException>();
+        p.Error.ShouldBeNull();
+        result.UnchangedFilePaths.ShouldBe([envFile]);
     }
 
     /// <remarks>Refer to "#run (finds .env file only)"</remarks>
@@ -457,5 +502,28 @@ public class EncryptTest : EnvironmentTestBase
         {
             File.WriteAllText(envKeysFile, originalKeysFileContents);
         }
+    }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-29 bug found via a code audit:
+    /// encrypt.js's `if (isDotenvPublicKey(key) || isPlainKey(key)) continue` exempts any key
+    /// ending in `_PLAIN` from encryption entirely, checked before exclude/include filtering.
+    /// Confirmed live against Node: this port had no such check, silently encrypting `_PLAIN`-
+    /// suffixed keys.
+    /// </remarks>
+    [Fact]
+    public void TestRunSkipsPlainSuffixedKeys()
+    {
+        File.WriteAllText(".env", "HELLO=World\nHELLO_PLAIN=NotSecret\n");
+
+        EncryptResult result = new Encrypt([], null, null, null).Run();
+
+        result.ProcessedEnvs.ShouldHaveSingleItem();
+        EncryptProcessedEnv p = result.ProcessedEnvs[0];
+        p.Keys.ShouldBe(["HELLO"]);
+
+        Dictionary<string, object> parsed = ScanToDictionary(p.EnvSrc);
+        (parsed["HELLO"] as string).ShouldStartWith("encrypted:");
+        parsed["HELLO_PLAIN"].ShouldBe("NotSecret");
     }
 }

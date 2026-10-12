@@ -1,16 +1,36 @@
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-/// <remarks>Reference source: dotenvx/src/lib/services/ls.js</remarks>
+/// <remarks>Reference source: dotenvx/src/lib/resolvers/ls.js (moved there from src/lib/services/ls.js by this pin)</remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class Ls(string directory = "./", string[]? envFile = null, string[]? excludeEnvFile = null)
 {
     private static readonly Func<string, string[]?, string[]?, Ls> DefaultFactory =
         (directory, envFile, excludeEnvFile) => new Ls(directory, envFile, excludeEnvFile);
 
-    private readonly string _cwd = Path.GetFullPath(directory);
-    private readonly string[] _ignore = ["node_modules/**", ".git/**"];
+    // path.resolve: '' is the working directory, and a blank name (" ") is just another, usually missing, directory
+    private readonly string _cwd = directory.Length == 0
+        ? NodePath.Resolve(".")
+        : string.IsNullOrWhiteSpace(directory)
+            ? Path.Combine(NodePath.Resolve("."), directory)
+            : NodePath.Resolve(directory);
+
+    // Fdir converts every slash in the crawl root to the platform separator, so `sub\deep` is crawled as sub/deep outside Windows too
+    private string CrawlRoot => OperatingSystem.IsWindows() ? _cwd : _cwd.Replace('\\', '/');
+    private readonly string[] _ignore = ["node_modules/**", "**/node_modules/**", ".git/**", "**/.git/**"];
+
+    // Matches ls.js's DEFAULT_EXCLUDED_DIRECTORY_EXTENSIONS - the Fdir crawler never descends into
+    // node_modules/.git or a directory whose extension matches one of these (macOS bundle formats),
+    // so files inside are never even candidates. This port originally only filtered .env* files
+    // AFTER a full unrestricted tree walk via the glob-based _ignore list above, which happened to
+    // still exclude node_modules/.git (both are covered by those globs too) but had NO equivalent
+    // for the bundle extensions at all - a .env* file inside e.g. a `.photoslibrary` directory would
+    // be listed here but never seen by Node. Fixed by pruning at the directory-walk level directly,
+    // matching LsAction.cs's own already-correct CountCrawledDirectories exclusion set.
+    private static readonly HashSet<string> ExcludedDirectoryExtensions =
+        [".app", ".key", ".numbers", ".pages", ".photoslibrary"];
 
     protected Ls() : this("./")
     {
@@ -31,31 +51,79 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
 
     private string[] FilePaths()
     {
-        List<string> files = [];
         string[] excluded = Exclude();
-        Func<string, bool> exclude = Picomatch(excluded);
-        Func<string, bool> include = Picomatch(Patterns(), excluded);
+        // dot: true matches ls.js's own real `match(patterns, { dot: true })` options - see
+        // IndexJs.Picomatch's doc comment for why the default changed to dot:false everywhere else.
+        Func<string, bool> exclude = Picomatch(excluded, dot: true);
+        Func<string, bool> include = Picomatch(Patterns(), excluded, dot: true);
 
-        foreach (string pattern in Patterns())
+        // Enumerate every file once (pruning excluded directories during the walk, matching
+        // upstream's Fdir crawler) and let the "**/"-prefixed picomatch globs do the actual
+        // filtering, rather than passing each user pattern to Directory.GetFiles as its own OS
+        // search pattern - "**/" isn't valid .NET search-pattern syntax, only valid picomatch/glob
+        // syntax.
+        return EnumerateFiles(CrawlRoot)
+            .Select(file => Path.GetRelativePath(CrawlRoot, file).Replace(Path.DirectorySeparatorChar, '/'))
+            .Where(path => !exclude(path) && include(path))
+            .Distinct()
+            .OrderBy(path => path, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal) // the crawl order Node shows: case-insensitive on Windows, by code unit elsewhere
+            .ToArray();
+    }
+
+    // Fdir skips directories it cannot read
+    private static readonly EnumerationOptions Inaccessible = new() { IgnoreInaccessible = true, AttributesToSkip = 0 }; // AttributesToSkip 0: the default skips Hidden, which on Unix is every dot file
+
+    public static bool IsLink(string directory)
+    {
+        return new DirectoryInfo(directory).Attributes.HasFlag(FileAttributes.ReparsePoint);
+    }
+
+    private static IEnumerable<string> EnumerateFiles(string directory)
+    {
+        // Fdir crawls a missing directory (or a file given as the directory) as empty: `ls nonexistent` reports 0 files
+        if (!Directory.Exists(directory))
         {
-            string[] found = Directory.GetFiles(_cwd, pattern, SearchOption.AllDirectories);
-            files.AddRange(found
-                .Select(file => Path.GetRelativePath(_cwd, file))
-                .Where(path => !exclude(path) && include(path))
-                .OrderBy(path => path));
+            yield break;
         }
 
-        return files.ToArray();
+        foreach (string file in Directory.GetFiles(directory, "*", Inaccessible))
+        {
+            yield return file;
+        }
+
+        foreach (string subdirectory in Directory.GetDirectories(directory, "*", Inaccessible))
+        {
+            // Fdir does not follow symbolic links: a link to a directory is reported like a file and never entered
+            if (IsLink(subdirectory))
+            {
+                yield return subdirectory;
+
+                continue;
+            }
+
+            string name = Path.GetFileName(subdirectory);
+            if (name is "node_modules" or ".git" ||
+                ExcludedDirectoryExtensions.Contains(Path.GetExtension(subdirectory).ToLowerInvariant()))
+            {
+                continue;
+            }
+
+            foreach (string file in EnumerateFiles(subdirectory))
+            {
+                yield return file;
+            }
+        }
     }
 
     private string[] Patterns()
     {
-        return envFile?.Select(part => part).ToArray() ?? [];
+        string[] value = envFile is { Length: > 0 } ? envFile : [".env*"];
+        return value.Select(part => $"**/{part}").ToArray();
     }
 
     private string[] ExcludePatterns()
     {
-        return excludeEnvFile?.Select(part => part).ToArray() ?? [];
+        return (excludeEnvFile ?? []).Select(part => $"**/{part}").ToArray();
     }
 
     private string[] Exclude()

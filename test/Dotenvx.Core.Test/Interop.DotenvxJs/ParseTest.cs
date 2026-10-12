@@ -10,6 +10,11 @@ public class ParseTest : EnvironmentTestBase
 {
     private readonly string _src = Fsx.ReadFileX("tests/.env");
 
+    public ParseTest()
+    {
+        ClearEnvironmentExceptPath();
+    }
+
     /// <remarks>Refer to "should return an object"</remarks>
     [Fact]
     public void TestShouldReturnAnObject()

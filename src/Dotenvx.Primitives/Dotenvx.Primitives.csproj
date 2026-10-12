@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Dotenvx</RootNamespace>
+        <PackageId>Dotenvx.Primitives</PackageId>
+        <Description>Parse, encrypt, decrypt, keypair, keyring and related primitives for .env files, ported from the @dotenvx/primitives npm package and matching it at the same version.</Description>
+        <!-- Tracks the exact @dotenvx/primitives npm package version this is ported from (see
+             dotenvx/node_modules/@dotenvx/primitives/package.json) - bump in lockstep with that
+             package's own version, not independently, the same way Dotenvx's own Version tracks the
+             dotenvx submodule pin. -->
+        <Version>3.0.2</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Dotenvx.Primitives.Test"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2"/>
+        <PackageReference Include="NBitcoin.Secp256k1" Version="3.1.6"/>
+    </ItemGroup>
+
+</Project>

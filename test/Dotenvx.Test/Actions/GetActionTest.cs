@@ -13,9 +13,9 @@ namespace dotnet_dotenvx.Test.Actions;
 public class GetActionTest : EnvironmentTestBase
 {
     private readonly JsonSerializerOptions _compactJsonOptions = new() { WriteIndented = false };
-    private readonly StringWriter _consoleOutput = new();
+    private readonly StringWriter _consoleOutput = new() { NewLine = "\n" };
     private readonly TextWriter _originalOut = Console.Out;
-    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true };
+    private readonly JsonSerializerOptions _prettyPrintJsonOptions = new() { WriteIndented = true, NewLine = "\n" };
 
     public GetActionTest()
     {
@@ -98,7 +98,7 @@ public class GetActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         string output = _consoleOutput.ToString();
-        output.ShouldBe($"HELLO={JsonSerializer.Serialize("f'bar")}\n");
+        output.ShouldBe("HELLO='f'\\''bar'\n");
         // Assert Get.Run() called
     }
 
@@ -113,7 +113,7 @@ public class GetActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         string output = _consoleOutput.ToString();
-        output.ShouldBe($"HELLO={JsonSerializer.Serialize("World")}\nHELLO2={JsonSerializer.Serialize("World2")}\n");
+        output.ShouldBe("HELLO='World'\nHELLO2='World2'\n");
     }
 
     /// <remarks>Refer to "get --pretty-print"</remarks>
@@ -139,7 +139,10 @@ public class GetActionTest : EnvironmentTestBase
         ParseResult parseResult = RootCommand.Parse(["get", "HELLO", "--convention", "nextjs"]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(0);
+        // Real dotenvx also exits 1 here: the nextjs convention's missing .env.development.local,
+        // .env.local, and .env.development files are each a non-ignored MISSING_ENV_FILE error,
+        // even though HELLO is still found in the plain .env file that does exist.
+        exitCode.ShouldBe(1);
         string output = _consoleOutput.ToString();
         output.ShouldBe("World\n");
     }
@@ -153,10 +156,11 @@ public class GetActionTest : EnvironmentTestBase
         ParseResult parseResult = RootCommand.Parse(["get", "NOTFOUND"]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(0);
+        // Real dotenvx exits 1 for a non-ignored, non-strict error too.
+        exitCode.ShouldBe(1);
         string output = _consoleOutput.ToString();
         output.ShouldBe("\n");
-        MockLogger.ErrorMessages.ShouldContain("[MISSING_KEY] missing NOTFOUND key");
+        MockLogger.ErrorMessages.ShouldContain("[MISSING_KEY] missing key (NOTFOUND). fix: [https://github.com/dotenvx/dotenvx/issues/759]");
     }
 
     /// <remarks>Refer to "get - key with format dotenv multiline encrypted"</remarks>
@@ -171,7 +175,7 @@ public class GetActionTest : EnvironmentTestBase
         exitCode.ShouldBe(1);
         string output = _consoleOutput.ToString();
         output.ShouldBe("");
-        MockLogger.ErrorMessages.ShouldContain("[MISSING_KEY] missing NOTFOUND key");
+        MockLogger.ErrorMessages.ShouldContain("[MISSING_KEY] missing key (NOTFOUND). fix: [https://github.com/dotenvx/dotenvx/issues/759]");
     }
 
     /// <remarks>Refer to "get KEY (not found) --ignore"</remarks>
@@ -187,5 +191,25 @@ public class GetActionTest : EnvironmentTestBase
         string output = _consoleOutput.ToString();
         output.ShouldBe("\n");
         MockLogger.ErrorMessages.ShouldNotContain("MISSING_KEY");
+    }
+
+    /// <remarks>
+    /// Not from a JS test - regression test for a 2026-09-27 bug (see docs/porting-traps.md, trap on
+    /// `OptionParsers.ParseMultiValue`). `System.CommandLine`'s `AllowMultipleArgumentsPerToken`
+    /// (needed for `--include-key`'s genuine variadic syntax) greedily consumed a completely
+    /// unregistered flag as just another array value instead of rejecting it, so
+    /// `get --include-key HELLO --totally-bogus-flag` used to silently succeed with
+    /// `includeKey = ["HELLO", "--totally-bogus-flag"]` instead of erroring the way Node's
+    /// commander does for any unrecognized `--flag`-shaped token.
+    /// </remarks>
+    [Fact]
+    public void TestIncludeKeyRejectsUnrecognizedFlagInsteadOfSwallowingIt()
+    {
+        File.WriteAllText(".env", "HELLO=World");
+        ParseResult parseResult = RootCommand.Parse(["get", "--include-key", "HELLO", "--totally-bogus-flag"]);
+
+        parseResult.Errors.ShouldNotBeEmpty();
+        int exitCode = parseResult.Invoke();
+        exitCode.ShouldNotBe(0);
     }
 }

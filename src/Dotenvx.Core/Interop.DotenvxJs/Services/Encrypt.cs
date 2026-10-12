@@ -2,15 +2,26 @@ using System.Collections;
 
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Primitives;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
-using static Dotenvx.Interop.PicomatchJs.IndexJs;
+using static Dotenvx.Primitives.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-/// <remarks>Reference source: dotenvx/src/lib/services/encrypt.js</remarks>
-public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath)
+/// <remarks>
+/// Reference source: dotenvx/src/lib/transforms/encrypt.js. The public key is `publickeys(src)[0]` (the
+/// first DOTENV_PUBLIC_KEY* in the file, whatever its name); when there is none a fresh keypair is made, the
+/// public key header is prepended to the env source and the private key is appended to the returned
+/// `KeysSrc` (the keys file is read and written relative to the working directory, default `.env.keys`;
+/// callers write it). Values are chosen with `scan` (`ik`/`ek`), encrypted unless already encrypted, and
+/// upserted per occurrence; DOTENV_PUBLIC_KEY* and *_PLAIN keys are never encrypted.
+/// </remarks>
+public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath,
+    bool noCreate = false)
 {
+    private const string SampleEnvKit = "HELLO=\"World\"\n";
+
     private readonly HashSet<string> _changedFilePaths = [];
 
     private readonly EnvItem[] _envs = DetermineEnvs(envs, Environment.GetEnvironmentVariables()
@@ -20,161 +31,127 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
     private readonly List<EncryptProcessedEnv> _processedEnvs = [];
     private readonly HashSet<string> _unchangedFilePaths = [];
 
-    private Func<string, bool> _exclude = _ => false;
-    private Func<string, bool> _include = _ => true;
+    private string? _keysSrc;
+
+    /// <summary>
+    /// `noArmor`: true keeps new keys in .env.keys. The CLI always sets it from `--no-armor` and the Armor session; the
+    /// default is "no Armor" so library callers never reach the network or a prompt unasked.
+    /// </summary>
+    public bool NoArmor { get; set; } = true;
+
+    private bool _noArmor;
 
     public EncryptResult Run()
     {
-        _exclude = Picomatch(excludeKeys);
-        _include = Picomatch(keys);
+        string fk = string.IsNullOrEmpty(envKeysFilePath) ? ".env.keys" : envKeysFilePath;
+        _noArmor = NoArmor; // key storage selector below may change it
+
+        // set up keysSrc
+        string fkPath = NodePath.Resolve(fk);
+        if (Fsx.ExistsSync(fkPath))
+        {
+            try
+            {
+                _keysSrc = Fsx.ReadFileX(fkPath, DetectEncoding(fkPath));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // do nothing (scenario: chmod a-r .env.keys)
+            }
+        }
 
         foreach (EnvItem env in _envs)
         {
             if (env.Type == EnvType.EnvFile)
             {
-                EncryptEnvFile(env.Value);
+                EncryptEnvFile(env.Value, fk);
             }
         }
 
         return new EncryptResult
         {
+            KeysSrc = _keysSrc,
             ProcessedEnvs = _processedEnvs.ToArray(),
             ChangedFilePaths = _changedFilePaths.ToArray(),
             UnchangedFilePaths = _unchangedFilePaths.ToArray()
         };
     }
 
-    private void EncryptEnvFile(string envFilePath)
+    private void EncryptEnvFile(string envFilePath, string fk)
     {
         EncryptProcessedEnv row = new() { Keys = [], Type = EnvType.EnvFile };
 
-        string filename = Path.GetFileName(envFilePath);
-        string filepath = Path.GetFullPath(envFilePath);
+        string filepath = NodePath.Resolve(envFilePath);
         row.FilePath = filepath;
         row.EnvFilePath = envFilePath;
 
         try
         {
-            string encoding = DetectEncoding(filepath);
-            string envSrc = Fsx.ReadFileX(filepath, encoding);
-            Dictionary<string, object> envParsed = DotenvParse(envSrc);
-
-            string? publicKey;
-            string? privateKey = null;
-
-            string publicKeyName = GuessPublicKeyName(envFilePath);
-            string privateKeyName = GuessPrivateKeyName(envFilePath);
-            string? existingPrivateKey = FindPrivateKey(envFilePath, envKeysFilePath);
-            string? existingPublicKey = FindPublicKey(envFilePath);
-
-            string localEnvKeysFilePath = Path.Combine(Path.GetDirectoryName(filepath)!, ".env.keys");
-            if (!string.IsNullOrEmpty(envKeysFilePath))
+            string envSrc;
+            if (!Fsx.ExistsSync(filepath) && !noCreate)
             {
-                localEnvKeysFilePath = Path.GetFullPath(envKeysFilePath);
-            }
-
-            string relativeFilePath = Path.GetRelativePath(Path.GetDirectoryName(filepath)!, localEnvKeysFilePath);
-
-            if (!string.IsNullOrEmpty(existingPrivateKey))
-            {
-                (string PublicKey, string PrivateKey) kp = KeyPair(existingPrivateKey);
-                publicKey = kp.PublicKey;
-                privateKey = kp.PrivateKey;
-
-                if (!string.IsNullOrEmpty(existingPublicKey) && existingPublicKey != publicKey)
-                {
-                    throw new InvalidDotenvPrivateKeyException(
-                        publicKeyName,
-                        publicKey,
-                        existingPublicKey,
-                        privateKeyName,
-                        existingPrivateKey);
-                }
-
-                if (string.IsNullOrEmpty(existingPublicKey))
-                {
-                    (string firstLinePreserved, string psEnvSrc) = PreserveShebang(envSrc);
-                    envSrc = psEnvSrc;
-
-                    string prependPublicKey = PrependPublicKey(publicKeyName, publicKey, filename, relativeFilePath);
-
-                    envSrc = $"{firstLinePreserved}{prependPublicKey}\n{envSrc}";
-                }
-            }
-            else if (!string.IsNullOrEmpty(existingPublicKey))
-            {
-                publicKey = existingPublicKey;
+                envSrc = SampleEnvKit;
+                row.Changed = true;
             }
             else
             {
-                string keysSrc = "";
-
-                if (Fsx.ExistsSync(localEnvKeysFilePath))
-                {
-                    keysSrc = Fsx.ReadFileX(localEnvKeysFilePath);
-                }
-
-                (string FirstLinePreserved, string EnvSrc) ps = PreserveShebang(envSrc);
-                string firstLinePreserved = ps.FirstLinePreserved;
-                envSrc = ps.EnvSrc;
-
-                (string PublicKey, string PrivateKey) kp = KeyPair();
-                publicKey = kp.PublicKey;
-                privateKey = kp.PrivateKey;
-
-                string prependPublicKey = PrependPublicKey(publicKeyName, publicKey, filename, relativeFilePath);
-
-                string firstTimeKeysSrc = string.Join("\n",
-                    "#/------------------!DOTENV_PRIVATE_KEYS!-------------------/",
-                    "#/ private decryption keys. DO NOT commit to source control /",
-                    "#/     [how it works](https://dotenvx.com/encryption)       /",
-                    "#/----------------------------------------------------------/");
-                string appendPrivateKey = string.Join("\n", $"# {filename}", $"{privateKeyName}={privateKey}", "");
-
-                envSrc = $"{firstLinePreserved}{prependPublicKey}\n{envSrc}";
-                keysSrc = keysSrc.Length > 1 ? keysSrc : $"{firstTimeKeysSrc}\n";
-                keysSrc = $"{keysSrc}\n{appendPrivateKey}";
-
-                Fsx.WriteFileX(localEnvKeysFilePath, keysSrc);
-
-                row.PrivateKeyAdded = true;
-                row.EnvKeysFilePath = envKeysFilePath ?? Path.Combine(Path.GetDirectoryName(envFilePath)!,
-                    Path.GetFileName(localEnvKeysFilePath));
+                envSrc = Fsx.ReadFileX(filepath, DetectEncoding(filepath));
             }
 
-            row.PublicKey = publicKey;
-            row.PrivateKey = privateKey;
-            row.PrivateKeyName = privateKeyName;
-
-            foreach ((string envKey, object envValue) in envParsed)
+            if (JsTrim(envSrc).Length == 0)
             {
-                string value = envValue as string ?? "";
-
-                if (_exclude(envKey))
-                {
-                    continue;
-                }
-
-                if (keys?.Length > 0 && !_include(envKey))
-                {
-                    continue;
-                }
-
-                bool encrypted = IsEncrypted(value) || IsPublicKey(envKey, value);
-                if (encrypted)
-                {
-                    continue;
-                }
-
-                row.Keys.Add(envKey);
-
-                string encryptedValue = EncryptValue(value, publicKey);
-
-                envSrc = Replace(envSrc, envKey, encryptedValue);
-
+                envSrc = SampleEnvKit;
                 row.Changed = true;
             }
 
+            string? publicKey = PublicKeys(envSrc).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(publicKey))
+            {
+                if (!noCreate && !_noArmor)
+                {
+                    _noArmor = !KeyStorage.ChooseArmored();
+                }
+
+                // upsert public key to .env file
+                (string newPublicKey, string privateKey) = Keypair();
+                publicKey = newPublicKey;
+                string publicKeyName = GuessPublicKeyName(envFilePath);
+                string privateKeyName = GuessPrivateKeyName(envFilePath);
+                envSrc = MutateSrc(envSrc, envFilePath, fk, publicKeyName, publicKey);
+                if (_noArmor)
+                {
+                    _keysSrc = MutateKeysSrc(_keysSrc, privateKeyName, privateKey, NodePath.Basename(envFilePath));
+                }
+                else
+                {
+                    KeyStorage.StoreInArmor(publicKey, privateKey);
+
+                    // don't set keysSrc (in armor)
+                }
+            }
+
+            ScanResult scanned = Scan(envSrc, new ScanOptions { Ik = keys, Ek = excludeKeys });
+            foreach ((string key, List<string> values) in scanned.Parsed)
+            {
+                if (IsPublicKey(key, "") || IsPlainKey(key))
+                {
+                    continue;
+                }
+
+                string[] transformed = values.Select(value => Encrypted(value) ? value : Encrypt(value, publicKey))
+                    .ToArray();
+
+                string before = envSrc;
+                envSrc = Upsert(envSrc, key, transformed);
+                if (envSrc != before)
+                {
+                    row.Changed = true;
+                    row.Keys.Add(key);
+                }
+            }
+
+            row.PublicKey = publicKey;
             row.EnvSrc = envSrc;
             if (row.Changed)
             {
@@ -187,40 +164,9 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
         }
         catch (Exception e)
         {
-            row.Error = e is FileNotFoundException ? new MissingEnvFileException(envFilePath, filepath) : e;
+            row.Error = e is FileNotFoundException ? new MissingEnvFileException(envFilePath) : e;
         }
 
         _processedEnvs.Add(row);
-    }
-
-    private static string PrependPublicKey(string publicKeyName, string publicKey, string filename,
-        string relativeFilePath = "")
-    {
-        string comment = relativeFilePath == ".env.keys" ? "" : $" # {relativeFilePath}";
-
-        return string.Join("\n",
-            "#/-------------------[DOTENV_PUBLIC_KEY]--------------------/",
-            "#/            public-key encryption for .env files          /",
-            "#/       [how it works](https://dotenvx.com/encryption)     /",
-            "#/----------------------------------------------------------/",
-            $"{publicKeyName}=\"{publicKey}\"{comment}", "", $"# {filename}");
-    }
-
-    private static (string FirstLinePreserved, string EnvSrc) PreserveShebang(string envSrc)
-    {
-        string[] lines = envSrc.Split('\n');
-        string firstLine = lines[0];
-        string[] remainingLines = lines.Skip(1).ToArray();
-        string firstLinePreserved = "";
-
-        if (!firstLine.StartsWith("#!"))
-        {
-            return (firstLinePreserved, envSrc);
-        }
-
-        firstLinePreserved = firstLine + "\n";
-        envSrc = string.Join('\n', remainingLines);
-
-        return (firstLinePreserved, envSrc);
     }
 }

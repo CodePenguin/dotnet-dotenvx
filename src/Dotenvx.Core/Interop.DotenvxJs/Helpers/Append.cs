@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 
+using static Dotenvx.Primitives.Primitives;
+
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/append.js</remarks>
@@ -10,7 +12,7 @@ public static partial class Helpers
         string output;
         string newPart = "";
 
-        Dictionary<string, object> parsed = DotenvParse(src, true, true);
+        Dictionary<string, object> parsed = ScanToDictionary(src, true, true);
         Dictionary<string, string> quotes = GetQuotes(src);
         if (parsed.TryGetValue(key, out object? parsedValue))
         {
@@ -28,9 +30,12 @@ public static partial class Helpers
                 enforceEndOfLine = "$"; // EMPTY scenario
             }
 
+            // ([\s\uFEFF]*)? not just (\s*)? so a byte-order-mark surviving at the very start of
+            // the decoded source is captured and preserved (not lost) when this key is the FIRST
+            // one in the file - see Fsx.ReadFileX's BOM-preservation trap in docs/porting-traps.md.
             Regex currentPart = new(
                 "^" + // start of line
-                "(\\s*)?" + // spaces
+                "([\\s\\uFEFF]*)?" + // spaces
                 "(export\\s+)?" + // export
                 Regex.Escape(key) + // KEY
                 "\\s*=\\s*" + // spaces (KEY = value)

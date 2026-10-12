@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.4">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+        <PackageReference Include="Shouldly" Version="4.3.0" />
+        <PackageReference Include="xunit" Version="2.9.3" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Referenced so its build output (dotenvx.dll + deps) is copied next to this
+             project's output automatically - gives a reliable path to the built CLI
+             without any fragile relative-path climbing. -->
+        <ProjectReference Include="..\..\src\Dotenvx\Dotenvx.csproj" />
+    </ItemGroup>
+
+    <!-- The fake external programs (op, bw, powershell, secret-tool, security, ...) are single-file apps in test/fakes. Each is published next to the
+         test assembly (fakes/<name>/) after a build, only when its source is newer than its output. -->
+    <ItemGroup>
+        <FakeSource Include="..\fakes\*.cs" />
+    </ItemGroup>
+
+    <Target Name="PublishFakes" AfterTargets="Build" Inputs="@(FakeSource)" Outputs="@(FakeSource->'$(OutDir)fakes\%(Filename)\%(Filename).dll')">
+        <Exec Command="dotnet publish &quot;%(FakeSource.FullPath)&quot; -o &quot;$(OutDir)fakes\%(FakeSource.Filename)&quot;" />
+    </Target>
+
+</Project>

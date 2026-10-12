@@ -14,7 +14,7 @@ namespace dotnet_dotenvx.Test.Actions;
 /// <remarks>Reference source: dotenvx/tests/cli/actions/decrypt.test.js</remarks>
 public class DecryptActionTest : EnvironmentTestBase
 {
-    private readonly StringWriter _consoleOutput = new();
+    private readonly StringWriter _consoleOutput = new() { NewLine = "\n" };
     private readonly TextWriter _originalOut = Console.Out;
 
     public DecryptActionTest()
@@ -43,9 +43,21 @@ public class DecryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"decrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldNotContain($"decrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldNotContain("✔ decrypted (.env)");
-        MockLogger.InfoMessages.ShouldContain($"no changes .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("no changes (.env)");
+        MockLogger.InfoMessages.ShouldNotContain("◇ decrypted (.env)");
+        MockLogger.VerboseMessages.ShouldContain($"no change .env ({Path.GetFullPath(".env")})");
+        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
+    }
+
+    /// <remarks>Refer to "dec" shorthand alias for "decrypt" (v2.21.0)</remarks>
+    [Fact]
+    public void TestDecAliasRunsDecrypt()
+    {
+        File.WriteAllText(".env", "");
+        ParseResult parseResult = RootCommand.Parse(["dec"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(0);
+        MockLogger.VerboseMessages.ShouldContain($"decrypting .env ({Path.GetFullPath(".env")})");
     }
 
     /// <remarks>Refer to "decrypt - .env but no changes"</remarks>
@@ -58,8 +70,8 @@ public class DecryptActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        MockLogger.InfoMessages.ShouldContain($"no changes .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("no changes (.env)");
+        MockLogger.VerboseMessages.ShouldContain($"no change .env ({Path.GetFullPath(".env")})");
+        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
     }
 
     /// <remarks>Refer to "decrypt - --stdout"</remarks>
@@ -105,23 +117,55 @@ public class DecryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"decrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain($"decrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("✔ decrypted (.env)");
+        MockLogger.InfoMessages.ShouldContain("◇ decrypted (.env)");
     }
 
-    /// <remarks>Refer to "decrypt - MISSING_ENV_FILE"</remarks>
+    /// <remarks>
+    /// Refer to "#decrypt - partially decrypts when another encrypted value is bad" - from
+    /// dotenvx/tests/e2e/decrypt.test.js. See DecryptTest.cs's
+    /// TestRunPartiallyDecryptsWhenAnotherEncryptedValueIsBad for the full writeup of the two real
+    /// bugs (Decrypt.cs's per-key loop aborting the whole file; DecryptAction.cs's Error/Changed
+    /// mutual exclusivity) found and fixed while porting this - this test locks in the CLI-level
+    /// exit code and log lines on top of that, verified live against the real Node CLI.
+    /// </remarks>
+    [Fact]
+    public void TestDecryptPartiallyDecryptsWhenAnotherEncryptedValueIsBad()
+    {
+        File.Copy("tests/monorepo/apps/encrypted/.env.keys", ".env.keys");
+        File.Copy("tests/monorepo/apps/encrypted/.env", ".env");
+        File.AppendAllText(".env", "FAKE=\"encrypted:fake123345343434\"\n");
+
+        ParseResult parseResult = RootCommand.Parse(["decrypt"]);
+        int exitCode = parseResult.Invoke();
+
+        exitCode.ShouldBe(1);
+        MockLogger.ErrorMessages.ShouldContain(
+            "[DECRYPTION_FAILED] could not decrypt FAKE. fix: [https://github.com/dotenvx/dotenvx/issues/757]");
+        MockLogger.InfoMessages.ShouldContain("◇ decrypted (.env)");
+        File.ReadAllText(".env").ShouldContain("HELLO=\"encrypted\"");
+        File.ReadAllText(".env").ShouldContain("FAKE=\"encrypted:fake123345343434\"");
+    }
+
+    /// <remarks>
+    /// Refer to "decrypt - MISSING_ENV_FILE". Verified against the real Node CLI: a per-file
+    /// MISSING_ENV_FILE error exits 1, matching decrypt.js's errorCount tracking - DecryptAction
+    /// previously never checked errorCount in its main branch and always returned 0 (a real,
+    /// independent, pre-existing bug, same shape as EncryptAction's - see docs/porting-traps.md).
+    /// </remarks>
     [Fact]
     public void TestDecryptMissingEnvFile()
     {
         ParseResult parseResult = RootCommand.Parse(["decrypt"]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(0);
-        MockLogger.ErrorMessages.ShouldContain($"[MISSING_ENV_FILE] missing .env file ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain(
-            "? add one with [echo \"HELLO=World\" > .env] and re-run [Dotenvx decrypt]");
+        exitCode.ShouldBe(1);
+        MockLogger.ErrorMessages.ShouldContain(
+            "[MISSING_ENV_FILE] missing file (.env). fix: [https://github.com/dotenvx/dotenvx/issues/484]");
     }
 
-    /// <remarks>Refer to "decrypt - OTHER_ERROR"</remarks>
+    /// <remarks>
+    /// Refer to "decrypt - OTHER_ERROR". Same bug/fix as TestDecryptMissingEnvFile above.
+    /// </remarks>
     [Fact]
     public void TestDecryptOtherError()
     {
@@ -132,7 +176,7 @@ public class DecryptActionTest : EnvironmentTestBase
         ParseResult parseResult = RootCommand.Parse(["decrypt"]);
         int exitCode = parseResult.Invoke();
 
-        exitCode.ShouldBe(0);
+        exitCode.ShouldBe(1);
 
         MockLogger.VerboseMessages.ShouldContain($"decrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.ErrorMessages.ShouldContain(s => s.StartsWith("The process cannot access the file"));
@@ -155,8 +199,7 @@ public class DecryptActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(1);
-        MockLogger.ErrorMessages.ShouldContain("Mock Error");
-        MockLogger.InfoMessages.ShouldContain("Mock Help");
+        MockLogger.ErrorMessages.ShouldContain("Mock Error. Mock Help");
         MockLogger.DebugMessages.ShouldContain("ERROR_CODE: 500");
     }
 }

@@ -55,18 +55,37 @@ public class Ignore
         return this;
     }
 
+    private static readonly System.Text.RegularExpressions.Regex InvalidPath = new(@"^\.{0,2}/|^\.?\.$");
+    private static readonly System.Text.RegularExpressions.Regex DriveLetter = new(@"^[A-Za-z]:/");
+
+
     /// <summary>
     ///     Tests if a path should be ignored
     /// </summary>
     public bool Ignores(string path)
     {
-        if (string.IsNullOrWhiteSpace(path))
+        // node-ignore's checkPath: the path must be a non-empty, relative path (backslashes are separators on Windows only)
+        string original = path;
+        if (path is null)
         {
-            return false;
+            throw new InvalidOperationException("path must be a string, but got `null`");
         }
 
-        // Normalize path separators
-        path = path.Replace('\\', '/');
+        if (path.Length == 0)
+        {
+            throw new InvalidOperationException("path must not be empty");
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            path = path.Replace('\\', '/');
+        }
+
+        if (InvalidPath.IsMatch(path) || (OperatingSystem.IsWindows() && DriveLetter.IsMatch(path)))
+        {
+            throw new InvalidOperationException(
+                $"path should be a `path.relative()`d string, but got \"{original}\"");
+        }
 
         bool ignored = false;
 

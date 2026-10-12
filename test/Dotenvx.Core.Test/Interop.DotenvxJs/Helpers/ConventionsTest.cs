@@ -54,13 +54,21 @@ public class ConventionsTest : IDisposable
         });
     }
 
-    /// <remarks>Refer to "#conventions (invalid)"</remarks>
+    /// <remarks>
+    /// Refer to "#conventions (invalid)". Rewritten 2026-10-02 - the old assertion locked in a
+    /// fabricated message/exception type (a plain `Exception` with invented text) instead of the
+    /// real `InvalidConventionException`/errors.js-shaped message, found via an unrelated
+    /// investigation into this port's error-code coverage.
+    /// </remarks>
     [Fact]
     public void TestConventionsInvalidThrowsException()
     {
-        Exception exception = Should.Throw<Exception>(() => Conventions("invalid"));
+        InvalidConventionException exception =
+            Should.Throw<InvalidConventionException>(() => Conventions("invalid"));
 
-        exception.Message.ShouldBe("INVALID_CONVENTION: 'invalid'. permitted conventions: ['nextjs', 'flow']");
+        exception.Message.ShouldBe("[INVALID_CONVENTION] invalid convention (invalid)");
+        exception.Code.ShouldBe("INVALID_CONVENTION");
+        exception.Help.ShouldBe("fix: [https://github.com/dotenvx/dotenvx/issues/761]");
     }
 
     /// <remarks>Refer to "#conventions (process.env.NODE_ENV is test)"</remarks>
@@ -141,5 +149,19 @@ public class ConventionsTest : IDisposable
             new() { Type = EnvType.EnvFile, Value = ".env" },
             new() { Type = EnvType.EnvFile, Value = ".env.defaults" }
         });
+    }
+
+    /// <remarks>Not an upstream test: `process.env.DOTENV_ENV || process.env.NODE_ENV || 'development'` skips empty values.</remarks>
+    [Theory]
+    [InlineData("", "", ".env.development")]
+    [InlineData("", "production", ".env.production")]
+    [InlineData("staging", "production", ".env.staging")]
+    [InlineData(null, "", ".env.development")]
+    public void TestEmptyEnvironmentValuesFallThrough(string? dotenvEnv, string nodeEnv, string expectedFile)
+    {
+        Environment.SetEnvironmentVariable("DOTENV_ENV", dotenvEnv);
+        Environment.SetEnvironmentVariable("NODE_ENV", nodeEnv);
+
+        Conventions("flow").Select(item => item.Value).ShouldContain(expectedFile);
     }
 }

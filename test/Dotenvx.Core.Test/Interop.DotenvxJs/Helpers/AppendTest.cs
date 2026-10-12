@@ -984,9 +984,7 @@ GROUP='$1$2'";
 
         string newSrc = Append(Src, "EVAL", "ttt");
         newSrc.ShouldBe(expected);
-        // Note: Eval is not currently supported
-        Main.Parse(newSrc)["EVAL"].ShouldBe("$(echo world),ttt");
-        // Main.Parse(newSrc)["EVAL"].ShouldBe("world,ttt"); // Uncomment and replace when supported
+        Main.Parse(newSrc)["EVAL"].ShouldBe("world,ttt");
     }
 
     /// <remarks>Refer to "#EMPTY"</remarks>

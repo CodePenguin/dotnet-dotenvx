@@ -18,6 +18,11 @@ public class ParseMultilineTest : EnvironmentTestBase
 
     private readonly string _src = Fsx.ReadFileX("tests/.env.multiline");
 
+    public ParseMultilineTest()
+    {
+        ClearEnvironmentExceptPath();
+    }
+
     [Fact]
     public void TestSetsBasicEnvironmentVariable()
     {

@@ -1,22 +1,46 @@
+using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
+using Dotenvx.Interop.DotenvxJs.Shared;
 
 namespace Dotenvx.Core.Test;
 
 public class EnvironmentTestBase : IDisposable
 {
     /*
-    .NET 8.0 removes the environment variables when set to blank.
-    Expected behavior changes after .NET 9.0 https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/9.0/empty-env-variable
+    .NET 8.0 removed environment variables when set to blank; since .NET 9.0 they are kept as "".
+    https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/9.0/empty-env-variable
+    Now that the solution targets net10.0, this reflects current (.NET 9+) behavior.
     */
-    protected const string? EmptyEnvironmentVariableValue = null;
+    protected const string EmptyEnvironmentVariableValue = "";
 
-    // Store existing environment keys
-    private readonly List<string> _existingEnvironmentKeys =
-        Environment.GetEnvironmentVariables().Keys.OfType<string>().ToList();
+    // Snapshot of the environment as it existed before this test, so it can be fully restored afterward
+    // (ClearEnvironment/ClearEnvironmentExceptPath remove variables for the rest of the process otherwise,
+    // since nothing else in this class puts their original values back).
+    private readonly Dictionary<string, string?> _originalEnvironmentVariables = Environment
+        .GetEnvironmentVariables()
+        .Cast<System.Collections.DictionaryEntry>()
+        .ToDictionary(entry => (string)entry.Key, entry => (string?)entry.Value);
+
+    private readonly List<string> _existingEnvironmentKeys;
 
     private readonly string _originalDirectory = Environment.CurrentDirectory;
     protected MockLogger MockLogger { get; } = new();
+
+    protected EnvironmentTestBase()
+    {
+        _existingEnvironmentKeys = _originalEnvironmentVariables.Keys.ToList();
+
+        // unit tests never read the developer's real Armor session or device key (the directory has no settings file, so
+        // Armor is off) ...
+        Environment.SetEnvironmentVariable("DOTENVX_CONFIG",
+            Path.Combine(Path.GetTempPath(), "dotenvx-unit-config-" + Guid.NewGuid().ToString("N")));
+
+        _existingEnvironmentKeys.Add("DOTENVX_CONFIG"); // ClearEnvironment() removes it with the rest
+
+        // ... and never reach the real OS secret store
+        NativeStore.Current = NSubstitute.Substitute.For<INativeSecretStore>();
+    }
 
     public void Dispose()
     {
@@ -28,20 +52,56 @@ public class EnvironmentTestBase : IDisposable
 
         // Remove any keys that were not in the original environment
         Environment.GetEnvironmentVariables().Keys.OfType<string>()
-            .Where(key => !_existingEnvironmentKeys.Contains(key))
+            .Where(key => !_originalEnvironmentVariables.ContainsKey(key))
             .ToList()
             .ForEach(key => Environment.SetEnvironmentVariable(key, null));
 
+        // Restore original values for keys that were cleared or modified during the test
+        foreach (KeyValuePair<string, string?> kv in _originalEnvironmentVariables)
+        {
+            if (Environment.GetEnvironmentVariable(kv.Key) != kv.Value)
+            {
+                Environment.SetEnvironmentVariable(kv.Key, kv.Value);
+            }
+        }
+
         // Reset Mock Factories
+        Del.ResetFactory();
+        SecretCli.ResetToDefaults();
+        NativeStore.ResetToDefaults();
+        Session.ResetToDefaults();
+        ArmorHttp.ResetToDefaults();
+        ExecuteDynamic.ResetToDefaults();
+        OpenUrl.ResetToDefaults();
+        PtyCommand.ResetToDefaults();
+        ParseWithDecryptor.ResetToDefaults();
+        Spinners.ResetToDefaults();
+        ArmorProviders.ResetToDefaults();
+        ListenForOpenKey.ResetToDefaults();
+        SystemInformation.ResetToDefaults();
+        EnvPaths.ConfigOverride = null;
+        LockUp.ResetFactory();
+        KeychainUp.ResetFactory();
+        KeychainDown.ResetFactory();
+        KeychainPush.ResetFactory();
+        KeychainPull.ResetFactory();
+        LockDown.ResetFactory();
+        Prompts.ResetToDefaults();
+        Doctor.ResetFactory();
+        Genexample.ResetFactory();
         Get.ResetFactory();
+        Gitignore.ResetFactory();
         KeyPair.ResetFactory();
         Ls.ResetFactory();
-        Ops.ResetFactory();
-        Parse.ResetFactory();
+        Prebuild.ResetFactory();
+        Precommit.ResetFactory();
         Run.ResetFactory();
         Sets.ResetFactory();
 
         Fsx.ResetToDefaults();
+        GitHelper.ResetToDefaults();
+        GitleaksHelper.ResetToDefaults();
+        ConsoleTty.ResetToDefaults();
 
         File.Delete(".env");
         File.Delete(".env.keys");

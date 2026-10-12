@@ -1,0 +1,6 @@
+# Line endings are LF everywhere: tests compare multi-line text and the generated help spec byte for byte, and a Windows checkout would
+# otherwise convert them to CRLF.
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.snk binary
