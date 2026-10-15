@@ -88,7 +88,7 @@ public class PtyParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             string relative = Path.GetRelativePath(WorkDir, file).Replace('\\', '/');
             if (relative.StartsWith(".git/", StringComparison.Ordinal) && !relative.StartsWith(".git/hooks", StringComparison.Ordinal))
             {
-                if (relative != ".git/config")
+                if (relative != ".git/config" && relative != ".git/info/attributes")
                 {
                     continue;
                 }
@@ -385,6 +385,48 @@ public class PtyParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 
     [Fact]
     public Task ProtectOutsideAGitRepositoryReports() => Compare(Files(), false, null, null, ProtectDefaults, "protect");
+
+    // The atomic writes protect makes (fsx writeFileXSync): removing the installer's hook block, and rewriting the legacy filter name in
+    // .git/info/attributes. Each starts from files that already exist, so the replacement must keep what the file holds besides the block.
+    private static readonly string HookBlock = global::Dotenvx.Interop.DotenvxJs.Helpers.InstallPrecommitHook.HookScript;
+
+    private static string LegacyHook => HookBlock.Replace("dotenvx precommit", "dotenvx ext precommit");
+
+    private static readonly string[] LegacyAttributes =
+    [
+        ".env* filter=dotenvx\n*.env filter=dotenvx\n.flaskenv filter=dotenvx\n.dev.vars* filter=dotenvx\n**/.env.d/* filter=dotenvx\n",
+        "# mine\n.env* filter=dotenvx\n*.env filter=dotenvx\n.flaskenv filter=dotenvx\n.dev.vars* filter=dotenvx\n**/.env.d/* filter=dotenvx\n*.png binary\n",
+        ".env* filter=dotenvx\r\n*.env filter=dotenvx\r\n.flaskenv filter=dotenvx\r\n.dev.vars* filter=dotenvx\r\n**/.env.d/* filter=dotenvx\r\n",
+        "*.png binary\n"
+    ];
+
+    [Fact]
+    public Task ProtectRemovesAHookThatHoldsOnlyTheInstallerBlock() =>
+        Compare(Files(".git/hooks/pre-commit", HookBlock), true, null, null, ProtectDefaults, "protect");
+
+    [Fact]
+    public Task ProtectKeepsTheRestOfAHookAfterRemovingTheInstallerBlock() =>
+        Compare(Files(".git/hooks/pre-commit", "#!/bin/sh\necho mine\n" + HookBlock), true, null, null, ProtectDefaults, "protect");
+
+    [Fact]
+    public Task ProtectRemovesTheLegacyHookBlockAndKeepsTheRest() =>
+        Compare(Files(".git/hooks/pre-commit", "#!/bin/sh\necho mine\n" + LegacyHook + "echo after\n"), true, null, null, ProtectDefaults, "protect");
+
+    [Fact]
+    public Task ProtectRemovesACrlfHookBlock() =>
+        Compare(Files(".git/hooks/pre-commit", "#!/bin/sh\r\necho mine\r\n" + HookBlock.Replace("\n", "\r\n")), true, null, null, ProtectDefaults, "protect");
+
+    [Fact]
+    public Task ProtectLeavesAHookThatOnlyMentionsDotenvxAlone() =>
+        Compare(Files(".git/hooks/pre-commit", "#!/bin/sh\ndotenvx precommit\n"), true, null, null, ProtectDefaults, "protect");
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public Task ProtectRewritesTheLegacyFilterNameInInfoAttributes(int variant) =>
+        Compare(Files(".git/info/attributes", LegacyAttributes[variant]), true, null, null, ProtectDefaults, "protect");
 
     [Fact]
     public Task ProtectWhenAlreadyConfiguredOffersDone() =>

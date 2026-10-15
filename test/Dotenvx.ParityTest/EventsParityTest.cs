@@ -180,4 +180,34 @@ public class EventsParityTest(NodeParityFixture fixture) : ArmorParityTestBase(f
 
         outcome.ExitCode.ShouldBe(0);
     }
+
+    // worker.js: events are posted in batches of 50, and a payload of more than 256 events is dropped without a single request
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(49)]
+    [InlineData(50)]
+    [InlineData(51)]
+    [InlineData(100)]
+    [InlineData(255)]
+    [InlineData(256)]
+    [InlineData(257)]
+    [InlineData(300)]
+    public async Task DeliverEventsWorkerBatchesAndLimitsLikeNode(int count)
+    {
+        if (!Available)
+        {
+            return;
+        }
+
+        LoggedIn();
+        Server.Handler = _ => new FakeResponse(200, "{}");
+        CompareStderr = false;
+        string events = string.Join(",", Enumerable.Range(0, count).Select(index => $"{{\"name\":\"cli/get\",\"n\":{index}}}"));
+        string input = $"{{\"options\":{{\"token\":\"tok_x\"}},\"events\":[{events}]}}";
+
+        Outcome outcome = await CompareWith(null, input, null, "_deliver-events");
+
+        Events(outcome).Length.ShouldBe(count is 0 or > 256 ? 0 : (count + 49) / 50);
+    }
 }
