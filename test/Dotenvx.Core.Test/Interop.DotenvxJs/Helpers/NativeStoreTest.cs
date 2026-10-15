@@ -435,4 +435,31 @@ public class NativeStoreTest : EnvironmentTestBase
 
         KeyProviders.NativeProvider("k").ShouldBeEmpty();
     }
+
+    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
+    // scan sees them and the reason is visible here. Add a new one only after asking.
+    /// <remarks>Refer to "native backend reads raw secrets from macOS Keychain on darwin"</remarks>
+    [Fact(Skip = "Not ported: The raw OS-store reads are tested at the Dotenvx.Providers level (NativeStoreTest: Keychain, Credential Manager, Secret Service command lines and results); the delegation test stubs @dotenvx/providers itself.")]
+    public void NativeBackendReadsRawSecretsFromMacOSKeychainOnDarwin()
+    {
+    }
+
+    /// <remarks>Refer to "native backend reads raw secrets from Windows Credential Manager on win32"</remarks>
+    [Fact(Skip = "Not ported: The raw OS-store reads are tested at the Dotenvx.Providers level (NativeStoreTest: Keychain, Credential Manager, Secret Service command lines and results); the delegation test stubs @dotenvx/providers itself.")]
+    public void NativeBackendReadsRawSecretsFromWindowsCredentialManagerOnWin32()
+    {
+    }
+
+    /// <remarks>Refer to "native backend reads raw secrets from Linux Secret Service on linux"</remarks>
+    [Fact(Skip = "Not ported: The raw OS-store reads are tested at the Dotenvx.Providers level (NativeStoreTest: Keychain, Credential Manager, Secret Service command lines and results); the delegation test stubs @dotenvx/providers itself.")]
+    public void NativeBackendReadsRawSecretsFromLinuxSecretServiceOnLinux()
+    {
+    }
+
+    /// <remarks>Refer to "native provider delegates ${method} key lookup to @dotenvx/providers"</remarks>
+    [Fact(Skip = "Not ported: The raw OS-store reads are tested at the Dotenvx.Providers level (NativeStoreTest: Keychain, Credential Manager, Secret Service command lines and results); the delegation test stubs @dotenvx/providers itself.")]
+    public void NativeProviderDelegatesKeyLookupToDotenvxProviders()
+    {
+    }
+
 }

@@ -539,4 +539,13 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             dotnet.StandardError.ShouldContain("MISSING_ENV_FILE");
         }
     }
+
+    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
+    // scan sees them and the reason is visible here. Add a new one only after asking.
+    /// <remarks>Refer to "command outcomes preserve piped stdout and stderr"</remarks>
+    [Fact(Skip = "Not ported: drives the JS `commandAction` wrapper directly; the .NET CLI's piped output is compared byte-for-byte with Node's by every parity test.")]
+    public void CommandOutcomesPreservePipedStdoutAndStderr()
+    {
+    }
+
 }

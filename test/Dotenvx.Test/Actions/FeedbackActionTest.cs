@@ -121,4 +121,19 @@ public class FeedbackActionTest : EnvironmentTestBase
         action.Hidden.ShouldBeTrue();
         action.Description.ShouldBe("send feedback to dotenvx");
     }
+
+    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
+    // scan sees them and the reason is visible here. Add a new one only after asking.
+    /// <remarks>Refer to "prompts in a terminal and supports hostname override"</remarks>
+    [Fact(Skip = "Not ported: Both need a real TTY on stdin (process.stdin.isTTY = true), which the test host cannot provide. Their cases are compared against the real Node CLI instead. (the hostname half is `FeedbackActionTest.TestHostnameOverride`)")]
+    public void PromptsInATerminalAndSupportsHostnameOverride()
+    {
+    }
+
+    /// <remarks>Refer to "cancellation exits without submitting"</remarks>
+    [Fact(Skip = "Not ported: Both need a real TTY on stdin (process.stdin.isTTY = true), which the test host cannot provide. Their cases are compared against the real Node CLI instead.")]
+    public void CancellationExitsWithoutSubmitting()
+    {
+    }
+
 }

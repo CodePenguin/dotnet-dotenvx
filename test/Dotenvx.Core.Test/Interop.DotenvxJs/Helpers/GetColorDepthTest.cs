@@ -88,6 +88,33 @@ public class GetColorDepthTest : IDisposable
         return table.Select(row => new object[] { row.Env, row.Depth });
     }
 
+    // The four upstream tests below are intentionally NOT ported (approved by the user, 2026-10-15). They stay as skipped tests so the
+    // upstream-test-titles scan sees them and nobody adds the unreachable deno fallback back.
+
+    /// <remarks>Refer to "returns WriteStream.prototype.getColorDepth()" - upstream stubs tty.WriteStream.prototype.getColorDepth.</remarks>
+    [Fact(Skip = "Not ported: the port computes the colour depth natively, so the probe cannot be missing or throw (see GetColorDepth).")]
+    public void TestReturnsTheStreamsProbeNotPorted()
+    {
+    }
+
+    /// <remarks>Refer to "falls back to process.env.TERM when getColorDepth throws an error (deno scenario)" - the deno fallback to TERM (xterm/256color -> 8).</remarks>
+    [Fact(Skip = "Not ported: the port computes the colour depth natively, so the probe cannot be missing or throw (see GetColorDepth).")]
+    public void TestFallsBackToTermWhenTheProbeThrowsNotPorted()
+    {
+    }
+
+    /// <remarks>Refer to "falls back to 4 when no process.env.TERM when getColorDepth throws an error (deno scenario)" - the deno fallback without TERM (-> 4).</remarks>
+    [Fact(Skip = "Not ported: the port computes the colour depth natively, so the probe cannot be missing or throw (see GetColorDepth).")]
+    public void TestFallsBackToFourWithoutTermNotPorted()
+    {
+    }
+
+    /// <remarks>Refer to "falls back to 4 when process.env.TERM neither xterm or 256color when getColorDepth throws an error (deno scenario)" - the deno fallback with another TERM (-> 4).</remarks>
+    [Fact(Skip = "Not ported: the port computes the colour depth natively, so the probe cannot be missing or throw (see GetColorDepth).")]
+    public void TestFallsBackToFourWhenTermIsNeitherXtermNor256ColorNotPorted()
+    {
+    }
+
     /// <remarks>Refer to "returns the color depth of a TTY stream"</remarks>
     [Theory]
     [MemberData(nameof(Environments))]

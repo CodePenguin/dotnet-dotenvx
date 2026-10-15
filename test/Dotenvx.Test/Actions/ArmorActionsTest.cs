@@ -633,4 +633,19 @@ public class ArmorActionsTest : EnvironmentTestBase
     {
         ArmorGroup(Root()).Subcommands.Any(c => c.Name == "keypair").ShouldBeFalse("armor keypair is not registered");
     }
+
+    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
+    // scan sees them and the reason is visible here. Add a new one only after asking.
+    /// <remarks>Refer to "armor up falls back to private key name when public key display is unavailable"</remarks>
+    [Fact(Skip = "Not ported: Both \"falls back to private key name when public key display is unavailable\" tests stub the service to return a null public key. The real ArmorUp/ArmorPush always resolve and verify the public key (ResolveLocalKey), so the state is unreachable here; the fallback is a one-line branch in the action.")]
+    public void ArmorUpFallsBackToPrivateKeyNameWhenPublicKeyDisplayIsUnavailable()
+    {
+    }
+
+    /// <remarks>Refer to "armor push falls back to private key name when public key display is unavailable"</remarks>
+    [Fact(Skip = "Not ported: Both \"falls back to private key name when public key display is unavailable\" tests stub the service to return a null public key. The real ArmorUp/ArmorPush always resolve and verify the public key (ResolveLocalKey), so the state is unreachable here; the fallback is a one-line branch in the action.")]
+    public void ArmorPushFallsBackToPrivateKeyNameWhenPublicKeyDisplayIsUnavailable()
+    {
+    }
+
 }

@@ -31,6 +31,10 @@ public static class Fsx
     internal static Action<string, string> StageWrite { get; set; } = (path, data) => File.WriteAllText(path, data, Utf8NoBom);
     internal static Action<string, string> StageMove { get; set; } = (from, to) => File.Move(from, to, true);
 
+    // write-file-atomic copies the existing file's uid/gid onto the replacement (when `process.getuid` exists, i.e. not on Windows)
+    internal static Func<string, (uint Uid, uint Gid)?> ReadOwner { get; set; } = FsxOwner.Read;
+    internal static Action<string, uint, uint> ChownFile { get; set; } = FsxOwner.Chown;
+
     private static void DefaultAppendFileSync(string path, string data)
     {
         File.AppendAllText(path, data, Utf8NoBom);
@@ -228,6 +232,7 @@ public static class Fsx
     private static void DefaultWriteFileXNoFollow(string filepath, string str)
     {
         UnixFileMode? existingMode = RegularFileMode(filepath);
+        (uint, uint)? existingOwner = existingMode is null ? null : ReadOwner(filepath);
         string directory = Path.GetDirectoryName(Path.GetFullPath(filepath)) ?? ".";
         string staging = Path.Combine(directory, $".dotenvx-write-{Guid.NewGuid().ToString("N")[..6]}");
         if (OperatingSystem.IsWindows())
@@ -242,7 +247,7 @@ public static class Fsx
         try
         {
             string stagedFile = Path.Combine(staging, "content");
-            WriteAtomic(stagedFile, str, existingMode);
+            WriteAtomic(stagedFile, str, existingMode, existingOwner);
             RegularFileMode(filepath);
             StageMove(stagedFile, filepath);
         }
@@ -290,7 +295,7 @@ public static class Fsx
     // mode is given (key files are always 0600). EACCES/EPERM become FILE_NOT_WRITABLE - confirmed reachable live (a brand-new
     // file in a directory that denies file creation, via `set`) - and a file-locked-by-another-handle sharing violation is a
     // separate IOException, deliberately NOT translated, matching upstream's own narrower EACCES/EPERM-only check.
-    private static void WriteAtomic(string filepath, string str, UnixFileMode? mode)
+    private static void WriteAtomic(string filepath, string str, UnixFileMode? mode, (uint Uid, uint Gid)? owner = null)
     {
         string target = filepath;
         try
@@ -310,6 +315,15 @@ public static class Fsx
         try
         {
             StageWrite(temporary, str);
+            if (!OperatingSystem.IsWindows())
+            {
+                (uint Uid, uint Gid)? chownTo = owner ?? (File.Exists(target) ? ReadOwner(target) : null);
+                if (chownTo is { } ids)
+                {
+                    ChownFile(temporary, ids.Uid, ids.Gid);
+                }
+            }
+
             if (!OperatingSystem.IsWindows() && (mode is not null || File.Exists(target)))
             {
                 File.SetUnixFileMode(temporary, mode ?? File.GetUnixFileMode(target));
@@ -365,5 +379,7 @@ public static class Fsx
         WriteKeyFile = DefaultWriteKeyFile;
         StageWrite = (path, data) => File.WriteAllText(path, data, Utf8NoBom);
         StageMove = (from, to) => File.Move(from, to, true);
+        ReadOwner = FsxOwner.Read;
+        ChownFile = FsxOwner.Chown;
     }
 }

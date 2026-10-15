@@ -83,4 +83,37 @@ public class KeyPairProviderTest : EnvironmentTestBase
         public void Resume() { }
         public void Pause() { }
     }
+
+    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
+    // scan sees them and the reason is visible here. Add a new one only after asking.
+    /// <remarks>Refer to "keypair ${mode} reads envKeysFilepath before other providers"</remarks>
+    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    public void KeypairReadsEnvKeysFilepathBeforeOtherProviders()
+    {
+    }
+
+    /// <remarks>Refer to "keypair ${mode} handles missing keys when no provider is enabled"</remarks>
+    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    public void KeypairHandlesMissingKeysWhenNoProviderIsEnabled()
+    {
+    }
+
+    /// <remarks>Refer to "keypair ${mode} still reads file keys with noArmor"</remarks>
+    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    public void KeypairStillReadsFileKeysWithNoArmor()
+    {
+    }
+
+    /// <remarks>Refer to "keypair ${mode} falls back to a provider when the file has no matching key"</remarks>
+    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    public void KeypairFallsBackToAProviderWhenTheFileHasNoMatchingKey()
+    {
+    }
+
+    /// <remarks>Refer to "keypair ${mode} forwards onStatus and reports the provider origin"</remarks>
+    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    public void KeypairForwardsOnStatusAndReportsTheProviderOrigin()
+    {
+    }
+
 }

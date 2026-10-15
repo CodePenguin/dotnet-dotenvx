@@ -260,4 +260,84 @@ public class FsxAtomicWriteTest : IDisposable
         new FileInfo(P("link")).LinkTarget.ShouldNotBeNull();
         File.ReadAllText(P("target")).ShouldBe("UPDATED\n");
     }
+
+    // write-file-atomic (the library behind fsx writeFileXSync) copies the existing file's uid/gid onto the replacement
+
+    [Fact]
+    public void ReplacementTakesTheExistingFilesOwner()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        File.WriteAllText(P("Envfile"), "OLD\n");
+        Fsx.ReadOwner = _ => (1234u, 5678u);
+        List<(string, uint, uint)> calls = [];
+        Fsx.ChownFile = (path, uid, gid) => calls.Add((path, uid, gid));
+
+        Fsx.WriteFileX(P("Envfile"), "NEW\n");
+
+        calls.Count.ShouldBe(1);
+        calls[0].Item2.ShouldBe(1234u);
+        calls[0].Item3.ShouldBe(5678u);
+    }
+
+    [Fact]
+    public void NoFollowReplacementTakesTheExistingFilesOwner()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        File.WriteAllText(P("Envfile"), "OLD\n");
+        Fsx.ReadOwner = _ => (1234u, 5678u);
+        List<(uint, uint)> calls = [];
+        Fsx.ChownFile = (_, uid, gid) => calls.Add((uid, gid));
+
+        Fsx.WriteFileXNoFollow(P("Envfile"), "NEW\n");
+
+        calls.ShouldBe([(1234u, 5678u)]);
+        File.ReadAllText(P("Envfile")).ShouldBe("NEW\n");
+    }
+
+    [Fact]
+    public void NewFileIsNotChowned()
+    {
+        List<string> calls = [];
+        Fsx.ReadOwner = _ => (1u, 1u);
+        Fsx.ChownFile = (path, _, _) => calls.Add(path);
+
+        Fsx.WriteFileX(P("fresh"), "NEW\n");
+        Fsx.WriteFileXNoFollow(P("fresh2"), "NEW\n");
+
+        calls.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void RealOwnerLookupMatchesTheCurrentUserAndChownToItSucceeds()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        File.WriteAllText(P("owned"), "X\n");
+        var owner = FsxOwner.Read(P("owned"));
+        if (owner is null)
+        {
+            return;
+        }
+
+        using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("id", "-u")
+        {
+            RedirectStandardOutput = true
+        })!;
+        string uid = process.StandardOutput.ReadToEnd().Trim();
+        process.WaitForExit();
+
+        owner.Value.Uid.ToString().ShouldBe(uid);
+        Should.NotThrow(() => FsxOwner.Chown(P("owned"), owner.Value.Uid, owner.Value.Gid));
+    }
 }

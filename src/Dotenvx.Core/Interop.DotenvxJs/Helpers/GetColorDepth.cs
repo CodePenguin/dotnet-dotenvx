@@ -9,8 +9,11 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// `getColorDepth()`, which is Node's `lib/internal/tty.js` `getColorDepth(env)` ported below (FORCE_COLOR, NO_COLOR,
 /// NODE_DISABLE_COLORS, TERM=dumb, the Windows build check, TMUX, CI, TEAMCITY, TERM_PROGRAM, COLORTERM and the TERM tables, as
 /// of Node 22.20), so
-/// the colours dotenvx writes to a terminal are the ones the Node CLI writes there. The fallback of the upstream `catch` (a runtime
-/// whose streams have no probe, e.g. deno) can't happen on Node and is not needed here.
+/// the colours dotenvx writes to a terminal are the ones the Node CLI writes there. INTENTIONALLY NOT PORTED (approved by the
+/// user, 2026-10-15): the upstream `catch` that falls back to the TERM variable (0 -> 4, `256color`/`xterm` -> 8) exists only for
+/// runtimes whose streams have no `getColorDepth` probe (e.g. deno). The probe here is native code that cannot be missing or throw,
+/// so the branch is unreachable; do not add it back. The 4 upstream colorDepth tests that stub the probe are kept as
+/// skipped tests in GetColorDepthTest.
 /// </remarks>
 public static partial class Helpers
 {

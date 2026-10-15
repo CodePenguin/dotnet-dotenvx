@@ -315,4 +315,31 @@ public class ParseWithDecryptorTest : EnvironmentTestBase
             result.Output.Injected["HELLO"].ShouldBe(["first", "second"]);
         }
     }
+
+    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
+    // scan sees them and the reason is visible here. Add a new one only after asking.
+    /// <remarks>Refer to "decryptors returns a custom decryptor unchanged"</remarks>
+    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    public void DecryptorsReturnsACustomDecryptorUnchanged()
+    {
+    }
+
+    /// <remarks>Refer to "decryptors returns null when Armor is unavailable or disabled"</remarks>
+    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    public void DecryptorsReturnsNullWhenArmorIsUnavailableOrDisabled()
+    {
+    }
+
+    /// <remarks>Refer to "decryptors returns an Armor decryptor"</remarks>
+    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    public void DecryptorsReturnsAnArmorDecryptor()
+    {
+    }
+
+    /// <remarks>Refer to "decryptors.sync runs the Armor decryptor through a worker"</remarks>
+    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    public void DecryptorsSyncRunsTheArmorDecryptorThroughAWorker()
+    {
+    }
+
 }

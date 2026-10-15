@@ -89,7 +89,7 @@ Numbered lessons from bugs found while porting `@dotenvx/dotenvx` v2.35.0. Each 
     - `-f` takes one value per occurrence, `-e` is variadic.
     - `-fk` is multi-valued and directory-aware where upstream is (`run/get/validate/decrypt/keypair`), single for `set/encrypt/del`.
     - `ignore` matches error codes exactly, `ConfigOptions.Envs`/`PathString` exist, and `ls -q` suppresses the summary.
-    - Every upstream test title is cited by a `Refer to "<title>"` remark or listed in `docs/upstream-tests-not-ported.md`; `node scripts/upstream-test-titles.js` lists gaps.
+    - Every upstream test title is cited by a `Refer to "<title>"` remark (intentionally not ported ones are skipped tests with the reason, inline in the related test file); `node scripts/upstream-test-titles.js` lists gaps.
 73. **Lessons from Armor, native stores, lock, secret managers, spinner and dynamic dispatch**, found by comparing against Node with fakes (`FakeSecretCli`, `FakeArmorServer`):
     - `armor pull` reports `changed` from the `.env.keys` upsert, `armor down` from the API's flag.
     - enquirer drains stdin per prompt: two keystroke bundles written together are consumed by the first prompt and the second sees end of input (exit 0). `Prompts` mirrors that.

@@ -13,7 +13,7 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Custodians;
 /// <remarks>
 /// Reference source: dotenvx/tests/lib/custodians/{index,native}.test.js. Upstream builds registries from plugin objects
 /// (`createRegistry`) and proxyquires the native backend; this port's registry is the fixed built-in set, so the scenarios that
-/// register custom plugins have no counterpart (see docs/upstream-tests-not-ported.md) while the fallback and failure rules run
+/// register custom plugins have no counterpart while the fallback and failure rules run
 /// against a substitute OS store.
 /// </remarks>
 public class CustodiansTest : EnvironmentTestBase
@@ -95,4 +95,25 @@ public class CustodiansTest : EnvironmentTestBase
         Should.Throw<Exception>(() => CustodiansRegistry.Store("unknown", "public", "private", new StoreContext()))
             .Message.ShouldContain("unknown custodian");
     }
+
+    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
+    // scan sees them and the reason is visible here. Add a new one only after asking.
+    /// <remarks>Refer to "custom custodians participate in selection, writes and ordered lookup"</remarks>
+    [Fact(Skip = "Not ported: Upstream builds registries from plugin objects (createRegistry, custom custodians, ordered lookup, disabled/unconfigured probing, synchronous-read validation). This port's registry is the fixed built-in set (file, native, armor, 1password, bitwarden) with no plugin API; the fallback and failure rules are covered by CustodiansTest.")]
+    public void CustomCustodiansParticipateInSelectionWritesAndOrderedLookup()
+    {
+    }
+
+    /// <remarks>Refer to "disabled custodians are never probed or read; unconfigured ones are not read"</remarks>
+    [Fact(Skip = "Not ported: Upstream builds registries from plugin objects (createRegistry, custom custodians, ordered lookup, disabled/unconfigured probing, synchronous-read validation). This port's registry is the fixed built-in set (file, native, armor, 1password, bitwarden) with no plugin API; the fallback and failure rules are covered by CustodiansTest.")]
+    public void DisabledCustodiansAreNeverProbedOrReadUnconfiguredOnesAreNotRead()
+    {
+    }
+
+    /// <remarks>Refer to "invalid registration and unsupported synchronous reads fail explicitly"</remarks>
+    [Fact(Skip = "Not ported: Upstream builds registries from plugin objects (createRegistry, custom custodians, ordered lookup, disabled/unconfigured probing, synchronous-read validation). This port's registry is the fixed built-in set (file, native, armor, 1password, bitwarden) with no plugin API; the fallback and failure rules are covered by CustodiansTest.")]
+    public void InvalidRegistrationAndUnsupportedSynchronousReadsFailExplicitly()
+    {
+    }
+
 }
