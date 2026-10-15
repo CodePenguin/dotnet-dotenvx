@@ -109,7 +109,7 @@ public class Precommit(string directory = "./", bool install = false)
 
     private string[] FilePaths()
     {
-        return Ls.Factory(directory, null, ExcludeEnvFile).Run();
+        return Ls.Factory(directory, Protect.PrecommitEnvPatterns, ExcludeEnvFile).Run();
     }
 
     private static bool IsInGitRepo()

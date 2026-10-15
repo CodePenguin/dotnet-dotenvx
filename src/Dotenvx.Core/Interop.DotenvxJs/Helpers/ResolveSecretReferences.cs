@@ -232,7 +232,7 @@ public static partial class ResolveBitwardenPassword
         {
             // createSpinner.pause() / resume() around the prompt, then the status starts
             Spinners.Pause();
-            string password = Prompts.Password("Bitwarden master password", "◇") ?? throw new PromptCancelledException();
+            string password = Prompts.Password("Bitwarden master password", "◇", "=") ?? throw new PromptCancelledException();
             Spinners.Resume();
             startStatus();
             SecretCliResult result = SecretCli.Exec("bw", ["unlock", "--passwordenv", PasswordEnv, "--raw"],

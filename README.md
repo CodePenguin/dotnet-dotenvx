@@ -7,7 +7,7 @@
 - **encrypted envs**: commit an encrypted `.env`, keep the private key out of source control
 - **a .NET library** too: load `.env` files into environment variables or `IConfiguration`
 
-The port aims for byte-for-byte compatibility with the Node CLI at **v2.24.1**: same commands, flags, output, exit codes and file formats. A `.env` encrypted by one can be decrypted by the other. See [Compatibility](#compatibility).
+The port aims for byte-for-byte compatibility with the Node CLI at **v2.34.2**: same commands, flags, output, exit codes and file formats. A `.env` encrypted by one can be decrypted by the other. See [Compatibility](#compatibility).
 
 > This is a .NET port, not the upstream project. For the product, documentation and cloud features see [dotenvx.com](https://dotenvx.com). Requires the .NET 10 runtime.
 
@@ -17,7 +17,7 @@ Install the CLI as a .NET tool:
 
 ```sh
 dotnet tool install --global Dotenvx
-dotenvx --version   # 2.24.1
+dotenvx --version   # 2.34.2
 ```
 
 Create a `.env` and run any command with it:
@@ -76,19 +76,18 @@ Use `-f` more than once to layer files (the first file wins unless you pass `--o
 
 | Command | What it does |
 | --- | --- |
-| `run -- <command>` | inject env into a command (`--overload`, `--strict`, `--redact`, `--mask`, `--validate`, ...) |
+| `run -- <command>` | inject env into a command (`--overload`, `--strict`, `--redact`, `--mask`, `--profile`, ...) |
 | `get [KEY]` | print one value, or every value as JSON (`--all`, `--format`, `--pretty-print`) |
 | `set <KEY> [value]` | set a value, encrypting it by default (`--plain` to keep it readable) |
 | `del <KEY>` | delete a key |
 | `encrypt` / `decrypt` | encrypt or decrypt `.env` files in place (`-k`, `--exclude-key`, `--stdout`) |
 | `keypair [KEY]` | print the public/private key pair |
 | `ls [directory]` | list `.env` files as a tree |
-| `validate` | check `.env` against `.env.example` |
 | `genexample [directory]` | generate `.env.example` |
-| `gitignore` | add `.env*` patterns to `.gitignore` |
-| `precommit`, `prebuild` | guard against committing or building with unencrypted `.env` files |
-| `lock` | protect private keys with a local passphrase |
-| `native` | keep private keys in the OS secret store (Keychain, Credential Manager, Secret Service) |
+| `protect` | protect secrets and private keys from code commits (`--docker`, git filter); `gitignore`, `precommit`, `prebuild` are deprecated aliases |
+| `check`, `spec` | check Envfile rules against `.env` files / create an Envfile (beta) |
+| `primitives` | low-level Envfile operations (`profile`, `redact`, `policy`, `check`, `keypair`, `derive`) |
+| `native`, `1password`, `bitwarden` | move private keys in/out of the OS secret store (Keychain, Credential Manager, Secret Service), 1Password or Bitwarden (`up`, `down`, `push`, `pull`) |
 | `armor`, `login`, `logout`, `curl` | [Dotenvx Armor](https://dotenvx.com) integration |
 | `doctor`, `update`, `help` | diagnostics, update instructions, help |
 | `ext <name>` | extensions: `ext ls`, `ext genexample`, `ext scan`, ... and external `dotenvx-ext-<name>` programs |
@@ -135,7 +134,7 @@ See [`samples/`](samples) for runnable versions.
 
 ## Compatibility
 
-- **Pinned target.** `dotenvx --version` prints `2.24.1`, the upstream release this port matches. The upstream repository is included as a git submodule (`dotenvx/`) at that exact tag and is used as the reference and as a source of test fixtures.
+- **Pinned target.** `dotenvx --version` prints `2.34.2`, the upstream release this port matches. The upstream repository is included as a git submodule (`dotenvx/`) at that exact tag and is used as the reference and as a source of test fixtures.
 - **How it is checked.** Besides the unit tests ported from upstream, the test suite runs the real Node CLI and this one side by side on the same inputs and compares exit codes, stdout, stderr and resulting files. This includes the exact `--help` text of every command and a sweep of more than a thousand command, flag and syntax combinations.
 - **Known differences.** Operating-system error text stays native to .NET, spinner and prompt redraw sequences differ, and a few corner cases are documented in [docs/parity-checklist.md](docs/parity-checklist.md).
 

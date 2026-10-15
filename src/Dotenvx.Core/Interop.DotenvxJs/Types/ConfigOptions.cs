@@ -18,6 +18,15 @@ public class ConfigOptions
     public bool? No1Password { get; set; }
     public bool? NoBitwarden { get; set; }
 
+    /// <summary>`options.noArmor`: skip Dotenvx Armor key access.</summary>
+    public bool? NoArmor { get; set; }
+
+    /// <summary>`options.token`: the Armor token (forces Armor on, even when the session is off).</summary>
+    public string? Token { get; set; }
+
+    /// <summary>`options.profile`: the Envfile profile that selects the env files.</summary>
+    public string? Profile { get; set; }
+
     // main.js `options.envs`: explicit env items (files or raw `KEY=value` strings) used as-is, ignoring `Path` and `Convention`
     public EnvItem[]? Envs { get; set; }
 

@@ -127,11 +127,10 @@ public class RunParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
     }
 
     /// <remarks>
-    /// Refer to `dotenvx/src/lib/helpers/cryptography/isPlainKey.js`'s `_PLAIN` exemption -
-    /// `redactedValues.js` skips any key ending in `_PLAIN` when building the sensitive-value set.
+    /// Since 2.34 `redactedValues.js` has no `_PLAIN` exemption in the legacy `--redact` rule (only public-key names are skipped).
     /// </remarks>
     [Fact]
-    public async Task RedactDoesNotHidePlainSuffixedKeyValueIdentically()
+    public async Task RedactAlsoHidesPlainSuffixedKeyValueIdentically()
     {
         if (!EnsureAvailable())
         {
@@ -144,7 +143,7 @@ public class RunParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 
         dotnet.ExitCode.ShouldBe(node.ExitCode);
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
-        dotnet.StandardOutput.ShouldContain("NotSecret");
+        dotnet.StandardOutput.ShouldContain("[REDACTED]"); // no `_PLAIN` exemption in the legacy rule
     }
 
     /// <remarks>

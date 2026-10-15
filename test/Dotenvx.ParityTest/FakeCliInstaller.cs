@@ -40,6 +40,19 @@ public static class FakeCliInstaller
     {
         string temporary = destination + ".tmp";
         File.Copy(source, temporary, true);
-        File.Move(temporary, destination, true);
+        // Windows refuses to replace a shim a just-finished (or still-exiting) process holds open: retry briefly
+        for (int attempt = 0; ; attempt++)
+        {
+            try
+            {
+                File.Move(temporary, destination, true);
+
+                return;
+            }
+            catch (Exception error) when (attempt < 50 && error is UnauthorizedAccessException or IOException)
+            {
+                Thread.Sleep(100);
+            }
+        }
     }
 }

@@ -73,7 +73,8 @@ public abstract class ArmorParityTestBase(NodeParityFixture fixture) : ParityTes
             ["PATH"] = BinDir + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"),
             ["FAKE_SECRET_CLI_DIR"] = VaultDir,
             ["DOTENVX_CONFIG"] = ConfigDir,
-            ["CI"] = ""
+            ["CI"] = "",
+            ["DOTENVX_NO_NATIVE"] = "false"
         };
 
         foreach ((string key, string value) in extra ?? [])
@@ -150,7 +151,8 @@ public abstract class ArmorParityTestBase(NodeParityFixture fixture) : ParityTes
         {
             foreach (string file in Directory.GetFiles(native).Order())
             {
-                files["vault/" + Path.GetFileName(file)] = File.ReadAllText(file);
+                string vaultName = Path.GetFileName(file);
+                files["vault/" + (RedactFiles ? System.Text.RegularExpressions.Regex.Replace(vaultName, "[0-9a-f]{40,}", "REDACTED") : vaultName)] = File.ReadAllText(file);
             }
         }
 
@@ -158,6 +160,42 @@ public abstract class ArmorParityTestBase(NodeParityFixture fixture) : ParityTes
         files["device"] = new Device(ConfigDir).PrivateKey();
 
         return files;
+    }
+
+    /// <summary>
+    /// The CLIs hand their `POST /api/events` to a detached worker that outlives the command: wait until the request log has
+    /// been quiet for a moment (or a few seconds passed) before reading it.
+    /// </summary>
+    private async Task SettleEvents()
+    {
+        int last = -1;
+        DateTime quietSince = DateTime.UtcNow;
+        DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+        while (DateTime.UtcNow < deadline)
+        {
+            int count = Server.RequestLog().Length;
+            if (count != last)
+            {
+                last = count;
+                quietSince = DateTime.UtcNow;
+            }
+            else if (DateTime.UtcNow - quietSince > TimeSpan.FromMilliseconds(700))
+            {
+                return;
+            }
+
+            await Task.Delay(50);
+        }
+    }
+
+    /// <summary>Event timestamps and durations differ between any two runs.</summary>
+    private static string NormalizeEvents(string line)
+    {
+        return line.Contains("/api/events")
+            ? System.Text.RegularExpressions.Regex.Replace(
+                System.Text.RegularExpressions.Regex.Replace(line, "\"occurred_at\":\"[^\"]*\"", "\"occurred_at\":\"T\""),
+                "\"duration_ms\":[0-9]+", "\"duration_ms\":0")
+            : line;
     }
 
     private async Task<Outcome> RunOne(bool node, Action? project, string? input, Dictionary<string, string> env,
@@ -172,7 +210,9 @@ public abstract class ArmorParityTestBase(NodeParityFixture fixture) : ParityTes
                 ? await Fixture.RunNodeWithInputAsync(WorkDir, env, input, args)
                 : await Fixture.RunDotnetWithInputAsync(WorkDir, env, input, args);
 
-        return new Outcome(result.ExitCode, result.StandardOutput, result.StandardError, [.. Server.RequestLog().Select(line => RedactRequests ? RedactKeyMaterial(line) : line)],
+        await SettleEvents();
+
+        return new Outcome(result.ExitCode, result.StandardOutput, result.StandardError, [.. Server.RequestLog().Select(line => NormalizeEvents(RedactRequests ? RedactKeyMaterial(line) : line))],
             Snapshot());
     }
 

@@ -27,9 +27,44 @@ if (!program) throw new Error('could not capture the commander program')
 const helper = program.createHelp()
 const hidden = new Set()
 
+// text added with addHelpText("after", ...): whatever outputHelp() prints beyond helpInformation()
+function afterHelp (cmd) {
+  let out = ""
+  const saved = cmd._outputConfiguration
+  cmd._outputConfiguration = { ...saved, writeOut: (text) => { out += text } }
+  try { cmd.outputHelp() } finally { cmd._outputConfiguration = saved }
+  const base = cmd.helpInformation()
+  return out.startsWith(base) ? out.slice(base.length) : ""
+}
+
+// which of dotenvx's collectors (src/cli/dotenvx.js) an option's parser is, so the port can rebuild `this.opts()`
+function parserKind (option) {
+  if (!option.parseArg) return null
+  const source = option.parseArg.toString()
+  if (source.includes('previous === undefined')) return 'envKeys'
+  if (source.includes('previous || []')) return option.parseArg('a,b', undefined).length === 2 ? 'envFile' : 'env'
+  return 'unknown'
+}
+
 function dump (cmd) {
   const entry = {
     name: cmd.name(),
+    // commander rejects extra operands only when allowExcessArguments(false) was set
+    allowExcessArguments: cmd._allowExcessArguments !== false,
+    argumentCount: cmd.registeredArguments.length,
+    lastArgumentVariadic: cmd.registeredArguments.length > 0 && Boolean(cmd.registeredArguments[cmd.registeredArguments.length - 1].variadic),
+    // every option exactly as registered (commander seeds opts() with the defaults in this order)
+    registrations: cmd.options.map(o => ({
+      attribute: o.attributeName(),
+      long: o.long || null,
+      short: o.short || null,
+      negate: Boolean(o.negate),
+      variadic: Boolean(o.variadic),
+      takes: o.required ? 'required' : (o.optional ? 'optional' : 'none'),
+      hasDefault: o.defaultValue !== undefined,
+      default: o.defaultValue === undefined ? null : o.defaultValue,
+      parser: parserKind(o)
+    })),
     usage: helper.commandUsage(cmd),
     description: helper.commandDescription(cmd),
     padWidth: helper.padWidth(cmd, helper),
@@ -37,6 +72,7 @@ function dump (cmd) {
     options: helper.visibleOptions(cmd).map(o => ({ term: helper.optionTerm(o), description: helper.optionDescription(o) })),
     commands: helper.visibleCommands(cmd).map(c => ({ term: helper.subcommandTerm(c), description: helper.subcommandDescription(c), name: c.name() })),
     hidden: Boolean(cmd._hidden),
+    after: afterHelp(cmd),
     children: cmd.commands.map(dump)
   }
   if (cmd._hidden) hidden.add(entry.name)

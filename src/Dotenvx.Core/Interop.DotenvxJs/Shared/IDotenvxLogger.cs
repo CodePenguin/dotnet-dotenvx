@@ -5,6 +5,12 @@ namespace Dotenvx.Interop.DotenvxJs.Shared;
 public interface IDotenvxLogger
 {
     void Error(string message);
+
+    /// <summary>`logger.infoerror`: a gray message on stderr at the error level.</summary>
+    void InfoError(string message)
+    {
+        Info(message);
+    }
     void Warn(string message);
     void Success(string message);
     void Info(string message);

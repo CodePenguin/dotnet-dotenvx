@@ -40,10 +40,23 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]?
 
     public bool PromptForSecrets { get; set; }
 
+    /// <summary>`--profile`: the Envfile profile that selects the env files.</summary>
+    public string? Profile { get; set; }
+
+    /// <summary>`--convention`, applied when the env files are resolved.</summary>
+    public string? Convention { get; set; }
+
+    /// <summary>`resolveDirectories: false` (the library get) keeps directories as given.</summary>
+    public bool ResolveDirectories { get; set; } = true;
+
     public virtual GetResult Run()
     {
         Dictionary<string, string> processEnv = new(global::Dotenvx.Helpers.EnvironmentHelper.GetEnvironmentVariablesAsDictionary());
-        Run runService = Services.Run.Factory(envs, overload, processEnv, envKeysFilePaths);
+        EnvItem[] selected = Helpers.Helpers.SelectEnvfileEnvs(envs,
+            new SelectEnvfileOptions { Profile = Profile, Convention = Convention, ResolveDirectories = ResolveDirectories },
+            processEnv.ToDictionary(pair => pair.Key, pair => (string?)pair.Value));
+        Run runService = Services.Run.Factory(selected, overload, processEnv, envKeysFilePaths);
+        runService.DetermineOnExecute = false;
         runService.KeyAccess = KeyAccess;
         runService.No1Password = No1Password;
         runService.NoBitwarden = NoBitwarden;

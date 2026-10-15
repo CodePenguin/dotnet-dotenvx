@@ -1,4 +1,4 @@
-using System.Text;
+using Dotenvx.Interop.EnquirerJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
@@ -6,265 +6,225 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 public class PromptCancelledException() : Exception("prompt cancelled");
 
 /// <remarks>
-/// Reference source: dotenvx/src/lib/helpers/prompts.js (`password`). Upstream renders through enquirer onto stderr; the
-/// rendering here is the same shape (`⊡ passphrase = ***`, then the line is cleared) but not byte-identical (enquirer
-/// emits per-keypress cursor and colour sequences). Verified live against Node: with piped stdin the answer is the first
-/// line; stdin ending before Enter leaves the promise pending and Node exits 0 silently, which is the `null` result.
+/// Reference source: dotenvx/src/lib/helpers/prompts.js. Upstream wraps enquirer; the wrapping here is the same, over a C# port of
+/// enquirer's prompts (Interop.EnquirerJs), so the terminal sees the same bytes. Stdin ending before a prompt is answered leaves
+/// upstream's promise pending, which makes Node exit 0 quietly - <see cref="EndOfInput" />.
 /// </remarks>
 public static class Prompts
 {
-    private static readonly Func<string, string, string?> DefaultPassword = ReadPassword;
+    /// <summary>A choice for <see cref="Select" />: the text shown and the value returned.</summary>
+    public record Choice(string Name, string Value, bool Disabled = false);
 
-    /// <summary>(message, prefix) => the entered text, or null when input ended before Enter. Throws <see cref="PromptCancelledException" />.</summary>
-    public static Func<string, string, string?> Password { get; internal set; } = DefaultPassword;
+    /// <summary>The options of prompts.js `select`.</summary>
+    public sealed record SelectRequest(string Message, IReadOnlyList<Choice> Choices)
+    {
+        public bool Navigation { get; init; }
+
+        public string? BackValue { get; init; }
+
+        public string? Initial { get; init; }
+
+        public string? Prefix { get; init; }
+    }
+
+    /// <summary>The options of prompts.js `multiselect`.</summary>
+    public sealed record MultiselectRequest(string Message, IReadOnlyList<Choice> Choices)
+    {
+        public IReadOnlyList<string> Initial { get; init; } = [];
+
+        public string? SubmitLabel { get; init; }
+
+        public Func<IReadOnlyList<string>, string>? SubmitLabelFunction { get; init; }
+    }
+
+    /// <summary>Where prompts render and read (swappable so tests can drive them with scripted keys).</summary>
+    public static IPromptOutput PromptOutput { get; set; } = ConsolePromptOutput.Instance;
+
+    public static IKeySource KeySource { get; set; } = ConsoleKeySource.Instance;
+
+    private static readonly Func<SelectRequest, string?> DefaultSelect = RunSelect;
+
+    private static readonly Func<MultiselectRequest, IReadOnlyList<string>?> DefaultMultiselect = RunMultiselect;
+
+    private static readonly Func<string, string?> DefaultInput = RunInput;
+
+    private static readonly Func<string, bool, bool?> DefaultConfirm = RunConfirm;
+
+    private static readonly Func<string, string, string, string?> DefaultPassword = RunPassword;
+
+    /// <summary>The chosen value, or null when input ended before an answer. Throws <see cref="PromptCancelledException" />.</summary>
+    public static Func<SelectRequest, string?> Select { get; internal set; } = DefaultSelect;
+
+    public static Func<MultiselectRequest, IReadOnlyList<string>?> Multiselect { get; internal set; } = DefaultMultiselect;
+
+    public static Func<string, string?> InputText { get; internal set; } = DefaultInput;
+
+    public static Func<string, bool, bool?> Confirm { get; internal set; } = DefaultConfirm;
+
+    /// <summary>(message, prefix, separator) => the entered text. Throws <see cref="PromptCancelledException" />.</summary>
+    public static Func<string, string, string, string?> Password { get; internal set; } = DefaultPassword;
+
+    /// <summary>Convenience for the callers that ask for a plain selection (no navigation, no prefix).</summary>
+    public static string? SelectOne(string message, IReadOnlyList<Choice> choices)
+    {
+        return Select(new SelectRequest(message, choices));
+    }
+
+    public static void ResetForTests() => ResetToDefaults();
 
     internal static void ResetToDefaults()
     {
-        Password = DefaultPassword;
+        PromptOutput = ConsolePromptOutput.Instance;
+        KeySource = ConsoleKeySource.Instance;
+        InputEnded = () => Environment.Exit(0);
         Select = DefaultSelect;
+        Multiselect = DefaultMultiselect;
+        InputText = DefaultInput;
+        Confirm = DefaultConfirm;
+        Password = DefaultPassword;
     }
 
-    /// <summary>A choice for <see cref="Select" />: the text shown and the value returned.</summary>
-    public record Choice(string Name, string Value);
+    /// <summary>What happens when stdin ends before a prompt is answered: the process exits silently with 0, as Node does.</summary>
+    public static Action InputEnded { get; set; } = () => Environment.Exit(0);
 
-    private static readonly Func<string, IReadOnlyList<Choice>, string?> DefaultSelect = ReadSelection;
-
-    /// <summary>(message, choices) => the chosen value, or null when input ended before Enter. Throws <see cref="PromptCancelledException" />.</summary>
-    public static Func<string, IReadOnlyList<Choice>, string?> Select { get; internal set; } = DefaultSelect;
-
-    /// <summary>
-    /// enquirer reads a whole stdin chunk per prompt and drops what the prompt did not use (verified live: with
-    /// two keystrokes piped in one write, the first of two consecutive prompts takes the chunk and the second sees only
-    /// the end of input). Piped input is therefore drained after a prompt completes.
-    /// </summary>
-    private static void DrainRedirectedInput()
+    private static T EndOfInput<T>()
     {
-        if (Console.IsInputRedirected)
-        {
-            while (Console.In.Read() != -1)
-            {
-                // discard
-            }
-        }
+        InputEnded();
+
+        return default!;
     }
 
-    /// <summary>Exits the process silently with 0, as Node does when a prompt can never be answered.</summary>
-    private static string? EndOfInput()
+    private static PromptOptions Options(string message)
     {
-        Environment.Exit(0);
-
-        return null;
+        return new PromptOptions { Message = message, Output = PromptOutput, Input = KeySource };
     }
 
-    private static bool _utf8Input;
-
-    /// <summary>
-    /// Node reads piped stdin as UTF-8; .NET defaults to the OEM code page on Windows. Set once: assigning
-    /// Console.InputEncoding replaces Console.In, which would drop characters already buffered for a later prompt.
-    /// </summary>
-    private static void UseUtf8Input()
+    /// <summary>prompts.js `choicesForSelect`.</summary>
+    private static ChoiceSpec[] ChoicesForSelect(IReadOnlyList<Choice> choices)
     {
-        if (!_utf8Input)
-        {
-            Console.InputEncoding = new UTF8Encoding(false);
-            _utf8Input = true;
-        }
+        return [.. choices.Select(choice => new ChoiceSpec(choice.Value, choice.Name.Length > 0 ? choice.Name : choice.Value,
+            Disabled: choice.Disabled ? true : null, DisabledHint: choice.Disabled ? "(unavailable)" : null))];
     }
 
-    // built from char codes: this file must not contain literal escape characters (see CONTRIBUTING.md tooling cautions)
-    private static readonly string KeyEscape = ((char)27).ToString();
-    private static readonly string KeyDown = KeyEscape + "[B";
-    private static readonly string KeyUp = KeyEscape + "[A";
-    private static readonly string KeyCtrlC = ((char)3).ToString();
-    private static readonly string KeyEnter = ((char)10).ToString();
-    private static readonly string KeyReturn = ((char)13).ToString();
-
-    private static string? ReadSelection(string message, IReadOnlyList<Choice> choices)
+    private static string? RunSelect(SelectRequest request)
     {
-        // enquirer select (verified live against piped stdin): Enter submits the highlighted choice, the down/up arrows
-        // move (wrapping), a digit jumps to that index, anything else is ignored; stdin ending first leaves the promise
-        // pending (the process exits 0 silently) and Ctrl+C cancels
-        if (choices.Count == 0)
+        PromptOptions options = Options(request.Message);
+        options.Choices = ChoicesForSelect(request.Choices);
+        if (request.Prefix is { Length: > 0 } prefix)
         {
-            return null;
+            options.PrefixPending = prefix;
         }
 
-        int index = 0;
-        Render(message, choices, index);
-        bool redirected = Console.IsInputRedirected;
-        if (redirected)
+        try
         {
-            UseUtf8Input();
+            if (request.Navigation)
+            {
+                options.InitialName = request.Initial;
+                options.BackValue = request.BackValue;
+
+                return (string?)new CustodySelect(options).Run();
+            }
+
+            return (string?)new SelectPrompt(options).Run();
         }
-
-        while (true)
+        catch (PromptInputEndedException)
         {
-            string key;
-            if (redirected)
-            {
-                int next = Console.In.Read();
-                if (next == -1)
-                {
-                    // stdin ended before an answer: Node's promise never settles and the process just exits 0
-                    return EndOfInput();
-                }
-
-                key = ((char)next).ToString();
-                if (next == 0x1b && Console.In.Peek() == '[')
-                {
-                    Console.In.Read();
-                    key = KeyEscape + "[" + (char)Console.In.Read();
-                }
-            }
-            else
-            {
-                ConsoleKeyInfo info = Console.ReadKey(true);
-                key = info.Key switch
-                {
-                    ConsoleKey.DownArrow => KeyDown,
-                    ConsoleKey.UpArrow => KeyUp,
-                    ConsoleKey.Enter => KeyEnter,
-                    ConsoleKey.C when info.Modifiers.HasFlag(ConsoleModifiers.Control) => KeyCtrlC,
-                    _ => info.KeyChar.ToString()
-                };
-            }
-
-            if (key == KeyCtrlC)
-            {
-                throw new PromptCancelledException();
-            }
-
-            if (key == KeyEnter || key == KeyReturn)
-            {
-                Console.Error.WriteLine();
-                DrainRedirectedInput();
-
-                return choices[index].Value;
-            }
-
-            if (key == KeyDown)
-            {
-                index = (index + 1) % choices.Count;
-            }
-            else if (key == KeyUp)
-            {
-                index = (index - 1 + choices.Count) % choices.Count;
-            }
-            else if (key.Length == 1 && char.IsDigit(key[0]) && key[0] - '0' < choices.Count)
-            {
-                index = key[0] - '0';
-            }
-
-            Render(message, choices, index);
+            return EndOfInput<string?>();
+        }
+        catch (PromptCancelled)
+        {
+            throw new PromptCancelledException();
         }
     }
 
-    private static void Render(string message, IReadOnlyList<Choice> choices, int index)
+    private static IReadOnlyList<string>? RunMultiselect(MultiselectRequest request)
     {
-        Console.Error.WriteLine($"? {message}");
-        for (int i = 0; i < choices.Count; i++)
+        PromptOptions options = Options(request.Message);
+        options.Choices = ChoicesForSelect(request.Choices);
+        options.InitialNames = request.Initial;
+        try
         {
-            Console.Error.WriteLine($"{(i == index ? "❯" : " ")} {choices[i].Name}");
+            if (request.SubmitLabel is not null || request.SubmitLabelFunction is not null)
+            {
+                options.SubmitLabel = request.SubmitLabel;
+                options.SubmitLabelFunction = request.SubmitLabelFunction;
+
+                return (IReadOnlyList<string>?)new Checklist(options).Run();
+            }
+
+            return (IReadOnlyList<string>?)new SelectPrompt(options, true, "multiselect").Run();
+        }
+        catch (PromptInputEndedException)
+        {
+            return EndOfInput<IReadOnlyList<string>?>();
+        }
+        catch
+        {
+            throw new PromptCancelledException();
         }
     }
 
-    private static string? ReadPassword(string message, string prefix)
+    private static string? RunInput(string message)
     {
-        Console.Error.Write($"{prefix} {message} = ");
-
-        var typed = new StringBuilder();
-        string? answer = null;
-
-        if (Console.IsInputRedirected)
+        try
         {
-            // Node reads piped stdin as UTF-8; .NET defaults to the OEM code page on Windows
-            UseUtf8Input();
-            int next;
-            while ((next = Console.In.Read()) != -1)
-            {
-                if (next == '\n')
-                {
-                    answer = typed.ToString();
-                    break;
-                }
-
-                if (next == '\r')
-                {
-                    continue;
-                }
-
-                if (next is 0x7f or 0x08)
-                {
-                    if (typed.Length > 0)
-                    {
-                        typed.Length--;
-                    }
-
-                    continue;
-                }
-
-                if (next == 0x03)
-                {
-                    ClearLine();
-                    throw new PromptCancelledException();
-                }
-
-                typed.Append((char)next);
-            }
+            return (string?)new InputPrompt(Options(message)).Run();
         }
-        else
+        catch (PromptInputEndedException)
         {
-            while (true)
-            {
-                ConsoleKeyInfo key = Console.ReadKey(true);
-
-                if (key.Key == ConsoleKey.Enter)
-                {
-                    answer = typed.ToString();
-                    break;
-                }
-
-                if (key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control))
-                {
-                    ClearLine();
-                    throw new PromptCancelledException();
-                }
-
-                if (key.Key == ConsoleKey.Backspace)
-                {
-                    if (typed.Length > 0)
-                    {
-                        typed.Length--;
-                        Console.Error.Write("\b \b");
-                    }
-
-                    continue;
-                }
-
-                if (!char.IsControl(key.KeyChar))
-                {
-                    typed.Append(key.KeyChar);
-                    Console.Error.Write('*');
-                }
-            }
+            return EndOfInput<string?>();
         }
-
-        if (answer is not null)
+        catch
         {
-            DrainRedirectedInput();
-            Console.Error.Write(new string('*', answer.Length));
-            Console.Error.WriteLine();
+            throw new PromptCancelledException();
         }
-
-        // prompts.js clearLastLine: move up one line and erase it
-        ClearLine(answer is not null);
-
-        // input ended before Enter: the pending promise lets Node exit 0
-        return answer ?? EndOfInput();
     }
 
-    private static void ClearLine(bool moveUp = true)
+    private static bool? RunConfirm(string message, bool initial)
     {
-        Console.Error.Write(moveUp ? "\u001b[1A\u001b[2K" : "\r\u001b[2K");
+        PromptOptions options = Options(message);
+        options.InitialBool = initial;
+        try
+        {
+            return new ConfirmPrompt(options).Run() is true;
+        }
+        catch (PromptInputEndedException)
+        {
+            return EndOfInput<bool?>();
+        }
+        catch
+        {
+            throw new PromptCancelledException();
+        }
+    }
+
+    /// <summary>prompts.js `clearLastLine`: up one line, erase it.</summary>
+    private static void ClearLastLine()
+    {
+        PromptOutput.Write("\u001b[1A\u001b[2K");
+    }
+
+    private static string? RunPassword(string message, string prefix, string separator)
+    {
+        PromptOptions options = Options(message);
+        options.PrefixPending = options.PrefixSubmitted = options.PrefixCancelled = prefix;
+        options.SeparatorPending = options.SeparatorSubmitted = options.SeparatorCancelled = separator;
+        try
+        {
+            string? answer = (string?)new PasswordPrompt(options).Run();
+            ClearLastLine();
+
+            return answer;
+        }
+        catch (PromptInputEndedException)
+        {
+            return EndOfInput<string?>();
+        }
+        catch
+        {
+            ClearLastLine();
+
+            throw new PromptCancelledException();
+        }
     }
 }

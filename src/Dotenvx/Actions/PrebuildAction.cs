@@ -23,7 +23,7 @@ public class PrebuildAction : Command
 
     private readonly IDotenvxLogger _logger;
 
-    public PrebuildAction(IDotenvxLogger logger) : base("prebuild", "prevent including .env files in docker")
+    public PrebuildAction(IDotenvxLogger logger) : base("prebuild", "deprecated. use [dotenvx protect --docker]")
     {
         _logger = logger;
         Add(_directoryArgument);
@@ -32,10 +32,11 @@ public class PrebuildAction : Command
 
     private int Execute(ParseResult parseResult)
     {
+        _logger.Warn("[DEPRECATED] dotenvx prebuild. fix: run [dotenvx protect --docker]");
         string directory = parseResult.GetValue(_directoryArgument) ?? ".";
 
         _logger.Debug($"directory: {directory}");
-        _logger.Debug($"options: {JsonStringify(new { })}");
+        _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         try
         {

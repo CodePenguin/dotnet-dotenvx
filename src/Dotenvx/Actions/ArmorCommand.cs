@@ -33,20 +33,20 @@ public class ArmorCommand : Command
 
         Subcommands.Add(new Step("up", "armor key", "team to armor private key for", logger,
             (host, token, device, file, team) => new ArmorUp(host, token, device, file, team).Run(),
-            (result, display) => $"⛨ armored ({display})"));
+            (result, display, file) => $"⛨ armored {file} ({display})"));
         Subcommands.Add(new Step("down", "dearmor key", "team to dearmor private key from", logger,
             (host, token, device, file, team) => new ArmorDown(host, token, device, file, team).Run(),
-            (result, display) => $"◇ dearmored to .env.keys ({display})"));
+            (result, display, file) => $"◇ dearmored {file} ({display}) to .env.keys"));
         Subcommands.Add(new Step("push", "push armored key (from .env.keys)", "team to push armored private key for", logger,
             (host, token, device, file, team) => new ArmorPush(host, token, device, file, team).Run(),
-            (result, display) => $"⛨ pushed ({display})"));
+            (result, display, file) => $"⛨ pushed {file} ({display}) to Armor"));
         Subcommands.Add(new Step("pull", "pull armored key (into .env.keys)", "team to pull armored private key from", logger,
             (host, token, device, file, team) => new ArmorPull(host, token, device, file, team).Run(),
-            (result, display) => $"◇ pulled to .env.keys ({display})"));
+            (result, display, file) => $"◇ pulled {file} ({display}) to .env.keys"));
         Subcommands.Add(new OpenStep(logger));
         Subcommands.Add(new Step("move", "move armored key (to other team)", null, logger,
             (host, token, device, file, _) => new ArmorMove(host, token, device, file).Run(),
-            (result, display) => $"⛨ moved to {result.Team} ({display})"));
+            (result, display, _) => $"⛨ moved to {result.Team} ({display})"));
         Subcommands.Add(new LoginAction(logger, "log in to Dotenvx Armor"));
         Subcommands.Add(new LogoutAction(logger, "log out of Dotenvx Armor"));
         Subcommands.Add(new Command("status", "print armor status")
@@ -84,7 +84,7 @@ public class ArmorCommand : Command
 
     internal static Option<string?> EnvFile()
     {
-        return new("--env-file", "-f") { Description = "path to your env file", HelpName = "path" };
+        return new("--file", "-f", "--env-file") { Description = "path to your env file", HelpName = "path" };
     }
 
     internal static Option<string?> Token()
@@ -99,7 +99,7 @@ public class ArmorCommand : Command
         private readonly Option<string?> _tokenOption = Token();
 
         public Step(string name, string description, string? teamDescription, IDotenvxLogger logger,
-            Func<string, string?, string, string?, string?, ArmorResult> run, Func<ArmorResult, string, string> success)
+            Func<string, string?, string, string?, string?, ArmorResult> run, Func<ArmorResult, string, string, string> success)
             : base(name, description)
         {
             _teamOption = new Option<string?>("--team") { Description = teamDescription ?? "", HelpName = "team" };
@@ -123,7 +123,7 @@ public class ArmorCommand : Command
         }
 
         private int Execute(ParseResult parseResult, IDotenvxLogger logger,
-            Func<string, string?, string, string?, string?, ArmorResult> run, Func<ArmorResult, string, string> success,
+            Func<string, string?, string, string?, string?, ArmorResult> run, Func<ArmorResult, string, string, string> success,
             bool hasTeam)
         {
             using SpinnerScope spinner = SpinnerScope.Start(parseResult, SpinnerText(parseResult.CommandResult.Command.Name));
@@ -166,18 +166,17 @@ public class ArmorCommand : Command
 
                 if (result.Changed)
                 {
-                    logger.Success(success(result, display));
+                    logger.Success(success(result, display, envFile ?? ".env"));
                 }
                 else
                 {
-                    logger.Info($"○ no change ({display})");
+                    // move.js says "no change ({display})"; the other steps name the env file
+                    logger.Info(parseResult.CommandResult.Command.Name == "move"
+                        ? $"○ no change ({display})"
+                        : $"○ no change to {envFile ?? ".env"} ({display})");
                 }
 
                 return 0;
-            }
-            catch (PromptCancelledException)
-            {
-                return 130;
             }
             catch (Exception error)
             {

@@ -1,3 +1,6 @@
+using System.Threading.Tasks;
+using System.Text;
+using Dotenvx.Interop.DotenvxJs.Events;
 using System.Linq;
 using Dotenvx.Help;
 using System;
@@ -26,26 +29,32 @@ public class DotenvxRootCommand : LoggingRootCommand
         DelAction delAction,
         DoctorAction doctorAction,
         EncryptAction encryptAction,
+        FeedbackAction feedbackAction,
         ExtCommand extCommand,
         GenexampleAction genexampleAction,
         GetAction getAction,
         GitignoreAction gitignoreAction,
         global::Dotenvx.Actions.HelpAction helpAction,
+        HiddenCommand hiddenCommand,
         KeyPairAction keyPairAction,
-        LockCommand lockCommand,
         LoginAction loginAction,
         LogoutAction logoutAction,
         LsAction lsAction,
+        BitwardenCommand bitwardenCommand,
+        CheckAction checkAction,
         NativeCommand nativeCommand,
+        OnePasswordCommand onePasswordCommand,
         PrebuildAction prebuildAction,
+        ProtectAction protectAction,
+        PrimitivesCommand primitivesCommand,
         PrecommitAction precommitAction,
         RunAction runAction,
         SetAction setAction,
-        UpdateAction updateAction,
-        ValidateAction validateAction
+        SpecAction specAction,
+        UpdateAction updateAction
     ) : base("a secure dotenv–from the creator of `dotenv`")
     {
-        UpdateBuiltInCommands([extCommand, lockCommand, doctorAction, nativeCommand, armorCommand, curlAction, loginAction, logoutAction]);
+        UpdateBuiltInCommands([extCommand, doctorAction, nativeCommand, primitivesCommand, onePasswordCommand, bitwardenCommand, armorCommand, curlAction, loginAction, logoutAction]);
 
         // Add Actions
         Subcommands.Add(armorCommand);
@@ -61,21 +70,43 @@ public class DotenvxRootCommand : LoggingRootCommand
         Subcommands.Add(gitignoreAction);
         Subcommands.Add(helpAction);
         Subcommands.Add(keyPairAction);
-        Subcommands.Add(lockCommand);
         Subcommands.Add(lsAction);
         Subcommands.Add(nativeCommand);
+        Subcommands.Add(protectAction);
+        Subcommands.Add(hiddenCommand);
+        Subcommands.Add(feedbackAction);
+        Subcommands.Add(specAction);
+        Subcommands.Add(checkAction);
+        Subcommands.Add(primitivesCommand);
+        Subcommands.Add(onePasswordCommand);
+        Subcommands.Add(bitwardenCommand);
         Subcommands.Add(prebuildAction);
         Subcommands.Add(precommitAction);
         Subcommands.Add(runAction);
-        Subcommands.Add(validateAction);
         Subcommands.Add(setAction);
         Subcommands.Add(updateAction);
         Subcommands.Add(extCommand);
+        Subcommands.Add(DeliverEvents());
 
         foreach (Command command in Subcommands)
         {
             UnknownOptionGuard.Apply(command);
         }
+    }
+
+    /// <remarks>Reference source: dotenvx.js `_deliver-events` (hidden) and lib/events/worker.js.</remarks>
+    private static Command DeliverEvents()
+    {
+        var command = new Command("_deliver-events") { Hidden = true };
+        command.SetAction(_ =>
+        {
+            // internal, short-lived worker: no output, local logs or retries; gives up after five seconds
+            Task.Run(() => EventWorker.Run(new StreamReader(Console.OpenStandardInput(), new UTF8Encoding(false)))).Wait(5000);
+
+            return 0;
+        });
+
+        return command;
     }
 
     /// <remarks>
@@ -106,7 +137,7 @@ public class DotenvxRootCommand : LoggingRootCommand
             if (spec is not null)
             {
                 Console.Out.Write(CommanderHelp.Render(spec, isRootHelp));
-                WriteTrailer(parseResult.CommandResult.Command, isRootHelp);
+                Console.Out.Write(spec.After);
 
                 return 0;
             }
@@ -147,19 +178,6 @@ public class DotenvxRootCommand : LoggingRootCommand
     {
         if (isRoot)
         {
-            foreach (string line in new[]
-                     {
-                         " ", "Better Security:",
-                         "  lock                     ⊡ lock private keys with a local passphrase",
-                         "  native                   ⌥ move private keys into your OS secret store", " ",
-                         "For Security Teams:",
-                         "  armor                    ⛨ move private keys into Dotenvx Armor [www.dotenvx.com/armor]",
-                         "  curl                     ⛨ call authenticated api Dotenvx Armor [www.dotenvx.com/armor]"
-                     })
-            {
-                Console.Out.Write(line + (char)10);
-            }
-
             return;
         }
 

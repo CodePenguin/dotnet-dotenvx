@@ -141,6 +141,34 @@ public class FsxTest : EnvironmentTestBase
     [Fact]
     public void TestWriteFileXTranslatesPermissionErrors()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            // Renaming a file over a directory is EISDIR on Unix (untranslated by write-file-atomic too), so deny file creation instead
+            if (Environment.UserName == "root")
+            {
+                return;
+            }
+
+            Directory.CreateDirectory("tests_fsx_read_only");
+            File.SetUnixFileMode("tests_fsx_read_only", UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+            try
+            {
+                string target = Path.Combine("tests_fsx_read_only", "file");
+                FileNotWritableException denied = Should.Throw<FileNotWritableException>(() => Fsx.WriteFileX(target, "hello"));
+
+                denied.MessageWithHelp.ShouldBe(
+                    $"[FILE_NOT_WRITABLE] cannot write to file ({target}). fix: [https://github.com/dotenvx/dotenvx/issues/890]");
+            }
+            finally
+            {
+                File.SetUnixFileMode("tests_fsx_read_only", UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                Directory.Delete("tests_fsx_read_only");
+            }
+
+            return;
+        }
+
         Directory.CreateDirectory("tests_fsx_a_directory");
 
         try
@@ -154,6 +182,36 @@ public class FsxTest : EnvironmentTestBase
         finally
         {
             Directory.Delete("tests_fsx_a_directory");
+        }
+    }
+
+    /// <remarks>
+    /// Refer to "encrypt and set create owner-only key files under umask 022". The key file is written 0600 whatever the
+    /// umask is, while an ordinary env file keeps the default permissions (Unix only; Windows has no mode bits).
+    /// </remarks>
+    [Fact]
+    public void TestKeyFilesAreOwnerOnly()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        string keys = Path.Combine(Path.GetTempPath(), "dotenvx-fsx-keys-" + Guid.NewGuid().ToString("N"));
+        string env = Path.Combine(Path.GetTempPath(), "dotenvx-fsx-env-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Fsx.WriteKeyFile(keys, "DOTENV_PRIVATE_KEY=abc\n");
+            Fsx.WriteFileX(env, "HELLO=World\n");
+
+            File.GetUnixFileMode(keys).ShouldBe(UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            (File.GetUnixFileMode(env) & UnixFileMode.GroupWrite).ShouldBe(UnixFileMode.None);
+            (File.GetUnixFileMode(env) & UnixFileMode.UserRead).ShouldBe(UnixFileMode.UserRead);
+        }
+        finally
+        {
+            File.Delete(keys);
+            File.Delete(env);
         }
     }
 }

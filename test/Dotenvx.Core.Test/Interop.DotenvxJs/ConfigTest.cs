@@ -170,7 +170,7 @@ public class ConfigTest : EnvironmentTestBase
         Main.Config(new ConfigOptions { Debug = true, Logger = MockLogger });
 
         MockLogger.SetLevelCalled.ShouldBe(DotenvxLogLevel.Debug);
-        MockLogger.DebugMessages.ShouldContain("Setting log level to debug");
+        MockLogger.DebugMessages.ShouldContain("setting log level to: debug");
     }
 
     /// <remarks>Refer to "logs only errors in quiet mode"</remarks>
@@ -189,7 +189,7 @@ public class ConfigTest : EnvironmentTestBase
         Main.Config(new ConfigOptions { Verbose = true, Logger = MockLogger, Path = [] });
 
         MockLogger.SetLevelCalled.ShouldBe(DotenvxLogLevel.Verbose);
-        MockLogger.DebugMessages.ShouldContain("Setting log level to verbose");
+        MockLogger.DebugMessages.ShouldContain("setting log level to: verbose");
     }
 
     /// <remarks>Refer to "sets specific log level and logs it"</remarks>
@@ -199,7 +199,7 @@ public class ConfigTest : EnvironmentTestBase
         Main.Config(new ConfigOptions { LogLevel = "warn", Logger = MockLogger, Path = [] });
 
         MockLogger.SetLevelCalled.ShouldBe(DotenvxLogLevel.Warn);
-        MockLogger.DebugMessages.ShouldContain("Setting log level to warn");
+        MockLogger.DebugMessages.ShouldContain("setting log level to: warn");
     }
 
     /// <remarks>Refer to "verbose mode overrides quiet mode"</remarks>
@@ -209,7 +209,7 @@ public class ConfigTest : EnvironmentTestBase
         Main.Config(new ConfigOptions { Quiet = true, Verbose = true, Logger = MockLogger, Path = [] });
 
         MockLogger.SetLevelCalled.ShouldBe(DotenvxLogLevel.Verbose);
-        MockLogger.DebugMessages.ShouldContain("Setting log level to verbose");
+        MockLogger.DebugMessages.ShouldContain("setting log level to: verbose");
     }
 
     /// <remarks>Refer to "quiet mode overrides specific log level"</remarks>
@@ -236,7 +236,7 @@ public class ConfigTest : EnvironmentTestBase
         });
 
         MockLogger.SetLevelCalled.ShouldBe(DotenvxLogLevel.Debug);
-        MockLogger.DebugMessages.ShouldContain("Setting log level to debug");
+        MockLogger.DebugMessages.ShouldContain("setting log level to: debug");
     }
 
     /// <remarks>Refer to "logs any errors thrown from reading file or parsing when in debug mode"</remarks>
@@ -257,7 +257,7 @@ public class ConfigTest : EnvironmentTestBase
         IFsxMock mockFsx = Substitute.For<IFsxMock>();
         mockFsx.ReadFileX(Arg.Any<string>(), "utf8").Returns("BASIC=basic");
         Fsx.ReadFileX = mockFsx.ReadFileX;
-        Fsx.ReadFileSync = _ => "BASIC=basic"u8.ToArray(); // for encoding check
+        Fsx.ReadFileSync = path => Path.GetFileName(path) == "Envfile" ? throw new FileNotFoundException() : "BASIC=basic"u8.ToArray(); // for encoding check; no Envfile
 
         ConfigResult result = Main.Config(new ConfigOptions { Path = ["~/.env"] });
 
@@ -272,7 +272,7 @@ public class ConfigTest : EnvironmentTestBase
     {
         IFsxMock mockFsx = Substitute.For<IFsxMock>();
         mockFsx.ReadFileX(Arg.Any<string>(), "utf8").Returns("BASIC=basic");
-        mockFsx.ReadFileSync(Arg.Any<string>()).Returns("test=foo"u8.ToArray()); // for purpose of encoding check
+        mockFsx.ReadFileSync(Arg.Any<string>()).Returns(call => Path.GetFileName(call.Arg<string>()) == "Envfile" ? throw new FileNotFoundException() : "test=foo"u8.ToArray()); // for purpose of encoding check; no Envfile
         Fsx.ReadFileX = mockFsx.ReadFileX;
         Fsx.ReadFileSync = mockFsx.ReadFileSync;
 
@@ -281,7 +281,7 @@ public class ConfigTest : EnvironmentTestBase
         result.Parsed["BASIC"].ShouldBe("basic");
         Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
         mockFsx.Received(1).ReadFileX(Arg.Any<string>(), "utf8");
-        mockFsx.Received(1).ReadFileSync(Arg.Any<string>());
+        mockFsx.Received(1).ReadFileSync(Arg.Is<string>(s => Path.GetFileName(s) == ".env")); // encoding check
     }
 
     /// <remarks>Refer to "takes comma-separated string for path option"</remarks>

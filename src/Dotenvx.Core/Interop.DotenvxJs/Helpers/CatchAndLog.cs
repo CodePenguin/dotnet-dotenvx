@@ -1,5 +1,6 @@
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Providers;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
@@ -19,9 +20,22 @@ public static partial class Helpers
             logger.Debug(debug);
         }
 
-        if (error is DotenvxException { Code.Length: > 0 } ex)
+        string? code = ErrorCodeOf(error);
+        if (!string.IsNullOrEmpty(code))
         {
-            logger.Debug($"ERROR_CODE: {ex.Code}");
+            logger.Debug($"ERROR_CODE: {code}");
         }
+    }
+
+    /// <summary>`error.code` of any error this port raises (dotenvx, provider and native store errors).</summary>
+    public static string? ErrorCodeOf(Exception error)
+    {
+        return error switch
+        {
+            DotenvxException dx => dx.Code,
+            ProviderException provider => provider.Code,
+            NativeStoreException native => native.Code,
+            _ => null
+        };
     }
 }

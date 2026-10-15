@@ -8,7 +8,7 @@
         <PackageId>Dotenvx.Core</PackageId>
         <Description>Load, parse, get and set .env values (including encrypted ones) from .NET code: Dotenvx.Config(), Get(), Parse() and Set(), a port of the @dotenvx/dotenvx library API.</Description>
         <!-- tracks the dotenvx release this port matches, in lockstep with Dotenvx.csproj -->
-        <Version>2.24.1</Version>
+        <Version>2.34.2</Version>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,6 +20,10 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Dotenvx.Primitives\Dotenvx.Primitives.csproj"/>
+        <ProjectReference Include="..\Dotenvx.Providers\Dotenvx.Providers.csproj"/>
+        <ProjectReference Include="..\Dotenvx.Enquirer\Dotenvx.Enquirer.csproj"/>
+        <ProjectReference Include="..\Dotenvx.Ignore\Dotenvx.Ignore.csproj"/>
+        <ProjectReference Include="..\Dotenvx.YoctoSpinner\Dotenvx.YoctoSpinner.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

@@ -56,7 +56,7 @@ public class KeyPairActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         string output = _consoleOutput.ToString();
-        var data = new { DOTENV_PUBLIC_KEY = "<PublicKey>", DOTENV_PRIVATE_KEY = "<PrivateKey>" };
+        var data = new { DOTENV_PUBLIC_KEY = "<PublicKey>", DOTENV_PRIVATE_KEY = "<PrivateKey>", provider = (string?)null };
         output.ShouldBe($"{Helpers.JsonStringify(data)}\n");
     }
 
@@ -192,7 +192,7 @@ public class KeyPairActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         string output = _consoleOutput.ToString();
-        var data = new { DOTENV_PUBLIC_KEY = PublicKey, DOTENV_PRIVATE_KEY = PrivateKey };
+        var data = new { DOTENV_PUBLIC_KEY = PublicKey, DOTENV_PRIVATE_KEY = PrivateKey, provider = (string?)null };
         output.ShouldBe($"{Helpers.JsonStringify(data, true)}\n");
     }
 
@@ -263,7 +263,8 @@ public class KeyPairActionTest : EnvironmentTestBase
             DOTENV_PUBLIC_KEY = PublicKey,
             DOTENV_PRIVATE_KEY = PrivateKey,
             DOTENV_PUBLIC_KEY_PRODUCTION = PublicKey,
-            DOTENV_PRIVATE_KEY_PRODUCTION = PrivateKey
+            DOTENV_PRIVATE_KEY_PRODUCTION = PrivateKey,
+            provider = new Dictionary<string, string?> { [".env"] = null, [".env.production"] = null }
         };
         output.ShouldBe($"{Helpers.JsonStringify(data)}\n");
     }
@@ -282,6 +283,6 @@ public class KeyPairActionTest : EnvironmentTestBase
         int exitCode = RootCommand.Parse(["keypair", "--pp"]).Invoke();
 
         exitCode.ShouldBe(0);
-        _consoleOutput.ToString().ShouldBe($"{Helpers.JsonStringify(new { DOTENV_PUBLIC_KEY = "<publicKey>" }, true)}\n");
+        _consoleOutput.ToString().ShouldBe($"{Helpers.JsonStringify(new { DOTENV_PUBLIC_KEY = "<publicKey>", provider = (string?)null }, true)}\n");
     }
 }

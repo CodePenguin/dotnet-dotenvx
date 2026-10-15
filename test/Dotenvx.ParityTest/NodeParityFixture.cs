@@ -97,6 +97,55 @@ public sealed class NodeParityFixture : IAsyncLifetime
         return RunProcessAsync(_nodePath, [DotenvxJsPath, ..args], workingDirectory, env, input);
     }
 
+    /// <summary>Runs a Node script file from the `dotenvx/` directory with <paramref name="input" /> piped to stdin.</summary>
+    public Task<CliResult> RunNodeFileWithInputAsync(string file, string input, params string[] args)
+    {
+        return RunProcessAsync(_nodePath, [file, ..args], Path.Combine(RepoRoot, "dotenvx"), null, input);
+    }
+
+    /// <summary>Runs a Node oracle script file with <paramref name="workingDirectory" /> as its current directory.</summary>
+    public Task<CliResult> RunNodeOracleAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env, params string[] args)
+    {
+        return RunProcessAsync(_nodePath, args, workingDirectory, env);
+    }
+
+    public string NodePath => _nodePath;
+
+    public string DotnetPath => _dotnetPath;
+
+    /// <summary>
+    /// Runs test/tools/pty/run.cjs (a pseudo terminal plus a terminal emulator that reads the screen) on a spec file. Installs its
+    /// npm dependencies on first use; returns null when they cannot be installed.
+    /// </summary>
+    public async Task<CliResult?> RunPtyAsync(string specFile)
+    {
+        string tools = Path.Combine(RepoRoot, "test", "tools", "pty");
+        if (!Directory.Exists(Path.Combine(tools, "node_modules", "node-pty")))
+        {
+            string npm = FindOnPath("npm") ?? "npm";
+            CliResult install = await RunProcessAsync(npm, ["install", "--no-audit", "--no-fund"], tools);
+            if (install.ExitCode != 0)
+            {
+                return null;
+            }
+        }
+
+        // npm leaves node-pty's prebuilt spawn-helper without its execute bit on macOS ("posix_spawnp failed")
+        if (!OperatingSystem.IsWindows())
+        {
+            string prebuilds = Path.Combine(tools, "node_modules", "node-pty", "prebuilds");
+            if (Directory.Exists(prebuilds))
+            {
+                foreach (string helper in Directory.GetFiles(prebuilds, "spawn-helper", SearchOption.AllDirectories))
+                {
+                    File.SetUnixFileMode(helper, File.GetUnixFileMode(helper) | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute);
+                }
+            }
+        }
+
+        return await RunProcessAsync(_nodePath, [Path.Combine(tools, "run.cjs"), specFile], tools);
+    }
+
     public Task<CliResult> RunDotnetWithInputAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env,
         string input, params string[] args)
     {
@@ -166,6 +215,17 @@ public sealed class NodeParityFixture : IAsyncLifetime
 
         // hermetic by default: no developer Armor session or device key is ever read
         psi.EnvironmentVariables["DOTENVX_CONFIG"] = HermeticConfigDir;
+
+        // native OS secret storage is the default since 2.34: keep the real store untouched unless a test opts in with
+        // DOTENVX_NO_NATIVE=false (the fake-store tests)
+        psi.EnvironmentVariables["DOTENVX_NO_NATIVE"] = "true";
+
+        // scripts/parity-coverage.js: V8 coverage of the upstream source while the parity suite drives it
+        if (Environment.GetEnvironmentVariable("DOTENVX_PARITY_NODE_COVERAGE") is { Length: > 0 } coverageDir &&
+            Path.GetFileNameWithoutExtension(fileName).Equals("node", StringComparison.OrdinalIgnoreCase))
+        {
+            psi.EnvironmentVariables["NODE_V8_COVERAGE"] = coverageDir;
+        }
 
         if (env != null)
         {

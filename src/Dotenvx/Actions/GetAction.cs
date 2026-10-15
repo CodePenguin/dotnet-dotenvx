@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Events;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -30,6 +31,8 @@ public class GetAction : Command
     private readonly Option<bool> _allOption =
         new("--all", "-a") { Description = "include all machine envs as well" };
 
+    private readonly Option<string?> _profileOption = new("--profile") { Description = "select an Envfile profile", HelpName = "name" };
+
     private readonly Option<string> _conventionOption =
         new("--convention")
         {
@@ -37,7 +40,7 @@ public class GetAction : Command
         };
 
     private readonly Option<string[]?> _envFileOption =
-        new("--env-file", "-f") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
+        new("--file", "-f", "--env-file") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
 
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
@@ -129,6 +132,7 @@ public class GetAction : Command
         Add(_envKeysFileOption);
         Add(_overloadOption);
         Add(_strictOption);
+        Add(_profileOption);
         Add(_conventionOption);
         Add(_ignoreOption);
         Add(_allOption);
@@ -142,6 +146,7 @@ public class GetAction : Command
         Add(_noNativeOption);
         Add(_noArmorOption);
         SetAction(Execute);
+        EventTracking.Track(this, "get");
     }
 
     private static IReadOnlyDictionary<string, string> FilterKeys(
@@ -185,30 +190,16 @@ public class GetAction : Command
         string format = formatValue ?? "json";
         bool prettyPrint = parseResult.GetValue(_prettyPrintOption);
 
+        _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Normalize(Help.CommanderOpts.Build(parseResult), false, true))}");
         if (key != null)
         {
             _logger.Debug($"key: {key}");
         }
 
-        var options = new
-        {
-            envs,
-            envFile,
-            envKeysFile,
-            overload,
-            strict,
-            convention,
-            ignoreList,
-            all,
-            format,
-            prettyPrint
-        };
-        _logger.Debug($"options: {JsonStringify(options)}");
-
         List<EnvItem> explicitEnvItems =
             EnvItemOrdering.BuildExplicitEnvItemsInOrder(parseResult, _envOption, _envFileOption);
 
-        EnvItem[] envItems = BuildCommandEnvs(NormalizeDotenvConfigPath(explicitEnvItems.ToArray()), convention);
+        EnvItem[] envItems = explicitEnvItems.ToArray();
 
         try
         {
@@ -217,7 +208,12 @@ public class GetAction : Command
                 spinner.OnStatus);
             getService.No1Password = parseResult.GetValue(_no1PasswordOption);
             getService.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
+            getService.KeyAccess.No1Password = getService.No1Password;
+            getService.KeyAccess.NoBitwarden = getService.NoBitwarden;
             getService.PromptForSecrets = true;
+            getService.KeyAccess.Interactive = true;
+            getService.Profile = parseResult.GetValue(_profileOption);
+            getService.Convention = convention;
             GetResult result = getService.Run();
             IReadOnlyDictionary<string, string> parsed = FilterKeys(result.Parsed, includeKey, excludeKey);
 
@@ -237,7 +233,7 @@ public class GetAction : Command
             foreach (Exception error in result.Errors)
             {
                 DotenvxException? dotenvError = error as DotenvxException;
-                string code = dotenvError?.Code ?? "UNKNOWN";
+                string code = ErrorCodeOf(error) ?? "UNKNOWN";
                 if (strict)
                 {
                     throw error;
@@ -295,11 +291,19 @@ public class GetAction : Command
                 }
             }
 
+            EventScope.Count(errorCount);
+
             return errorCount > 0 ? 1 : 0;
+        }
+        catch (PromptCancelledException cancelled)
+        {
+            EventScope.Fail(cancelled);
+            return 130;
         }
         catch (Exception error)
         {
             CatchAndLog(_logger, error);
+            EventScope.Fail(error);
             return 1;
         }
     }

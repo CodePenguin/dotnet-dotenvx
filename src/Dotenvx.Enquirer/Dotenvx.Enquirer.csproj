@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Dotenvx.Interop.EnquirerJs</RootNamespace>
+        <PackageId>Dotenvx.Enquirer</PackageId>
+        <Description>The terminal prompts dotenvx uses (select, multiselect, input, confirm, password), ported from the enquirer npm package and rendering the same bytes.</Description>
+        <!-- Tracks the exact enquirer version bundled in @dotenvx/tooling (see
+             dotenvx/node_modules/@dotenvx/tooling/dist/index.cjs) - bump in lockstep with it. -->
+        <Version>2.4.1</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Dotenvx.Core"/>
+        <InternalsVisibleTo Include="Dotenvx.Core.Test"/>
+        <InternalsVisibleTo Include="Dotenvx.Test"/>
+        <InternalsVisibleTo Include="Dotenvx.ParityTest"/>
+    </ItemGroup>
+
+</Project>

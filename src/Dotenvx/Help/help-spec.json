@@ -1,8 +1,68 @@
 {
  "name": "dotenvx",
+ "allowExcessArguments": true,
+ "argumentCount": 2,
+ "lastArgumentVariadic": true,
+ "registrations": [
+  {
+   "attribute": "logLevel",
+   "long": "--log-level",
+   "short": "-l",
+   "negate": false,
+   "variadic": false,
+   "takes": "required",
+   "hasDefault": true,
+   "default": "info",
+   "parser": null
+  },
+  {
+   "attribute": "quiet",
+   "long": "--quiet",
+   "short": "-q",
+   "negate": false,
+   "variadic": false,
+   "takes": "none",
+   "hasDefault": false,
+   "default": null,
+   "parser": null
+  },
+  {
+   "attribute": "verbose",
+   "long": "--verbose",
+   "short": "-v",
+   "negate": false,
+   "variadic": false,
+   "takes": "none",
+   "hasDefault": false,
+   "default": null,
+   "parser": null
+  },
+  {
+   "attribute": "debug",
+   "long": "--debug",
+   "short": "-d",
+   "negate": false,
+   "variadic": false,
+   "takes": "none",
+   "hasDefault": false,
+   "default": null,
+   "parser": null
+  },
+  {
+   "attribute": "version",
+   "long": "--version",
+   "short": "-V",
+   "negate": false,
+   "variadic": false,
+   "takes": "none",
+   "hasDefault": false,
+   "default": null,
+   "parser": null
+  }
+ ],
  "usage": "dotenvx run -- yourcommand",
  "description": "a secure dotenv–from the creator of `dotenv`",
- "padWidth": 32,
+ "padWidth": 27,
  "arguments": [
   {
    "term": "command",
@@ -76,39 +136,9 @@
    "name": "keypair"
   },
   {
-   "term": "ls [options] [directory]",
-   "description": "print all .env files in a tree structure",
-   "name": "ls"
-  },
-  {
-   "term": "validate [options]",
-   "description": "validate .env file(s) against .env.example",
-   "name": "validate"
-  },
-  {
-   "term": "gitignore [options]",
-   "description": "append to .gitignore",
-   "name": "gitignore"
-  },
-  {
-   "term": "genexample [options] [directory]",
-   "description": "generate .env.example",
-   "name": "genexample"
-  },
-  {
-   "term": "precommit [options] [directory]",
-   "description": "prevent committing .env files to code",
-   "name": "precommit"
-  },
-  {
-   "term": "prebuild [directory]",
-   "description": "prevent including .env files in docker",
-   "name": "prebuild"
-  },
-  {
-   "term": "update",
-   "description": "update dotenvx",
-   "name": "update"
+   "term": "hidden",
+   "description": "hidden features",
+   "name": "hidden"
   },
   {
    "term": "help [command]",
@@ -122,9 +152,191 @@
   }
  ],
  "hidden": false,
+ "after": "",
  "children": [
   {
    "name": "run",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "env",
+     "long": "--env",
+     "short": "-e",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "env"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envKeysFile",
+     "long": "--env-keys-file",
+     "short": "-fk",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": "envKeys"
+    },
+    {
+     "attribute": "overload",
+     "long": "--overload",
+     "short": "-o",
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "strict",
+     "long": "--strict",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": true,
+     "default": false,
+     "parser": null
+    },
+    {
+     "attribute": "profile",
+     "long": "--profile",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "convention",
+     "long": "--convention",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "ignore",
+     "long": "--ignore",
+     "short": null,
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "token",
+     "long": "--token",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "mask",
+     "long": "--mask",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "optional",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "redact",
+     "long": "--redact",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": true,
+     "default": false,
+     "parser": null
+    },
+    {
+     "attribute": "armor",
+     "long": "--no-armor",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "native",
+     "long": "--no-native",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "1password",
+     "long": "--no-1password",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "bitwarden",
+     "long": "--no-bitwarden",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx run [options]",
    "description": "inject env at runtime [dotenvx run -- yourcommand]",
    "padWidth": 27,
@@ -135,7 +347,7 @@
      "description": "environment variable(s) set as string (example: \"HELLO=World\") (default: [])"
     },
     {
-     "term": "-f, --env-file <path>",
+     "term": "-f, --file <path>",
      "description": "path(s) to your env file(s) (default: [])"
     },
     {
@@ -143,20 +355,16 @@
      "description": "path(s) to your .env.keys file(s) (default: same path as your env file)"
     },
     {
-     "term": "--redact",
-     "description": "redact injected values except keys ending in _PLAIN (default: false)"
-    },
-    {
      "term": "-o, --overload",
      "description": "override existing env variables (by default, existing env vars take precedence over .env files)"
     },
     {
-     "term": "--validate",
-     "description": "validate against .env.example (default: false)"
-    },
-    {
      "term": "--strict",
      "description": "process.exit(1) on any errors (default: false)"
+    },
+    {
+     "term": "--profile <name>",
+     "description": "select an Envfile profile"
     },
     {
      "term": "--convention <name>",
@@ -173,6 +381,10 @@
     {
      "term": "--mask [characters]",
      "description": "inject masked values, optionally setting visible characters"
+    },
+    {
+     "term": "--redact",
+     "description": "redact injected values except public keys (Envfile rules take precedence) (default: false)"
     },
     {
      "term": "--no-armor",
@@ -197,10 +409,236 @@
    ],
    "commands": [],
    "hidden": false,
+   "after": "\nExamples:\n\n  ```\n  $ dotenvx run -- npm run dev\n  $ dotenvx run -- flask --app index run\n  $ dotenvx run -- php artisan serve\n  $ dotenvx run -- bin/rails s\n  ```\n\nTry it:\n\n  ```\n  $ echo \"HELLO=World\" > .env\n  $ echo \"console.log('Hello ' + process.env.HELLO)\" > index.js\n\n  $ dotenvx run -f .env -- node index.js\n  [dotenvx] injected env (1) from .env\n  Hello World\n  ```\n  \n",
    "children": []
   },
   {
    "name": "get",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "env",
+     "long": "--env",
+     "short": "-e",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "env"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envKeysFile",
+     "long": "--env-keys-file",
+     "short": "-fk",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": "envKeys"
+    },
+    {
+     "attribute": "overload",
+     "long": "--overload",
+     "short": "-o",
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "strict",
+     "long": "--strict",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": true,
+     "default": false,
+     "parser": null
+    },
+    {
+     "attribute": "profile",
+     "long": "--profile",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "convention",
+     "long": "--convention",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "ignore",
+     "long": "--ignore",
+     "short": null,
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "all",
+     "long": "--all",
+     "short": "-a",
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "includeKey",
+     "long": "--include-key",
+     "short": "-ik",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "excludeKey",
+     "long": "--exclude-key",
+     "short": "-ek",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "mask",
+     "long": "--mask",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "optional",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "prettyPrint",
+     "long": "--pretty-print",
+     "short": "-pp",
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "pp",
+     "long": "--pp",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "format",
+     "long": "--format",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": "json",
+     "parser": null
+    },
+    {
+     "attribute": "armor",
+     "long": "--no-armor",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "native",
+     "long": "--no-native",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "1password",
+     "long": "--no-1password",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "bitwarden",
+     "long": "--no-bitwarden",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx get [KEY] [options]",
    "description": "return a single environment variable",
    "padWidth": 35,
@@ -216,7 +654,7 @@
      "description": "environment variable(s) set as string (example: \"HELLO=World\") (default: [])"
     },
     {
-     "term": "-f, --env-file <path>",
+     "term": "-f, --file <path>",
      "description": "path(s) to your env file(s) (default: [])"
     },
     {
@@ -230,6 +668,10 @@
     {
      "term": "--strict",
      "description": "process.exit(1) on any errors (default: false)"
+    },
+    {
+     "term": "--profile <name>",
+     "description": "select an Envfile profile"
     },
     {
      "term": "--convention <name>",
@@ -290,10 +732,137 @@
    ],
    "commands": [],
    "hidden": false,
+   "after": "",
    "children": []
   },
   {
    "name": "set",
+   "allowExcessArguments": true,
+   "argumentCount": 2,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "profile",
+     "long": "--profile",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envKeysFile",
+     "long": "--env-keys-file",
+     "short": "-fk",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "encrypt",
+     "long": "--encrypt",
+     "short": "-c",
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": true,
+     "default": true,
+     "parser": null
+    },
+    {
+     "attribute": "plain",
+     "long": "--plain",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": true,
+     "default": false,
+     "parser": null
+    },
+    {
+     "attribute": "create",
+     "long": "--no-create",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "armor",
+     "long": "--no-armor",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "native",
+     "long": "--no-native",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "1password",
+     "long": "--no-1password",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "bitwarden",
+     "long": "--no-bitwarden",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx set <KEY> [value] [options]",
    "description": "encrypt a single environment variable",
    "padWidth": 27,
@@ -309,7 +878,11 @@
    ],
    "options": [
     {
-     "term": "-f, --env-file <path>",
+     "term": "--profile <name>",
+     "description": "select an Envfile profile"
+    },
+    {
+     "term": "-f, --file <path>",
      "description": "path(s) to your env file(s) (default: [])"
     },
     {
@@ -337,19 +910,55 @@
      "description": "disable OS secret store features"
     },
     {
+     "term": "--no-1password",
+     "description": "disable 1Password features"
+    },
+    {
+     "term": "--no-bitwarden",
+     "description": "disable Bitwarden features"
+    },
+    {
      "term": "-h, --help",
      "description": "display help for command"
     }
    ],
    "commands": [],
    "hidden": false,
+   "after": "\nExamples:\n\n  ```\n  $ dotenvx set KEY value\n  $ dotenvx set KEY \"value with spaces\"\n  $ dotenvx set KEY -- \"---value with a dash---\"\n  $ dotenvx set KEY -- \"-----BEGIN OPENSSH PRIVATE KEY-----\n                        b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\n                        -----END OPENSSH PRIVATE KEY-----\"\n  ```\n  \n",
    "children": []
   },
   {
    "name": "del",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    }
+   ],
    "usage": "dotenvx del <KEY> [options]",
    "description": "delete a single environment variable",
-   "padWidth": 21,
+   "padWidth": 17,
    "arguments": [
     {
      "term": "KEY",
@@ -358,7 +967,7 @@
    ],
    "options": [
     {
-     "term": "-f, --env-file <path>",
+     "term": "-f, --file <path>",
      "description": "path(s) to your env file(s) (default: [])"
     },
     {
@@ -368,17 +977,170 @@
    ],
    "commands": [],
    "hidden": false,
+   "after": "\nExamples:\n\n  ```\n  $ dotenvx del KEY\n  $ dotenvx del KEY -f .env.production\n  ```\n  \n",
    "children": []
   },
   {
    "name": "encrypt",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "profile",
+     "long": "--profile",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envKeysFile",
+     "long": "--env-keys-file",
+     "short": "-fk",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "key",
+     "long": "--key",
+     "short": "-k",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "excludeKey",
+     "long": "--exclude-key",
+     "short": "-ek",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "stdout",
+     "long": "--stdout",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "token",
+     "long": "--token",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "create",
+     "long": "--no-create",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "armor",
+     "long": "--no-armor",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "native",
+     "long": "--no-native",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "1password",
+     "long": "--no-1password",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "bitwarden",
+     "long": "--no-bitwarden",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx encrypt [options]",
    "description": "encrypt .env file(s)",
    "padWidth": 35,
    "arguments": [],
    "options": [
     {
-     "term": "-f, --env-file <path>",
+     "term": "--profile <name>",
+     "description": "select an Envfile profile"
+    },
+    {
+     "term": "-f, --file <path>",
      "description": "path(s) to your env file(s) (default: [])"
     },
     {
@@ -414,23 +1176,184 @@
      "description": "disable OS secret store features"
     },
     {
+     "term": "--no-1password",
+     "description": "disable 1Password features"
+    },
+    {
+     "term": "--no-bitwarden",
+     "description": "disable Bitwarden features"
+    },
+    {
      "term": "-h, --help",
      "description": "display help for command"
     }
    ],
    "commands": [],
    "hidden": false,
+   "after": "",
    "children": []
   },
   {
    "name": "enc",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "profile",
+     "long": "--profile",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envKeysFile",
+     "long": "--env-keys-file",
+     "short": "-fk",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "key",
+     "long": "--key",
+     "short": "-k",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "excludeKey",
+     "long": "--exclude-key",
+     "short": "-ek",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "stdout",
+     "long": "--stdout",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "token",
+     "long": "--token",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "create",
+     "long": "--no-create",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "armor",
+     "long": "--no-armor",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "native",
+     "long": "--no-native",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "1password",
+     "long": "--no-1password",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "bitwarden",
+     "long": "--no-bitwarden",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx enc [options]",
    "description": "encrypt .env file(s)",
    "padWidth": 35,
    "arguments": [],
    "options": [
     {
-     "term": "-f, --env-file <path>",
+     "term": "--profile <name>",
+     "description": "select an Envfile profile"
+    },
+    {
+     "term": "-f, --file <path>",
      "description": "path(s) to your env file(s) (default: [])"
     },
     {
@@ -466,23 +1389,136 @@
      "description": "disable OS secret store features"
     },
     {
+     "term": "--no-1password",
+     "description": "disable 1Password features"
+    },
+    {
+     "term": "--no-bitwarden",
+     "description": "disable Bitwarden features"
+    },
+    {
      "term": "-h, --help",
      "description": "display help for command"
     }
    ],
    "commands": [],
    "hidden": true,
+   "after": "",
    "children": []
   },
   {
    "name": "decrypt",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envKeysFile",
+     "long": "--env-keys-file",
+     "short": "-fk",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": "envKeys"
+    },
+    {
+     "attribute": "key",
+     "long": "--key",
+     "short": "-k",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "excludeKey",
+     "long": "--exclude-key",
+     "short": "-ek",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "armor",
+     "long": "--no-armor",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "native",
+     "long": "--no-native",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "stdout",
+     "long": "--stdout",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "mask",
+     "long": "--mask",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "optional",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx decrypt [options]",
    "description": "decrypt .env file(s)",
    "padWidth": 35,
    "arguments": [],
    "options": [
     {
-     "term": "-f, --env-file <path>",
+     "term": "-f, --file <path>",
      "description": "path(s) to your env file(s) (default: [])"
     },
     {
@@ -520,17 +1556,122 @@
    ],
    "commands": [],
    "hidden": false,
+   "after": "",
    "children": []
   },
   {
    "name": "dec",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envKeysFile",
+     "long": "--env-keys-file",
+     "short": "-fk",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": "envKeys"
+    },
+    {
+     "attribute": "key",
+     "long": "--key",
+     "short": "-k",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "excludeKey",
+     "long": "--exclude-key",
+     "short": "-ek",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "armor",
+     "long": "--no-armor",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "native",
+     "long": "--no-native",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "stdout",
+     "long": "--stdout",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "mask",
+     "long": "--mask",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "optional",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx dec [options]",
    "description": "decrypt .env file(s)",
    "padWidth": 35,
    "arguments": [],
    "options": [
     {
-     "term": "-f, --env-file <path>",
+     "term": "-f, --file <path>",
      "description": "path(s) to your env file(s) (default: [])"
     },
     {
@@ -568,10 +1709,126 @@
    ],
    "commands": [],
    "hidden": true,
+   "after": "",
    "children": []
   },
   {
    "name": "keypair",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envKeysFile",
+     "long": "--env-keys-file",
+     "short": "-fk",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": "envKeys"
+    },
+    {
+     "attribute": "armor",
+     "long": "--no-armor",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "native",
+     "long": "--no-native",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "1password",
+     "long": "--no-1password",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "bitwarden",
+     "long": "--no-bitwarden",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "prettyPrint",
+     "long": "--pretty-print",
+     "short": "-pp",
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "pp",
+     "long": "--pp",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "format",
+     "long": "--format",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": "json",
+     "parser": null
+    }
+   ],
    "usage": "dotenvx keypair [KEY] [options]",
    "description": "print public/private keys for .env file(s)",
    "padWidth": 27,
@@ -583,7 +1840,7 @@
    ],
    "options": [
     {
-     "term": "-f, --env-file <path>",
+     "term": "-f, --file <path>",
      "description": "path(s) to your env file(s)"
     },
     {
@@ -597,6 +1854,14 @@
     {
      "term": "--no-native",
      "description": "disable OS secret store features"
+    },
+    {
+     "term": "--no-1password",
+     "description": "disable 1Password features"
+    },
+    {
+     "term": "--no-bitwarden",
+     "description": "disable Bitwarden features"
     },
     {
      "term": "-pp, --pretty-print",
@@ -617,10 +1882,60 @@
    ],
    "commands": [],
    "hidden": false,
+   "after": "",
    "children": []
   },
   {
    "name": "ls",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": true,
+     "default": ".env*",
+     "parser": null
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": true,
+     "default": ".env*",
+     "parser": null
+    },
+    {
+     "attribute": "excludeEnvFile",
+     "long": "--exclude-env-file",
+     "short": "-ef",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "json",
+     "long": "--json",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx ls [options] [directory]",
    "description": "print all .env files in a tree structure",
    "padWidth": 45,
@@ -632,7 +1947,7 @@
    ],
    "options": [
     {
-     "term": "-f, --env-file <filenames...>",
+     "term": "-f, --file <filenames...>",
      "description": "path(s) to your env file(s) (default: \".env*\")"
     },
     {
@@ -649,13 +1964,240 @@
     }
    ],
    "commands": [],
-   "hidden": false,
+   "hidden": true,
+   "after": "",
    "children": []
   },
   {
-   "name": "validate",
-   "usage": "dotenvx validate [options]",
-   "description": "validate .env file(s) against .env.example",
+   "name": "spec",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "stdout",
+     "long": "--stdout",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "overwrite",
+     "long": "--overwrite",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
+   "usage": "dotenvx spec [options]",
+   "description": "create an Envfile",
+   "padWidth": 17,
+   "arguments": [],
+   "options": [
+    {
+     "term": "--stdout",
+     "description": "send to stdout"
+    },
+    {
+     "term": "--overwrite",
+     "description": "replace existing Envfile, including custom rules, comments, and missing-file blocks"
+    },
+    {
+     "term": "-f, --file <path>",
+     "description": "file to read variable names from"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": true,
+   "after": "",
+   "children": []
+  },
+  {
+   "name": "check",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "env",
+     "long": "--env",
+     "short": "-e",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "env"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [],
+     "parser": "envFile"
+    },
+    {
+     "attribute": "envKeysFile",
+     "long": "--env-keys-file",
+     "short": "-fk",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": "envKeys"
+    },
+    {
+     "attribute": "overload",
+     "long": "--overload",
+     "short": "-o",
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "profile",
+     "long": "--profile",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "convention",
+     "long": "--convention",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "ignore",
+     "long": "--ignore",
+     "short": null,
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "token",
+     "long": "--token",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "armor",
+     "long": "--no-armor",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "native",
+     "long": "--no-native",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "1password",
+     "long": "--no-1password",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "bitwarden",
+     "long": "--no-bitwarden",
+     "short": null,
+     "negate": true,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
+   "usage": "dotenvx check [options]",
+   "description": "check Envfile rules against .env file(s)",
    "padWidth": 27,
    "arguments": [],
    "options": [
@@ -664,7 +2206,7 @@
      "description": "environment variable(s) set as string (example: \"HELLO=World\") (default: [])"
     },
     {
-     "term": "-f, --env-file <path>",
+     "term": "-f, --file <path>",
      "description": "path(s) to your env file(s) (default: [])"
     },
     {
@@ -674,6 +2216,10 @@
     {
      "term": "-o, --overload",
      "description": "override existing env variables (by default, existing env vars take precedence over .env files)"
+    },
+    {
+     "term": "--profile <name>",
+     "description": "select an Envfile profile"
     },
     {
      "term": "--convention <name>",
@@ -709,13 +2255,32 @@
     }
    ],
    "commands": [],
-   "hidden": false,
+   "hidden": true,
+   "after": "",
    "children": []
   },
   {
    "name": "gitignore",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "pattern",
+     "long": "--pattern",
+     "short": null,
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": true,
+     "default": [
+      ".env*"
+     ],
+     "parser": null
+    }
+   ],
    "usage": "dotenvx gitignore [options]",
-   "description": "append to .gitignore",
+   "description": "deprecated. use [dotenvx protect]",
    "padWidth": 23,
    "arguments": [],
    "options": [
@@ -729,14 +2294,42 @@
     }
    ],
    "commands": [],
-   "hidden": false,
+   "hidden": true,
+   "after": "\nExamples:\n\n  ```\n  $ dotenvx gitignore\n  $ dotenvx gitignore --pattern .env.keys\n  ```\n\n  Try it:\n\n  ```\n  $ dotenvx gitignore\n  ▣ ignored .env* (.gitignore)\n  ```\n  \n",
    "children": []
   },
   {
    "name": "genexample",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "envFile",
+     "long": "--file",
+     "short": "-f",
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": true,
+     "default": ".env",
+     "parser": null
+    },
+    {
+     "attribute": "envFile",
+     "long": "--env-file",
+     "short": null,
+     "negate": false,
+     "variadic": true,
+     "takes": "required",
+     "hasDefault": true,
+     "default": ".env",
+     "parser": null
+    }
+   ],
    "usage": "dotenvx genexample [options] [directory]",
    "description": "generate .env.example",
-   "padWidth": 25,
+   "padWidth": 21,
    "arguments": [
     {
      "term": "directory",
@@ -745,7 +2338,7 @@
    ],
    "options": [
     {
-     "term": "-f, --env-file <paths...>",
+     "term": "-f, --file <paths...>",
      "description": "path(s) to your env file(s) (default: \".env\")"
     },
     {
@@ -754,13 +2347,41 @@
     }
    ],
    "commands": [],
-   "hidden": false,
+   "hidden": true,
+   "after": "",
    "children": []
   },
   {
    "name": "precommit",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "install",
+     "long": "--install",
+     "short": "-i",
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "uninstall",
+     "long": "--uninstall",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx precommit [options] [directory]",
-   "description": "prevent committing .env files to code",
+   "description": "deprecated. use [dotenvx protect]",
    "padWidth": 13,
    "arguments": [
     {
@@ -771,7 +2392,11 @@
    "options": [
     {
      "term": "-i, --install",
-     "description": "install to .git/hooks/pre-commit"
+     "description": "install a pre-commit hook"
+    },
+    {
+     "term": "--uninstall",
+     "description": "remove the dotenvx pre-commit hook"
     },
     {
      "term": "-h, --help",
@@ -779,13 +2404,82 @@
     }
    ],
    "commands": [],
-   "hidden": false,
+   "hidden": true,
+   "after": "\nExamples:\n\n  ```\n  $ dotenvx precommit\n  $ dotenvx precommit --install\n  ```\n\nTry it:\n\n  ```\n  $ dotenvx precommit\n  [dotenvx@0.45.0][precommit] success\n  ```\n  \n",
+   "children": []
+  },
+  {
+   "name": "protect",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "docker",
+     "long": "--docker",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "gitFile",
+     "long": "--git-file",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "gitProcess",
+     "long": "--git-process",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "none",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
+   "usage": "dotenvx protect [options] [directory]",
+   "description": "protect secrets and private keys from code commits",
+   "padWidth": 10,
+   "arguments": [
+    {
+     "term": "directory",
+     "description": "directory to check with --docker (default: \".\")"
+    }
+   ],
+   "options": [
+    {
+     "term": "--docker",
+     "description": "check env files are encrypted or dockerignored"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": true,
+   "after": "",
    "children": []
   },
   {
    "name": "prebuild",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [],
    "usage": "dotenvx prebuild [options] [directory]",
-   "description": "prevent including .env files in docker",
+   "description": "deprecated. use [dotenvx protect --docker]",
    "padWidth": 10,
    "arguments": [
     {
@@ -800,11 +2494,16 @@
     }
    ],
    "commands": [],
-   "hidden": false,
+   "hidden": true,
+   "after": "\nDeprecated. Use [dotenvx protect --docker].\n\nExamples:\n\n  ```\n  $ dotenvx protect --docker\n  ```\n\nTry it:\n\n  ```\n  $ dotenvx protect --docker apps/backend\n  ```\n  \n",
    "children": []
   },
   {
    "name": "doctor",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [],
    "usage": "dotenvx doctor [options] [directory]",
    "description": "scan for dotenv loaders",
    "padWidth": 10,
@@ -822,10 +2521,78 @@
    ],
    "commands": [],
    "hidden": true,
+   "after": "",
+   "children": []
+  },
+  {
+   "name": "feedback",
+   "allowExcessArguments": false,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "hostname",
+     "long": "--hostname",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
+   "usage": "dotenvx feedback [options] [message]",
+   "description": "send feedback to dotenvx",
+   "padWidth": 21,
+   "arguments": [
+    {
+     "term": "message",
+     "description": "feedback message"
+    }
+   ],
+   "options": [
+    {
+     "term": "--hostname <hostname>",
+     "description": "set API hostname"
+    },
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": true,
+   "after": "",
+   "children": []
+  },
+  {
+   "name": "hidden",
+   "allowExcessArguments": false,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [],
+   "usage": "dotenvx hidden [options]",
+   "description": "hidden features",
+   "padWidth": 10,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": false,
+   "after": "\nHidden Commands:\n  update                 update dotenvx\n  feedback [message]     send feedback to dotenvx\n  protect                protect secrets and private keys from code commits\n  ls [directory]         print all .env files in a tree structure\n  genexample [directory] generate .env.example\n  native                 ⌥ move private keys in/out of your OS secret store\n  1password              □ move private keys in/out of 1Password\n  bitwarden              □ move private keys in/out of Bitwarden\n  armor                  ⛨ move private keys in/out of Dotenvx Armor [www.dotenvx.com/armor]\n  curl                   ⛨ call authenticated api Dotenvx Armor [www.dotenvx.com/armor]\n\nBeta Commands:\n  spec                   create an Envfile\n  check                  check Envfile rules against .env file(s)\n  primitives profile [options]               resolve an Envfile profile to comma-separated filenames\n  primitives redact [options] [text]         replace secret strings in text with [REDACTED]\n  primitives policy [options]                print the Envfile policy for selected files as JSON\n  primitives check [options]                 check selected env files against Envfile and print redacted JSON\n  primitives keypair [options] [privateKey]  generate or restore a keypair and print JSON\n  primitives derive [options] [privateKey]   derive and print a public key from a private key\n\nDeprecated Commands:\n  gitignore              deprecated. use [dotenvx protect]\n  precommit [directory]  deprecated. use [dotenvx protect]\n  prebuild [directory]   deprecated. use [dotenvx protect --docker]\n\nRun directly: dotenvx <command>\n",
    "children": []
   },
   {
    "name": "update",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [],
    "usage": "dotenvx update [options]",
    "description": "update dotenvx",
    "padWidth": 10,
@@ -837,11 +2604,28 @@
     }
    ],
    "commands": [],
-   "hidden": false,
+   "hidden": true,
+   "after": "",
    "children": []
   },
   {
    "name": "login",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "hostname",
+     "long": "--hostname",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx login [options]",
    "description": "log in to move keys off-device, share with your team, and audit access",
    "padWidth": 21,
@@ -858,10 +2642,27 @@
    ],
    "commands": [],
    "hidden": true,
+   "after": "",
    "children": []
   },
   {
    "name": "logout",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "hostname",
+     "long": "--hostname",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx logout [options]",
    "description": "log out of connected security features",
    "padWidth": 21,
@@ -878,10 +2679,49 @@
    ],
    "commands": [],
    "hidden": true,
+   "after": "",
    "children": []
   },
   {
    "name": "curl",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [
+    {
+     "attribute": "request",
+     "long": "--request",
+     "short": "-X",
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "data",
+     "long": "--data",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
+     "attribute": "token",
+     "long": "--token",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    }
+   ],
    "usage": "dotenvx curl [options] [url]",
    "description": "Dotenvx Armor API",
    "padWidth": 22,
@@ -911,10 +2751,15 @@
    ],
    "commands": [],
    "hidden": true,
+   "after": "\nEndpoints:\n\n  GET    /api/account\n  GET    /api/armor/keypairs\n  GET    /api/armor/keypairs/:public_key\n  POST   /api/armor/keypairs/:public_key/name\n  POST   /api/armor/keypairs/:public_key/members/:member_id/grant\n  POST   /api/armor/keypairs/:public_key/members/:member_id/revoke\n  POST   /api/armor/keypairs/:public_key/settings/guard\n  POST   /api/armor/keypairs/:public_key/settings/enclave\n  GET    /api/teams\n  GET    /api/teams/:team\n  GET    /api/teams/:team/members\n  POST   /api/teams/:team/members/:member_id/keypairs/:public_key/grant\n  POST   /api/teams/:team/members/:member_id/keypairs/:public_key/revoke\n  GET    /api/teams/:team/invitations\n  POST   /api/teams/:team/invitations\n  POST   /api/teams/:team/invitations/:id/cancel\n  GET    /api/join_requests\n  POST   /api/join_requests\n  POST   /api/join_requests/:id/cancel\n  GET    /api/teams/:team/join_requests\n  POST   /api/teams/:team/join_requests/:id/accept\n  POST   /api/teams/:team/join_requests/:id/decline\n  POST   /api/armor/:team/settings/join_requests\n  GET    /api/logs?team=:team\n\nExamples:\n\n  dotenvx curl \"https://armor.dotenvx.com/api/account\"\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs\"\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs?page=1&per=100\"\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs?sort=name_asc\"\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs?sort=public_key_desc\"\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs/PUBLIC_KEY\"\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs/PUBLIC_KEY/name\" --data '{\"name\":\"Production\"}'\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs/PUBLIC_KEY/name\" --data '{\"name\":null}'\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs/PUBLIC_KEY/members/123/grant\" --request POST\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs/PUBLIC_KEY/members/123/revoke\" --request POST\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs/PUBLIC_KEY/settings/guard\" --data '{\"value\":true}'\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs/PUBLIC_KEY/settings/guard\" --data '{\"value\":false}'\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs/PUBLIC_KEY/settings/enclave\" --data '{\"value\":true}'\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/keypairs/PUBLIC_KEY/settings/enclave\" --data '{\"value\":false}'\n  dotenvx curl \"https://armor.dotenvx.com/api/teams\"\n  dotenvx curl \"https://armor.dotenvx.com/api/teams/TEAM\"\n  dotenvx curl \"https://armor.dotenvx.com/api/teams/TEAM/members\"\n  dotenvx curl \"https://armor.dotenvx.com/api/teams/TEAM/members/123/keypairs/PUBLIC_KEY/grant\" --request POST\n  dotenvx curl \"https://armor.dotenvx.com/api/teams/TEAM/members/123/keypairs/PUBLIC_KEY/revoke\" --request POST\n  dotenvx curl \"https://armor.dotenvx.com/api/teams/TEAM/invitations\"\n  dotenvx curl \"https://armor.dotenvx.com/api/teams/TEAM/invitations\" --data '{\"email\":\"person@example.com\",\"role\":\"member\"}'\n  dotenvx curl \"https://armor.dotenvx.com/api/teams/TEAM/invitations/123/cancel\" --request POST\n  dotenvx curl \"https://armor.dotenvx.com/api/join_requests\"\n  dotenvx curl \"https://armor.dotenvx.com/api/join_requests\" --data '{\"team\":\"TEAM\"}'\n  dotenvx curl \"https://armor.dotenvx.com/api/join_requests/123/cancel\" --request POST\n  dotenvx curl \"https://armor.dotenvx.com/api/teams/TEAM/join_requests\"\n  dotenvx curl \"https://armor.dotenvx.com/api/teams/TEAM/join_requests/123/accept\" --data '{\"role\":\"member\"}'\n  dotenvx curl \"https://armor.dotenvx.com/api/teams/TEAM/join_requests/123/decline\" --request POST\n  dotenvx curl \"https://armor.dotenvx.com/api/armor/TEAM/settings/join_requests\" --data '{\"value\":true}'\n  dotenvx curl \"https://armor.dotenvx.com/api/logs?team=TEAM\"\n  dotenvx curl \"https://armor.dotenvx.com/api/logs?team=TEAM&action=keypair/access&actor=USERNAME&result=success&resource=keypair/KEYPAIR_ID&page=1&per=100\"\n  dotenvx curl \"https://armor.dotenvx.com/api/logs?team=TEAM&actor=missing&resource=missing\"\n  \n",
    "children": []
   },
   {
    "name": "help",
+   "allowExcessArguments": true,
+   "argumentCount": 1,
+   "lastArgumentVariadic": false,
+   "registrations": [],
    "usage": "dotenvx help [options] [command]",
    "description": "display help for command",
    "padWidth": 10,
@@ -927,12 +2772,607 @@
    ],
    "commands": [],
    "hidden": false,
+   "after": "",
    "children": []
   },
   {
+   "name": "1password",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [],
+   "usage": "dotenvx 1password [options] [command]",
+   "description": "move private keys in/out of 1Password",
+   "padWidth": 14,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [
+    {
+     "term": "up [options]",
+     "description": "move key from .env.keys into 1Password",
+     "name": "up"
+    },
+    {
+     "term": "down [options]",
+     "description": "move key from 1Password to .env.keys",
+     "name": "down"
+    },
+    {
+     "term": "push [options]",
+     "description": "copy key from .env.keys into 1Password",
+     "name": "push"
+    },
+    {
+     "term": "pull [options]",
+     "description": "copy key from 1Password into .env.keys",
+     "name": "pull"
+    }
+   ],
+   "hidden": true,
+   "after": "",
+   "children": [
+    {
+     "name": "up",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx 1password up [options]",
+     "description": "move key from .env.keys into 1Password",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "down",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx 1password down [options]",
+     "description": "move key from 1Password to .env.keys",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "push",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx 1password push [options]",
+     "description": "copy key from .env.keys into 1Password",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "pull",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx 1password pull [options]",
+     "description": "copy key from 1Password into .env.keys",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    }
+   ]
+  },
+  {
+   "name": "bitwarden",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [],
+   "usage": "dotenvx bitwarden [options] [command]",
+   "description": "move private keys in/out of Bitwarden",
+   "padWidth": 14,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [
+    {
+     "term": "up [options]",
+     "description": "move key from .env.keys into Bitwarden",
+     "name": "up"
+    },
+    {
+     "term": "down [options]",
+     "description": "move key from Bitwarden to .env.keys",
+     "name": "down"
+    },
+    {
+     "term": "push [options]",
+     "description": "copy key from .env.keys into Bitwarden",
+     "name": "push"
+    },
+    {
+     "term": "pull [options]",
+     "description": "copy key from Bitwarden into .env.keys",
+     "name": "pull"
+    }
+   ],
+   "hidden": true,
+   "after": "",
+   "children": [
+    {
+     "name": "up",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx bitwarden up [options]",
+     "description": "move key from .env.keys into Bitwarden",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "down",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx bitwarden down [options]",
+     "description": "move key from Bitwarden to .env.keys",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "push",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx bitwarden push [options]",
+     "description": "copy key from .env.keys into Bitwarden",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "pull",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx bitwarden pull [options]",
+     "description": "copy key from Bitwarden into .env.keys",
+     "padWidth": 27,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --file <path>",
+       "description": "path to your env file"
+      },
+      {
+       "term": "-fk, --env-keys-file <path>",
+       "description": "path to your .env.keys file (default: \".env.keys\")"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    }
+   ]
+  },
+  {
    "name": "native",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [],
    "usage": "dotenvx native [options] [command]",
-   "description": "move private keys into your OS secret store",
+   "description": "move private keys in/out of your OS secret store",
    "padWidth": 14,
    "arguments": [],
    "options": [
@@ -964,16 +3404,55 @@
     }
    ],
    "hidden": true,
+   "after": "",
    "children": [
     {
      "name": "up",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
      "usage": "dotenvx native up [options]",
      "description": "store key in OS secret store",
      "padWidth": 27,
      "arguments": [],
      "options": [
       {
-       "term": "-f, --env-file <path>",
+       "term": "-f, --file <path>",
        "description": "path to your env file"
       },
       {
@@ -987,17 +3466,56 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "down",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
      "usage": "dotenvx native down [options]",
      "description": "move key from OS secret store to .env.keys",
      "padWidth": 27,
      "arguments": [],
      "options": [
       {
-       "term": "-f, --env-file <path>",
+       "term": "-f, --file <path>",
        "description": "path to your env file"
       },
       {
@@ -1011,17 +3529,56 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "push",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
      "usage": "dotenvx native push [options]",
      "description": "push key to OS secret store from .env.keys",
      "padWidth": 27,
      "arguments": [],
      "options": [
       {
-       "term": "-f, --env-file <path>",
+       "term": "-f, --file <path>",
        "description": "path to your env file"
       },
       {
@@ -1035,17 +3592,56 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "pull",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envKeysFile",
+       "long": "--env-keys-file",
+       "short": "-fk",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env.keys",
+       "parser": null
+      }
+     ],
      "usage": "dotenvx native pull [options]",
      "description": "pull key from OS secret store into .env.keys",
      "padWidth": 27,
      "arguments": [],
      "options": [
       {
-       "term": "-f, --env-file <path>",
+       "term": "-f, --file <path>",
        "description": "path to your env file"
       },
       {
@@ -1059,90 +3655,19 @@
      ],
      "commands": [],
      "hidden": false,
-     "children": []
-    }
-   ]
-  },
-  {
-   "name": "lock",
-   "usage": "dotenvx lock [options] [command]",
-   "description": "lock private keys with a local passphrase",
-   "padWidth": 14,
-   "arguments": [],
-   "options": [
-    {
-     "term": "-h, --help",
-     "description": "display help for command"
-    }
-   ],
-   "commands": [
-    {
-     "term": "up [options]",
-     "description": "lock key in .env.keys",
-     "name": "up"
-    },
-    {
-     "term": "down [options]",
-     "description": "unlock key in .env.keys",
-     "name": "down"
-    }
-   ],
-   "hidden": true,
-   "children": [
-    {
-     "name": "up",
-     "usage": "dotenvx lock up [options]",
-     "description": "lock key in .env.keys",
-     "padWidth": 27,
-     "arguments": [],
-     "options": [
-      {
-       "term": "-f, --env-file <path>",
-       "description": "path to your env file"
-      },
-      {
-       "term": "-fk, --env-keys-file <path>",
-       "description": "path to your .env.keys file (default: \".env.keys\")"
-      },
-      {
-       "term": "-h, --help",
-       "description": "display help for command"
-      }
-     ],
-     "commands": [],
-     "hidden": false,
-     "children": []
-    },
-    {
-     "name": "down",
-     "usage": "dotenvx lock down [options]",
-     "description": "unlock key in .env.keys",
-     "padWidth": 27,
-     "arguments": [],
-     "options": [
-      {
-       "term": "-f, --env-file <path>",
-       "description": "path to your env file"
-      },
-      {
-       "term": "-fk, --env-keys-file <path>",
-       "description": "path to your .env.keys file (default: \".env.keys\")"
-      },
-      {
-       "term": "-h, --help",
-       "description": "display help for command"
-      }
-     ],
-     "commands": [],
-     "hidden": false,
+     "after": "",
      "children": []
     }
    ]
   },
   {
    "name": "armor",
+   "allowExcessArguments": true,
+   "argumentCount": 2,
+   "lastArgumentVariadic": true,
+   "registrations": [],
    "usage": "dotenvx armor [options] [command] [command] [args...]",
-   "description": "move private keys into Dotenvx Armor [www.dotenvx.com/armor]",
+   "description": "move private keys in/out of Dotenvx Armor [www.dotenvx.com/armor]",
    "padWidth": 16,
    "arguments": [
     {
@@ -1173,7 +3698,7 @@
     },
     {
      "term": "push [options]",
-     "description": "push armored key (from .env.keys)",
+     "description": "push armored key",
      "name": "push"
     },
     {
@@ -1213,16 +3738,66 @@
     }
    ],
    "hidden": true,
+   "after": "",
    "children": [
     {
      "name": "up",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "token",
+       "long": "--token",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "team",
+       "long": "--team",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
      "usage": "dotenvx armor up [options]",
      "description": "armor key",
-     "padWidth": 21,
+     "padWidth": 17,
      "arguments": [],
      "options": [
       {
-       "term": "-f, --env-file <path>",
+       "term": "-f, --file <path>",
        "description": "path to your env file"
       },
       {
@@ -1240,17 +3815,67 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "down",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "token",
+       "long": "--token",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "team",
+       "long": "--team",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
      "usage": "dotenvx armor down [options]",
      "description": "dearmor key",
-     "padWidth": 21,
+     "padWidth": 17,
      "arguments": [],
      "options": [
       {
-       "term": "-f, --env-file <path>",
+       "term": "-f, --file <path>",
        "description": "path to your env file"
       },
       {
@@ -1268,17 +3893,67 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "push",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "token",
+       "long": "--token",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "team",
+       "long": "--team",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
      "usage": "dotenvx armor push [options]",
-     "description": "push armored key (from .env.keys)",
-     "padWidth": 21,
+     "description": "push armored key",
+     "padWidth": 17,
      "arguments": [],
      "options": [
       {
-       "term": "-f, --env-file <path>",
+       "term": "-f, --file <path>",
        "description": "path to your env file"
       },
       {
@@ -1296,17 +3971,67 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "pull",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "token",
+       "long": "--token",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "team",
+       "long": "--team",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
      "usage": "dotenvx armor pull [options]",
      "description": "pull armored key (into .env.keys)",
-     "padWidth": 21,
+     "padWidth": 17,
      "arguments": [],
      "options": [
       {
-       "term": "-f, --env-file <path>",
+       "term": "-f, --file <path>",
        "description": "path to your env file"
       },
       {
@@ -1324,17 +4049,45 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "open",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
      "usage": "dotenvx armor open [options]",
      "description": "open armored key (in browser)",
-     "padWidth": 21,
+     "padWidth": 17,
      "arguments": [],
      "options": [
       {
-       "term": "-f, --env-file <path>",
+       "term": "-f, --file <path>",
        "description": "path to your env file"
       },
       {
@@ -1344,17 +4097,56 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "move",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "token",
+       "long": "--token",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
      "usage": "dotenvx armor move [options]",
      "description": "move armored key (to other team)",
-     "padWidth": 21,
+     "padWidth": 17,
      "arguments": [],
      "options": [
       {
-       "term": "-f, --env-file <path>",
+       "term": "-f, --file <path>",
        "description": "path to your env file"
       },
       {
@@ -1368,10 +4160,27 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "login",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "hostname",
+       "long": "--hostname",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
      "usage": "dotenvx armor login [options]",
      "description": "log in to Dotenvx Armor",
      "padWidth": 21,
@@ -1388,10 +4197,27 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "logout",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "hostname",
+       "long": "--hostname",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
      "usage": "dotenvx armor logout [options]",
      "description": "log out of Dotenvx Armor",
      "padWidth": 21,
@@ -1408,10 +4234,15 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "status",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [],
      "usage": "dotenvx armor status [options]",
      "description": "print armor status",
      "padWidth": 10,
@@ -1424,10 +4255,15 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "settings",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [],
      "usage": "dotenvx armor settings [options] [command]",
      "description": "settings",
      "padWidth": 16,
@@ -1476,9 +4312,14 @@
       }
      ],
      "hidden": false,
+     "after": "",
      "children": [
       {
        "name": "username",
+       "allowExcessArguments": true,
+       "argumentCount": 0,
+       "lastArgumentVariadic": false,
+       "registrations": [],
        "usage": "dotenvx armor settings username [options]",
        "description": "print your username",
        "padWidth": 10,
@@ -1491,10 +4332,27 @@
        ],
        "commands": [],
        "hidden": false,
+       "after": "",
        "children": []
       },
       {
        "name": "token",
+       "allowExcessArguments": true,
+       "argumentCount": 0,
+       "lastArgumentVariadic": false,
+       "registrations": [
+        {
+         "attribute": "unmask",
+         "long": "--unmask",
+         "short": null,
+         "negate": false,
+         "variadic": false,
+         "takes": "none",
+         "hasDefault": false,
+         "default": null,
+         "parser": null
+        }
+       ],
        "usage": "dotenvx armor settings token [options]",
        "description": "print your access token (--unmask)",
        "padWidth": 10,
@@ -1511,10 +4369,27 @@
        ],
        "commands": [],
        "hidden": false,
+       "after": "",
        "children": []
       },
       {
        "name": "device",
+       "allowExcessArguments": true,
+       "argumentCount": 0,
+       "lastArgumentVariadic": false,
+       "registrations": [
+        {
+         "attribute": "unmask",
+         "long": "--unmask",
+         "short": null,
+         "negate": false,
+         "variadic": false,
+         "takes": "none",
+         "hasDefault": false,
+         "default": null,
+         "parser": null
+        }
+       ],
        "usage": "dotenvx armor settings device [options]",
        "description": "print your device pubkey (--unmask)",
        "padWidth": 10,
@@ -1531,10 +4406,15 @@
        ],
        "commands": [],
        "hidden": false,
+       "after": "",
        "children": []
       },
       {
        "name": "hostname",
+       "allowExcessArguments": true,
+       "argumentCount": 0,
+       "lastArgumentVariadic": false,
+       "registrations": [],
        "usage": "dotenvx armor settings hostname [options]",
        "description": "print hostname",
        "padWidth": 10,
@@ -1547,10 +4427,15 @@
        ],
        "commands": [],
        "hidden": false,
+       "after": "",
        "children": []
       },
       {
        "name": "path",
+       "allowExcessArguments": true,
+       "argumentCount": 0,
+       "lastArgumentVariadic": false,
+       "registrations": [],
        "usage": "dotenvx armor settings path [options]",
        "description": "print path to settings file",
        "padWidth": 10,
@@ -1563,10 +4448,15 @@
        ],
        "commands": [],
        "hidden": false,
+       "after": "",
        "children": []
       },
       {
        "name": "on",
+       "allowExcessArguments": true,
+       "argumentCount": 0,
+       "lastArgumentVariadic": false,
+       "registrations": [],
        "usage": "dotenvx armor settings on [options]",
        "description": "turn armor on",
        "padWidth": 10,
@@ -1579,10 +4469,15 @@
        ],
        "commands": [],
        "hidden": false,
+       "after": "",
        "children": []
       },
       {
        "name": "off",
+       "allowExcessArguments": true,
+       "argumentCount": 0,
+       "lastArgumentVariadic": false,
+       "registrations": [],
        "usage": "dotenvx armor settings off [options]",
        "description": "turn armor off",
        "padWidth": 10,
@@ -1595,6 +4490,7 @@
        ],
        "commands": [],
        "hidden": false,
+       "after": "",
        "children": []
       }
      ]
@@ -1602,7 +4498,331 @@
    ]
   },
   {
+   "name": "primitives",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [],
+   "usage": "dotenvx primitives [options] [command]",
+   "description": "standalone primitive operations",
+   "padWidth": 30,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [
+    {
+     "term": "profile [options]",
+     "description": "resolve an Envfile profile to comma-separated filenames",
+     "name": "profile"
+    },
+    {
+     "term": "redact [options] [text]",
+     "description": "replace secret strings in text with [REDACTED]",
+     "name": "redact"
+    },
+    {
+     "term": "policy [options]",
+     "description": "print the Envfile policy for selected files as JSON",
+     "name": "policy"
+    },
+    {
+     "term": "check [options]",
+     "description": "check selected env files against Envfile and print redacted JSON",
+     "name": "check"
+    },
+    {
+     "term": "keypair [options] [privateKey]",
+     "description": "generate or restore a keypair and print JSON",
+     "name": "keypair"
+    },
+    {
+     "term": "derive [options] [privateKey]",
+     "description": "derive and print a public key from a private key",
+     "name": "derive"
+    }
+   ],
+   "hidden": true,
+   "after": "",
+   "children": [
+    {
+     "name": "profile",
+     "allowExcessArguments": false,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "profile",
+       "long": "--profile",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "file",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": "envKeys"
+      }
+     ],
+     "usage": "dotenvx primitives profile [options]",
+     "description": "resolve an Envfile profile to comma-separated filenames",
+     "padWidth": 18,
+     "arguments": [],
+     "options": [
+      {
+       "term": "--profile <name>",
+       "description": "explicit profile name"
+      },
+      {
+       "term": "-f, --file <paths>",
+       "description": "explicit comma-separated files, overriding profile selection"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "redact",
+     "allowExcessArguments": false,
+     "argumentCount": 1,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "secret",
+       "long": "--secret",
+       "short": "-s",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": "env"
+      },
+      {
+       "attribute": "stdin",
+       "long": "--stdin",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "none",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx primitives redact [options] [text]",
+     "description": "replace secret strings in text with [REDACTED]",
+     "padWidth": 20,
+     "arguments": [
+      {
+       "term": "text",
+       "description": "text to redact"
+      }
+     ],
+     "options": [
+      {
+       "term": "-s, --secret <value>",
+       "description": "literal secret to redact (repeat for multiple secrets)"
+      },
+      {
+       "term": "--stdin",
+       "description": "read text from stdin"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "policy",
+     "allowExcessArguments": false,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "file",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": "envKeys"
+      }
+     ],
+     "usage": "dotenvx primitives policy [options]",
+     "description": "print the Envfile policy for selected files as JSON",
+     "padWidth": 18,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --file <paths>",
+       "description": "comma-separated env files, first file wins (default: .env)"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "check",
+     "allowExcessArguments": false,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "file",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": "envKeys"
+      }
+     ],
+     "usage": "dotenvx primitives check [options]",
+     "description": "check selected env files against Envfile and print redacted JSON",
+     "padWidth": 18,
+     "arguments": [],
+     "options": [
+      {
+       "term": "-f, --file <paths>",
+       "description": "comma-separated env files, first file wins (default: .env)"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "keypair",
+     "allowExcessArguments": false,
+     "argumentCount": 1,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "stdin",
+       "long": "--stdin",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "none",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx primitives keypair [options] [privateKey]",
+     "description": "generate or restore a keypair and print JSON",
+     "padWidth": 10,
+     "arguments": [
+      {
+       "term": "privateKey",
+       "description": "hex-encoded private key to restore"
+      }
+     ],
+     "options": [
+      {
+       "term": "--stdin",
+       "description": "read the private key from stdin"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "derive",
+     "allowExcessArguments": false,
+     "argumentCount": 1,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "stdin",
+       "long": "--stdin",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "none",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx primitives derive [options] [privateKey]",
+     "description": "derive and print a public key from a private key",
+     "padWidth": 10,
+     "arguments": [
+      {
+       "term": "privateKey",
+       "description": "hex-encoded private key"
+      }
+     ],
+     "options": [
+      {
+       "term": "--stdin",
+       "description": "read the private key from stdin"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    }
+   ]
+  },
+  {
    "name": "ext",
+   "allowExcessArguments": true,
+   "argumentCount": 2,
+   "lastArgumentVariadic": true,
+   "registrations": [],
    "usage": "dotenvx ext [options] [command] [command] [args...]",
    "description": "🔌 extensions",
    "padWidth": 32,
@@ -1640,7 +4860,7 @@
     },
     {
      "term": "prebuild [directory]",
-     "description": "prevent including .env files in docker",
+     "description": "deprecated. use [dotenvx protect --docker]",
      "name": "prebuild"
     },
     {
@@ -1655,9 +4875,59 @@
     }
    ],
    "hidden": false,
+   "after": "",
    "children": [
     {
      "name": "ls",
+     "allowExcessArguments": true,
+     "argumentCount": 1,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": true,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env*",
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": true,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env*",
+       "parser": null
+      },
+      {
+       "attribute": "excludeEnvFile",
+       "long": "--exclude-env-file",
+       "short": "-ef",
+       "negate": false,
+       "variadic": true,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "json",
+       "long": "--json",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "none",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
      "usage": "dotenvx ext ls [options] [directory]",
      "description": "print all .env files in a tree structure",
      "padWidth": 45,
@@ -1669,7 +4939,7 @@
      ],
      "options": [
       {
-       "term": "-f, --env-file <filenames...>",
+       "term": "-f, --file <filenames...>",
        "description": "path(s) to your env file(s) (default: \".env*\")"
       },
       {
@@ -1687,13 +4957,41 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "genexample",
+     "allowExcessArguments": true,
+     "argumentCount": 1,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "envFile",
+       "long": "--file",
+       "short": "-f",
+       "negate": false,
+       "variadic": true,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env",
+       "parser": null
+      },
+      {
+       "attribute": "envFile",
+       "long": "--env-file",
+       "short": null,
+       "negate": false,
+       "variadic": true,
+       "takes": "required",
+       "hasDefault": true,
+       "default": ".env",
+       "parser": null
+      }
+     ],
      "usage": "dotenvx ext genexample [options] [directory]",
      "description": "generate .env.example",
-     "padWidth": 25,
+     "padWidth": 21,
      "arguments": [
       {
        "term": "directory",
@@ -1702,7 +5000,7 @@
      ],
      "options": [
       {
-       "term": "-f, --env-file <paths...>",
+       "term": "-f, --file <paths...>",
        "description": "path(s) to your env file(s) (default: \".env\")"
       },
       {
@@ -1712,10 +5010,29 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     },
     {
      "name": "gitignore",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "pattern",
+       "long": "--pattern",
+       "short": null,
+       "negate": false,
+       "variadic": true,
+       "takes": "required",
+       "hasDefault": true,
+       "default": [
+        ".env*"
+       ],
+       "parser": null
+      }
+     ],
      "usage": "dotenvx ext gitignore [options]",
      "description": "append to .gitignore",
      "padWidth": 23,
@@ -1732,12 +5049,17 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "\nExamples:\n\n  ```\n  $ dotenvx gitignore\n  $ dotenvx gitignore --pattern .env.keys\n  ```\n\n  Try it:\n\n  ```\n  $ dotenvx gitignore\n  ▣ ignored .env* (.gitignore)\n  ```\n  \n",
      "children": []
     },
     {
      "name": "prebuild",
+     "allowExcessArguments": true,
+     "argumentCount": 1,
+     "lastArgumentVariadic": false,
+     "registrations": [],
      "usage": "dotenvx ext prebuild [options] [directory]",
-     "description": "prevent including .env files in docker",
+     "description": "deprecated. use [dotenvx protect --docker]",
      "padWidth": 10,
      "arguments": [
       {
@@ -1753,10 +5075,38 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "\nDeprecated. Use [dotenvx protect --docker].\n\nExamples:\n\n  ```\n  $ dotenvx protect --docker\n  ```\n\nTry it:\n\n  ```\n  $ dotenvx protect --docker apps/backend\n  ```\n  \n",
      "children": []
     },
     {
      "name": "precommit",
+     "allowExcessArguments": true,
+     "argumentCount": 1,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "install",
+       "long": "--install",
+       "short": "-i",
+       "negate": false,
+       "variadic": false,
+       "takes": "none",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "uninstall",
+       "long": "--uninstall",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "none",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
      "usage": "dotenvx ext precommit [options] [directory]",
      "description": "prevent committing .env files to code",
      "padWidth": 13,
@@ -1769,7 +5119,11 @@
      "options": [
       {
        "term": "-i, --install",
-       "description": "install to .git/hooks/pre-commit"
+       "description": "install a pre-commit hook"
+      },
+      {
+       "term": "--uninstall",
+       "description": "remove the dotenvx pre-commit hook"
       },
       {
        "term": "-h, --help",
@@ -1778,10 +5132,15 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "\nExamples:\n\n  ```\n  $ dotenvx precommit\n  $ dotenvx precommit --install\n  ```\n\nTry it:\n\n  ```\n  $ dotenvx precommit\n  [dotenvx@0.45.0][precommit] success\n  ```\n  \n",
      "children": []
     },
     {
      "name": "scan",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [],
      "usage": "dotenvx ext scan [options]",
      "description": "scan for leaked secrets",
      "padWidth": 10,
@@ -1794,9 +5153,31 @@
      ],
      "commands": [],
      "hidden": false,
+     "after": "",
      "children": []
     }
    ]
+  },
+  {
+   "name": "_deliver-events",
+   "allowExcessArguments": true,
+   "argumentCount": 0,
+   "lastArgumentVariadic": false,
+   "registrations": [],
+   "usage": "dotenvx _deliver-events [options]",
+   "description": "",
+   "padWidth": 10,
+   "arguments": [],
+   "options": [
+    {
+     "term": "-h, --help",
+     "description": "display help for command"
+    }
+   ],
+   "commands": [],
+   "hidden": true,
+   "after": "",
+   "children": []
   }
  ]
 }

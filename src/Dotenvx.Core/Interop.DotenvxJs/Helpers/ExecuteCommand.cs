@@ -181,6 +181,7 @@ public static partial class Helpers
             string? killSignal = await killedBy;
             if (killSignal != null)
             {
+                Events.EventScope.SignalReceived(signalSent ?? killSignal);
                 if (!ErrorSignals.Contains(signalSent ?? killSignal))
                 {
                     string description = ChildSignal.Describe(killSignal) is { } text ? $" ({text})" : "";
@@ -203,11 +204,18 @@ public static partial class Helpers
             // whatever it wanted to say) - only genuine process-start/wait failures below get a
             // logged message.
             logger.Debug($"received exitCode {exitCode}");
+            Events.EventScope.SignalReceived(signalSent);
             return exitCode;
         }
         catch (Exception error)
         {
             // Handle errors
+            Events.EventScope.SignalReceived(signalSent);
+            if (error is Win32Exception { NativeErrorCode: 2 })
+            {
+                Events.EventScope.Fail("COMMAND_NOT_FOUND");
+            }
+
             if (ErrorSignals.Contains(signalSent ?? error.Message))
             {
                 return GetExitCodeFromProcess(child) ?? 1;
@@ -324,19 +332,85 @@ public static partial class Helpers
         return entries.Where(entry => entry.IndexOf('=') > 0).Select(entry => entry[..entry.IndexOf('=')]);
     }
 
+    /// <summary>
+    /// `which.sync(command)` (which 6.x): a command with a slash is checked as given; otherwise each PATH directory is searched
+    /// (Windows also searches the current directory first, trying every PATHEXT extension in upper and lower case).
+    /// </summary>
     private static string? WhichSync(string command)
     {
-        // Equivalent to which.sync - find executable in PATH
-        if (File.Exists(command))
+        bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        char delimiter = Path.PathSeparator;
+        bool hasSlash = command.Contains('/') || (isWindows && command.Contains('\\'));
+        string[] pathEnv = hasSlash
+            ? [""]
+            :
+            [
+                .. isWindows ? [Directory.GetCurrentDirectory()] : Array.Empty<string>(),
+                .. (Environment.GetEnvironmentVariable("PATH") ?? "").Split(delimiter)
+            ];
+
+        string pathExtExe = "";
+        List<string> pathExt = [""];
+        if (isWindows)
         {
-            return command;
+            string configured = Environment.GetEnvironmentVariable("PATHEXT") ?? "";
+            pathExtExe = configured.Length > 0 ? configured : string.Join(delimiter, ".EXE", ".CMD", ".BAT", ".COM");
+            pathExt = [.. pathExtExe.Split(delimiter).SelectMany(item => new[] { item, item.ToLowerInvariant() })];
+            if (command.Contains('.') && pathExt[0] != "")
+            {
+                pathExt.Insert(0, "");
+            }
         }
 
-        bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        string? pathVar = Environment.GetEnvironmentVariable("PATH");
-        string[] paths = pathVar?.Split(Path.PathSeparator) ?? [];
-        string[] extensions = isWindows && !Path.HasExtension(command) ? [".exe", ".cmd", ".bat"] : [""];
-        return paths.SelectMany(_ => extensions, (path, extension) => Path.Combine(path, command + extension))
-            .FirstOrDefault(File.Exists);
+        foreach (string envPart in pathEnv)
+        {
+            string pathPart = envPart.Length >= 2 && envPart[0] == '"' && envPart[^1] == '"' ? envPart[1..^1] : envPart;
+            string joined = pathPart.Length == 0 ? command : Path.Combine(pathPart, command);
+            if (pathPart.Length == 0 && (command.StartsWith("./", StringComparison.Ordinal) || command.StartsWith(".\\", StringComparison.Ordinal)))
+            {
+                joined = command;
+            }
+
+            foreach (string extension in pathExt)
+            {
+                string candidate = joined + extension;
+                if (IsExecutable(candidate, isWindows, pathExtExe.Split(delimiter)))
+                {
+                    return candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>isexe: a file that is runnable (a PATHEXT extension on Windows, an execute bit elsewhere).</summary>
+    private static bool IsExecutable(string path, bool isWindows, string[] pathExt)
+    {
+        try
+        {
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            if (isWindows)
+            {
+                if (pathExt.Length == 0 || pathExt.All(item => item.Length == 0))
+                {
+                    return true;
+                }
+
+                return pathExt.Any(item => item.Length > 0 && path.EndsWith(item, StringComparison.OrdinalIgnoreCase));
+            }
+
+            const UnixFileMode anyExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+
+            return (File.GetUnixFileMode(path) & anyExecute) != 0;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 }

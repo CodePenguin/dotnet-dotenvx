@@ -8,6 +8,7 @@ using Dotenvx.Help;
 using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Shared;
+using Dotenvx.Logging;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -34,6 +35,7 @@ public static class HostExtensions
         if (firstUnknown is not null && !args.TakeWhile(a => a != "--").Any(a => a is "-h" or "--help" or "-V" or "--version"))
         {
             // `process.argv.slice(3)`: everything after the first user argument
+            AnnounceLogLevel(host);
             return ExecuteDynamic.Dynamic(firstUnknown, args[1..], host.Services.GetRequiredService<IDotenvxLogger>());
         }
 
@@ -46,6 +48,7 @@ public static class HostExtensions
             parseResult.UnmatchedTokens.FirstOrDefault() is { } unknownCommand)
         {
             // `process.argv.slice(3)`: everything after the first user argument
+            AnnounceLogLevel(host);
             return ExecuteDynamic.Dynamic(unknownCommand, args[1..], host.Services.GetRequiredService<IDotenvxLogger>());
         }
 
@@ -84,6 +87,20 @@ public static class HostExtensions
             return 1;
         }
 
+        // commander: `error: required option '-s, --secret <value>' not specified` (stderr, exit 1)
+        if (!RequestsHelpOrVersion(parseResult) && CommanderErrors.RequiredOption(parseResult) is { } required)
+        {
+            Console.Error.WriteLine(required);
+            return 1;
+        }
+
+        // commander: allowExcessArguments(false) commands reject extra operands (after the required-option check)
+        if (!RequestsHelpOrVersion(parseResult) && CommanderErrors.ExcessArguments(parseResult) is { } excess)
+        {
+            Console.Error.WriteLine(excess);
+            return 1;
+        }
+
         // root options without a command (`dotenvx -q`) behave like no arguments: commander prints the help and exits 1
         if (ReferenceEquals(parseResult.CommandResult.Command, root) && !RequestsHelpOrVersion(parseResult) &&
             !parseResult.UnmatchedTokens.Any())
@@ -92,7 +109,19 @@ public static class HostExtensions
             return 1;
         }
 
+        if (!RequestsHelpOrVersion(parseResult))
+        {
+            AnnounceLogLevel(host);
+        }
+
         return parseResult.Invoke();
+    }
+
+    /// <summary>dotenvx.js preAction hook: `logger.debug(`setting log level to: ...`)` runs only once a command is about to execute.</summary>
+    private static void AnnounceLogLevel(IHost host)
+    {
+        var options = host.Services.GetRequiredService<DotenvxLoggerOptions>();
+        host.Services.GetRequiredService<IDotenvxLogger>().Debug($"setting log level to: {options.LogLevel.ToString().ToLowerInvariant()}");
     }
 
     private static readonly System.Text.RegularExpressions.Regex ColonLongOption = new("^--[A-Za-z][A-Za-z0-9-]*:");

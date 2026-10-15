@@ -5,12 +5,15 @@ using System.Linq;
 using System.Text.Json;
 
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Events;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Primitives;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 using ParseResult = System.CommandLine.ParseResult;
 
@@ -26,7 +29,7 @@ namespace Dotenvx.Actions;
 public class DecryptAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
-        new("--env-file", "-f") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
+        new("--file", "-f", "--env-file") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
 
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
@@ -81,6 +84,7 @@ public class DecryptAction : Command
         Add(_noNativeOption);
         Add(_noArmorOption);
         SetAction(Execute);
+        EventTracking.Track(this, "decrypt");
     }
 
     private int Execute(ParseResult parseResult)
@@ -101,7 +105,7 @@ public class DecryptAction : Command
             keys,
             stdout
         };
-        _logger.Debug($"options: {JsonStringify(options)}");
+        _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         List<EnvItem> envItems = [];
         envItems.AddRange(
@@ -148,6 +152,8 @@ public class DecryptAction : Command
                 }
             }
 
+            EventScope.Count(errorCount);
+
             return errorCount > 0 ? 1 : 0; // exit early
         }
 
@@ -191,20 +197,33 @@ public class DecryptAction : Command
                 }
             }
 
+            Dictionary<string, InjectSummaryFile> summaryRows = processedEnvs.GroupBy(row => row.EnvFilePath).ToDictionary(
+                group => group.Key, group => new InjectSummaryFile(group.Last().EnvFilePath,
+                    PublicKeys(group.Last().EnvSrc), group.Last().KeySources));
+            InjectSummaryFile Row(string filepath)
+            {
+                return summaryRows.GetValueOrDefault(filepath) ?? new InjectSummaryFile(filepath);
+            }
+
             if (changedFilePaths.Count > 0)
             {
-                _logger.Success($"◇ decrypted ({string.Join(',', changedFilePaths)})");
+                InjectSummarySources summary = InjectSummarySourcesOf(changedFilePaths.Select(Row));
+                _logger.Success($"◇ decrypted {string.Join(',', summary.Files)}{summary.Suffix}");
             }
             else if (unchangedFilePaths.Count > 0)
             {
-                _logger.Info($"○ no change ({string.Join(',', unchangedFilePaths)})");
+                InjectSummarySources summary = InjectSummarySourcesOf(unchangedFilePaths.Select(Row));
+                _logger.Info($"○ no change to {string.Join(',', summary.Files)}{summary.Suffix}");
             }
+
+            EventScope.Count(errorCount);
 
             return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {
             CatchAndLog(_logger, error);
+            EventScope.Fail(error);
             return 1;
         }
     }

@@ -9,4 +9,5 @@ public class ProcessedDecrypt
     public bool Changed { get; set; }
     public string EnvSrc { get; set; } = string.Empty;
     public Exception? Error { get; set; }
+    public IReadOnlyDictionary<string, string>? KeySources { get; set; }
 }

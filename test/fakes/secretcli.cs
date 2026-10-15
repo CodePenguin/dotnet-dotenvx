@@ -17,7 +17,9 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 
 string tool = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "op");
-string dir = Environment.GetEnvironmentVariable("FAKE_SECRET_CLI_DIR") ?? ".";
+// the delivery worker of the events subsystem gets a filtered environment without FAKE_SECRET_CLI_DIR: fall back to the vault beside the shim directory
+string dir = Environment.GetEnvironmentVariable("FAKE_SECRET_CLI_DIR")
+    ?? Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Environment.ProcessPath) ?? ".", "..", "vault"));
 string Sanitize(string value) => Regex.Replace(value, "[^A-Za-z0-9]", "_");
 
 File.AppendAllText(Path.Combine(dir, "calls.log"),
@@ -26,9 +28,94 @@ File.AppendAllText(Path.Combine(dir, "calls.log"),
 
 Console.OutputEncoding = new UTF8Encoding(false);
 
-if (tool == "op" && args is ["read", var reference, "--no-newline"])
+// dotenvx's own bw calls always end with --nointeraction
+args = [.. args.Where(arg => arg != "--nointeraction")];
+
+// Key custody (dotenvx 1password / bitwarden): items created by the custodians live in <dir>/op-items and <dir>/bw-items. Behaviour switches are
+// plain files in <dir>: op-missing, op-signedout (removed by `op signin`), op-signin-fails, op-create-badid, op-create-novault,
+// op-read-wrong, op-account (account id), bw-missing, bw-status (unlocked|locked|unauthenticated|garbage), bw-user (user id),
+// bw-server, bw-create-org, bw-create-garbage, bw-get-wrong.
+bool Flag(string name) => File.Exists(Path.Combine(dir, name));
+string Setting(string name, string fallback) => Flag(name) ? File.ReadAllText(Path.Combine(dir, name)).Trim() : fallback;
+string NextId(string kind, Func<int, string> format)
+{
+    Directory.CreateDirectory(Path.Combine(dir, kind));
+    return format(Directory.GetFiles(Path.Combine(dir, kind)).Length + 1);
+}
+
+if (tool == "op" && Flag("op-missing"))
+{
+    Console.Error.WriteLine("op: not found");
+    return 127;
+}
+
+if (tool == "op" && args is ["--version"])
+{
+    Console.Out.WriteLine("2.30.0");
+    return 0;
+}
+
+if (tool == "op" && args is ["whoami", ..])
+{
+    if (Flag("op-signedout"))
+    {
+        Console.Error.WriteLine("[ERROR] account is not signed in");
+        return 1;
+    }
+
+    Console.Out.WriteLine($"{{\"account_uuid\":\"{Setting("op-account", "abcdefghijklmnopqrstuvwxyz")}\"}}");
+    return 0;
+}
+
+if (tool == "op" && args is ["signin"])
+{
+    if (Flag("op-signin-fails"))
+    {
+        Console.Error.WriteLine("[ERROR] signin failed");
+        return 1;
+    }
+
+    File.Delete(Path.Combine(dir, "op-signedout"));
+    return 0;
+}
+
+if (tool == "op" && args is ["item", "create", "-", ..])
+{
+    string id = NextId("op-items", count => $"it{count:D24}");
+    JsonElement created = JsonDocument.Parse(Console.In.ReadToEnd()).RootElement;
+    string privateKey = created.GetProperty("fields").EnumerateArray().First(field => field.GetProperty("label").GetString() == "private_key")
+        .GetProperty("value").GetString()!;
+    File.WriteAllText(Path.Combine(dir, "op-items", id), privateKey);
+    string reportedId = Flag("op-create-badid") ? "bad" : id;
+    string vault = Flag("op-create-novault") ? "bad" : "vaultvaultvaultvaultvault0";
+    Console.Out.WriteLine($"{{\"id\":\"{reportedId}\",\"vault\":{{\"id\":\"{vault}\"}}}}");
+    return 0;
+}
+
+if (tool == "op" && args is ["item", "delete", var deleteId, ..])
+{
+    string file = Path.Combine(dir, "op-items", deleteId);
+    if (!File.Exists(file))
+    {
+        Console.Error.WriteLine("[ERROR] item not found");
+        return 1;
+    }
+
+    File.Delete(file);
+    return 0;
+}
+
+if (tool == "op" && args is ["read", var reference, "--no-newline", ..])
 {
     string file = Path.Combine(dir, "op", Sanitize(reference));
+    string[] parts = reference.Split('/');
+    string itemFile = parts.Length == 5 ? Path.Combine(dir, "op-items", parts[3]) : "";
+    if (itemFile.Length > 0 && File.Exists(itemFile))
+    {
+        Console.Out.Write(Flag("op-read-wrong") ? "wrong" : File.ReadAllText(itemFile));
+        return 0;
+    }
+
     if (!File.Exists(file))
     {
         Console.Error.WriteLine($"[ERROR] could not read secret '{reference}'");
@@ -36,6 +123,73 @@ if (tool == "op" && args is ["read", var reference, "--no-newline"])
     }
 
     Console.Out.Write(File.ReadAllText(file));
+    return 0;
+}
+
+if (tool == "bw" && Flag("bw-missing"))
+{
+    Console.Error.WriteLine("bw: not found");
+    return 127;
+}
+
+if (tool == "bw" && args is ["--version"])
+{
+    Console.Out.WriteLine("2024.9.0");
+    return 0;
+}
+
+if (tool == "bw" && args is ["status"])
+{
+    string status = Setting("bw-status", "unlocked");
+    if (status == "garbage")
+    {
+        Console.Out.WriteLine("not json");
+        return 0;
+    }
+
+    if (status == "locked" && Environment.GetEnvironmentVariable("BW_SESSION") is { Length: > 0 } session && Flag("session") &&
+        session == File.ReadAllText(Path.Combine(dir, "session")).Trim())
+    {
+        status = "unlocked";
+    }
+
+    string server = Flag("bw-server") ? $"\"{Setting("bw-server", "")}\"" : "null";
+    Console.Out.WriteLine($"{{\"serverUrl\":{server},\"userId\":\"{Setting("bw-user", "11111111-1111-1111-1111-111111111111")}\",\"status\":\"{status}\"}}");
+    return 0;
+}
+
+if (tool == "bw" && args is ["create", "item"])
+{
+    if (Flag("bw-create-garbage"))
+    {
+        Console.Out.WriteLine("not json");
+        return 0;
+    }
+
+    string id = NextId("bw-items", count => $"00000000-0000-0000-0000-{count:D12}");
+    JsonElement created = JsonDocument.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(Console.In.ReadToEnd().Trim()))).RootElement;
+    File.WriteAllText(Path.Combine(dir, "bw-items", id), created.GetProperty("login").GetProperty("password").GetString()!);
+    string organization = Flag("bw-create-org") ? "\"22222222-2222-2222-2222-222222222222\"" : "null";
+    Console.Out.WriteLine($"{{\"id\":\"{id}\",\"organizationId\":{organization}}}");
+    return 0;
+}
+
+if (tool == "bw" && args is ["get", "password", var itemId] && File.Exists(Path.Combine(dir, "bw-items", itemId)))
+{
+    Console.Out.Write(Flag("bw-get-wrong") ? "wrong" : File.ReadAllText(Path.Combine(dir, "bw-items", itemId)));
+    return 0;
+}
+
+if (tool == "bw" && args is ["delete", "item", var removeId])
+{
+    string file = Path.Combine(dir, "bw-items", removeId);
+    if (!File.Exists(file))
+    {
+        Console.Error.WriteLine("Not found.");
+        return 1;
+    }
+
+    File.Delete(file);
     return 0;
 }
 

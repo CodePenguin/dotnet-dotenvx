@@ -25,7 +25,8 @@ public class NativeStoreParityTest(NodeParityFixture fixture) : ParityTestBase(f
         {
             ["PATH"] = BinDir + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"),
             ["FAKE_SECRET_CLI_DIR"] = VaultDir,
-            ["CI"] = ""
+            ["CI"] = "",
+            ["DOTENVX_NO_NATIVE"] = "false"
         };
 
         foreach ((string key, string value) in extra ?? [])

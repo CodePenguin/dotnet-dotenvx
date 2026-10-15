@@ -138,7 +138,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
-        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from --env flag");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1)");
     }
 
     /// <remarks>Refer to "run - envFile (with errors)"</remarks>
@@ -267,7 +267,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HELLO=World)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
-        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env, and --env flag");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (1) from .env");
     }
 
     /// <remarks>Refer to "run - envFile AND two envs"</remarks>
@@ -325,7 +325,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain("HOLA set");
         MockLogger.DebugMessages.ShouldContain("HELLO set to World");
         MockLogger.DebugMessages.ShouldContain("HOLA set to amigo");
-        MockLogger.InfoMessages.ShouldContain("⟐ injected env (2) from .env, and --env flags");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (2) from .env");
     }
 
     /// <remarks>Refer to "run - env (two strings)"</remarks>
@@ -371,7 +371,7 @@ public class RunActionTest : EnvironmentTestBase
         MockLogger.VerboseMessages.ShouldContain("loading env from string (HEY=there)");
         MockLogger.VerboseMessages.ShouldContain("HELLO set");
         MockLogger.VerboseMessages.ShouldContain("HEY set");
-        MockLogger.InfoMessages.ShouldContain("⟐ injected env (2) from --env flags");
+        MockLogger.InfoMessages.ShouldContain("⟐ injected env (2)");
     }
 
     /// <remarks>Refer to "run - MISSING_ENV_FILE"</remarks>

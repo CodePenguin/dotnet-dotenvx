@@ -50,7 +50,7 @@ public class EncryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain($"encrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("◈ encrypted (.env)");
+        MockLogger.InfoMessages.ShouldContain(m => m.StartsWith("◈ encrypted .env (") && m.EndsWith(") via .env.keys ⛉"));
     }
 
     /// <remarks>Refer to "enc" shorthand alias for "encrypt" (v2.21.0)</remarks>
@@ -76,7 +76,7 @@ public class EncryptActionTest : EnvironmentTestBase
         int exitCode = parseResult.Invoke();
 
         exitCode.ShouldBe(0);
-        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
+        MockLogger.InfoMessages.ShouldContain(m => m.StartsWith("○ no change to .env"));
     }
 
     /// <remarks>Refer to "encrypt - --stdout"</remarks>
@@ -108,7 +108,7 @@ public class EncryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain($"encrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("◈ encrypted (.env)");
+        MockLogger.InfoMessages.ShouldContain(m => m.StartsWith("◈ encrypted .env (") && m.EndsWith(") via .env.keys ⛉"));
     }
 
     /// <remarks>
@@ -129,7 +129,7 @@ public class EncryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain($"encrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("◈ encrypted (.env)");
+        MockLogger.InfoMessages.ShouldContain(m => m.StartsWith("◈ encrypted .env (") && m.EndsWith(") via .env.keys ⛉"));
     }
 
     /// <remarks>
@@ -148,7 +148,7 @@ public class EncryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"encrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain($"encrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("◈ encrypted (.env)");
+        MockLogger.InfoMessages.ShouldContain(m => m.StartsWith("◈ encrypted .env (") && m.EndsWith(") via .env.keys ⛉"));
         File.ReadAllText(".env").ShouldContain("encrypted:");
     }
 

@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text.Json;
 
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Events;
+using Dotenvx.Interop.DotenvxJs.Custodians;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -30,6 +32,9 @@ public class SetAction : Command
     private readonly Option<bool> _noArmorOption = SecretResolverOptions.NoArmor();
 
     private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+    private readonly Option<bool> _no1PasswordOption = new("--no-1password") { Description = "disable 1Password features" };
+    private readonly Option<bool> _noBitwardenOption = new("--no-bitwarden") { Description = "disable Bitwarden features" };
+    private readonly Option<string?> _profileOption = new("--profile") { Description = "select an Envfile profile", HelpName = "name" };
 
     private readonly Option<bool> _encryptOption =
         new("--encrypt", "-c")
@@ -38,7 +43,7 @@ public class SetAction : Command
         };
 
     private readonly Option<string[]?> _envFileOption =
-        new("--env-file", "-f") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
+        new("--file", "-f", "--env-file") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
 
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
@@ -64,6 +69,7 @@ public class SetAction : Command
         "encrypt a single environment variable")
     {
         _logger = logger;
+        Add(_profileOption);
         Add(_encryptOption);
         Add(_envFileOption);
         Add(_envKeysFileOption);
@@ -71,9 +77,12 @@ public class SetAction : Command
         Add(_noCreateOption);
         Add(_plainOption);
                 Add(_valueArgument);
+        Add(_no1PasswordOption);
+        Add(_noBitwardenOption);
         Add(_noNativeOption);
         Add(_noArmorOption);
         SetAction(Execute);
+        EventTracking.Track(this, "set");
     }
 
     private int Execute(ParseResult parseResult)
@@ -97,10 +106,11 @@ public class SetAction : Command
 
             try
             {
-                value = Prompts.Password(key, plain ? "◇" : "◈");
+                value = Prompts.Password(key, plain ? "◇" : "◈", "=");
             }
-            catch (PromptCancelledException)
+            catch (PromptCancelledException cancelled)
             {
+                EventScope.Fail(cancelled);
                 return 130;
             }
         }
@@ -111,8 +121,8 @@ public class SetAction : Command
         _logger.Debug($"key: {key}");
         _logger.Debug($"value: {value}");
 
-        var options = new { envFile, envKeysFile, encrypt, plain };
-        _logger.Debug($"options: {JsonStringify(options)}");
+        var options = new { profile = parseResult.GetValue(_profileOption), envFile, envKeysFile, encrypt, plain };
+        _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         // `-c`/`--encrypt` has no real "off" state upstream (commander registers it as a bare
         // boolean flag defaulting to true, with no --no-encrypt negation) - `--plain` is the only
@@ -128,13 +138,18 @@ public class SetAction : Command
             string? envKeysFilePath = envKeysFile?.LastOrDefault(); // plain `<path>` option: commander keeps the LAST occurrence
 
             Sets setsService = Sets.Factory(key, value, envItems.ToArray(), encrypt, envKeysFilePath, noCreate);
-            setsService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.SessionUnlessToken);
-            setsService.NoArmor = setsService.KeyAccess.NoArmor;
+            // set.js: noArmor = options.armor === false (the custody menu decides about Armor, not the session)
+            setsService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.FlagOnly);
+            setsService.KeyAccess.No1Password = parseResult.GetValue(_no1PasswordOption);
+            setsService.KeyAccess.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
+            setsService.KeyAccess.Interactive = true;
+            setsService.Profile = parseResult.GetValue(_profileOption);
+            NativeCustodian.Logger = _logger;
             SetsResult result = setsService.Run();
 
             if (!string.IsNullOrEmpty(result.KeysSrc))
             {
-                Fsx.WriteFileX(envKeysFilePath ?? ".env.keys", result.KeysSrc);
+                Fsx.WriteKeyFile(envKeysFilePath ?? ".env.keys", result.KeysSrc);
             }
 
             IList<ProcessedSet> processedEnvs = result.ProcessedEnvs;
@@ -179,11 +194,14 @@ public class SetAction : Command
                 _logger.Info($"○ no change ({string.Join(',', unchangedFilePaths)})");
             }
 
+            EventScope.Count(errorCount);
+
             return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {
             CatchAndLog(_logger, error);
+            EventScope.Fail(error);
             return 1;
         }
     }

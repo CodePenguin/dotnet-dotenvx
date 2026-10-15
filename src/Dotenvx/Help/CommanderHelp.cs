@@ -18,12 +18,17 @@ public sealed class HelpSpec
 {
     public string Name { get; set; } = "";
     public string Usage { get; set; } = "";
+    public bool AllowExcessArguments { get; set; } = true;
+    public int ArgumentCount { get; set; }
+    public bool LastArgumentVariadic { get; set; }
     public string Description { get; set; } = "";
     public int PadWidth { get; set; }
     public List<HelpRow> Arguments { get; set; } = [];
     public List<HelpRow> Options { get; set; } = [];
+    public List<OptionRegistration> Registrations { get; set; } = [];
     public List<HelpRow> Commands { get; set; } = [];
     public bool Hidden { get; set; }
+    public string After { get; set; } = "";
     public List<HelpSpec> Children { get; set; } = [];
 }
 

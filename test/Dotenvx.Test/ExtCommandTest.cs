@@ -40,6 +40,7 @@ public class ExtCommandTest : EnvironmentTestBase
             new DelAction(MockLogger),
             new DoctorAction(MockLogger),
             new EncryptAction(MockLogger),
+            new FeedbackAction(MockLogger),
             new ExtCommand(
                 new GenexampleAction(MockLogger), new GitignoreAction(MockLogger), new LsAction(MockLogger),
                 new PrebuildAction(MockLogger), new PrecommitAction(MockLogger), new ScanAction(MockLogger),
@@ -48,18 +49,23 @@ public class ExtCommandTest : EnvironmentTestBase
             new GetAction(MockLogger),
             new GitignoreAction(MockLogger),
             new global::Dotenvx.Actions.HelpAction(),
+            new HiddenCommand(),
             new KeyPairAction(MockLogger),
-            new LockCommand(MockLogger),
             new LoginAction(MockLogger),
             new LogoutAction(MockLogger),
             new LsAction(MockLogger),
+            new BitwardenCommand(MockLogger),
+            new CheckAction(MockLogger, new global::Dotenvx.Logging.DotenvxLoggerOptions()),
             new NativeCommand(MockLogger),
+            new OnePasswordCommand(MockLogger),
             new PrebuildAction(MockLogger),
+            new ProtectAction(MockLogger),
+            new PrimitivesCommand(MockLogger),
             new PrecommitAction(MockLogger),
             new RunAction(MockLogger),
             new SetAction(MockLogger),
-            new UpdateAction(),
-            new ValidateAction(MockLogger));
+            new SpecAction(MockLogger),
+            new UpdateAction());
     }
 
     private DotenvxRootCommand RootCommand { get; }

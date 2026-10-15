@@ -36,13 +36,20 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
         set => KeyAccess.NoNative = value;
     }
 
+    private readonly Dictionary<string, string> _sources = [];
     private Func<string, IDictionary<string, string>?>? _provider;
     private Decryptor? _decryptor;
 
     public DecryptResult Run()
     {
-        _provider = Providers.Resolve(KeyAccess);
-        _decryptor = Providers.ResolveDecryptor(KeyAccess);
+        Action<string, string>? onProvider = KeyAccess.OnProvider;
+        KeyAccess.OnProvider = (name, key) =>
+        {
+            _sources[key] = name;
+            onProvider?.Invoke(name, key);
+        };
+        _provider = KeyProviders.Resolve(KeyAccess);
+        _decryptor = KeyProviders.ResolveDecryptor(KeyAccess);
 
         foreach (EnvItem env in _envs)
         {
@@ -81,8 +88,9 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                 Fk = envKeysFilePaths is { Length: > 0 } ? envKeysFilePaths : null,
                 ReadFile = path => Fsx.ReadFileX(path),
                 Provider = _provider
-            }, _decryptor);
+            }, _decryptor, key => _sources.GetValueOrDefault(key));
             PrimitivesParseArraysOutput result = outcome.Output;
+            row.KeySources = outcome.KeySources;
 
             if (outcome.LeadingError is not null)
             {

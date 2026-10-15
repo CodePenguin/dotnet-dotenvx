@@ -24,6 +24,7 @@ public static class Fsx
     public static Func<string, byte[]> ReadFileSync { get; internal set; } = DefaultReadFileSync;
     public static Action<string, string> WriteFileSync { get; internal set; } = DefaultWriteFileSync;
     public static Action<string, string> WriteFileX { get; internal set; } = DefaultWriteFileX;
+    public static Action<string, string> WriteKeyFile { get; internal set; } = DefaultWriteKeyFile;
 
     private static void DefaultAppendFileSync(string path, string data)
     {
@@ -214,25 +215,75 @@ public static class Fsx
 
     private static void DefaultWriteFileX(string filepath, string str)
     {
-        // Matches fsx.js's writeFileX/writeFileXSync: catches EACCES/EPERM specifically and
-        // translates to FILE_NOT_WRITABLE - confirmed reachable live (a brand-new file in a
-        // directory that denies file creation, via `set`), not the broader "any write failure"
-        // this might first appear to cover. .NET surfaces this as UnauthorizedAccessException
-        // (confirmed via a live probe) - a file-locked-by-another-handle sharing violation is a
-        // separate IOException, deliberately NOT translated here, matching upstream's own
-        // narrower EACCES/EPERM-only check.
+        WriteAtomic(filepath, str, null);
+    }
+
+    private static void DefaultWriteKeyFile(string filepath, string str)
+    {
+        WriteAtomic(filepath, str, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+    }
+
+    // fsx.js writeFileX/writeFileXSync (write-file-atomic): the content goes to a temporary file in the same directory, which then
+    // replaces the target, so a failed write never leaves a half-written file. An existing file keeps its permissions unless a
+    // mode is given (key files are always 0600). EACCES/EPERM become FILE_NOT_WRITABLE - confirmed reachable live (a brand-new
+    // file in a directory that denies file creation, via `set`) - and a file-locked-by-another-handle sharing violation is a
+    // separate IOException, deliberately NOT translated, matching upstream's own narrower EACCES/EPERM-only check.
+    private static void WriteAtomic(string filepath, string str, UnixFileMode? mode)
+    {
+        string target = filepath;
         try
         {
-            File.WriteAllText(filepath, str, Utf8NoBom);
+            // write-file-atomic resolves symbolic links and replaces the file they point to
+            if (File.ResolveLinkTarget(filepath, true) is { } resolved)
+            {
+                target = resolved.FullName;
+            }
+        }
+        catch (IOException)
+        {
+        }
+
+        string directory = Path.GetDirectoryName(Path.GetFullPath(target)) ?? ".";
+        string temporary = Path.Combine(directory, $".{Guid.NewGuid():N}.tmp");
+        try
+        {
+            File.WriteAllText(temporary, str, Utf8NoBom);
+            if (!OperatingSystem.IsWindows() && (mode is not null || File.Exists(target)))
+            {
+                File.SetUnixFileMode(temporary, mode ?? File.GetUnixFileMode(target));
+            }
+
+            File.Move(temporary, target, true);
         }
         catch (UnauthorizedAccessException)
         {
+            TryDelete(temporary);
+
             throw new FileNotWritableException(filepath);
         }
         catch (IOException error) when (error is FileNotFoundException or DirectoryNotFoundException)
         {
+            TryDelete(temporary);
+
             // fs.writeFile's raw ENOENT (a missing directory, or a dangling link into one), which the commands print as given
             throw new FileNotFoundException($"ENOENT: no such file or directory, open '{NodePath.ErrorPath(filepath)}'", filepath, error);
+        }
+        catch (Exception)
+        {
+            TryDelete(temporary);
+
+            throw;
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception)
+        {
         }
     }
 
@@ -248,5 +299,6 @@ public static class Fsx
         ReadFileSync = DefaultReadFileSync;
         WriteFileSync = DefaultWriteFileSync;
         WriteFileX = DefaultWriteFileX;
+        WriteKeyFile = DefaultWriteKeyFile;
     }
 }

@@ -3,20 +3,9 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Providers;
 
 namespace Dotenvx.Interop.DotenvxJs.Api;
-
-/// <summary>An error response from the Armor API (helpers/buildApiError.js and buildOauthError.js).</summary>
-public class ApiException(string code, string message, string? help = null)
-    : Types.DotenvxException(code, message, help)
-{
-    /// <summary>`error.help`: always set by buildApiError.js (the `fix: [..]` text, or `[code] &lt;json&gt;` when the API sent none).</summary>
-    public string? ErrorHelp { get; init; }
-
-    public JsonNode? Meta { get; init; }
-    public JsonNode? Json { get; init; }
-    public int StatusCode { get; init; }
-}
 
 /// <remarks>
 /// Reference source: dotenvx/src/lib/api/*.js (postArmorUp/Down/Pull/Push/Move/Keyring/Decrypt, postLogout, getAccount,
@@ -28,37 +17,14 @@ public static class ArmorApi
 {
     private const string OauthClientId = "oac_dotenvxcli";
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-    };
-
     private static string Stringify(JsonNode body)
     {
-        return body.ToJsonString(JsonOptions);
+        return ArmorWire.Stringify(body);
     }
 
-    /// <summary>`await resp.body.json()`: invalid JSON raises V8's SyntaxError text for the common cases.</summary>
     private static JsonNode ParseJson(string body)
     {
-        if (body.Length == 0)
-        {
-            throw new FormatException("Unexpected end of JSON input");
-        }
-
-        try
-        {
-            return JsonNode.Parse(body) ?? throw new FormatException("Unexpected end of JSON input");
-        }
-        catch (JsonException)
-        {
-            char first = body.TrimStart()[0];
-            string preview = body.Length <= 10 ? body : body[..10] + "\"...";
-            throw new FormatException(
-                body.Length <= 10
-                    ? $"Unexpected token '{first}', \"{preview}\" is not valid JSON"
-                    : $"Unexpected token '{first}', \"{preview} is not valid JSON");
-        }
+        return ArmorWire.ParseJson(body);
     }
 
     private static IReadOnlyDictionary<string, string> BearerHeaders(string? token)
@@ -71,22 +37,7 @@ public static class ArmorApi
 
     public static ApiException BuildApiError(int statusCode, JsonNode json)
     {
-        JsonNode? error = json["error"] ?? throw new NullReferenceException("Cannot read properties of undefined");
-        string? errorCode = error["code"]?.ToString();
-        string code = string.IsNullOrEmpty(errorCode) ? statusCode.ToString() : errorCode;
-        string message = $"[{code}] {error["message"]}";
-        string? helpText = error["help"]?.ToString();
-        bool hasHelp = !string.IsNullOrEmpty(helpText);
-        string help = hasHelp ? $"fix: [{helpText}]" : $"[{code}] {json.ToJsonString(JsonOptions)}";
-
-        // `error.messageWithHelp` only exists when the API sent a help text (so `MessageWithHelp` is the plain message otherwise)
-        return new ApiException(code, message, hasHelp ? help : null)
-        {
-            ErrorHelp = help,
-            Meta = error["meta"],
-            Json = json,
-            StatusCode = statusCode
-        };
+        return ArmorWire.BuildApiError(statusCode, json);
     }
 
     public static ApiException BuildOauthError(int statusCode, JsonNode json)
@@ -219,6 +170,14 @@ public static class ArmorApi
 
         return Api($"{(string.IsNullOrEmpty(hostname) ? "https://armor.dotenvx.com" : hostname)}/api/armor/decrypt",
             "POST", token, body);
+    }
+
+    /// <summary>postFeedback.js: `POST /api/feedback` with `{ body }` (no authorization).</summary>
+    public static JsonNode PostFeedback(string hostname, string body)
+    {
+        return Call($"{hostname}/api/feedback", "POST",
+            new Dictionary<string, string> { ["Content-Type"] = "application/json" },
+            Stringify(new JsonObject { ["body"] = body }), BuildApiError);
     }
 
     public static JsonNode Logout(string hostname, string? token)

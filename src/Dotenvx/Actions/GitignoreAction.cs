@@ -30,7 +30,7 @@ public class GitignoreAction : Command
             CustomParser = OptionParsers.ParseMultiValue
         };
 
-    public GitignoreAction(IDotenvxLogger logger) : base("gitignore", "append to .gitignore")
+    public GitignoreAction(IDotenvxLogger logger) : base("gitignore", "deprecated. use [dotenvx protect]")
     {
         _logger = logger;
         Add(_patternOption);
@@ -39,13 +39,14 @@ public class GitignoreAction : Command
 
     private int Execute(ParseResult parseResult)
     {
+        _logger.Warn("[DEPRECATED] dotenvx gitignore. fix: run [dotenvx protect]");
         // System.CommandLine's Option<string[]?> resolves to a non-null EMPTY array when the
         // flag is omitted entirely (confirmed via a scratch reflection probe, 2026-09-24 - never
         // null), so a `?? [...]` fallback never triggers here; must check Length explicitly.
         string[]? rawPatterns = parseResult.GetValue(_patternOption);
         string[] patterns = rawPatterns is { Length: > 0 } ? rawPatterns : [".env*"];
 
-        _logger.Debug($"options: {JsonStringify(new { pattern = patterns })}");
+        _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         Gitignore gitignoreService = Gitignore.Factory(patterns);
         GitignoreGenericResult[] results = gitignoreService.Run();

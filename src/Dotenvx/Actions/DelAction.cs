@@ -1,4 +1,5 @@
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Events;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -20,7 +21,7 @@ namespace Dotenvx.Actions;
 public class DelAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
-        new("--env-file", "-f") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
+        new("--file", "-f", "--env-file") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
 
     private readonly Argument<string> _keyArgument =
         new("key") { Description = "KEY", HelpName = "KEY" };
@@ -34,6 +35,7 @@ public class DelAction : Command
         Add(_keyArgument);
         Add(_envFileOption);
         SetAction(Execute);
+        EventTracking.Track(this, "del");
     }
 
     private int Execute(ParseResult parseResult)
@@ -46,7 +48,7 @@ public class DelAction : Command
         _logger.Debug($"key: {key}");
 
         var options = new { envFile };
-        _logger.Debug($"options: {JsonStringify(options)}");
+        _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         try
         {
@@ -87,11 +89,14 @@ public class DelAction : Command
                 _logger.Info($"○ no change ({string.Join(',', result.UnchangedFilePaths)})");
             }
 
+            EventScope.Count(errorCount);
+
             return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {
             CatchAndLog(_logger, error);
+            EventScope.Fail(error);
             return 1;
         }
     }

@@ -43,7 +43,13 @@ public static class CommanderErrors
     {
         foreach (ParseError error in parseResult.Errors)
         {
-            if (error.SymbolResult is not OptionResult { Option: { } option } || option.Arity.MinimumNumberOfValues == 0)
+            if (error.SymbolResult is not OptionResult { Option: { } option } optionResult || option.Arity.MinimumNumberOfValues == 0)
+            {
+                continue;
+            }
+
+            // a required option that was never given is `required option ... not specified`, not a missing value
+            if (optionResult.IdentifierToken is null)
             {
                 continue;
             }
@@ -55,6 +61,41 @@ public static class CommanderErrors
         }
 
         return null;
+    }
+
+    /// <summary>`error: required option '&lt;flags&gt;' not specified` for the first required option that was not given, or null.</summary>
+    public static string? RequiredOption(ParseResult parseResult)
+    {
+        foreach (Option option in parseResult.CommandResult.Command.Options.Where(option => option.Required))
+        {
+            if (parseResult.GetResult(option) is not { IdentifierToken: not null } && FindRow(parseResult, option) is { } row)
+            {
+                return $"error: required option '{row.Term}' not specified";
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>`error: too many arguments for 'check'. Expected 0 arguments but got 1.` for a command registered with allowExcessArguments(false), or null.</summary>
+    public static string? ExcessArguments(ParseResult parseResult)
+    {
+        HelpSpec? spec = CommanderHelp.Find(PathOf(parseResult));
+        if (spec is null || spec.AllowExcessArguments || spec.LastArgumentVariadic)
+        {
+            return null;
+        }
+
+        int received = parseResult.CommandResult.Children.OfType<ArgumentResult>().Sum(argument => argument.Tokens.Count) +
+                       parseResult.UnmatchedTokens.Count;
+        if (received <= spec.ArgumentCount)
+        {
+            return null;
+        }
+
+        string plural = spec.ArgumentCount == 1 ? "" : "s";
+
+        return $"error: too many arguments for '{spec.Name}'. Expected {spec.ArgumentCount} argument{plural} but got {received}.";
     }
 
     /// <summary>The upstream (term, description) row of <paramref name="option" /> for the command that was invoked.</summary>

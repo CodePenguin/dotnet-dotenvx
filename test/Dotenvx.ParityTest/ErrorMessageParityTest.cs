@@ -27,8 +27,7 @@ namespace Dotenvx.ParityTest;
 /// `executeCommand.js` but deliberately never surfaced to the user - see trap for `ExecuteCommand.cs`'s
 /// own suppression), `onePasswordFailed`/`bitwardenFailed` (1Password/Bitwarden secret resolution,
 /// out of scope), `invalidColor`/`missingLogLevel` (internal safety checks against hardcoded,
-/// always-valid call sites, not reachable from user input), `invalidPassphrase` (the `lock`/
-/// passphrase feature, out of scope), and `invalidPublicKey`/`missingPublicKey` (confirmed via grep
+/// always-valid call sites, not reachable from user input), `invalidPublicKey`/`missingPublicKey` (confirmed via grep
 /// to have zero call sites anywhere in the current pinned source - dead code upstream, nothing to
 /// port). `custom()` is also excluded - its message/help are caller-supplied, not a fixed template.
 /// </remarks>
@@ -75,9 +74,6 @@ public class ErrorMessageParityTest(NodeParityFixture fixture) : ParityTestBase(
             ("missingEnvFile",
                 new { envFilepath = ".env.production" },
                 new MissingEnvFileException(".env.production")),
-            ("missingEnvExample",
-                new { },
-                new MissingEnvExampleException()),
             ("missingEnvKeysFile",
                 new { envKeysFilepath = ".env.keys" },
                 new MissingEnvKeysFileException(".env.keys")),
@@ -96,21 +92,18 @@ public class ErrorMessageParityTest(NodeParityFixture fixture) : ParityTestBase(
             ("missingValue",
                 new { key = "KEY" },
                 new MissingValueException("KEY")),
-            ("validationFailed",
-                new { message = "missing required (KEY)" },
-                new ValidationFailedException("missing required (KEY)")),
             ("precommitHookModifyFailed",
                 new { error = new { message = "disk full" } },
                 new PrecommitHookModifyFailedException("disk full")),
             ("wrongPrivateKey",
                 new { key = "KEY", privateKeyName = "DOTENV_PRIVATE_KEY", privateKey = SamplePrivateKey },
                 new WrongPrivateKeyException("KEY", "DOTENV_PRIVATE_KEY", SamplePrivateKey)),
-            ("invalidPassphrase",
-                new { privateKeyName = "DOTENV_PRIVATE_KEY_PRODUCTION" },
-                new InvalidPassphraseException("DOTENV_PRIVATE_KEY_PRODUCTION")),
-            ("invalidPassphrase",
+            ("envfileRequired",
                 new { },
-                new InvalidPassphraseException()),
+                new EnvfileRequiredException()),
+            ("invalidEnv",
+                new { message = "KEY is required; OTHER must be a number" },
+                new InvalidEnvException("KEY is required; OTHER must be a number", [])),
             ("invalidConvention",
                 new { convention = "bogus" },
                 new InvalidConventionException("bogus"))

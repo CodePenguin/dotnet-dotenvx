@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Dotenvx.Interop.IgnoreJs</RootNamespace>
+        <PackageId>Dotenvx.Ignore</PackageId>
+        <Description>.gitignore-style pattern matching, ported from the ignore npm package.</Description>
+        <!-- Tracks the ignore npm package version @dotenvx/tooling depends on (^7.0.5, see dotenvx/node_modules/@dotenvx/tooling/package.json). -->
+        <Version>7.0.5</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Dotenvx.Core"/>
+        <InternalsVisibleTo Include="Dotenvx.Core.Test"/>
+    </ItemGroup>
+
+</Project>

@@ -26,7 +26,6 @@ public class ArmorProviderParityTest(NodeParityFixture fixture) : ArmorParityTes
     [Theory]
     [InlineData("get", "HELLO")]
     [InlineData("get")]
-    [InlineData("validate")]
     [InlineData("keypair")]
     [InlineData("decrypt", "--stdout")]
     [InlineData("run", "--", "node", "-e", "console.log(process.env.HELLO)")]
@@ -112,7 +111,8 @@ public class ArmorProviderParityTest(NodeParityFixture fixture) : ArmorParityTes
 
         Outcome outcome = await CompareWith(EncryptedProject, null, null, "get", "HELLO");
 
-        outcome.Stderr.ShouldNotContain("ECONNREFUSED");
+        // providers 0.3.5 reports the failed connection before the undecryptable value; both CLIs print the same
+        outcome.Stderr.ShouldContain("DECRYPTION_FAILED");
     }
 
     [Theory]
@@ -234,11 +234,11 @@ public class ArmorProviderParityTest(NodeParityFixture fixture) : ArmorParityTes
             return;
         }
 
-        // session turned off, but --token skips the session check (run/validate accept it)
+        // session turned off, but --token skips the session check (run accepts it)
         LoggedIn(on: false);
         Server.Handler = _ => new FakeResponse(200, Keyring);
 
-        Outcome outcome = await CompareWith(EncryptedProject, null, null, "validate", "--token", "tok_x");
+        Outcome outcome = await CompareWith(EncryptedProject, null, null, "run", "--token", "tok_x", "--", "node", "-e", "1");
 
         outcome.Requests.ShouldNotBeEmpty();
     }
@@ -258,59 +258,11 @@ public class ArmorProviderParityTest(NodeParityFixture fixture) : ArmorParityTes
         RedactFiles = true;
         RedactRequests = true;
 
-        Outcome outcome = await CompareWith(args[0] == "set" ? null : () => WriteFile(".env", "A=1\n"), "\n", null, args);
+        Outcome outcome = await CompareWith(args[0] == "set" ? null : () => WriteFile(".env", "A=1\n"), "\n",
+            new Dictionary<string, string> { ["DOTENVX_NO_NATIVE"] = "true" }, args);
 
         outcome.Files.ShouldContainKey(".env.keys");
-        outcome.Requests.ShouldBeEmpty();
-    }
-
-    [Theory]
-    [InlineData("set", "A", "1")]
-    [InlineData("encrypt")]
-    public async Task ArmorStorageChoicePostsTheNewKeypairLikeNode(params string[] args)
-    {
-        if (!Available)
-        {
-            return;
-        }
-
-        LoggedIn();
-        CompareStderr = false;
-        RedactFiles = true;
-        RedactRequests = true;
-        Server.Handler = _ => new FakeResponse(200, """{"changed":true}""");
-
-        Outcome outcome = await CompareWith(args[0] == "set" ? null : () => WriteFile(".env", "A=1\n"),
-            (char)27 + "[B\n", null, args);
-
-        outcome.Files.ContainsKey(".env.keys").ShouldBeFalse("armored keys are not written to .env.keys");
-        outcome.Requests.Single().ShouldContain("POST /api/armor/up");
-    }
-
-    [Fact]
-    public async Task ArmorStorageChoiceWithTeamRequiredMatchesNode()
-    {
-        if (!Available)
-        {
-            return;
-        }
-
-        LoggedIn();
-        CompareStderr = false;
-        RedactFiles = true;
-        RedactRequests = true;
-        Server.Handler = request => request.NormalizedBody.Contains("\"team\"")
-            ? new FakeResponse(200, """{"changed":true}""")
-            : new FakeResponse(400,
-                """{"error":{"code":"TEAM_REQUIRED","message":"team","meta":{"organizations":[{"provider_slug":"acme"},{"provider_slug":"globex"}]}}}""");
-
-        // storage: Armor (down, enter), then the team prompt. Piped in one write, enquirer's first prompt takes the whole
-        // chunk, so the team prompt only ever sees the end of input: the process exits 0 right after the first request
-        string input = (char)27 + "[B\n" + (char)27 + "[B\n";
-        Outcome outcome = await CompareWith(null, input, null, "set", "A", "1");
-
-        outcome.Requests.Length.ShouldBe(1);
-        outcome.ExitCode.ShouldBe(0);
+        outcome.Requests.ShouldAllBe(request => request.Contains("/api/events"), "file storage sends no key to Armor (only the events report)");
     }
 
     [Theory]
@@ -324,9 +276,10 @@ public class ArmorProviderParityTest(NodeParityFixture fixture) : ArmorParityTes
         }
 
         LoggedIn();
+        CompareStderr = false;
         RedactFiles = true;
 
-        Outcome outcome = await CompareWith(args[0] == "set" ? null : () => WriteFile(".env", "A=1\n"), "", null, args);
+        Outcome outcome = await CompareWith(args[0] == "set" ? null : () => WriteFile(".env", "A=1\n"), "", new Dictionary<string, string> { ["DOTENVX_NO_NATIVE"] = "true" }, args);
 
         outcome.Files.ShouldContainKey(".env.keys");
         outcome.Requests.ShouldBeEmpty();
@@ -342,7 +295,7 @@ public class ArmorProviderParityTest(NodeParityFixture fixture) : ArmorParityTes
 
         RedactFiles = true;
 
-        Outcome outcome = await CompareWith(null, "", null, "set", "A", "1");
+        Outcome outcome = await CompareWith(null, "", new Dictionary<string, string> { ["DOTENVX_NO_NATIVE"] = "true" }, "set", "A", "1");
 
         outcome.Files.ShouldContainKey(".env.keys");
     }

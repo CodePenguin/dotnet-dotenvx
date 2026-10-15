@@ -512,4 +512,31 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         dotnet.StandardOutput.ShouldBe(node.StandardOutput);
         dotnet.StandardError.ShouldContain("unknown option '--totally-made-up-flag'");
     }
+
+    /// <remarks>Refer to "get preserves large piped values and JSON on success and failure"</remarks>
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task GetPreservesLargePipedValuesAndJsonOnSuccessAndFailure(bool json, bool missingFile)
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        string value = string.Concat(Enumerable.Repeat("abcdefghij", 100000));
+        string[] args = [.. new[] { "get" }, .. (json ? Array.Empty<string>() : ["BIG"]), "-f", ".env", .. (missingFile ? ["-f", "missing.env"] : Array.Empty<string>())];
+        (CliResult node, CliResult dotnet) = await RunBothAsync(() => WriteFile(".env", $"BIG={value}\n"), null, args);
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.ExitCode.ShouldBe(missingFile ? 1 : 0);
+        dotnet.StandardOutput.Length.ShouldBe(node.StandardOutput.Length);
+        (dotnet.StandardOutput == node.StandardOutput).ShouldBeTrue("stdout matches exactly");
+        if (missingFile)
+        {
+            dotnet.StandardError.ShouldContain("MISSING_ENV_FILE");
+        }
+    }
 }

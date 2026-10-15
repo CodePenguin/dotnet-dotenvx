@@ -1,6 +1,7 @@
 using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Primitives;
+using Dotenvx.Providers;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 using static Dotenvx.Primitives.Primitives;
@@ -53,6 +54,9 @@ public class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = null)
         set => KeyAccess.NoNative = value;
     }
 
+    /// <summary>Where the private key came from in the last <see cref="Run" /> (`origins[filepath]`): null when there was none.</summary>
+    public string? Origin { get; private set; }
+
     public virtual Dictionary<string, string?> Run()
     {
         Dictionary<string, string?> result = new();
@@ -80,20 +84,48 @@ public class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = null)
                 ? envKeysFilePaths
                 : [Path.Combine(Path.GetDirectoryName(NodePath.Resolve(envFilePath)) ?? "", ".env.keys")];
 
-            ring = KeyringSync(new KeyringOptions
+            // the key files are tried first, then the providers; whichever answers is the origin of the key
+            string origin = "environment";
+            Action<string, string>? onProvider = KeyAccess.OnProvider;
+            KeyAccess.OnProvider = (name, _) => origin = name;
+            Func<string, IDictionary<string, string>?>? provider = KeyProviders.Resolve(KeyAccess);
+
+            FileProvider keys = new(new ProviderOptions { Fk = fk });
+            Func<string, IDictionary<string, string>?> lookup = key =>
+            {
+                IDictionary<string, string> found = keys.GetSync(key);
+                if (found.TryGetValue(key, out string? have) && !string.IsNullOrEmpty(have))
+                {
+                    origin = ".env.keys";
+
+                    return found;
+                }
+
+                origin = "custom";
+
+                return provider is null ? new Dictionary<string, string>() : provider(key);
+            };
+
+            try
+            {
+                ring = KeyringSync(new KeyringOptions
             {
                 Ring = ring,
-                Fk = fk,
+                Fk = publicKey != null ? [] : fk,
                 ProcessEnv = EnvironmentHelper.GetEnvironmentVariablesAsDictionary(),
                 ReadFile = path => Fsx.ReadFileX(path),
-                Provider = Providers.Resolve(KeyAccess)
-            });
+                Provider = lookup
+                });
+            }
+            finally
+            {
+                KeyAccess.OnProvider = onProvider;
+            }
 
             result[GuessPublicKeyName(envFilePath)] = publicKey;
-            result[GuessPrivateKeyName(envFilePath)] =
-                publicKey != null && !string.IsNullOrEmpty(ring.GetValueOrDefault(publicKey))
-                    ? ring[publicKey]
-                    : null;
+            bool hasKey = publicKey != null && !string.IsNullOrEmpty(ring.GetValueOrDefault(publicKey));
+            result[GuessPrivateKeyName(envFilePath)] = hasKey ? ring[publicKey!] : null;
+            Origin = hasKey ? origin : null;
         }
 
         return result;

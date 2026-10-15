@@ -10,4 +10,7 @@ public class RunProcessedEnv
     public IReadOnlyDictionary<string, string> Injected { get; set; } = new Dictionary<string, string>();
     public IReadOnlyDictionary<string, string> PreExisted { get; set; } = new Dictionary<string, string>();
     public string Src { get; set; } = string.Empty;
+
+    /// <summary>Where each private key came from (`row.keySources`): environment, .env.keys, custom, armor or a provider name.</summary>
+    public IReadOnlyDictionary<string, string>? KeySources { get; set; }
 }

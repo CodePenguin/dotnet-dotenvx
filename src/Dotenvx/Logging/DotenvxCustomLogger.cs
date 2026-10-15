@@ -34,9 +34,8 @@ public class DotenvxCustomLogger(DotenvxCustomLoggerConfiguration configuration)
             message = $"{message}\n{exception}";
         }
 
-        // upstream stops the spinner before it prints anything
-        Interop.DotenvxJs.Helpers.Spinners.StopActive();
-
+        // a running spinner is not stopped here: yocto-spinner wipes itself before any terminal output and redraws after it
+        // (see YoctoSpinner's stream hook); actions stop it explicitly where upstream does
         // Only "info" goes to stdout upstream (dotenvx/src/shared/logger.js) - everything else
         // (error, infoerror, warn, success, help, verbose, debug) goes to stderr, keeping stdout
         // reserved for actual data (e.g. `get`'s returned values) so it stays script-safe.

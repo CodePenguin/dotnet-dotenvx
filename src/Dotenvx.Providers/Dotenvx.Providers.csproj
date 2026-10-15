@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Dotenvx</RootNamespace>
+        <PackageId>Dotenvx.Providers</PackageId>
+        <Description>Look up dotenvx private keys in .env.keys, the OS secret store, Dotenvx Armor, 1Password and Bitwarden, ported from the @dotenvx/providers npm package and matching it at the same version.</Description>
+        <!-- Tracks the exact @dotenvx/providers npm package version this is ported from (see
+             dotenvx/node_modules/@dotenvx/providers/package.json) - bump in lockstep with that package's own version. -->
+        <Version>0.3.5</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Dotenvx.Core"/>
+        <InternalsVisibleTo Include="Dotenvx.Core.Test"/>
+        <InternalsVisibleTo Include="Dotenvx.Providers.Test"/>
+        <InternalsVisibleTo Include="Dotenvx.Test"/>
+        <InternalsVisibleTo Include="Dotenvx.ParityTest"/>
+        <InternalsVisibleTo Include="Dotenvx.Configuration.Test"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Dotenvx.Primitives\Dotenvx.Primitives.csproj"/>
+    </ItemGroup>
+
+</Project>

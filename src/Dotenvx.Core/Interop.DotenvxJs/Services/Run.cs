@@ -58,6 +58,7 @@ public class Run
     private readonly HashSet<string> _uniqueInjectedKeys = [];
     private readonly bool _useSystemEnv;
 
+    private readonly Dictionary<string, string> _sources = [];
     private Func<string, IDictionary<string, string>?>? _provider;
     private Decryptor? _decryptor;
 
@@ -92,8 +93,14 @@ public class Run
 
     public virtual RunResult Execute()
     {
-        _provider = Providers.Resolve(KeyAccess);
-        _decryptor = Providers.ResolveDecryptor(KeyAccess);
+        Action<string, string>? onProvider = KeyAccess.OnProvider;
+        KeyAccess.OnProvider = (name, key) =>
+        {
+            _sources[key] = name;
+            onProvider?.Invoke(name, key);
+        };
+        _provider = KeyProviders.Resolve(KeyAccess);
+        _decryptor = KeyProviders.ResolveDecryptor(KeyAccess);
 
         EnvItem[] envs = DetermineOnExecute ? DetermineEnvs(_envs, _processEnv) : _envs;
         foreach (EnvItem env in envs)
@@ -137,8 +144,9 @@ public class Run
                 ProcessEnv = new Dictionary<string, string>(_processEnv),
                 Fk = _envKeysFilePaths is { Length: > 0 } ? _envKeysFilePaths : null,
                 Provider = _provider
-            }, _decryptor);
+            }, _decryptor, key => _sources.GetValueOrDefault(key));
             PrimitivesParseOutput parsed = outcome.Output;
+            row.KeySources = outcome.KeySources;
             row.Parsed = parsed.Parsed;
             row.Errors = DecryptErrors(parsed, outcome.LeadingError);
             row.Injected = parsed.Injected;
@@ -152,6 +160,11 @@ public class Run
             {
                 _uniqueInjectedKeys.Add(key); // track uniqueInjectedKeys across multiple files
             }
+        }
+        catch (PromptCancelledException)
+        {
+            // `if (e.code === 'PROMPT_CANCELLED') throw e`
+            throw;
         }
         catch (Exception e)
         {
@@ -250,10 +263,11 @@ public class Run
                 ProcessEnv = _processEnv,
                 Fk = fk,
                 Provider = _provider
-            }, _decryptor);
+            }, _decryptor, key => _sources.GetValueOrDefault(key));
             PrimitivesParseOutput parsed = outcome.Output;
 
             row.Src = src;
+            row.KeySources = outcome.KeySources;
             row.Parsed = parsed.Parsed;
             row.Errors = DecryptErrors(parsed, outcome.LeadingError);
             row.Injected = parsed.Injected;
@@ -266,6 +280,10 @@ public class Run
             {
                 _uniqueInjectedKeys.Add(key);
             }
+        }
+        catch (PromptCancelledException)
+        {
+            throw;
         }
         catch (Exception e)
         {

@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 
 using Dotenvx.Interop.DotenvxJs.Api;
+using Dotenvx.Interop.DotenvxJs.Custodians;
 using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 
@@ -60,7 +61,7 @@ internal static class ArmorTeam
             string chosen = choices[0].Value;
             if (choices.Length > 1)
             {
-                chosen = Prompts.Select("Select team", choices) ?? throw new PromptCancelledException();
+                chosen = Prompts.Select(new Prompts.SelectRequest("Select team", choices) { Prefix = "⛨" }) ?? throw new PromptCancelledException();
             }
 
             return call(chosen);
@@ -78,54 +79,24 @@ internal static class ArmorTeam
     }
 }
 
-/// <remarks>
-/// Reference source: dotenvx/src/lib/transforms/{encrypt,set}.js `selectKeyStorage` and the `PostArmorUp` branch taken when a
-/// brand-new keypair is created while an Armor session is on.
-/// </remarks>
-internal static class KeyStorage
-{
-    /// <summary>`selectKeyStorage() === 'armored'`: asks where the new private key should live.</summary>
-    public static bool ChooseArmored()
-    {
-        string selected = Prompts.Select("Choose private key storage",
-        [
-            new Prompts.Choice("◫ File (.env.keys)", "file"), new Prompts.Choice("⛨ Armor (armor.dotenvx.com)", "armored")
-        ]) ?? throw new PromptCancelledException();
-
-        return selected == "armored";
-    }
-
-    /// <summary>Posts the new keypair to Armor (asking for a team when the account has several); nothing goes in .env.keys.</summary>
-    public static void StoreInArmor(string publicKey, string privateKey)
-    {
-        var session = new Session();
-        string hostname = session.Hostname();
-        string? token = session.Token();
-        string devicePublicKey = session.DevicePublicKey();
-
-        ArmorTeam.Run(null, team => ArmorApi.ArmorUp(hostname, token, devicePublicKey, publicKey, privateKey, team));
-    }
-}
 
 /// <remarks>Reference source: dotenvx/src/lib/services/armorUp.js</remarks>
 public class ArmorUp(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
 {
     public virtual ArmorResult Run()
     {
-        string file = envFile ?? ".env";
-        string privateKeyName = GuessPrivateKeyName(file);
-
-        string? publicKey = ReadEnvKey(GuessPublicKeyName(file), file, true, ["MISSING_PRIVATE_KEY"]);
-        string? privateKey = ReadEnvKey(privateKeyName, ".env.keys", true, ["MISSING_KEY"]);
+        LocalKey source = ResolveLocalKey.Resolve(envFile ?? ".env", true);
+        string? publicKey = source.PublicKey;
+        string? privateKey = source.PrivateKey;
 
         JsonNode json = ArmorTeam.Run(team, chosen =>
             ArmorApi.ArmorUp(hostname, token, devicePublicKey, publicKey, privateKey, chosen,
                 omitPrivateKey: privateKey is null));
 
-        RemoveEnvKey(privateKeyName);
+        source.Remove();
 
-        return new ArmorResult(ArmorTeam.AsBool(json["changed"]), privateKeyName,
-            ArmorTeam.AsString(json["private_key"]), publicKey);
+        return new ArmorResult(ArmorTeam.AsBool(json["changed"]) || !string.IsNullOrEmpty(privateKey),
+            source.PrivateKeyName, ArmorTeam.AsString(json["private_key"]), publicKey);
     }
 }
 
@@ -174,25 +145,14 @@ public class ArmorPush(string hostname, string? token, string devicePublicKey, s
 {
     public virtual ArmorResult Run()
     {
-        string file = envFile ?? ".env";
-        string privateKeyName = GuessPrivateKeyName(file);
-        string privateKey = ReadEnvKey(privateKeyName, ".env.keys", true)!;
-
-        string publicKey;
-        try
-        {
-            publicKey = Primitives.Primitives.Derive(privateKey);
-        }
-        catch
-        {
-            publicKey = "";
-        }
+        LocalKey source = ResolveLocalKey.Resolve(envFile ?? ".env");
+        string privateKey = source.PrivateKey!;
 
         JsonNode json = ArmorTeam.Run(team, chosen =>
             ArmorApi.ArmorPush(hostname, token, devicePublicKey, privateKey, chosen));
 
-        return new ArmorResult(ArmorTeam.AsBool(json["changed"]), privateKeyName,
-            ArmorTeam.AsString(json["private_key"]), publicKey);
+        return new ArmorResult(ArmorTeam.AsBool(json["changed"]), source.PrivateKeyName,
+            ArmorTeam.AsString(json["private_key"]), source.PublicKey);
     }
 }
 
@@ -213,7 +173,7 @@ public class ArmorMove(string hostname, string? token, string devicePublicKey, s
             .Select(o => new Prompts.Choice(o!["provider_slug"]!.ToString(), o["provider_slug"]!.ToString()))
         ];
 
-        string team = Prompts.Select("Select team", choices) ?? throw new PromptCancelledException();
+        string team = Prompts.Select(new Prompts.SelectRequest("Select team", choices) { Prefix = "⛨" }) ?? throw new PromptCancelledException();
         JsonNode json = ArmorApi.ArmorMove(hostname, token, devicePublicKey, publicKey, team);
 
         return new ArmorResult(ArmorTeam.AsBool(json["changed"]), privateKeyName,

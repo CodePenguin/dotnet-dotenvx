@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Text.Json;
 
+using Dotenvx.Interop.DotenvxJs.Events;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -16,6 +17,12 @@ namespace Dotenvx.Interop.DotenvxJs;
 public static class Main
 {
     public static ConfigResult Config(ConfigOptions? options = null)
+    {
+        return Config(options, null);
+    }
+
+    /// <summary>Plain `config` or the instrumented one behind <see cref="WithEvents" />.</summary>
+    internal static ConfigResult Config(ConfigOptions? options, EventRecorder? events)
     {
         options ??= new ConfigOptions();
         options = NormalizeDotenvConfigQuiet(options);
@@ -40,16 +47,43 @@ public static class Main
         // envKeysFile
         string[]? envKeysFile = string.IsNullOrEmpty(options.EnvKeysFile) ? null : [options.EnvKeysFile];
 
+        // dotenvx-armor related (asked before anything else, as main.js does)
+        bool noArmor = ResolveNoArmor(options);
+
+        bool fatal = false;
+        string[] sensitiveValues = [];
         try
         {
-            EnvItem[] envs = NormalizeDotenvConfigPath(BuildConfigEnvs(options));
+            // `{ ...process.env, ...processEnv }`
+            Dictionary<string, string?> selectionEnv = new(CurrentProcessEnv());
+            foreach ((string name, string value) in processEnv)
+            {
+                selectionEnv[name] = value;
+            }
+
+            EnvItem[] envs = options.Envs ?? SelectEnvfileEnvs(BuildConfigEnvs(options),
+                new SelectEnvfileOptions { Profile = options.Profile }, selectionEnv);
+            EnvfileSchema schema = ReadEnvfile.Read(null, envs.Where(env => env.Type == EnvType.EnvFile).Select(env => env.Value));
 
             Run run = Run.Factory(envs, options.Overload ?? false, processEnv, envKeysFile);
-            run.DetermineOnExecute = options.Envs == null;
+            run.DetermineOnExecute = false;
             run.NoNative = options.NoNative == true;
+            run.KeyAccess.NoArmor = noArmor;
+            run.KeyAccess.Logger = options?.Logger;
+            run.KeyAccess.Token = options.Token;
             run.No1Password = options.No1Password == true;
             run.NoBitwarden = options.NoBitwarden == true;
             RunResult runResult = run.Execute();
+
+            CheckResult check = schema.Exists
+                ? global::Dotenvx.Primitives.Primitives.Check(schema.Policy, new Dictionary<string, string>(processEnv))
+                : new CheckResult();
+            InvalidEnvException? validationError = PrepareValidatedEnv.ValidationError(check.Errors);
+            sensitiveValues = RedactedValues(runResult.ProcessedEnvs, schema, processEnv);
+            if (schema.Exists)
+            {
+                RedactProcessOutput.Install(sensitiveValues);
+            }
 
             if (options.Mask != null)
             {
@@ -70,7 +104,7 @@ public static class Main
 
                 foreach (Exception error in processedEnv.Errors)
                 {
-                    string errorCode = error is DotenvxException dotenvxError ? dotenvxError.Code : "GENERIC_ERROR";
+                    string errorCode = ErrorCodeOf(error) ?? "GENERIC_ERROR";
 
                     // Check if the error code is in the ignore list
                     bool isIgnored = ignore.Contains(errorCode); // exact code match, like `ignore.includes(error.code)`
@@ -82,6 +116,8 @@ public static class Main
 
                     if (strict)
                     {
+                        fatal = true;
+
                         throw error; // Re-throw the original exception if strict mode is enabled
                     }
 
@@ -96,7 +132,10 @@ public static class Main
                 }
 
                 // debug parsed
-                logger?.Debug($"parsed: {JsonStringify(processedEnv.Parsed)}");
+                // a file that could not be loaded has no `parsed` (JS prints `undefined`)
+                logger?.Debug(processedEnv.Errors.Any(failure => ErrorCodeOf(failure) == "MISSING_ENV_FILE")
+                    ? "undefined"
+                    : RedactOutputText(JsonStringify(processedEnv.Parsed), sensitiveValues)!);
 
                 foreach (KeyValuePair<string, string> entry in processedEnv.Injected)
                 {
@@ -104,7 +143,7 @@ public static class Main
 
                     // verbose/debug injected key/value
                     logger?.Verbose($"{entry.Key} set");
-                    logger?.Debug($"{entry.Key} set to {entry.Value}");
+                    logger?.Debug(RedactOutputText($"{entry.Key} set to {entry.Value}", sensitiveValues)!);
 
                     // Inject into System Environment
                     if (useSystemEnv)
@@ -118,17 +157,47 @@ public static class Main
                     parsedAll[entry.Key] = entry.Value;
                     // verbose/debug preExisted key/value
                     logger?.Verbose($"{entry.Key} pre-exists (protip: use --overload to override)");
-                    logger?.Debug($"{entry.Key} pre-exists as {entry.Value} (protip: use --overload to override)");
+                    logger?.Debug(RedactOutputText(
+                        $"{entry.Key} pre-exists as {entry.Value} (protip: use --overload to override)", sensitiveValues)!);
                 }
             }
 
-            string msg = $"injected env ({runResult.UniqueInjectedKeys.Length})";
-            if (runResult.ReadableFilePaths.Length > 0)
+            if (validationError is not null)
             {
-                msg += $" from {string.Join(", ", runResult.ReadableFilePaths)}";
+                if (ignore.Contains(validationError.Code))
+                {
+                    logger?.Verbose($"ignored: {validationError.Message}");
+                }
+                else if (strict || validationError.Diagnostics.Any(diagnostic => diagnostic.Strict))
+                {
+                    fatal = true;
+
+                    throw validationError;
+                }
+                else
+                {
+                    logger?.Warn(validationError.MessageWithHelp ?? validationError.Message);
+                    lastError = validationError;
+                }
             }
 
-            logger?.Success($"⟐ {msg}");
+            events?.Add(new Dictionary<string, object?>
+            {
+                ["files"] = runResult.ReadableFilePaths, ["injected_count"] = (long)runResult.UniqueInjectedKeys.Length
+            });
+            logger?.Success(global::Dotenvx.Primitives.Primitives.InjectSummary(runResult.UniqueInjectedKeys.Length,
+                runResult.ReadableFilePaths.Select(filepath =>
+                {
+                    RunProcessedEnv? row = runResult.ProcessedEnvs.FirstOrDefault(item => item.FilePath == filepath);
+
+                    return new InjectSummaryFile(filepath,
+                        row is null ? [] : global::Dotenvx.Primitives.Primitives.PublicKeys(row.Src), row?.KeySources);
+                })));
+
+            if (lastError != null)
+            {
+                events?.Fail(lastError);
+            }
 
             return lastError != null
                 ? new ConfigResult { Parsed = parsedAll, Error = lastError }
@@ -136,15 +205,22 @@ public static class Main
         }
         catch (Exception error)
         {
-            if (strict)
+            events?.Fail(error);
+            if (strict || fatal || ErrorCodeOf(error) == "MALFORMED_ENVFILE")
             {
                 throw; // re-throw if strict
             }
 
-            logger?.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
+            logger?.Error(RedactOutputText((error as DotenvxException)?.MessageWithHelp ?? error.Message, sensitiveValues)!);
 
             return new ConfigResult { Parsed = new Dictionary<string, string>(), Error = error };
         }
+    }
+
+    /// <summary>`resolveNoArmor(options)`: `noArmor`, or (without a token) no active Armor session.</summary>
+    private static bool ResolveNoArmor(ConfigOptions? options)
+    {
+        return options?.NoArmor == true || (string.IsNullOrEmpty(options?.Token) && new Db.Session(options?.Logger).NoArmor());
     }
 
     private static void SetLogLevel(IDotenvxLogger? logger, ConfigOptions options)
@@ -154,33 +230,31 @@ public static class Main
             return;
         }
 
-        DotenvxLogLevel logLevel = DotenvxLogLevel.Info; // default
-        if (options.Debug == true)
+        // setLogLevel (shared/logger.js): debug, then verbose, then quiet (error), else `options.logLevel`; nothing at all when none is given
+        string? name = options.Debug == true ? "debug"
+            : options.Verbose == true ? "verbose"
+            : options.Quiet == true ? "error"
+            : options.LogLevel;
+        if (string.IsNullOrEmpty(name))
         {
-            logLevel = DotenvxLogLevel.Debug;
-        }
-        else if (options.Verbose == true)
-        {
-            logLevel = DotenvxLogLevel.Verbose;
-        }
-        else if (options.Quiet == true)
-        {
-            logLevel = DotenvxLogLevel.Error;
-        }
-        else if (!string.IsNullOrEmpty(options.LogLevel))
-        {
-            logLevel = DotenvxLogLevelExtensions.FromString(options.LogLevel);
+            return;
         }
 
+        DotenvxLogLevel logLevel = DotenvxLogLevelExtensions.FromString(name);
         logger.SetLevel(logLevel);
         // Only log which level it's setting if it's not set to quiet mode
-        if (options.Quiet != true || (options.Quiet == true && logLevel != DotenvxLogLevel.Error))
+        if (options.Quiet != true || name != "error")
         {
-            logger.Debug($"Setting log level to {logLevel.ToString().ToLowerInvariant()}");
+            logger.Debug($"setting log level to: {name}");
         }
     }
 
     public static object? Get(string? key, GetOptions? options = null)
+    {
+        return Get(key, options, null);
+    }
+
+    internal static object? Get(string? key, GetOptions? options, EventRecorder? events)
     {
         options ??= new GetOptions();
         options = (GetOptions)NormalizeDotenvConfigConvention(options);
@@ -190,8 +264,14 @@ public static class Main
         Services.Get getService = Services.Get.Factory(key, envs, options.Overload ?? false, options.All ?? false,
             string.IsNullOrEmpty(options.EnvKeysFile) ? null : [options.EnvKeysFile]);
         getService.NoNative = options.NoNative == true;
+        getService.KeyAccess.NoArmor = ResolveNoArmor(options);
+        getService.KeyAccess.Logger = options?.Logger;
         getService.No1Password = options.No1Password == true;
+        getService.KeyAccess.No1Password = getService.No1Password;
+        getService.KeyAccess.NoBitwarden = options.NoBitwarden == true;
         getService.NoBitwarden = options.NoBitwarden == true;
+        getService.Profile = options.Profile;
+        getService.ResolveDirectories = false;
         getService.PromptForSecrets = true;
         GetResult result = getService.Run();
 
@@ -212,6 +292,7 @@ public static class Main
                 continue;
             }
 
+            events?.Fail(error);
             if (options.Strict == true)
             {
                 throw error;
@@ -219,6 +300,12 @@ public static class Main
 
             options.Logger?.Error((error as DotenvxException)?.MessageWithHelp ?? error.Message);
         }
+
+        events?.Add(new Dictionary<string, object?>
+        {
+            ["error_count"] = (long)result.Errors.Count(error =>
+                !ignore.Contains(error is DotenvxException dotenvx ? dotenvx.Code : "GENERIC_ERROR"))
+        });
 
         if (key != null)
         {
@@ -323,34 +410,61 @@ public static class Main
         return parsed;
     }
 
+    /// <summary>
+    /// An explicitly instrumented SDK client using connected Armor (main.js `withEvents`). `Config` stays synchronous;
+    /// `Get`/`Set` preserve their results and errors. Plain SDK calls are unchanged.
+    /// </summary>
+    public static EventSdk WithEvents()
+    {
+        return new EventSdk();
+    }
+
     public static SetsResult Set(string key, string value, SetsOptions? options = null)
     {
+        return Set(key, value, options, null);
+    }
+
+    internal static SetsResult Set(string key, string value, SetsOptions? options, EventRecorder? events)
+    {
+        if (options != null)
+        {
+            options = (SetsOptions)NormalizeDotenvConfigQuiet(options);
+        }
+
         // encrypt
         bool encrypt = !(options?.Plain == true || options?.Encrypt == false);
         bool noCreate = options?.NoCreate == true;
         string withEncryption = encrypt ? " with encryption" : "";
+
+        if (options != null)
+        {
+            SetLogLevel(options.Logger, options);
+        }
 
         EnvItem[] envs = BuildEnvs(options ?? new SetsOptions());
         string? envKeysFilepath = options?.EnvKeysFile;
 
         Sets setsService = Sets.Factory(key, value, envs, encrypt, envKeysFilepath, noCreate);
         setsService.NoNative = options?.NoNative == true;
+        setsService.KeyAccess.NoArmor = ResolveNoArmor(options);
+        setsService.KeyAccess.Logger = options?.Logger;
+        setsService.KeyAccess.No1Password = options?.No1Password == true;
+        setsService.KeyAccess.NoBitwarden = options?.NoBitwarden == true;
+        setsService.Profile = options?.Profile;
         SetsResult result = setsService.Run();
 
         if (!string.IsNullOrEmpty(result.KeysSrc))
         {
-            Fsx.WriteFileX(envKeysFilepath ?? ".env.keys", result.KeysSrc);
+            Fsx.WriteKeyFile(envKeysFilepath ?? ".env.keys", result.KeysSrc);
         }
 
         foreach (ProcessedSet processedEnv in result.ProcessedEnvs)
         {
-            if (processedEnv.Error == null)
-            {
-                Fsx.WriteFileX(processedEnv.FilePath, processedEnv.EnvSrc);
-            }
+            options?.Logger?.Verbose($"setting for {processedEnv.EnvFilePath}");
 
             if (processedEnv.Error == null)
             {
+                Fsx.WriteFileX(processedEnv.FilePath, processedEnv.EnvSrc);
                 options?.Logger?.Verbose($"{key} set{withEncryption} ({processedEnv.EnvFilePath})");
                 options?.Logger?.Debug(
                     $"{key} set{withEncryption} to {processedEnv.Value} ({processedEnv.EnvFilePath})");
@@ -360,10 +474,17 @@ public static class Main
                 options?.Logger?.Warn((processedEnv.Error as DotenvxException)?.MessageWithHelp ??
                                        processedEnv.Error.Message);
             }
+
+            events?.File(processedEnv.EnvFilePath, processedEnv.Changed, processedEnv.Error,
+                new Dictionary<string, object?> { ["key"] = key, ["output"] = "file" });
         }
 
-        // this port has no native/armor key storage (out of scope - see docs/porting-traps.md, submodule-pin
-        // note), so remotePrivateKeyAdded/the " · armored ⛨" suffix can never apply here.
+        events?.Add(new Dictionary<string, object?>
+        {
+            ["error_count"] = (long)result.ProcessedEnvs.Count(env => env.Error is not null)
+        });
+
+        // main.js reads `remotePrivateKeyAdded` (the " · armored ⛨" suffix) but no transform ever sets it, so it can never apply
         ProcessedSet? localKeyAddedEnv = result.ProcessedEnvs.FirstOrDefault(p => p.PrivateKeyAdded);
 
         if (result.ChangedFilePaths.Length > 0)

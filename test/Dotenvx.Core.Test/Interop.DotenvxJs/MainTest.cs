@@ -1160,4 +1160,47 @@ public class MainTest : EnvironmentTestBase
         MockLogger.ErrorMessages.ShouldBeEmpty();
         MockLogger.VerboseMessages.ShouldContain(m => m.StartsWith("ignored: [MISSING_PRIVATE_KEY]"));
     }
+
+    /// <remarks>Not from a JS test: main.js `resolveNoArmor` / `token` handling.</remarks>
+    [Fact]
+    public void TestConfigPassesTheArmorTokenAndNoArmorToTheResolver()
+    {
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs = [],
+            ReadableStrings = [],
+            ReadableFilePaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        Main.Config(new ConfigOptions { Token = "tok" });
+        mockRun.KeyAccess.Token.ShouldBe("tok");
+        mockRun.KeyAccess.NoArmor.ShouldBeFalse(); // a token forces Armor on without looking at the session
+
+        Main.Config(new ConfigOptions { NoArmor = true });
+        mockRun.KeyAccess.NoArmor.ShouldBeTrue();
+        mockRun.KeyAccess.Token.ShouldBeNull();
+
+        Main.Config(new ConfigOptions()); // no session in the unit-test config directory: Armor is off
+        mockRun.KeyAccess.NoArmor.ShouldBeTrue();
+    }
+
+    /// <remarks>Not from a JS test: main.js `resolveNoArmor` for get.</remarks>
+    [Fact]
+    public void TestGetResolvesNoArmorLikeConfig()
+    {
+        Get mockGet = Substitute.For<Get>("KEY", Array.Empty<EnvItem>(), false, false, null!);
+        mockGet.Run().Returns(new GetResult { Parsed = new Dictionary<string, string>(), Errors = [] });
+        Get.Factory = (_, _, _, _, _) => mockGet;
+
+        Main.Get("KEY", new GetOptions { Token = "tok" });
+        mockGet.KeyAccess.NoArmor.ShouldBeFalse();
+
+        Main.Get("KEY", new GetOptions { NoArmor = true });
+        mockGet.KeyAccess.NoArmor.ShouldBeTrue();
+    }
 }

@@ -74,19 +74,6 @@ public class ErrorsTest
             "[MISSING_ENV_FILE] missing file (.env). fix: [https://github.com/dotenvx/dotenvx/issues/484]");
     }
 
-    /// <remarks>Refer to "#errors validationFailed"</remarks>
-    [Fact]
-    public void TestValidationFailed()
-    {
-        ValidationFailedException result = new("missing required (DATABASE_URL)");
-
-        result.Code.ShouldBe("VALIDATION_FAILED");
-        result.Message.ShouldBe("[VALIDATION_FAILED] missing required (DATABASE_URL)");
-        result.Help.ShouldBe("fix: [https://github.com/dotenvx/dotenvx/issues/907]");
-        result.MessageWithHelp.ShouldBe(
-            "[VALIDATION_FAILED] missing required (DATABASE_URL). fix: [https://github.com/dotenvx/dotenvx/issues/907]");
-    }
-
     /// <remarks>Refer to "#errors missingEnvKeysFile falls back to .env.keys"</remarks>
     [Fact]
     public void TestMissingEnvKeysFileFallsBackToEnvKeys()

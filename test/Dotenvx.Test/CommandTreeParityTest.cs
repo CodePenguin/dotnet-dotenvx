@@ -34,6 +34,7 @@ public class CommandTreeParityTest : EnvironmentTestBase
             new DelAction(MockLogger),
             new DoctorAction(MockLogger),
             new EncryptAction(MockLogger),
+            new FeedbackAction(MockLogger),
             new ExtCommand(
                 new GenexampleAction(MockLogger), new GitignoreAction(MockLogger), new LsAction(MockLogger),
                 new PrebuildAction(MockLogger), new PrecommitAction(MockLogger), new ScanAction(MockLogger),
@@ -42,18 +43,23 @@ public class CommandTreeParityTest : EnvironmentTestBase
             new GetAction(MockLogger),
             new GitignoreAction(MockLogger),
             new global::Dotenvx.Actions.HelpAction(),
+            new HiddenCommand(),
             new KeyPairAction(MockLogger),
-            new LockCommand(MockLogger),
             new LoginAction(MockLogger),
             new LogoutAction(MockLogger),
             new LsAction(MockLogger),
+            new BitwardenCommand(MockLogger),
+            new CheckAction(MockLogger, new global::Dotenvx.Logging.DotenvxLoggerOptions()),
             new NativeCommand(MockLogger),
+            new OnePasswordCommand(MockLogger),
             new PrebuildAction(MockLogger),
+            new ProtectAction(MockLogger),
+            new PrimitivesCommand(MockLogger),
             new PrecommitAction(MockLogger),
             new RunAction(MockLogger),
             new SetAction(MockLogger),
-            new UpdateAction(),
-            new ValidateAction(MockLogger));
+            new SpecAction(MockLogger),
+            new UpdateAction());
         return root;
     }
 
@@ -81,6 +87,44 @@ public class CommandTreeParityTest : EnvironmentTestBase
         differences.ShouldBeEmpty();
     }
 
+    [Fact]
+    public void EveryRegisteredOptionExistsAndNothingElseDoes()
+    {
+        var differences = new List<string>();
+        CompareRegistrations(BuildRoot(), CommanderHelp.RootSpec, "dotenvx", differences);
+
+        differences.ShouldBeEmpty();
+    }
+
+    /// <summary>Hidden options count too: commander rejects any flag it did not register ().</summary>
+    private static void CompareRegistrations(Command ours, HelpSpec spec, string path, List<string> differences)
+    {
+        if (path != "dotenvx")
+        {
+            var ourFlags = ours.Options.SelectMany(o => Flags(o)).Where(f => !DotnetOnly.Contains(f)).ToHashSet();
+            var upstreamFlags = spec.Registrations.SelectMany(r => new[] { r.Long, r.Short }).OfType<string>().ToHashSet();
+            upstreamFlags.ExceptWith(RootOnlyUpstream);
+            foreach (string flag in upstreamFlags.Except(ourFlags).Except(["--pp"]))
+            {
+                differences.Add($"{path}: upstream option '{flag}' is missing");
+            }
+
+            foreach (string flag in ourFlags.Except(upstreamFlags))
+            {
+                differences.Add($"{path}: extra option '{flag}' (not upstream)");
+            }
+        }
+
+        foreach (HelpSpec child in spec.Children)
+        {
+            Command? match = ours.Subcommands.FirstOrDefault(c => Names(c).Contains(child.Name));
+            if (match is not null)
+            {
+                CompareRegistrations(match, child, $"{path} {child.Name}", differences);
+            }
+        }
+    }
+
     private static void Compare(Command ours, HelpSpec spec, string path, List<string> differences)
     {
         // (upstream lists `help [command]` as a command argument we model as an optional argument)
@@ -97,7 +141,7 @@ public class CommandTreeParityTest : EnvironmentTestBase
             differences.Add($"{path}: extra command '{name}' (not upstream)");
         }
 
-        var ourFlags = ours.Options.SelectMany(o => Flags(o)).Where(f => !DotnetOnly.Contains(f) || (path == "dotenvx" && RootOnlyUpstream.Contains(f)))
+        var ourFlags = ours.Options.Where(o => !o.Hidden).SelectMany(o => Flags(o)).Where(f => !DotnetOnly.Contains(f) || (path == "dotenvx" && RootOnlyUpstream.Contains(f)))
             .ToHashSet();
         var upstreamFlags = spec.Options.SelectMany(o => TermFlags(o.Term)).ToHashSet();
         if (path != "dotenvx")
@@ -110,7 +154,8 @@ public class CommandTreeParityTest : EnvironmentTestBase
             differences.Add($"{path}: upstream option '{flag}' is missing");
         }
 
-        foreach (string flag in ourFlags.Except(upstreamFlags))
+        // `--env-file` is the hidden legacy spelling of `--file` (fileOptions.js)
+        foreach (string flag in ourFlags.Except(upstreamFlags).Except(["--env-file"]))
         {
             differences.Add($"{path}: extra option '{flag}' (not upstream)");
         }

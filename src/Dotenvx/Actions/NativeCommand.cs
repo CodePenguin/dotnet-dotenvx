@@ -2,11 +2,13 @@ using System;
 using System.CommandLine;
 
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 
 using ParseResult = System.CommandLine.ParseResult;
+using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
 namespace Dotenvx.Actions;
 
@@ -34,6 +36,7 @@ public class NativeCommand : Command
 
         SetAction(parseResult =>
         {
+            new Session(logger).NotifyUpdate();
             // native.js: `this.help()` prints the native help and exits 0
             parseResult.RootCommandResult.Command.Parse(["native", "--help"]).Invoke();
             return 0;
@@ -42,8 +45,8 @@ public class NativeCommand : Command
 
     private sealed class Step : Command
     {
-        private readonly Option<string?> _envFileOption = LockCommand.EnvFileOption();
-        private readonly Option<string> _envKeysFileOption = LockCommand.EnvKeysFileOption();
+        private readonly Option<string?> _envFileOption = CustodyOptions.EnvFileOption();
+        private readonly Option<string> _envKeysFileOption = CustodyOptions.EnvKeysFileOption();
 
         public Step(string name, string description, IDotenvxLogger logger,
             Func<string?, string?, KeychainResult> run,
@@ -51,7 +54,13 @@ public class NativeCommand : Command
         {
             Add(_envFileOption);
             Add(_envKeysFileOption);
-            SetAction(parseResult => Execute(parseResult, logger, run, successMessage));
+            SetAction(parseResult =>
+            {
+                // native.js preAction hook
+                new Session(logger).NotifyUpdate();
+
+                return Execute(parseResult, logger, run, successMessage);
+            });
         }
 
         private static string SpinnerText(string name)
@@ -66,7 +75,7 @@ public class NativeCommand : Command
             using SpinnerScope spinner = SpinnerScope.Start(parseResult, SpinnerText(parseResult.CommandResult.Command.Name));
             string? envFile = parseResult.GetValue(_envFileOption);
             string envKeysFile = parseResult.GetValue(_envKeysFileOption) ?? ".env.keys";
-            logger.Debug($"options: {LockCommand.OptionsJson(envFile, envKeysFile)}");
+            logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
             try
             {

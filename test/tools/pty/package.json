@@ -1,0 +1,9 @@
+{
+  "name": "dotenvx-parity-pty-tools",
+  "private": true,
+  "description": "Pseudo-terminal harness for the interactive parity tests (node-pty + an xterm emulator to read the screen)",
+  "dependencies": {
+    "@xterm/headless": "5.5.0",
+    "node-pty": "1.1.0"
+  }
+}

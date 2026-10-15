@@ -45,7 +45,7 @@ public class LsAction : Command
         };
 
     private readonly Option<string[]?> _envFileOption =
-        new("--env-file", "-f")
+        new("--file", "-f", "--env-file")
         {
             Description = "path(s) to your env file(s) (default: \".env*\")", HelpName = "filenames...",
             AllowMultipleArgumentsPerToken = true,
@@ -82,7 +82,7 @@ public class LsAction : Command
         using SpinnerScope spinner = SpinnerScope.Start(parseResult, "traversing");
 
         DateTime startedAt = DateTime.UtcNow;
-        string directory = parseResult.GetValue(_directoryArgument) is { Length: > 0 } given ? given : "./";
+        string directory = parseResult.GetValue(_directoryArgument) is { Length: > 0 } given ? given : ".";
         string[]? envFile = parseResult.GetValue(_envFileOption);
         string[]? excludeEnvFile = parseResult.GetValue(_excludeEnvFileOption);
         bool json = parseResult.GetValue(_jsonOption);
@@ -91,7 +91,7 @@ public class LsAction : Command
         _logger.Debug($"directory: {directory}");
 
         var options = new { envFile, excludeEnvFile };
-        _logger.Debug($"options: {JsonStringify(options)}");
+        _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         Ls lsService = Ls.Factory(directory, envFile, excludeEnvFile);
         string[] filepaths = lsService.Run();

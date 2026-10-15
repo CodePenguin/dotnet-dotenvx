@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json;
 
+using Dotenvx.Providers;
+
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>An OS secret store holding dotenvx private keys, addressed by public key (providers/native/index.js).</summary>
@@ -91,10 +93,32 @@ public static class NativeStore
         };
     }
 
+    // nativeStoreError.js: ENOENT, and on Linux a missing D-Bus session, mean "no store here"; anything else is a failed access
+    private static NativeStoreException StoreError(string message, SecretCliResult? result, bool linux = false)
+    {
+        bool unavailable = result is not null && (result.NotFound || (linux && LinuxUnavailable.IsMatch(result.Stderr)));
+
+        return new NativeStoreException(unavailable ? "NATIVE_UNAVAILABLE" : "NATIVE_ACCESS_FAILED", message);
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex LinuxUnavailable = new(
+        @"org\.freedesktop\.DBus\.Error\.(ServiceUnknown|NoServer)|Cannot autolaunch D-Bus without X11|Failed to connect to socket .*: No such file or directory",
+        System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
     /// <remarks>Reference source: dotenvx/src/lib/helpers/macosKeychain.js</remarks>
     internal sealed class MacosKeychain : INativeSecretStore
     {
         private const string SecurityBin = "/usr/bin/security";
+
+        private static string QuoteArgument(string value)
+        {
+            if (value.IndexOfAny(['\r', '\n', '\0']) >= 0)
+            {
+                throw new InvalidOperationException("invalid Keychain argument");
+            }
+
+            return "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        }
 
         public string? Get(string publicKey)
         {
@@ -102,8 +126,7 @@ public static class NativeStore
             SecretCliResult result = SecretCli.Exec(SecurityBin, args, null);
             if (result.NotFound || result.ExitCode != 0)
             {
-                // execFileSync's own error: the Node message is "Command failed: <command line>"
-                throw new InvalidOperationException($"Command failed: {SecurityBin} {string.Join(' ', args)}");
+                throw StoreError("failed to read private key from macOS Keychain", result);
             }
 
             return result.Stdout.Trim();
@@ -111,11 +134,28 @@ public static class NativeStore
 
         public void Set(string publicKey, string privateKey, string label)
         {
-            SecretCliResult result = SecretCli.Exec(SecurityBin,
-                ["add-generic-password", "-U", "-s", Service, "-a", publicKey, "-l", label, "-w", privateKey], null);
-            if (result.NotFound || result.ExitCode != 0)
+            SecretCliResult? result = null;
+            try
             {
-                throw new InvalidOperationException("failed to save private key to macOS Keychain");
+                string input = string.Join(' ',
+                    new[] { "add-generic-password", "-U", "-s", Service, "-a", publicKey, "-l", label, "-w", privateKey }
+                        .Select(QuoteArgument)) + "\n";
+                // the 4096-byte line buffer of security must also consume the newline and NUL.
+                if (System.Text.Encoding.UTF8.GetByteCount(input) >= 4096)
+                {
+                    throw new InvalidOperationException("Keychain command too long");
+                }
+
+                // Interactive security can exit zero on failure, so inspect stderr too.
+                result = SecretCli.ExecWithInput(SecurityBin, ["-i"], input);
+                if (result.NotFound || result.ExitCode != 0 || result.Stderr.Length > 0)
+                {
+                    throw new InvalidOperationException("Keychain write failed");
+                }
+            }
+            catch (Exception)
+            {
+                throw StoreError("failed to save private key to macOS Keychain", result);
             }
         }
 
@@ -125,7 +165,7 @@ public static class NativeStore
                 ["delete-generic-password", "-s", Service, "-a", publicKey], null);
             if (result.NotFound || result.ExitCode != 0)
             {
-                throw new InvalidOperationException("failed to delete private key from macOS Keychain");
+                throw StoreError("failed to delete private key from macOS Keychain", result);
             }
         }
     }
@@ -145,7 +185,7 @@ public static class NativeStore
             SecretCliResult result = SecretCli.Exec(SecretToolBin, ["lookup", .. Attributes(publicKey)], null);
             if (result.NotFound || result.ExitCode != 0)
             {
-                throw new InvalidOperationException("failed to read private key from Linux Secret Service");
+                throw StoreError("failed to read private key from Linux Secret Service", result, true);
             }
 
             string value = result.Stdout.Trim();
@@ -159,7 +199,7 @@ public static class NativeStore
                 ["store", $"--label={label}", .. Attributes(publicKey)], privateKey);
             if (result.NotFound || result.ExitCode != 0)
             {
-                throw new InvalidOperationException("failed to save private key to Linux Secret Service");
+                throw StoreError("failed to save private key to Linux Secret Service", result, true);
             }
         }
 
@@ -168,7 +208,7 @@ public static class NativeStore
             SecretCliResult result = SecretCli.Exec(SecretToolBin, ["clear", .. Attributes(publicKey)], null);
             if (result.NotFound || result.ExitCode != 0)
             {
-                throw new InvalidOperationException("failed to delete private key from Linux Secret Service");
+                throw StoreError("failed to delete private key from Linux Secret Service", result, true);
             }
         }
     }
@@ -187,53 +227,40 @@ public static class NativeStore
         }
 
         /// <summary>`run(payload)`: the script reads the JSON payload from stdin; any failure throws.</summary>
-        private static string Run(object payload)
+        private static SecretCliResult Run(object payload)
         {
-            SecretCliResult result = SecretCli.ExecWithInput(PowershellBin,
+            return SecretCli.ExecWithInput(PowershellBin,
                 ["-NoProfile", "-NonInteractive", "-EncodedCommand", EncodedScript], JsonSerializer.Serialize(payload));
-            if (result.NotFound || result.ExitCode != 0)
-            {
-                throw new InvalidOperationException("powershell failed");
-            }
-
-            return result.Stdout;
         }
 
         public string? Get(string publicKey)
         {
-            try
+            SecretCliResult result = Run(new { action = "read", target = Target(publicKey) });
+            if (result.NotFound || result.ExitCode != 0)
             {
-                string value = Run(new { action = "read", target = Target(publicKey) }).Trim();
+                throw StoreError("failed to read private key from Windows Credential Manager", result);
+            }
 
-                return value == "" ? null : value;
-            }
-            catch
-            {
-                throw new InvalidOperationException("failed to read private key from Windows Credential Manager");
-            }
+            string value = result.Stdout.Trim();
+
+            return value == "" ? null : value;
         }
 
         public void Set(string publicKey, string privateKey, string label)
         {
-            try
+            SecretCliResult result = Run(new { action = "write", target = Target(publicKey), username = publicKey, secret = privateKey });
+            if (result.NotFound || result.ExitCode != 0)
             {
-                Run(new { action = "write", target = Target(publicKey), username = publicKey, secret = privateKey });
-            }
-            catch
-            {
-                throw new InvalidOperationException("failed to save private key to Windows Credential Manager");
+                throw StoreError("failed to save private key to Windows Credential Manager", result);
             }
         }
 
         public void Delete(string publicKey)
         {
-            try
+            SecretCliResult result = Run(new { action = "delete", target = Target(publicKey) });
+            if (result.NotFound || result.ExitCode != 0)
             {
-                Run(new { action = "delete", target = Target(publicKey) });
-            }
-            catch
-            {
-                throw new InvalidOperationException("failed to delete private key from Windows Credential Manager");
+                throw StoreError("failed to delete private key from Windows Credential Manager", result);
             }
         }
     }

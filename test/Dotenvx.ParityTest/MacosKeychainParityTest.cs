@@ -79,6 +79,8 @@ public class MacosKeychainParityTest(NodeParityFixture fixture) : ParityTestBase
                           const real = cp.execFileSync
                           const fake = {{JsonSerializer.Serialize(nodeFake)}}
                           cp.execFileSync = (bin, args, opts) => real(bin === '{{SecurityBin}}' ? fake : bin, args, opts)
+                          const realSpawn = cp.spawnSync
+                          cp.spawnSync = (bin, args, opts) => realSpawn(bin === '{{SecurityBin}}' ? fake : bin, args, opts)
                           const keychain = require('./src/lib/helpers/macosKeychain')
                           const sequence = {{JsonSerializer.Serialize(Sequence.Select(s => new[] { s.Op, s.Key, s.Value }))}}
                           const lines = []
@@ -105,10 +107,13 @@ public class MacosKeychainParityTest(NodeParityFixture fixture) : ParityTestBase
         var results = new List<(string Op, string Key, string Value, string Outcome)>();
         var original = SecretCli.Exec;
         var originalWithInput = SecretCli.ExecWithInput;
+        var originalFull = SecretCli.ExecFull;
         var fakeEnv = new Dictionary<string, string> { ["FAKE_SECURITY_DIR"] = Path.Combine(FakeDirectory("dotnet"), "vault") };
         try
         {
             SecretCli.Exec = (command, args, env) => original(command == SecurityBin ? dotnetFake : command, args, fakeEnv);
+            SecretCli.ExecWithInput = (command, args, input) =>
+                originalFull(command == SecurityBin ? dotnetFake : command, args, fakeEnv, input);
             var keychain = new NativeStore.MacosKeychain();
             foreach ((string op, string key, string value) in Sequence)
             {

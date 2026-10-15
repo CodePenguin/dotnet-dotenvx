@@ -9,7 +9,7 @@ namespace Dotenvx.ParityTest;
 /// </remarks>
 public class RealWindowsCredentialManagerParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 {
-    private static readonly Dictionary<string, string> Env = new() { ["CI"] = "" };
+    private static readonly Dictionary<string, string> Env = new() { ["CI"] = "", ["DOTENVX_NO_NATIVE"] = "false" };
 
     private async Task<string> CreateProject()
     {

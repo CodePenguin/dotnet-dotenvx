@@ -43,9 +43,9 @@ public class DecryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"decrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldNotContain($"decrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldNotContain("◇ decrypted (.env)");
+        MockLogger.InfoMessages.ShouldNotContain(m => m.StartsWith("◇ decrypted"));
         MockLogger.VerboseMessages.ShouldContain($"no change .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
+        MockLogger.InfoMessages.ShouldContain("○ no change to .env");
     }
 
     /// <remarks>Refer to "dec" shorthand alias for "decrypt" (v2.21.0)</remarks>
@@ -71,7 +71,7 @@ public class DecryptActionTest : EnvironmentTestBase
 
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"no change .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
+        MockLogger.InfoMessages.ShouldContain("○ no change to .env");
     }
 
     /// <remarks>Refer to "decrypt - --stdout"</remarks>
@@ -117,7 +117,7 @@ public class DecryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(0);
         MockLogger.VerboseMessages.ShouldContain($"decrypting .env ({Path.GetFullPath(".env")})");
         MockLogger.VerboseMessages.ShouldContain($"decrypted .env ({Path.GetFullPath(".env")})");
-        MockLogger.InfoMessages.ShouldContain("◇ decrypted (.env)");
+        MockLogger.InfoMessages.ShouldContain(m => m.StartsWith("◇ decrypted .env (") && m.EndsWith(") via .env.keys ⛉"));
     }
 
     /// <remarks>
@@ -141,7 +141,7 @@ public class DecryptActionTest : EnvironmentTestBase
         exitCode.ShouldBe(1);
         MockLogger.ErrorMessages.ShouldContain(
             "[DECRYPTION_FAILED] could not decrypt FAKE. fix: [https://github.com/dotenvx/dotenvx/issues/757]");
-        MockLogger.InfoMessages.ShouldContain("◇ decrypted (.env)");
+        MockLogger.InfoMessages.ShouldContain(m => m.StartsWith("◇ decrypted .env (") && m.EndsWith(") via .env.keys ⛉"));
         File.ReadAllText(".env").ShouldContain("HELLO=\"encrypted\"");
         File.ReadAllText(".env").ShouldContain("FAKE=\"encrypted:fake123345343434\"");
     }

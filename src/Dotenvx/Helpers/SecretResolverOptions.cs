@@ -40,17 +40,21 @@ public static class SecretResolverOptions
     public static KeyAccessOptions KeyAccess(IDotenvxLogger logger, bool noNative, bool noArmorFlag, string? token,
         ArmorMode mode, Action<string>? onStatus = null)
     {
-        bool noArmor = noArmorFlag;
-        if (!noArmor && mode != ArmorMode.FlagOnly &&
-            (mode == ArmorMode.Session || string.IsNullOrEmpty(token)))
+        var access = new KeyAccessOptions
         {
-            noArmor = new Session(logger).NoArmor();
+            NoNative = noNative, NoArmor = noArmorFlag, Token = token, Logger = logger, OnStatus = onStatus
+        };
+        if (!noArmorFlag && mode == ArmorMode.Session)
+        {
+            // get.js/decrypt.js ask the session right away (`await sesh.noArmor()`)
+            access.NoArmor = new Session(logger).NoArmor();
+        }
+        else if (!noArmorFlag && mode == ArmorMode.SessionUnlessToken && string.IsNullOrEmpty(token))
+        {
+            access.DeferNoArmor(() => new Session(logger).NoArmor());
         }
 
-        return new KeyAccessOptions
-        {
-            NoNative = noNative, NoArmor = noArmor, Token = token, Logger = logger, OnStatus = onStatus
-        };
+        return access;
     }
 
     public static Option<bool> NoNative()
@@ -58,13 +62,13 @@ public static class SecretResolverOptions
         return new Option<bool>("--no-native") { Description = "disable OS secret store features" };
     }
 
-    public static Option<bool> No1Password()
+    public static Option<bool> No1Password(string description = "disable 1Password secret reference resolution")
     {
-        return new Option<bool>("--no-1password") { Description = "disable 1Password secret reference resolution" };
+        return new Option<bool>("--no-1password") { Description = description };
     }
 
-    public static Option<bool> NoBitwarden()
+    public static Option<bool> NoBitwarden(string description = "disable Bitwarden secret reference resolution")
     {
-        return new Option<bool>("--no-bitwarden") { Description = "disable Bitwarden secret reference resolution" };
+        return new Option<bool>("--no-bitwarden") { Description = description };
     }
 }

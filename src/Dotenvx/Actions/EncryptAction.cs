@@ -5,12 +5,16 @@ using System.Linq;
 using System.Text.Json;
 
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Events;
+using Dotenvx.Interop.DotenvxJs.Custodians;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Primitives;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+using static Dotenvx.Primitives.Primitives;
 
 using ParseResult = System.CommandLine.ParseResult;
 
@@ -28,7 +32,7 @@ namespace Dotenvx.Actions;
 public class EncryptAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
-        new("--env-file", "-f") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
+        new("--file", "-f", "--env-file") { Description = "path(s) to your env file(s) (default: [])", HelpName = "paths..." };
 
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
@@ -58,6 +62,10 @@ public class EncryptAction : Command
     private readonly Option<string?> _tokenOption = SecretResolverOptions.Token();
 
     private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
+    private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password("disable 1Password features");
+    private readonly Option<bool> _noBitwardenOption = SecretResolverOptions.NoBitwarden("disable Bitwarden features");
+
+    private readonly Option<string?> _profileOption = new("--profile") { Description = "select an Envfile profile", HelpName = "name" };
 
     private readonly Option<bool> _noCreateOption =
         new("--no-create") { Description = "do not create .env file(s) when missing" };
@@ -70,16 +78,34 @@ public class EncryptAction : Command
     {
         Aliases.Add("enc"); // shorthand
         _logger = logger;
+        Add(_profileOption);
         Add(_envFileOption);
         Add(_envKeysFileOption);
         Add(_keyOption);
         Add(_excludeKeyOption);
         Add(_stdoutOption);
         Add(_noCreateOption);
+        Add(_no1PasswordOption);
+        Add(_noBitwardenOption);
         Add(_noNativeOption);
         Add(_noArmorOption);
         Add(_tokenOption);
         SetAction(Execute);
+        EventTracking.Track(this, "encrypt");
+    }
+
+    private KeyAccessOptions KeyAccess(ParseResult parseResult, Action<string>? onStatus = null)
+    {
+        // encrypt.js: noArmor = options.armor === false (the custody menu decides about Armor, not the session)
+        KeyAccessOptions access = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption),
+            parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption),
+            SecretResolverOptions.ArmorMode.FlagOnly, onStatus);
+        access.No1Password = parseResult.GetValue(_no1PasswordOption);
+        access.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
+        access.Interactive = true;
+        NativeCustodian.Logger = _logger;
+
+        return access;
     }
 
     private int Execute(ParseResult parseResult)
@@ -90,11 +116,13 @@ public class EncryptAction : Command
         string[]? envKeysFile = parseResult.GetValue(_envKeysFileOption);
         string[]? key = parseResult.GetValue(_keyOption);
         string[]? excludeKey = parseResult.GetValue(_excludeKeyOption);
+        string? profile = parseResult.GetValue(_profileOption);
         bool stdout = parseResult.GetValue(_stdoutOption);
         bool noCreate = parseResult.GetValue(_noCreateOption);
 
         var options = new
         {
+            profile,
             envFile,
             envKeysFile,
             key,
@@ -102,22 +130,21 @@ public class EncryptAction : Command
             stdout,
             noCreate
         };
-        _logger.Debug($"options: {JsonStringify(options)}");
+        _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         List<EnvItem> envItems = [];
         envItems.AddRange(
             SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
 
         string? envKeysFilePath = envKeysFile?.LastOrDefault(); // plain `<path>` option: commander keeps the LAST occurrence
+        string fk = envKeysFilePath ?? ".env.keys";
 
         // stdout - should not have a try so that exit codes can surface to stdout
         if (stdout)
         {
             Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate)
             {
-                NoArmor = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption),
-                    parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption),
-                    SecretResolverOptions.ArmorMode.SessionUnlessToken).NoArmor
+                KeyAccess = KeyAccess(parseResult), Profile = profile
             };
             EncryptResult result = encryptService.Run();
 
@@ -136,22 +163,23 @@ public class EncryptAction : Command
                 }
             }
 
+            EventScope.Count(stdoutErrorCount);
+
             return stdoutErrorCount > 0 ? 1 : 0; // exit early
         }
 
         try
         {
+            KeyAccessOptions access = KeyAccess(parseResult, spinner.OnStatus);
             Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate)
             {
-                NoArmor = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption),
-                    parseResult.GetValue(_noArmorOption), parseResult.GetValue(_tokenOption),
-                    SecretResolverOptions.ArmorMode.SessionUnlessToken).NoArmor
+                KeyAccess = access, Profile = profile
             };
             EncryptResult result = encryptService.Run();
 
             if (!string.IsNullOrEmpty(result.KeysSrc))
             {
-                Fsx.WriteFileX(envKeysFilePath ?? ".env.keys", result.KeysSrc);
+                Fsx.WriteKeyFile(fk, result.KeysSrc);
             }
 
             IList<EncryptProcessedEnv> processedEnvs = result.ProcessedEnvs;
@@ -180,20 +208,58 @@ public class EncryptAction : Command
                 }
             }
 
+            // Existing public keys can encrypt without private-key access. Metadata lookup must never turn successful
+            // encryption into a failure.
+            foreach (EncryptProcessedEnv row in processedEnvs)
+            {
+                if (row.Error != null || row.KeySources != null || PublicKeys(row.EnvSrc).Length == 0)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    KeyPair keyPair = KeyPair.Factory(row.FilePath, [fk]);
+                    keyPair.KeyAccess = access;
+                    keyPair.Run();
+                    row.KeySources = new Dictionary<string, string?>
+                    {
+                        [PublicKeys(row.EnvSrc)[0]] = keyPair.Origin
+                    }.Where(pair => pair.Value is not null).ToDictionary(pair => pair.Key, pair => pair.Value!);
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+            }
+
+            Dictionary<string, InjectSummaryFile> summaryRows = processedEnvs.GroupBy(row => row.EnvFilePath).ToDictionary(
+                group => group.Key, group => new InjectSummaryFile(group.Last().EnvFilePath,
+                    PublicKeys(group.Last().EnvSrc), group.Last().KeySources));
+            InjectSummaryFile Row(string filepath)
+            {
+                return summaryRows.GetValueOrDefault(filepath) ?? new InjectSummaryFile(filepath);
+            }
+
             if (changedFilePaths.Count > 0)
             {
-                _logger.Success($"◈ encrypted ({string.Join(',', changedFilePaths)})");
+                InjectSummarySources summary = InjectSummarySourcesOf(changedFilePaths.Select(Row));
+                _logger.Success($"◈ encrypted {string.Join(',', summary.Files)}{summary.Suffix}");
             }
             else if (unchangedFilePaths.Count > 0)
             {
-                _logger.Info($"○ no change ({string.Join(',', unchangedFilePaths)})");
+                InjectSummarySources summary = InjectSummarySourcesOf(unchangedFilePaths.Select(Row));
+                _logger.Info($"○ no change to {string.Join(',', summary.Files)}{summary.Suffix}");
             }
+
+            EventScope.Count(errorCount);
 
             return errorCount > 0 ? 1 : 0;
         }
         catch (Exception error)
         {
             CatchAndLog(_logger, error);
+            EventScope.Fail(error);
             return 1;
         }
     }

@@ -1,52 +1,166 @@
+using System.Text.RegularExpressions;
+
 using Dotenvx.Interop.DotenvxJs.Shared;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>
-/// Reference source: dotenvx/src/lib/helpers/colorDepth.js (not getColorDepth.js, which doesn't
-/// exist at this pin - the doc comment was wrong from the start, fixed 2026-09-25). Missing the
-/// upstream function's very first line entirely: `if (stream && !stream.isTTY) return 1` - this
-/// port unconditionally fell through to the TERM/COLORTERM-based fallback regardless of whether
-/// output was actually a terminal, so every colored message (error/warn/success/etc.) kept its
-/// ANSI escape codes even when piped/redirected to a file or another process. Confirmed live via
-/// raw byte comparison (`xxd`) against Node, which correctly emits plain text once output isn't a
-/// TTY - found while adding a parity test for `ext scan`'s "gitleaks not found" message, which
-/// fails a byte-for-byte comparison specifically because of this. The TERM/COLORTERM fallback
-/// itself (for when it genuinely IS a TTY) was already a deliberate simplification of Node's own
-/// `WriteStream.prototype.getColorDepth()` platform/terminal-capability probing - kept as-is here,
-/// only the missing TTY short-circuit was added.
+/// Reference source: dotenvx/src/lib/helpers/colorDepth.js: `if (stream && !stream.isTTY) return 1`, otherwise the stream's own
+/// `getColorDepth()`, which is Node's `lib/internal/tty.js` `getColorDepth(env)` ported below (FORCE_COLOR, NO_COLOR,
+/// NODE_DISABLE_COLORS, TERM=dumb, the Windows build check, TMUX, CI, TEAMCITY, TERM_PROGRAM, COLORTERM and the TERM tables, as
+/// of Node 22.20), so
+/// the colours dotenvx writes to a terminal are the ones the Node CLI writes there. The fallback of the upstream `catch` (a runtime
+/// whose streams have no probe, e.g. deno) can't happen on Node and is not needed here.
 /// </remarks>
 public static partial class Helpers
 {
+    private static readonly Dictionary<string, int> TermEnvs = new()
+    {
+        ["eterm"] = 4, ["cons25"] = 4, ["console"] = 4, ["cygwin"] = 4, ["dtterm"] = 4, ["gnome"] = 4, ["hurd"] = 4,
+        ["jfbterm"] = 4, ["konsole"] = 4, ["kterm"] = 4, ["mlterm"] = 4, ["mosh"] = 24, ["putty"] = 4, ["st"] = 4,
+        ["rxvt-unicode-24bit"] = 24, ["terminator"] = 24, ["xterm-kitty"] = 24
+    };
+
+    private static readonly (string Name, int Colors)[] CiEnvs =
+    [
+        ("APPVEYOR", 8), ("BUILDKITE", 8), ("CIRCLECI", 24), ("DRONE", 8), ("GITEA_ACTIONS", 24), ("GITHUB_ACTIONS", 24),
+        ("GITLAB_CI", 8), ("TRAVIS", 8)
+    ];
+
+    private static readonly Regex[] TermEnvsRegExp =
+    [
+        new("ansi"), new("color"), new("linux"), new("direct"), new("^con[0-9]*x[0-9]"), new("^rxvt"), new("^screen"), new("^xterm"),
+        new("^vt100"), new("^vt220")
+    ];
+
     public static int GetColorDepth(ColorStream stream)
     {
         bool isTty = stream == ColorStream.StdOut ? ConsoleTty.IsStdOutTty() : ConsoleTty.IsStdErrTty();
-        if (!isTty)
+
+        return isTty ? NodeColorDepth(name => Environment.GetEnvironmentVariable(name), ConsoleTty.Platform) : 1;
+    }
+
+    /// <summary>Node's `getColorDepth(env)` (1, 4, 8 or 24 bits-per-colour-channel depth of a terminal).</summary>
+    public static int NodeColorDepth(Func<string, string?> env, OsPlatform platform)
+    {
+        string? forceColor = env("FORCE_COLOR");
+        if (forceColor is not null)
+        {
+            return forceColor switch
+            {
+                "" or "1" or "true" => 4,
+                "2" => 8,
+                "3" => 24,
+                _ => 1
+            };
+        }
+
+        if (env("NODE_DISABLE_COLORS") is not null || env("NO_COLOR") is not null || env("TERM") == "dumb")
         {
             return 1;
         }
 
-        // Unix-like systems (Linux, macOS) - simplified to match JS fallback logic
-        string? term = Environment.GetEnvironmentVariable("TERM");
-        if (string.IsNullOrEmpty(term))
+        if (platform.IsWindows)
         {
-            return 4; // 16 colors as fallback
+            if (platform.Major >= 10)
+            {
+                if (platform.Build >= 14931)
+                {
+                    return 24;
+                }
+
+                if (platform.Build >= 10586)
+                {
+                    return 8;
+                }
+            }
+
+            return 4;
         }
 
-        if (term.Contains("256color") || term.Contains("xterm"))
+        if (!string.IsNullOrEmpty(env("TMUX")))
         {
-            return 8; // 256 colors
+            return 24;
         }
 
-        if (term.Contains("truecolor") || term.Contains("24bit"))
+        // Azure DevOps
+        if (env("TF_BUILD") is not null && env("AGENT_NAME") is not null)
         {
-            return 24; // 16 million colors
+            return 4;
         }
 
-        // Check COLORTERM for truecolor support
-        string? colorTerm = Environment.GetEnvironmentVariable("COLORTERM");
-        return colorTerm is "truecolor" or "24bit"
-            ? 24
-            : 4; // 16 colors as fallback
+        if (env("CI") is not null)
+        {
+            foreach ((string name, int colors) in CiEnvs)
+            {
+                if (env(name) is not null)
+                {
+                    return colors;
+                }
+            }
+
+            return env("CI_NAME") == "codeship" ? 8 : 1;
+        }
+
+        string? teamcity = env("TEAMCITY_VERSION");
+        if (teamcity is not null)
+        {
+            return Regex.IsMatch(teamcity, @"^(9\.(0*[1-9]\d*)\.|\d{2,}\.)") ? 4 : 1;
+        }
+
+        string? termProgram = env("TERM_PROGRAM");
+        switch (termProgram)
+        {
+            case "iTerm.app":
+                string? version = env("TERM_PROGRAM_VERSION");
+
+                return string.IsNullOrEmpty(version) || Regex.IsMatch(version, @"^[0-2]\.") ? 8 : 24;
+            case "HyperTerm":
+            case "MacTerm":
+                return 24;
+            case "Apple_Terminal":
+                return 8;
+        }
+
+        string? colorTerm = env("COLORTERM");
+        if (colorTerm is "truecolor" or "24bit")
+        {
+            return 24;
+        }
+
+        string? term = env("TERM");
+        if (!string.IsNullOrEmpty(term))
+        {
+            if (term.Contains("truecolor", StringComparison.Ordinal))
+            {
+                return 24;
+            }
+
+            if (Regex.IsMatch(term, "^xterm-256"))
+            {
+                return 8;
+            }
+
+            string lower = term.ToLowerInvariant();
+            if (TermEnvs.TryGetValue(lower, out int known))
+            {
+                return known;
+            }
+
+            if (TermEnvsRegExp.Any(pattern => pattern.IsMatch(lower)))
+            {
+                return 4;
+            }
+        }
+
+        return string.IsNullOrEmpty(colorTerm) ? 1 : 4;
     }
+}
+
+/// <summary>What Node's color probe reads from `process.platform` and `os.release()`.</summary>
+public readonly record struct OsPlatform(bool IsWindows, int Major, int Build)
+{
+    public static OsPlatform Current { get; } = OperatingSystem.IsWindows()
+        ? new OsPlatform(true, Environment.OSVersion.Version.Major, Environment.OSVersion.Version.Build)
+        : new OsPlatform(false, 0, 0);
 }

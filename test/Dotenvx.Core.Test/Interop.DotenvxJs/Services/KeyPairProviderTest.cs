@@ -73,41 +73,6 @@ public class KeyPairProviderTest : EnvironmentTestBase
         });
     }
 
-    private sealed class ApprovalKeyring : ArmorKeyring
-    {
-        public ApprovalKeyring() : base(null, null, "", null)
-        {
-        }
-
-        public override JsonNode Run()
-        {
-            OnApprovalRequired?.Invoke("https://armor.example/approve", "ACCESS_APPROVAL_REQUIRED");
-
-            return JsonNode.Parse("""{"public-key":"private-key"}""")!;
-        }
-    }
-
-    /// <remarks>Refer to "keypair forwards onStatus to providers"</remarks>
-    [Fact]
-    public void TestKeypairForwardsOnStatusToProviders()
-    {
-        var statuses = new List<string>();
-        ArmorProviders.KeyringFactory = (_, _, _, _) => new ApprovalKeyring();
-        ListenForOpenKey.Input = () => new NotATty();
-        // an active Armor session (settings file present, logged in) so the Armor provider is composed
-        string config = Environment.GetEnvironmentVariable("DOTENVX_CONFIG")!;
-        Directory.CreateDirectory(config);
-        File.WriteAllText(Path.Combine(config, ".env"),
-            "DOTENVX_ARMOR_USERNAME=\"scott\"\nDOTENVX_ARMOR_TOKEN=\"token-123\"\nDOTENVX_ARMOR_ON=\"true\"\n");
-
-        Dictionary<string, string?> result = new KeyPair(".env")
-        {
-            KeyAccess = new KeyAccessOptions { NoNative = true, OnStatus = statuses.Add }
-        }.Run();
-
-        result["DOTENV_PRIVATE_KEY"].ShouldBe("private-key");
-        statuses.ShouldBe(["[ACCESS_APPROVAL_REQUIRED] press Enter to open [https://armor.example/approve] and approve (PUB LIC)"]);
-    }
 
     private sealed class NotATty : IKeyInput
     {

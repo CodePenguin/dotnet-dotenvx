@@ -32,7 +32,8 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
 
     private static readonly HashSet<string> DotnetOnlyAliases =
     [
-        "-?", "-V", "--version", "-l", "--log-level", "-q", "--quiet", "-v", "--verbose", "-d", "--debug"
+        "-?", "-V", "--version", "--env-file", // legacy hidden alias of --file
+         "-l", "--log-level", "-q", "--quiet", "-v", "--verbose", "-d", "--debug"
     ];
 
     // "--pp" (a third alias on get/keypair's --pretty-print option, confirmed functionally working
@@ -54,7 +55,6 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
     [InlineData("decrypt")]
     [InlineData("keypair")]
     [InlineData("ls")]
-    [InlineData("validate")]
     [InlineData("gitignore")]
     [InlineData("genexample")]
     [InlineData("precommit")]
@@ -162,7 +162,6 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
     [InlineData("decrypt")]
     [InlineData("keypair")]
     [InlineData("ls")]
-    [InlineData("validate")]
     [InlineData("gitignore")]
     [InlineData("genexample")]
     [InlineData("precommit")]

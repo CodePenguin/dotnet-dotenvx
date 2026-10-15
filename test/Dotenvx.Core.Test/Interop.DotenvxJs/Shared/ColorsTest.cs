@@ -51,6 +51,7 @@ public class ColorsTest : EnvironmentTestBase
     public void TestGetColorWithAnsi16ColorSupport()
     {
         Environment.SetEnvironmentVariable("TERM", "not-a-known-term");
+        Environment.SetEnvironmentVariable("COLORTERM", "1");
 
         Colors.GetColor("orangered", ColorStream.StdErr)("hello")
             .ShouldBe("\x1b[33mhello\x1b[39m");
@@ -95,6 +96,7 @@ public class ColorsTest : EnvironmentTestBase
     public void TestBoldWithAnsi16ColorSupport()
     {
         Environment.SetEnvironmentVariable("TERM", "not-a-known-term");
+        Environment.SetEnvironmentVariable("COLORTERM", "1");
 
         Colors.Bold("hello", ColorStream.StdErr).ShouldBe("\x1b[1mhello\x1b[22m");
     }

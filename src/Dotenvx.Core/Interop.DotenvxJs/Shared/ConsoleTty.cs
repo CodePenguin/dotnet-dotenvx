@@ -1,3 +1,5 @@
+using Dotenvx.Interop.DotenvxJs.Helpers;
+
 namespace Dotenvx.Interop.DotenvxJs.Shared;
 
 /// <remarks>
@@ -11,8 +13,12 @@ public static class ConsoleTty
     public static Func<bool> IsStdOutTty { get; internal set; } = DefaultIsStdOutTty;
     public static Func<bool> IsStdErrTty { get; internal set; } = DefaultIsStdErrTty;
 
+    /// <summary>`process.platform` / `os.release()` as the colour-depth probe sees them.</summary>
+    public static OsPlatform Platform { get; internal set; } = OsPlatform.Current;
+
     internal static void ResetToDefaults()
     {
+        Platform = OsPlatform.Current;
         IsStdOutTty = DefaultIsStdOutTty;
         IsStdErrTty = DefaultIsStdErrTty;
     }

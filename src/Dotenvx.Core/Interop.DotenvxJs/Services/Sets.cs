@@ -1,7 +1,7 @@
-using System.Collections;
-
+using Dotenvx.Interop.DotenvxJs.Custodians;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
+using Dotenvx.Primitives;
 
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 using static Dotenvx.Primitives.Primitives;
@@ -10,10 +10,10 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 
 /// <remarks>
 /// Reference source: dotenvx/src/lib/transforms/set.js. Like the original: `publickeys(src)[0]` is the key to
-/// encrypt with; a keypair is only generated when encryption is wanted and the file has no public key (the
-/// private key is appended to the returned `KeysSrc`, which callers write to the keys file - default
-/// `.env.keys` in the working directory). A `*_PLAIN` key, or `--plain`, stores the value as plaintext via
-/// `upsert`. When encrypting, the current decrypted value comes from the `get` resolver and the file is only
+/// encrypt with; a keypair is only generated when encryption is wanted and the file has no public key (the private key goes
+/// to the chosen custodian; the keys file text comes back as `KeysSrc`, which callers write - default `.env.keys` in the
+/// working directory). A key the Envfile exempts from encryption (else a `*_PLAIN` key), or `--plain`, stores the value as
+/// plaintext via `upsert`. When encrypting, the current decrypted value comes from the `get` resolver and the file is only
 /// rewritten when the requested value differs from it.
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
@@ -31,24 +31,25 @@ public class Sets
 
     private readonly bool _noCreate;
 
-    /// <summary>`noArmor`; see <see cref="Encrypt.NoArmor" />.</summary>
-    public bool NoArmor { get; set; } = true;
-
-    private bool _noArmor;
     private readonly List<ProcessedSet> _processedEnvs = [];
     private readonly HashSet<string> _unchangedFilePaths = [];
     private readonly string? _value;
 
     private string? _keysSrc;
+    private string? _storage;
+    private readonly StoreContext _custodyContext = new();
 
-    /// <summary>How missing private keys are looked up: --no-native, --no-armor, --token (providers/index.js options).</summary>
-    public KeyAccessOptions KeyAccess { get; set; } = new();
+    /// <summary>How private keys are looked up and stored: --no-native, --no-armor, --no-1password, --no-bitwarden, --token.</summary>
+    public KeyAccessOptions KeyAccess { get; set; } = new() { NoArmor = true };
 
     public bool NoNative
     {
         get => KeyAccess.NoNative;
         set => KeyAccess.NoNative = value;
     }
+
+    /// <summary>`--profile`: the Envfile profile that selects the env files.</summary>
+    public string? Profile { get; set; }
 
     public Sets(string? key, string? value, EnvItem[] envs, bool encrypt = true, string? envKeysFilePath = null,
         bool noCreate = false)
@@ -58,11 +59,7 @@ public class Sets
         _encrypt = encrypt;
         _envKeysFilePath = envKeysFilePath;
         _noCreate = noCreate;
-
-        Dictionary<string, string> processEnv = new(Environment.GetEnvironmentVariables()
-            .Cast<DictionaryEntry>()
-            .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
-        _envs = DetermineEnvs(envs, processEnv);
+        _envs = envs;
     }
 
     protected Sets() : this(null, null, [])
@@ -81,7 +78,7 @@ public class Sets
     public virtual SetsResult Run()
     {
         string fk = string.IsNullOrEmpty(_envKeysFilePath) ? ".env.keys" : _envKeysFilePath;
-        _noArmor = NoArmor; // key storage selector below may change it
+        _custodyContext.Token = KeyAccess.Token;
 
         // set up keysSrc
         string fkPath = NodePath.Resolve(fk);
@@ -97,7 +94,7 @@ public class Sets
             }
         }
 
-        foreach (EnvItem env in _envs)
+        foreach (EnvItem env in SelectEnvfileEnvs(_envs, new SelectEnvfileOptions { Profile = Profile }))
         {
             if (env.Type == EnvType.EnvFile)
             {
@@ -126,6 +123,13 @@ public class Sets
 
         try
         {
+            EnvfileSchema schema = ReadEnvfile.Read(null, [filePath]);
+
+            // set.js: noEncrypt = !options.encrypt || (schema.exists ? schema.keys[key]?.fs.encrypted === false : isPlainKey(key))
+            bool noEncrypt = !_encrypt || (schema.Exists
+                ? schema.Keys.TryGetValue(_key ?? "", out KeyPolicy? policy) && !policy.Encrypted
+                : IsPlainKey(_key ?? ""));
+
             string envSrc;
             if (!Fsx.ExistsSync(filePath) && !_noCreate)
             {
@@ -145,31 +149,31 @@ public class Sets
 
             string? publicKey = PublicKeys(envSrc).FirstOrDefault();
 
-            // set.js: `const noEncrypt = !options.encrypt || isPlainKey(key)`
-            bool noEncrypt = !_encrypt || IsPlainKey(_key ?? "");
-
             // only create if missing public key and encryption needed
             if (string.IsNullOrEmpty(publicKey) && !noEncrypt)
             {
-                if (!_noCreate && !_noArmor)
-                {
-                    _noArmor = !KeyStorage.ChooseArmored();
-                }
-
+                // upsert public key to .env file
                 (string newPublicKey, string privateKey) = Keypair();
                 publicKey = newPublicKey;
                 string publicKeyName = GuessPublicKeyName(envFilePath);
                 string privateKeyName = GuessPrivateKeyName(envFilePath);
                 envSrc = MutateSrc(envSrc, envFilePath, fk, publicKeyName, publicKey);
-                if (_noArmor)
-                {
-                    _keysSrc = MutateKeysSrc(_keysSrc, privateKeyName, privateKey, NodePath.Basename(envFilePath));
-                }
-                else
-                {
-                    KeyStorage.StoreInArmor(publicKey, privateKey);
 
-                    // don't set keysSrc (in armor)
+                _custodyContext.KeysSrc = _keysSrc;
+                _custodyContext.PrivateKeyName = privateKeyName;
+                _custodyContext.Comment = NodePath.Basename(envFilePath);
+                _custodyContext.KeysFilepath = fk;
+                (string chosen, StoreResult stored) = KeyStorage.Store(_storage, publicKey, privateKey,
+                    new KeyStorageOptions { Access = KeyAccess, NoCreate = _noCreate, Fk = fk }, _custodyContext);
+                _storage = chosen;
+                if (stored.HasKeysSrc)
+                {
+                    _keysSrc = stored.KeysSrc;
+                }
+
+                if (stored.NativePrivateKeyAdded)
+                {
+                    row.NativePrivateKeyAdded = true;
                 }
             }
 
@@ -187,6 +191,8 @@ public class Sets
                 // expensive additional loop: the current (decrypted) value comes from the get resolver
                 Get getService = Get.Factory(_key, [env], false, true, [fk]);
                 getService.KeyAccess = KeyAccess;
+                getService.No1Password = KeyAccess.No1Password;
+                getService.NoBitwarden = KeyAccess.NoBitwarden;
                 GetResult resolved = getService.Run();
                 string? before = resolved.Parsed.GetValueOrDefault(_key ?? "");
                 if (_value != before)

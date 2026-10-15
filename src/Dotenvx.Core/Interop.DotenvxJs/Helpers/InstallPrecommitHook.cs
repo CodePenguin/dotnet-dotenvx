@@ -13,9 +13,9 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// as an actual newline character (unlike the earlier `\\033` escapes, which are doubled in source
 /// specifically so the shell interprets them later, not JS at template-literal-evaluation time).
 /// </remarks>
-public class InstallPrecommitHook
+public class InstallPrecommitHook(string? hookPath = null)
 {
-    private const string HookScript =
+    public const string HookScript =
         "#!/bin/sh\n" +
         "\n" +
         "if command -v dotenvx 2>&1 >/dev/null\n" +
@@ -38,7 +38,7 @@ public class InstallPrecommitHook
         "  exit 1\n" +
         "fi\n";
 
-    public string HookPath { get; } = Path.Combine(".git", "hooks", "pre-commit");
+    public string HookPath { get; } = hookPath ?? Path.Combine(".git", "hooks", "pre-commit");
 
     public InstallPrecommitHookResult Run()
     {

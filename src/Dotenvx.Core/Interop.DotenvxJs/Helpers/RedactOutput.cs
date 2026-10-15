@@ -43,13 +43,7 @@ public static partial class Helpers
         switch (value)
         {
             case string text:
-                string result = text;
-                foreach (string sensitiveValue in values)
-                {
-                    result = result.Replace(sensitiveValue, Redact(sensitiveValue));
-                }
-
-                return result;
+                return global::Dotenvx.Primitives.Primitives.Redact(text, values);
             case System.Collections.IDictionary dictionary:
                 Dictionary<string, object?> mapped = new();
                 foreach (System.Collections.DictionaryEntry entry in dictionary)
@@ -88,7 +82,7 @@ public static partial class Helpers
         return result;
     }
 
-    private static int PartialMatchLength(string value, IReadOnlyList<string> sensitiveValues)
+    internal static int PartialMatchLength(string value, IReadOnlyList<string> sensitiveValues)
     {
         int longest = 0;
 
@@ -108,7 +102,7 @@ public static partial class Helpers
         return longest;
     }
 
-    private static int SafeBoundary(string value, int boundary, IReadOnlyList<string> sensitiveValues)
+    internal static int SafeBoundary(string value, int boundary, IReadOnlyList<string> sensitiveValues)
     {
         int result = boundary;
         bool changed = true;

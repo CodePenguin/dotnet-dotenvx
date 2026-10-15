@@ -81,6 +81,11 @@ public class KeychainUp(string? envFile = null, string? envKeysFile = null) : Ke
         }
 
         NativeStore.Current.Set(publicKey, privateKey!, label);
+        if (NativeStore.Current.Get(publicKey) != privateKey)
+        {
+            throw new Exception("could not verify private key in OS secret store; .env.keys unchanged");
+        }
+
         RemoveEnvKey(privateKeyName, EnvKeysFile);
 
         return new KeychainResult(true, label, privateKeyName, privateKey, publicKey);

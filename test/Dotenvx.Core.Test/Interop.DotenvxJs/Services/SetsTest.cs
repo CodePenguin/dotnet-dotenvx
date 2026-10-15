@@ -642,7 +642,7 @@ public class SetsTest : EnvironmentTestBase
     public void TestRunPlainSuffixedKeyStoresAsPlaintextEvenWithEncryptOn()
     {
         Fsx.ReadFileX = (_, _) => "HELLO=World\n";
-        Fsx.ReadFileSync = _ => [];
+        Fsx.ReadFileSync = path => Path.GetFileName(path) == "Envfile" ? throw new FileNotFoundException() : []; // no Envfile
         Fsx.ExistsSync = filepath => filepath.EndsWith(".env");
 
         SetsResult result = new Sets("HELLO_PLAIN", "mysecret", []).Run();

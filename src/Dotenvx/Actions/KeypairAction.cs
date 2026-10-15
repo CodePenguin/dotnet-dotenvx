@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 
 using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Events;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -34,7 +35,7 @@ namespace Dotenvx.Actions;
 public class KeyPairAction : Command
 {
     private readonly Option<string[]?> _envFileOption =
-        new("--env-file", "-f") { Description = "path(s) to your env file(s)", HelpName = "paths..." };
+        new("--file", "-f", "--env-file") { Description = "path(s) to your env file(s)", HelpName = "paths..." };
 
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
@@ -58,6 +59,9 @@ public class KeyPairAction : Command
 
     private readonly Option<bool> _noNativeOption = SecretResolverOptions.NoNative();
 
+    private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password("disable 1Password features");
+    private readonly Option<bool> _noBitwardenOption = SecretResolverOptions.NoBitwarden("disable Bitwarden features");
+
     private readonly Option<bool> _prettyPrintOption =
         new("--pretty-print", "-pp", "--pp") { Description = "pretty print output" };
 
@@ -70,9 +74,12 @@ public class KeyPairAction : Command
         Add(_envKeysFileOption);
         Add(_formatOption);
         Add(_prettyPrintOption);
+        Add(_no1PasswordOption);
+        Add(_noBitwardenOption);
         Add(_noNativeOption);
         Add(_noArmorOption);
         SetAction(Execute);
+        EventTracking.Track(this, "keypair");
     }
 
     private int Execute(ParseResult parseResult)
@@ -87,20 +94,19 @@ public class KeyPairAction : Command
         string format = formatValue ?? "json";
         bool prettyPrint = parseResult.GetValue(_prettyPrintOption);
 
+        _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
         if (key != null)
         {
             _logger.Debug($"key: {key}");
         }
-
-        var options = new { envFile, envKeysFile, format, prettyPrint };
-        _logger.Debug($"options: {JsonStringify(options)}");
 
         try
         {
             string[] split = DotenvxJsHelpers.SplitCommaSeparatedEnvFiles(envFile);
             string[] resolvedEnvFiles = // -f given but blank (`-f " "`) means no files at all, not the .env default
             DotenvxJsHelpers.Filepaths(split.Length == 0 && (envFile is null || envFile.Length == 0) ? null : split);
-            Dictionary<string, string?> results = [];
+            Dictionary<string, object?> results = [];
+            Dictionary<string, string?> origins = [];
             foreach (string resolvedEnvFile in resolvedEnvFiles)
             {
                 if (!Fsx.ExistsSync(resolvedEnvFile))
@@ -112,10 +118,21 @@ public class KeyPairAction : Command
                 KeyPair keyPair = KeyPair.Factory(resolvedEnvFile, envKeysFile is { Length: > 0 } ? envKeysFile : null);
                 keyPair.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.FlagOnly,
                 spinner.OnStatus);
+                keyPair.KeyAccess.Interactive = true;
+                keyPair.KeyAccess.No1Password = parseResult.GetValue(_no1PasswordOption);
+                keyPair.KeyAccess.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
                 foreach ((string resultKey, string? resultValue) in keyPair.Run())
                 {
                     results[resultKey] = resultValue;
                 }
+
+                origins[resolvedEnvFile] = keyPair.Origin;
+            }
+
+            if (key == "provider" || (key is null && format is not ("shell" or "colon")))
+            {
+                // keypair.js: `out.provider = names.length === 1 ? origins[names[0]] : origins` (a null origin stays null)
+                results["provider"] = origins.Count == 1 ? origins.Values.First() : origins;
             }
 
             if (key != null)
@@ -128,14 +145,21 @@ public class KeyPairAction : Command
                 // null" the way `TryGetValue`'s bool return can - using the wrong one here made a
                 // present-but-null key take the "not found" branch (empty line, exit 1) instead of
                 // printing "null" and exiting 0, confirmed live against Node.
-                if (!results.TryGetValue(key, out string? single))
+                if (!results.TryGetValue(key, out object? singleValue))
                 {
                     Spinners.StopActive();
                     Console.WriteLine("");
                     return 1;
                 }
 
-                string singleText = single ?? "null";
+                if (singleValue is Dictionary<string, string?> map)
+                {
+                    PrintMap(map.ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value), format, prettyPrint);
+
+                    return 0;
+                }
+
+                string singleText = (string?)singleValue ?? "null";
                 if (format == "colon")
                 {
                     Spinners.StopActive();
@@ -149,23 +173,7 @@ public class KeyPairAction : Command
             }
             else
             {
-                if (format == "shell")
-                {
-                    string inline = string.Join(' ', results.Select(kvp => $"{kvp.Key}={kvp.Value ?? ""}"));
-                    Spinners.StopActive();
-                    Console.WriteLine(inline);
-                }
-                else if (format == "colon")
-                {
-                    string inline = string.Join(' ', results.Select(kvp => $"{kvp.Key}:{kvp.Value ?? ""}"));
-                    Spinners.StopActive();
-                    Console.WriteLine(inline);
-                }
-                else
-                {
-                    Spinners.StopActive();
-                    Console.WriteLine(JsonStringify(results, prettyPrint));
-                }
+                PrintMap(results, format, prettyPrint);
             }
 
             return 0;
@@ -173,7 +181,35 @@ public class KeyPairAction : Command
         catch (Exception error)
         {
             DotenvxJsHelpers.CatchAndLog(_logger, error);
+            EventScope.Fail(error);
             return 1;
+        }
+    }
+
+    private static string Inline(object? value)
+    {
+        return value switch
+        {
+            null => "",
+            string text => text,
+            _ => "[object Object]"
+        };
+    }
+
+    private static void PrintMap(Dictionary<string, object?> results, string format, bool prettyPrint)
+    {
+        Spinners.StopActive();
+        if (format == "shell")
+        {
+            Console.WriteLine(string.Join(' ', results.Select(kvp => $"{kvp.Key}={Inline(kvp.Value)}")));
+        }
+        else if (format == "colon")
+        {
+            Console.WriteLine(string.Join(' ', results.Select(kvp => $"{kvp.Key}:{Inline(kvp.Value)}")));
+        }
+        else
+        {
+            Console.WriteLine(JsonStringify(results, prettyPrint));
         }
     }
 }

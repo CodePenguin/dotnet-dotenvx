@@ -157,16 +157,6 @@ public class MissingEnvFilesException() : DotenvxException(
     "[MISSING_ENV_FILES] no .env* files found",
     "fix: [https://github.com/dotenvx/dotenvx/issues/760]");
 
-public class MissingEnvExampleException() : DotenvxException(
-    "MISSING_ENV_EXAMPLE",
-    "[MISSING_ENV_EXAMPLE] missing .env.example file",
-    "fix: [https://github.com/dotenvx/dotenvx/issues/905]");
-
-public class ValidationFailedException(string message) : DotenvxException(
-    "VALIDATION_FAILED",
-    $"[VALIDATION_FAILED] {message}",
-    "fix: [https://github.com/dotenvx/dotenvx/issues/907]");
-
 /// <remarks>
 /// Mirrors errors.js's `.custom({message, help})` - used by prebuild.js/precommit.js for their
 /// ad-hoc "not encrypted/dockerignored"-style messages, which never pass a `code` (confirmed by
@@ -237,7 +227,15 @@ public class MispairedPrivateKeyException(string publicKey, string publicKeyExis
     $"[MISPAIRED_PRIVATE_KEY] private key's derived public key ({Truncate(publicKey)}) does not match the existing public key ({Truncate(publicKeyExisting)})",
     "fix: [https://github.com/dotenvx/dotenvx/issues/752]");
 
-public class InvalidPassphraseException(string? privateKeyName = null) : DotenvxException(
-    "INVALID_PASSPHRASE",
-    $"[INVALID_PASSPHRASE] could not unlock {(string.IsNullOrEmpty(privateKeyName) ? "DOTENV_PRIVATE_KEY" : privateKeyName)} using passphrase",
-    "fix: [try again with the correct passphrase]");
+public class EnvfileRequiredException() : DotenvxException(
+    "ENVFILE_REQUIRED",
+    "[ENVFILE_REQUIRED] check requires an Envfile",
+    "fix: run [dotenvx spec]");
+
+/// <summary>errors.js `invalidEnv()`: the failed Envfile checks joined with "; ", without help.</summary>
+public class InvalidEnvException(string message, IReadOnlyList<Dotenvx.Primitives.CheckError> diagnostics) : DotenvxException(
+    "INVALID_ENV",
+    $"[INVALID_ENV] {message}")
+{
+    public IReadOnlyList<Dotenvx.Primitives.CheckError> Diagnostics { get; } = diagnostics;
+}

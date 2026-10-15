@@ -49,7 +49,6 @@ public class EncryptTest : EnvironmentTestBase
         p.Type.ShouldBe(EnvType.EnvFile);
         p.FilePath.ShouldBe(Path.GetFullPath(".env"));
         p.EnvFilePath.ShouldBe(".env");
-        p.Error.ShouldBeNull();
 
         result.ChangedFilePaths.ShouldBe([".env"]);
         result.UnchangedFilePaths.ShouldBeEmpty();
@@ -407,7 +406,6 @@ public class EncryptTest : EnvironmentTestBase
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
         EncryptProcessedEnv p = result.ProcessedEnvs[0];
-        p.Error.ShouldBeNull();
         result.UnchangedFilePaths.ShouldBe([envFile]);
     }
 

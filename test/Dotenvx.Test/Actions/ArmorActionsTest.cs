@@ -65,8 +65,13 @@ public class ArmorActionsTest : EnvironmentTestBase
         return root.Parse(args).Invoke();
     }
 
-    private static void EnvFiles(string file = ".env", string publicKey = "027c9c5579cce25013e1e5ae8b4bde6d93bad14457babf5b3e055572ae4931f71")
+    private static readonly (string PublicKey, string PrivateKey) Pair = global::Dotenvx.Primitives.Primitives.Keypair();
+
+    private static string PairDisplay => ArmoredKeyDisplay.Display(Pair.PublicKey);
+
+    private static void EnvFiles(string file = ".env", string? publicKey = null)
     {
+        publicKey ??= Pair.PublicKey;
         string name = file == ".env" ? "DOTENV_PUBLIC_KEY" : "DOTENV_PUBLIC_KEY_" + file[5..].ToUpperInvariant();
         File.WriteAllText(file, $"{name}=\"{publicKey}\"\n");
     }
@@ -88,7 +93,7 @@ public class ArmorActionsTest : EnvironmentTestBase
     public void TestArmorUpPassesExplicitTeamOptionToArmorUpService()
     {
         EnvFiles();
-        KeysFile(global::Dotenvx.Primitives.Primitives.Keypair().PrivateKey);
+        KeysFile(Pair.PrivateKey);
         Respond((_, _) => (200, """{"changed":true,"private_key":"p"}"""));
 
         Run("armor", "up", "--team", "hackclub").ShouldBe(0);
@@ -96,7 +101,7 @@ public class ArmorActionsTest : EnvironmentTestBase
         RequestBody()["team"]!.ToString().ShouldBe("hackclub");
         _requests[0].Url.ShouldBe($"{Hostname}/api/armor/up");
         RequestToken().ShouldBe("Bearer token-123");
-        MockLogger.InfoMessages.ShouldContain("⛨ armored (027 C9C)");
+        MockLogger.InfoMessages.ShouldContain($"⛨ armored .env ({PairDisplay})");
     }
 
     /// <remarks>Refer to "armor up prints no changes message when remote armor is unchanged"</remarks>
@@ -104,33 +109,19 @@ public class ArmorActionsTest : EnvironmentTestBase
     public void TestArmorUpPrintsNoChangesMessageWhenRemoteArmorIsUnchanged()
     {
         EnvFiles();
-        KeysFile(global::Dotenvx.Primitives.Primitives.Keypair().PrivateKey);
         Respond((_, _) => (200, """{"changed":false,"private_key":"p"}"""));
 
         Run("armor", "up").ShouldBe(0);
 
-        MockLogger.InfoMessages.ShouldContain("○ no change (027 C9C)");
+        MockLogger.InfoMessages.ShouldContain($"○ no change to .env ({PairDisplay})");
     }
 
-    /// <remarks>Refer to "armor up falls back to private key name when public key display is unavailable"</remarks>
-    [Fact]
-    public void TestArmorUpFallsBackToPrivateKeyNameWhenPublicKeyDisplayIsUnavailable()
-    {
-        EnvFiles(publicKey: "");
-        KeysFile("priv");
-        Respond((_, _) => (200, """{"changed":true,"private_key":"p"}"""));
-
-        Run("armor", "up").ShouldBe(0);
-
-        MockLogger.InfoMessages.ShouldContain("⛨ armored (DOTENV_PRIVATE_KEY)");
-    }
-
-    /// <remarks>Refer to "armor up logs errors and exits"</remarks>
+    /// <remarks>Refer to "armor up logs errors and exits" and "armor up logs errors and returns failure"</remarks>
     [Fact]
     public void TestArmorUpLogsErrorsAndExits()
     {
         EnvFiles();
-        KeysFile("priv");
+        KeysFile(Pair.PrivateKey);
         Respond((_, _) => (401, """{"error":{"code":"UNAUTHORIZED","message":"bad token"}}"""));
 
         Run("armor", "up").ShouldBe(1);
@@ -151,8 +142,8 @@ public class ArmorActionsTest : EnvironmentTestBase
 
         _requests[0].Url.ShouldBe($"{Hostname}/api/armor/down");
         RequestToken().ShouldBe("Bearer token-123");
-        RequestBody()["public_key"]!.ToString().ShouldBe("027c9c5579cce25013e1e5ae8b4bde6d93bad14457babf5b3e055572ae4931f71");
-        MockLogger.InfoMessages.ShouldContain("◇ dearmored to .env.keys (027 C9C)");
+        RequestBody()["public_key"]!.ToString().ShouldBe(Pair.PublicKey);
+        MockLogger.InfoMessages.ShouldContain($"◇ dearmored .env ({PairDisplay}) to .env.keys");
     }
 
     /// <remarks>Refer to "armor down passes explicit env file option to ArmorDown service"</remarks>
@@ -189,10 +180,10 @@ public class ArmorActionsTest : EnvironmentTestBase
 
         Run("armor", "down").ShouldBe(0);
 
-        MockLogger.InfoMessages.ShouldContain("○ no change (027 C9C)");
+        MockLogger.InfoMessages.ShouldContain($"○ no change to .env ({PairDisplay})");
     }
 
-    /// <remarks>Refer to "armor down logs errors and exits"</remarks>
+    /// <remarks>Refer to "armor down logs errors and exits" and "armor down logs errors and returns failure"</remarks>
     [Fact]
     public void TestArmorDownLogsErrorsAndExits()
     {
@@ -217,7 +208,7 @@ public class ArmorActionsTest : EnvironmentTestBase
 
         _requests[0].Url.ShouldBe($"{Hostname}/api/armor/pull");
         RequestToken().ShouldBe("Bearer token-123");
-        MockLogger.InfoMessages.ShouldContain("◇ pulled to .env.keys (027 C9C)");
+        MockLogger.InfoMessages.ShouldContain($"◇ pulled .env ({PairDisplay}) to .env.keys");
     }
 
     /// <remarks>Refer to "armor pull passes explicit env file option to ArmorPull service"</remarks>
@@ -254,10 +245,10 @@ public class ArmorActionsTest : EnvironmentTestBase
 
         Run("armor", "pull").ShouldBe(0);
 
-        MockLogger.InfoMessages.ShouldContain("○ no change (027 C9C)");
+        MockLogger.InfoMessages.ShouldContain($"○ no change to .env ({PairDisplay})");
     }
 
-    /// <remarks>Refer to "armor pull logs errors and exits"</remarks>
+    /// <remarks>Refer to "armor pull logs errors and exits" and "armor pull logs errors and returns failure"</remarks>
     [Fact]
     public void TestArmorPullLogsErrorsAndExits()
     {
@@ -282,7 +273,7 @@ public class ArmorActionsTest : EnvironmentTestBase
         Run("armor", "push", "--team", "hackclub").ShouldBe(0);
 
         RequestBody()["team"]!.ToString().ShouldBe("hackclub");
-        MockLogger.InfoMessages.ShouldContain($"⛨ pushed ({ArmoredKeyDisplay.Display(publicKey)})");
+        MockLogger.InfoMessages.ShouldContain($"⛨ pushed .env ({ArmoredKeyDisplay.Display(publicKey)}) to Armor");
     }
 
     /// <remarks>Refer to "armor push prints no changes message when remote armor is unchanged"</remarks>
@@ -295,26 +286,14 @@ public class ArmorActionsTest : EnvironmentTestBase
 
         Run("armor", "push").ShouldBe(0);
 
-        MockLogger.InfoMessages.ShouldContain($"○ no change ({ArmoredKeyDisplay.Display(publicKey)})");
+        MockLogger.InfoMessages.ShouldContain($"○ no change to .env ({ArmoredKeyDisplay.Display(publicKey)})");
     }
 
-    /// <remarks>Refer to "armor push falls back to private key name when public key display is unavailable"</remarks>
-    [Fact]
-    public void TestArmorPushFallsBackToPrivateKeyNameWhenPublicKeyDisplayIsUnavailable()
-    {
-        KeysFile("not-a-valid-private-key");
-        Respond((_, _) => (200, """{"changed":true}"""));
-
-        Run("armor", "push").ShouldBe(0);
-
-        MockLogger.InfoMessages.ShouldContain("⛨ pushed (DOTENV_PRIVATE_KEY)");
-    }
-
-    /// <remarks>Refer to "armor push logs errors and exits"</remarks>
+    /// <remarks>Refer to "armor push logs errors and exits" and "armor push logs errors and returns failure"</remarks>
     [Fact]
     public void TestArmorPushLogsErrorsAndExits()
     {
-        KeysFile(global::Dotenvx.Primitives.Primitives.Keypair().PrivateKey);
+        KeysFile(Pair.PrivateKey);
         Respond((_, _) => (500, """{"error":{"code":"BOOM","message":"push failed"}}"""));
 
         Run("armor", "push").ShouldBe(1);
@@ -326,7 +305,7 @@ public class ArmorActionsTest : EnvironmentTestBase
 
     private void MoveApi(string moveJson)
     {
-        Prompts.Select = (_, _) => "hackclub";
+        Prompts.Select = _ => "hackclub";
         Respond((path, _) => path == "/api/account"
             ? (200, """{"organizations":[{"provider_slug":"hackclub"}]}""")
             : (200, moveJson));
@@ -343,7 +322,7 @@ public class ArmorActionsTest : EnvironmentTestBase
 
         _requests[0].Url.ShouldBe($"{Hostname}/api/account");
         _requests[1].Url.ShouldBe($"{Hostname}/api/armor/move");
-        MockLogger.InfoMessages.ShouldContain("⛨ moved to hackclub (027 C9C)");
+        MockLogger.InfoMessages.ShouldContain($"⛨ moved to hackclub ({PairDisplay})");
     }
 
     /// <remarks>Refer to "armor move passes explicit env file option to ArmorMove service"</remarks>
@@ -367,10 +346,10 @@ public class ArmorActionsTest : EnvironmentTestBase
 
         Run("armor", "move").ShouldBe(0);
 
-        MockLogger.InfoMessages.ShouldContain("○ no change (027 C9C)");
+        MockLogger.InfoMessages.ShouldContain($"○ no change ({PairDisplay})");
     }
 
-    /// <remarks>Refer to "armor move logs errors and exits"</remarks>
+    /// <remarks>Refer to "armor move logs errors and exits" and "armor move logs errors and returns failure"</remarks>
     [Fact]
     public void TestArmorMoveLogsErrorsAndExits()
     {
@@ -458,7 +437,7 @@ public class ArmorActionsTest : EnvironmentTestBase
             "refusing to send Armor token to [https://evil.example]. expected [https://armor.example.com]");
     }
 
-    /// <remarks>Refer to "prints API error JSON and sets a failing exit code"</remarks>
+    /// <remarks>Refer to "prints API error JSON and sets a failing exit code" and "prints API error JSON and returns a failing exit code"</remarks>
     [Fact]
     public void TestPrintsApiErrorJsonAndSetsAFailingExitCode()
     {

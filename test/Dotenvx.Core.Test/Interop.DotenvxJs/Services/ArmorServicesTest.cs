@@ -17,6 +17,10 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Services;
 /// </remarks>
 public class ArmorServicesTest : EnvironmentTestBase
 {
+    private static readonly (string PublicKey, string PrivateKey) Pair = global::Dotenvx.Primitives.Primitives.Keypair();
+    private static string Pub => Pair.PublicKey;
+    private static string Priv => Pair.PrivateKey;
+
     private readonly List<(string Path, JsonNode Body)> _calls = [];
     private readonly List<string> _selectMessages = [];
     private readonly string _dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "dotenvx-armor-svc-" + Guid.NewGuid().ToString("N"));
@@ -50,9 +54,9 @@ public class ArmorServicesTest : EnvironmentTestBase
 
     private void Select(string? answer)
     {
-        Prompts.Select = (message, _) =>
+        Prompts.Select = request =>
         {
-            _selectMessages.Add(message);
+            _selectMessages.Add(request.Message);
 
             return answer;
         };
@@ -65,9 +69,9 @@ public class ArmorServicesTest : EnvironmentTestBase
         return """{"error":{"code":"TEAM_REQUIRED","message":"team required","meta":{"organizations":[ORGS]}}}""".Replace("ORGS", orgs);
     }
 
-    private void Env(string file, string publicKey = "pub-from-env")
+    private void Env(string file, string? publicKey = null)
     {
-        File.WriteAllText(file, $"{GuessPublicKey(file)}=\"{publicKey}\"\n");
+        File.WriteAllText(file, $"{GuessPublicKey(file)}=\"{publicKey ?? Pub}\"\n");
     }
 
     private static string GuessPublicKey(string file)
@@ -80,9 +84,9 @@ public class ArmorServicesTest : EnvironmentTestBase
         return file == ".env" ? "DOTENV_PRIVATE_KEY" : "DOTENV_PRIVATE_KEY_" + file[5..].ToUpperInvariant();
     }
 
-    private static void Keys(string file, string value = "priv-from-env-keys")
+    private static void Keys(string file, string? value = null)
     {
-        File.WriteAllText(".env.keys", $"{KeyName(file)}=\"{value}\"\n");
+        File.WriteAllText(".env.keys", $"{KeyName(file)}=\"{value ?? Priv}\"\n");
     }
 
     // ---- armorUp ----
@@ -98,11 +102,11 @@ public class ArmorServicesTest : EnvironmentTestBase
         ArmorResult result = new ArmorUp("https://armor.dotenvx.com", "token-1", "device-pub-1", ".env.production").Run();
 
         _selectMessages.ShouldBeEmpty("does not prompt when armor up succeeds without team");
-        _calls[0].Body["public_key"]!.ToString().ShouldBe("pub-from-env");
-        _calls[0].Body["private_key"]!.ToString().ShouldBe("priv-from-env-keys");
+        _calls[0].Body["public_key"]!.ToString().ShouldBe(Pub);
+        _calls[0].Body["private_key"]!.ToString().ShouldBe(Priv);
         _calls[0].Body["team"].ShouldBeNull();
-        File.Exists(".env.keys").ShouldBeFalse("removes the local private key after a successful armor up");
-        result.ShouldBe(new ArmorResult(false, "DOTENV_PRIVATE_KEY_PRODUCTION", "priv-from-api", "pub-from-env"));
+        File.Exists(".env.keys").ShouldBeFalse("removes the local private key after a successful armor up");  // a pushed local key counts as changed (armorUp.js: changed = json.changed || privateKey != null)
+        result.ShouldBe(new ArmorResult(true, "DOTENV_PRIVATE_KEY_PRODUCTION", "priv-from-api", Pub));
     }
 
     /// <remarks>Refer to "ArmorUp still calls api when local private key is already absent"</remarks>
@@ -134,7 +138,7 @@ public class ArmorServicesTest : EnvironmentTestBase
         _calls.Count.ShouldBe(1);
         _calls[0].Body["team"]!.ToString().ShouldBe("hackclub");
         File.Exists(".env.keys").ShouldBeFalse();
-        result.ShouldBe(new ArmorResult(true, "DOTENV_PRIVATE_KEY_PRODUCTION", "priv-from-api", "pub-from-env"));
+        result.ShouldBe(new ArmorResult(true, "DOTENV_PRIVATE_KEY_PRODUCTION", "priv-from-api", Pub));
     }
 
     /// <remarks>Refer to "ArmorUp retries with selected team when api requires team"</remarks>
@@ -183,9 +187,9 @@ public class ArmorServicesTest : EnvironmentTestBase
         ArmorResult result = new ArmorDown("https://armor.dotenvx.com", "token-1", "device-pub-1", ".env.production").Run();
 
         _selectMessages.ShouldBeEmpty();
-        _calls[0].Body["public_key"]!.ToString().ShouldBe("pub-from-env");
+        _calls[0].Body["public_key"]!.ToString().ShouldBe(Pub);
         File.ReadAllText(".env.keys").ShouldBe("DOTENV_PRIVATE_KEY_PRODUCTION=priv-from-api\n");
-        result.ShouldBe(new ArmorResult(true, "DOTENV_PRIVATE_KEY_PRODUCTION", "priv-from-api", "pub-from-env"));
+        result.ShouldBe(new ArmorResult(true, "DOTENV_PRIVATE_KEY_PRODUCTION", "priv-from-api", Pub));
     }
 
     /// <remarks>Refer to "ArmorDown surfaces remote changed flag even if local file was already current"</remarks>
@@ -266,10 +270,10 @@ public class ArmorServicesTest : EnvironmentTestBase
 
         ArmorResult result = new ArmorPull("https://armor.dotenvx.com", "token-1", "device-pub-1", ".env.production").Run();
 
-        _calls[0].Body["public_key"]!.ToString().ShouldBe("pub-from-env");
+        _calls[0].Body["public_key"]!.ToString().ShouldBe(Pub);
         File.ReadAllText(".env.keys").ShouldBe("DOTENV_PRIVATE_KEY_PRODUCTION=priv-from-api\n");
         // armorPull.js: `changed` is the upsert's (the file changed), not the API's flag
-        result.ShouldBe(new ArmorResult(true, "DOTENV_PRIVATE_KEY_PRODUCTION", "priv-from-api", "pub-from-env"));
+        result.ShouldBe(new ArmorResult(true, "DOTENV_PRIVATE_KEY_PRODUCTION", "priv-from-api", Pub));
     }
 
     /// <remarks>Refer to "ArmorPull returns unchanged when .env.keys already has the private key"</remarks>
@@ -426,8 +430,8 @@ public class ArmorServicesTest : EnvironmentTestBase
         _selectMessages.ShouldBe(["Select team"]);
         _calls[1].Path.ShouldBe("/api/armor/move");
         _calls[1].Body["team"]!.ToString().ShouldBe("hackclub");
-        _calls[1].Body["public_key"]!.ToString().ShouldBe("pub-from-env");
-        result.ShouldBe(new ArmorResult(true, "DOTENV_PRIVATE_KEY_PRODUCTION", "priv-from-api", "pub-from-env", "hackclub"));
+        _calls[1].Body["public_key"]!.ToString().ShouldBe(Pub);
+        result.ShouldBe(new ArmorResult(true, "DOTENV_PRIVATE_KEY_PRODUCTION", "priv-from-api", Pub, "hackclub"));
     }
 
     /// <remarks>Refer to "ArmorMove returns unchanged when api reports no change"</remarks>

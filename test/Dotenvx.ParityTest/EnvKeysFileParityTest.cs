@@ -130,9 +130,6 @@ public class EnvKeysFileParityTest(NodeParityFixture fixture) : ParityTestBase(f
     [Theory]
     [InlineData("get", "-fk", "real", "HELLO", 0)]
     [InlineData("get", "-fk", "real/.env.keys", "HELLO", 0)]
-    [InlineData("validate", "-fk", "real", "", 0)]
-    [InlineData("validate", "-fk", "real/.env.keys", "", 0)]
-    [InlineData("validate", "-fk", "nosuchdir", "", 1)]
     // keypair does not resolve a directory: `real` is read as a literal file, which doesn't exist.
     [InlineData("keypair", "-fk", "real", "DOTENV_PRIVATE_KEY", 0)]
     [InlineData("keypair", "-fk", "real/.env.keys", "DOTENV_PRIVATE_KEY", 0)]

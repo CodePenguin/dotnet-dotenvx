@@ -140,7 +140,7 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
     {
         Environment.SetEnvironmentVariable("BW_SESSION", null);
         SecretCli.IsInteractive = () => true;
-        Prompts.Password = (_, _) => "master-password";
+        Prompts.Password = (_, _, _) => "master-password";
         Stub((_, args, _) => args[0] == "unlock"
             ? new SecretCliResult(0, "request-session\n")
             : new SecretCliResult(0, $"{args[1]}-value\n"));
@@ -184,7 +184,7 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
     {
         Environment.SetEnvironmentVariable("BW_SESSION", null);
         SecretCli.IsInteractive = () => true;
-        Prompts.Password = (_, _) => throw new PromptCancelledException();
+        Prompts.Password = (_, _, _) => throw new PromptCancelledException();
         Forbid();
 
         Should.Throw<PromptCancelledException>(() => ResolveBitwardenPassword.Resolve(

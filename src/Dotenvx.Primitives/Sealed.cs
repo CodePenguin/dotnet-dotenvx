@@ -6,7 +6,7 @@ namespace Dotenvx.Primitives;
 /// package - see docs/porting-traps.md, live-oracle note). Decompiled via
 /// `node -e "console.log(require('@dotenvx/primitives').sealed.toString())"` from within the
 /// submodule dir, then confirmed behaviorally by calling it directly with concrete inputs
-/// (duplicate keys, DOTENV_PUBLIC_KEY*/​*_PLAIN exemptions, empty content). Real semantics: parses
+/// (duplicate keys, DOTENV_PUBLIC_KEY*/​*_PLAIN exemptions, empty content). 3.3.0 also treats whitespace-only values and values starting with op:// or bw:// as sealed. Real semantics: parses
 /// EVERY occurrence of every key (not just the last, unlike Parse's default last-value-wins, and
 /// unlike Parse's own `collectAllValues` param, which despite its name only keeps the FIRST
 /// occurrence via TryAdd - neither is suitable here), and requires every one of those values to be
@@ -24,7 +24,9 @@ public static partial class Primitives
                 continue;
             }
 
-            if (!Encrypted(entry.Value))
+            // 3.3.0: blank (whitespace-only) values and op:// / bw:// secret references are sealed too
+            if (entry.Value.Trim() != "" && !Encrypted(entry.Value) && !entry.Value.StartsWith("op://", StringComparison.Ordinal) &&
+                !entry.Value.StartsWith("bw://", StringComparison.Ordinal))
             {
                 return false;
             }

@@ -46,9 +46,15 @@ public class ArmorKeysParityTest(NodeParityFixture fixture) : ArmorParityTestBas
 
         Outcome outcome = await CompareWith(Project, null, null, "armor", command);
 
-        (changed ? outcome.Stderr : outcome.Stdout).ShouldContain(changed
-            ? command == "up" ? "⛨ armored (02B 106)" : "⛨ pushed (02B 106)"
-            : "no change (02B 106)");
+        // `up` removes the local key, so it reports "armored" even when the server says nothing changed
+        if (changed || command == "up")
+        {
+            outcome.Stderr.ShouldContain(command == "up" ? "⛨ armored .env (02B 106)" : "⛨ pushed .env (02B 106) to Armor");
+        }
+        else
+        {
+            outcome.Stdout.ShouldContain("no change to .env (02B 106)");
+        }
         outcome.Requests.Single().ShouldContain($"/api/armor/{command}");
         if (command == "up")
         {
@@ -236,7 +242,8 @@ public class ArmorKeysParityTest(NodeParityFixture fixture) : ArmorParityTestBas
         // `up`/`push` read the private key from .env.keys; `down` needs the .env file's public key
         Outcome outcome = await CompareWith(keys ? null : ProjectWithoutKeys, null, null, "armor", command);
 
-        outcome.ExitCode.ShouldBe(1);
+        // `up` may be repeated for a key Armor already holds, so a missing .env.keys is not an error there
+        outcome.ExitCode.ShouldBe(command == "up" && !keys ? 0 : 1);
     }
 
     [Fact]

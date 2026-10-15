@@ -21,7 +21,38 @@ public static class ListenForOpenKey
     private static readonly string LineFeed = ((char)10).ToString();
     private static readonly string CtrlC = ((char)3).ToString();
 
-    private static readonly Action DefaultInterrupt = () => Environment.Exit(130);
+    // killing yourself with SIGINT: POSIX processes really die by the signal (a shell reports 128 + 2, a pty reports a signal exit);
+    // Windows terminates the process with exit code 1
+    private static readonly Action DefaultInterrupt = () =>
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Environment.Exit(1);
+        }
+
+        const int sigint = 2;
+        try
+        {
+            Signal(sigint, IntPtr.Zero); // SIG_DFL
+            Kill(Getpid(), sigint);
+            System.Threading.Thread.Sleep(1000);
+        }
+        catch (Exception)
+        {
+            // no libc to signal through: fall back to the exit code a shell reports for a SIGINT death
+        }
+
+        Environment.Exit(130);
+    };
+
+    [System.Runtime.InteropServices.DllImport("libc", EntryPoint = "signal")]
+    private static extern IntPtr Signal(int signum, IntPtr handler);
+
+    [System.Runtime.InteropServices.DllImport("libc", EntryPoint = "kill")]
+    private static extern int Kill(int pid, int signal);
+
+    [System.Runtime.InteropServices.DllImport("libc", EntryPoint = "getpid")]
+    private static extern int Getpid();
 
     /// <summary>`process.kill(process.pid, 'SIGINT')`. Swappable for tests.</summary>
     public static Action Interrupt { get; internal set; } = DefaultInterrupt;
@@ -105,13 +136,14 @@ public static class ListenForOpenKey
 
         public bool IsTty => !Console.IsInputRedirected;
 
-        public bool IsRaw => false;
+        public bool IsRaw => Console.TreatControlCAsInput;
 
         public event Action<string>? Data;
 
         public void SetRawMode(bool raw)
         {
-            // Console.ReadKey(true) already reads without echo or line buffering
+            // Console.ReadKey(true) already reads without echo or line buffering; raw mode also delivers Ctrl+C as a key instead of signalling
+            Console.TreatControlCAsInput = raw;
         }
 
         public void Resume()

@@ -9,6 +9,7 @@ public class ProcessedSet
     public string EnvFilePath { get; set; } = string.Empty;
     public bool Changed { get; set; }
     public bool PrivateKeyAdded { get; set; }
+    public bool NativePrivateKeyAdded { get; set; }
     public string EnvSrc { get; set; } = string.Empty;
     public Exception? Error { get; set; }
 }

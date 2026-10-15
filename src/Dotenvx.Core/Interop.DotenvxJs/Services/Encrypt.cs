@@ -1,5 +1,4 @@
-using System.Collections;
-
+using Dotenvx.Interop.DotenvxJs.Custodians;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Types;
 using Dotenvx.Primitives;
@@ -12,10 +11,10 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// <remarks>
 /// Reference source: dotenvx/src/lib/transforms/encrypt.js. The public key is `publickeys(src)[0]` (the
 /// first DOTENV_PUBLIC_KEY* in the file, whatever its name); when there is none a fresh keypair is made, the
-/// public key header is prepended to the env source and the private key is appended to the returned
-/// `KeysSrc` (the keys file is read and written relative to the working directory, default `.env.keys`;
-/// callers write it). Values are chosen with `scan` (`ik`/`ek`), encrypted unless already encrypted, and
-/// upserted per occurrence; DOTENV_PUBLIC_KEY* and *_PLAIN keys are never encrypted.
+/// public key header is prepended to the env source and the private key is handed to the chosen custodian (the keys
+/// file text comes back as `KeysSrc`; callers write it). Values are chosen with `scan` (`ik`/`ek`) and the Envfile
+/// (`fs.encrypted`, else "not *_PLAIN"), encrypted unless already encrypted, and upserted per occurrence; DOTENV_PUBLIC_KEY*
+/// keys are never encrypted. When an Envfile exempts everything, no key is created.
 /// </remarks>
 public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath,
     bool noCreate = false)
@@ -23,28 +22,23 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
     private const string SampleEnvKit = "HELLO=\"World\"\n";
 
     private readonly HashSet<string> _changedFilePaths = [];
-
-    private readonly EnvItem[] _envs = DetermineEnvs(envs, Environment.GetEnvironmentVariables()
-        .Cast<DictionaryEntry>()
-        .ToDictionary(entry => (string)entry.Key, entry => entry.Value?.ToString() ?? string.Empty));
-
     private readonly List<EncryptProcessedEnv> _processedEnvs = [];
     private readonly HashSet<string> _unchangedFilePaths = [];
 
     private string? _keysSrc;
 
-    /// <summary>
-    /// `noArmor`: true keeps new keys in .env.keys. The CLI always sets it from `--no-armor` and the Armor session; the
-    /// default is "no Armor" so library callers never reach the network or a prompt unasked.
-    /// </summary>
-    public bool NoArmor { get; set; } = true;
+    /// <summary>How private keys are looked up and stored: --no-native, --no-armor, --no-1password, --no-bitwarden, --token.</summary>
+    public KeyAccessOptions KeyAccess { get; set; } = new() { NoArmor = true };
 
-    private bool _noArmor;
+    /// <summary>`--profile`: the Envfile profile that selects the env files.</summary>
+    public string? Profile { get; set; }
 
     public EncryptResult Run()
     {
         string fk = string.IsNullOrEmpty(envKeysFilePath) ? ".env.keys" : envKeysFilePath;
-        _noArmor = NoArmor; // key storage selector below may change it
+        string? storage = null;
+        StoreContext custodyContext = new() { Token = KeyAccess.Token };
+        KeyStorageOptions storageOptions = new() { Access = KeyAccess, NoCreate = noCreate, Fk = fk };
 
         // set up keysSrc
         string fkPath = NodePath.Resolve(fk);
@@ -60,11 +54,11 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
             }
         }
 
-        foreach (EnvItem env in _envs)
+        foreach (EnvItem env in SelectEnvfileEnvs(envs, new SelectEnvfileOptions { Profile = Profile }))
         {
             if (env.Type == EnvType.EnvFile)
             {
-                EncryptEnvFile(env.Value, fk);
+                EncryptEnvFile(env.Value, fk, ref storage, custodyContext, storageOptions);
             }
         }
 
@@ -77,7 +71,8 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
         };
     }
 
-    private void EncryptEnvFile(string envFilePath, string fk)
+    private void EncryptEnvFile(string envFilePath, string fk, ref string? storage, StoreContext custodyContext,
+        KeyStorageOptions storageOptions)
     {
         EncryptProcessedEnv row = new() { Keys = [], Type = EnvType.EnvFile };
 
@@ -87,6 +82,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
         try
         {
+            EnvfileSchema schema = ReadEnvfile.Read(null, [filepath]);
             string envSrc;
             if (!Fsx.ExistsSync(filepath) && !noCreate)
             {
@@ -98,47 +94,75 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                 envSrc = Fsx.ReadFileX(filepath, DetectEncoding(filepath));
             }
 
-            if (JsTrim(envSrc).Length == 0)
+            if (!schema.Exists && JsTrim(envSrc).Length == 0)
             {
                 envSrc = SampleEnvKit;
                 row.Changed = true;
+            }
+
+            ScanResult scanned = Scan(envSrc, new ScanOptions { Ik = keys, Ek = excludeKeys });
+            List<KeyValuePair<string, List<string>>> selected = scanned.Parsed.Where(pair =>
+            {
+                if (IsPublicKey(pair.Key, ""))
+                {
+                    return false;
+                }
+
+                return schema.Exists
+                    ? !schema.Keys.TryGetValue(pair.Key, out KeyPolicy? policy) || policy.Encrypted
+                    : !IsPlainKey(pair.Key);
+            }).ToList();
+            if (schema.Exists && !selected.Any(pair => pair.Value.Any(value => !Encrypted(value))))
+            {
+                // A missing file still needs writing even when its initial values are exempt from encryption.
+                // Avoid generating keys, but preserve creation.
+                row.EnvSrc = envSrc;
+                if (row.Changed)
+                {
+                    _changedFilePaths.Add(envFilePath);
+                }
+                else
+                {
+                    _unchangedFilePaths.Add(envFilePath);
+                }
+
+                _processedEnvs.Add(row);
+
+                return;
             }
 
             string? publicKey = PublicKeys(envSrc).FirstOrDefault();
 
             if (string.IsNullOrEmpty(publicKey))
             {
-                if (!noCreate && !_noArmor)
-                {
-                    _noArmor = !KeyStorage.ChooseArmored();
-                }
-
                 // upsert public key to .env file
                 (string newPublicKey, string privateKey) = Keypair();
                 publicKey = newPublicKey;
                 string publicKeyName = GuessPublicKeyName(envFilePath);
                 string privateKeyName = GuessPrivateKeyName(envFilePath);
                 envSrc = MutateSrc(envSrc, envFilePath, fk, publicKeyName, publicKey);
-                if (_noArmor)
-                {
-                    _keysSrc = MutateKeysSrc(_keysSrc, privateKeyName, privateKey, NodePath.Basename(envFilePath));
-                }
-                else
-                {
-                    KeyStorage.StoreInArmor(publicKey, privateKey);
 
-                    // don't set keysSrc (in armor)
+                custodyContext.KeysSrc = _keysSrc;
+                custodyContext.PrivateKeyName = privateKeyName;
+                custodyContext.Comment = NodePath.Basename(envFilePath);
+                custodyContext.KeysFilepath = fk;
+                (string chosen, StoreResult stored) =
+                    KeyStorage.Store(storage, publicKey, privateKey, storageOptions, custodyContext);
+                storage = chosen;
+                row.KeySources = new Dictionary<string, string> { [publicKey] = stored.HasKeysSrc ? "file" : storage };
+                if (stored.HasKeysSrc)
+                {
+                    _keysSrc = stored.KeysSrc;
+                }
+
+                if (stored.NativePrivateKeyAdded)
+                {
+                    row.NativePrivateKeyAdded = true;
                 }
             }
 
-            ScanResult scanned = Scan(envSrc, new ScanOptions { Ik = keys, Ek = excludeKeys });
-            foreach ((string key, List<string> values) in scanned.Parsed)
+            foreach ((string key, List<string> values) in selected)
             {
-                if (IsPublicKey(key, "") || IsPlainKey(key))
-                {
-                    continue;
-                }
-
                 string[] transformed = values.Select(value => Encrypted(value) ? value : Encrypt(value, publicKey))
                     .ToArray();
 

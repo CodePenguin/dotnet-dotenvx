@@ -1,4 +1,4 @@
-# Parity checklist: dotenvx v2.24.1
+# Parity checklist: dotenvx v2.34.2
 
 The goal is byte-for-byte parity with the Node `@dotenvx/dotenvx` CLI at the pinned tag: **anything that exists in that version is in scope.** This file lists every upstream component, whether it is ported, and how it is verified. A component is "done" when it is ported, covered by unit tests ported from `dotenvx/tests` (or by oracle/parity tests when upstream has none) and compared against the real Node CLI by a parity test. Update this file in the same change as the code.
 
@@ -16,20 +16,23 @@ The goal is byte-for-byte parity with the Node `@dotenvx/dotenvx` CLI at the pin
 
 | Command | Status | Notes |
 | --- | --- | --- |
-| `run` | done | including `op://` / `bw://` secret references and `--redact`/`--mask`/`--validate` |
+| `run` | done | including `op://` / `bw://` secret references and `--redact`/`--mask`/`--profile`, summary `⟐ injected env (N)` |
 | `get` | done | |
 | `set` | done | hidden-value prompt on a terminal, key-storage selection, `--no-armor`/`--no-native` |
 | `del` | done | |
 | `encrypt` (`enc`), `decrypt` (`dec`) | done | `enc`/`dec` are hidden aliases |
 | `keypair` | done | |
 | `ls` | done | file order can differ on some filesystems (trap #64) |
-| `validate` | done | |
-| `gitignore`, `genexample`, `precommit`, `prebuild` | done | |
+| `genexample` | done | |
+| `protect` (`--docker`, `--git-file`, `--git-process`) | done | git filter/attributes/ignore installed in an isolated git config in tests; the interactive checklist uses its defaults |
+| `gitignore`, `precommit` (`--install`, `--uninstall`), `prebuild` | done | deprecated in favor of `protect`; print the deprecation warning |
+| `check`, `spec` | done | hidden beta commands; `spec` multiselect uses its defaults |
+| `primitives` (`profile`, `redact`, `policy`, `check`, `keypair`, `derive`) | done | |
+| `feedback`, `hidden` | done | `hidden` lists the hidden commands |
 | `help [command]` | done | byte-identical to commander's help |
 | `doctor` | done | hidden |
 | `update` | done | prints the npm commands (never a packaged binary) |
-| `lock` (`up`, `down`) | done | scrypt implemented in `LockCrypto` (no .NET built-in) |
-| `native` (`up`, `down`, `push`, `pull`) | done | every store shells out like upstream (`security`, `secret-tool`, PowerShell with upstream's script) |
+| `native`, `1password`, `bitwarden` (`up`, `down`, `push`, `pull`) | done | every store shells out like upstream (`security`, `secret-tool`, PowerShell with upstream's script) |
 | `armor` (`up`, `down`, `push`, `pull`, `open`, `move`, `status`, `settings`) | done | verified against a fake Armor API; falls back to a `dotenvx-armor` program like upstream |
 | `login`, `logout`, `curl` | done | OAuth device flow against the fake API |
 | `ext` (`ls`, `genexample`, `gitignore`, `prebuild`, `precommit`, `scan`) | done | |
@@ -52,6 +55,7 @@ All verified against the real CLI; none hides a behavior gap.
 9. A child killed by `SIGUSR1` makes Node open its inspector on port 9229, and both runs race for that port; only the stderr text can differ (`ACCEPTED_STDERR_ONLY` in the sweep).
 10. macOS only: Node exits before a large write (over about 64 KB) to a pipe drains and cuts the output (`encrypt --stdout` of a 600-key file stops near key 417); .NET prints all of it. The sweep accepts `r16 many keys encrypt --stdout` on macOS only. Writing to a file or a terminal is complete in both.
 11. Linux and macOS: the real Keychain and Secret Service stay behind fakes (see 5); on Windows the Credential Manager is also tested for real.
+12. Interactive menus (custody, `spec`, `protect`, feedback, passwords) run on a port of enquirer (`Interop.EnquirerJs`): `EnquirerParityTest` (piped keys, byte-identical stderr) and `PtyParityTest` (real pseudo-terminal, screens compared cell by cell) check them against Node. Verified on Windows; Linux/macOS runs pending.
 
 ## Platforms and CI
 

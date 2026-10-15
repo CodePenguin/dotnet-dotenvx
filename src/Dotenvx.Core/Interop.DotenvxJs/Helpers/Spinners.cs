@@ -1,4 +1,4 @@
-using System.Text;
+using Dotenvx.Interop.YoctoSpinnerJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
@@ -25,11 +25,8 @@ public record SpinnerOptions(
 /// </remarks>
 public static class Spinners
 {
-    private static readonly string[] DefaultFrames = OperatingSystem.IsWindows() &&
-                                                     string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WT_SESSION")) &&
-                                                     Environment.GetEnvironmentVariable("TERM_PROGRAM") != "vscode"
-        ? ["-", "\\", "|", "/"]
-        : ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    /// <summary>createSpinner.js `FRAMES`.</summary>
+    private static readonly string[] DefaultFrames = ["◇", "⬖", "◆", "⬗"];
 
     private static readonly Func<SpinnerOptions, ISpinner?> DefaultCreate = Create;
 
@@ -65,6 +62,20 @@ public static class Spinners
         IsStderrTty = () => !Console.IsErrorRedirected;
     }
 
+    /// <summary>The yocto-spinner port behind the <see cref="ISpinner" /> the actions use.</summary>
+    private sealed class YoctoSpinnerAdapter(YoctoSpinner inner) : ISpinner
+    {
+        public string Text
+        {
+            get => inner.Text;
+            set => inner.Text = value;
+        }
+
+        public void Start() => inner.Start();
+
+        public void Stop() => inner.Stop();
+    }
+
     private static ISpinner? Create(SpinnerOptions options)
     {
         bool enabled = IsStderrTty() && options.Spinner != false && !options.Quiet && !options.Verbose && !options.Debug;
@@ -73,106 +84,11 @@ public static class Spinners
             return null;
         }
 
-        var spinner = new ConsoleSpinner(options.Text ?? "thinking", options.Frames ?? DefaultFrames);
+        var spinner = new YoctoSpinnerAdapter(new YoctoSpinner(options.Text ?? "thinking", options.Frames ?? DefaultFrames));
         spinner.Start();
         Active = spinner;
 
         return spinner;
-    }
-
-    /// <summary>yocto-spinner: redraws `frame text` every 80ms on one stderr line (a plain line per update when not interactive).</summary>
-    private sealed class ConsoleSpinner : ISpinner
-    {
-        private const int IntervalMs = 80;
-        private readonly string[] _frames;
-        private readonly bool _interactive;
-        private readonly object _lock = new();
-        private int _frame = -1;
-        private bool _spinning;
-        private Timer? _timer;
-        private string _text;
-
-        public ConsoleSpinner(string text, string[] frames)
-        {
-            _text = text;
-            _frames = frames;
-            // yocto-spinner: isTTY && TERM !== 'dumb' && !('CI' in process.env)
-            _interactive = Environment.GetEnvironmentVariable("TERM") != "dumb" &&
-                           Environment.GetEnvironmentVariable("CI") is null;
-        }
-
-        public string Text
-        {
-            get => _text;
-            set
-            {
-                _text = value ?? "";
-                Render();
-            }
-        }
-
-        public void Start()
-        {
-            lock (_lock)
-            {
-                if (_spinning)
-                {
-                    return;
-                }
-
-                _spinning = true;
-                if (_interactive)
-                {
-                    Write("\u001b[?25l");
-                }
-
-                Render();
-                if (_interactive)
-                {
-                    _timer = new Timer(_ => Render(), null, IntervalMs, IntervalMs);
-                }
-            }
-        }
-
-        public void Stop()
-        {
-            lock (_lock)
-            {
-                if (!_spinning)
-                {
-                    return;
-                }
-
-                _spinning = false;
-                _timer?.Dispose();
-                _timer = null;
-                if (_interactive)
-                {
-                    Write("\r\u001b[2K");
-                    Write("\u001b[?25h");
-                }
-            }
-        }
-
-        private void Render()
-        {
-            lock (_lock)
-            {
-                if (!_spinning)
-                {
-                    return;
-                }
-
-                _frame = (_frame + 1) % _frames.Length;
-                string line = $"\u001b[36m{_frames[_frame]}\u001b[39m {_text}";
-                Write(_interactive ? "\r\u001b[2K" + line : line + "\n");
-            }
-        }
-
-        private static void Write(string text)
-        {
-            Console.Error.Write(text);
-        }
     }
 }
 

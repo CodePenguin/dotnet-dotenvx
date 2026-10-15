@@ -17,11 +17,11 @@ The upstream JS project is a git submodule at `dotenvx/`, used as porting refere
 
 ### Pinning rules
 
-- The submodule is pinned to the exact tag **`v2.24.1`** (never upstream HEAD, never a commit past the tag). `src/Dotenvx/Dotenvx.csproj` `Version` stays equal to the pinned tag, so `dotenvx --version` states which release this port matches.
-- `src/Dotenvx.Primitives/Dotenvx.Primitives.csproj` `Version` equals the installed `@dotenvx/primitives` version (`dotenvx/node_modules/@dotenvx/primitives/package.json`, currently **3.0.2**).
+- The submodule is pinned to the exact tag **`v2.34.2`** (never upstream HEAD, never a commit past the tag). `src/Dotenvx/Dotenvx.csproj` `Version` stays equal to the pinned tag, so `dotenvx --version` states which release this port matches.
+- `src/Dotenvx.Primitives/Dotenvx.Primitives.csproj` `Version` equals the installed `@dotenvx/primitives` version (`dotenvx/node_modules/@dotenvx/primitives/package.json`, currently **3.3.0**).
 - Bump versions only through the "Version bump checklist" below. Do not run `git submodule update --remote`.
 - Scope rule: **anything that exists in the targeted version is in scope**, and all of it is ported: Dotenvx Armor (session/device stores, API client, login/logout/curl/settings/armor commands, key providers and decryptors), native secret stores and `native`, 1Password/Bitwarden resolution, `lock`, `doctor`/`update`/`help`, spinner, pty for `--redact`, signal forwarding and dynamic extensions. [docs/parity-checklist.md](docs/parity-checklist.md) lists every component, its status and the accepted differences; keep it current.
-- `precommit`/`prebuild` are current at the pin but deprecated upstream in favor of `protect`; revisit when the pin passes that change.
+- `precommit`/`prebuild`/`gitignore` are deprecated at the pin in favor of `protect`; they still run and print the deprecation warning.
 
 ## Commands
 
@@ -118,6 +118,16 @@ Parity is proven by oracle tests, not ported tests: `test/Dotenvx.ParityTest/Pri
 - Deterministic structure tests also live here: `HelpExactParityTest` (exact `--help` bytes for every command path and `help <cmd>`), `HelpTextParityTest` (options per command, against System.CommandLine's native help), `ErrorMessageParityTest` (every error subtype vs `errors.js`), `GlobalOptionsParityTest`.
 - Use `FixedKeypairFixture` for deterministic keypairs. Every run gets a hermetic `DOTENVX_CONFIG` (no developer Armor session or device key is ever read); pass `--no-native --no-armor` to Node's `set`/`encrypt` (never in a `RunBothAsync`'s shared args) when the `.env` has no public key yet and no Armor/native behavior is under test.
 - Armor, native-store and secret-manager scenarios run against fakes shared by both CLIs: `test/fakes/secretcli.cs` (installed as `op`, `bw`, `powershell` or `secret-tool` by `FakeCliInstaller`), `test/fakes/security.cs` (macOS `security`), `test/fakes/gitleaks.cs` and `FakeArmorServer` (`ArmorParityTestBase` wires config dir, device key, secret store and request log; `Compare` asserts identical exit/stdout/stderr/requests/files).
+
+### Coverage-guided parity
+
+`scripts/parity-coverage.js` shows which upstream lines (and which port lines) the parity suite never executes, so new scenarios can target real gaps.
+
+- `node scripts/parity-coverage.js node [--filter "FullyQualifiedName~X"]` runs the suite with `NODE_V8_COVERAGE` set on every Node child; `node scripts/parity-coverage.js dotnet` does the same for the Dotenvx assemblies; `node scripts/parity-coverage.js report` writes `coverage/node-gaps.txt` and `coverage/dotnet-gaps.txt` (git-ignored).
+- Set `COVERAGE_KEEP=1` to accumulate over several invocations. Run `CustodyParityTest` on its own first, then everything else with `COVERAGE_KEEP=1` (one full run once lost the custody coverage). The filter cannot contain `|` (cmd shell): one class per invocation.
+- In coverage mode the Node child inherits `NODE_V8_COVERAGE`, so the few tests that dump the whole environment (`get --all`, `get --format eval`, SDK `get all`) fail only there; they pass in normal runs.
+- Many remaining gaps are not scenarios to write: dead or unreachable upstream code, guard errors the CLI never reaches, and POSIX-only code (signal forwarding, `ptyCommand`, the Linux secret service) that has to run on Linux/macOS.
+- Interactive tests (`PtyParityTest`, `EnquirerParityTest`) need `test/tools/pty` (`npm install` runs on first use; the fixture sets the execute bit on node-pty's `spawn-helper`). Never let a test open a real browser, and always isolate global git config (`GIT_CONFIG_GLOBAL`, `GIT_CONFIG_SYSTEM`, `XDG_CONFIG_HOME`) when exercising `protect`.
 
 Detailed, numbered lessons from past bugs are in [docs/porting-traps.md](docs/porting-traps.md). Skim its headings before touching parsing, option handling, error output, or file encodings; the most reusable ones:
 

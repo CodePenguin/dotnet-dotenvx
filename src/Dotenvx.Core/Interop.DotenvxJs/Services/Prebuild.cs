@@ -66,12 +66,14 @@ public class Prebuild(string directory = "./")
             else if (file is not (".env.example" or ".env.vault" or ".env.x"))
             {
                 string src = Fsx.ReadFileX(file);
-                bool encrypted = Sealed(src);
-                if (!encrypted)
+                bool privateKeyFile = Path.GetFileName(file).StartsWith(".env.keys", StringComparison.Ordinal);
+
+                // hasPlaintextSecrets(src) is `!sealed(src)`
+                if (privateKeyFile || !Sealed(src))
                 {
                     string errorMsg = $"{file} not encrypted/dockerignored";
                     string errorHelp = $"fix: [dotenvx encrypt -f {file}] or [dotenvx gitignore --pattern {file}]";
-                    if (file.Contains(".env.keys"))
+                    if (privateKeyFile)
                     {
                         errorMsg = $"{file} not dockerignored";
                         errorHelp = $"fix: [dotenvx gitignore --pattern {file}]";

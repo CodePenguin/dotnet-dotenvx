@@ -10,4 +10,10 @@ public class EncryptProcessedEnv
     public bool Changed { get; set; }
     public string EnvSrc { get; set; } = string.Empty;
     public string? PublicKey { get; set; }
+
+    /// <summary>`row.keySources`: where the private key of the file lives (new keys: the custodian chosen).</summary>
+    public IReadOnlyDictionary<string, string>? KeySources { get; set; }
+
+    /// <summary>`row.nativePrivateKeyAdded`: the private key was added to the OS secret store.</summary>
+    public bool NativePrivateKeyAdded { get; set; }
 }

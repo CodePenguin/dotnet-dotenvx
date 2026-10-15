@@ -90,7 +90,7 @@ public static partial class EnvKeyFiles
         {
             if (nextLines.Any(line => AnyEnvKeyLine().IsMatch(line)))
             {
-                Fsx.WriteFileSync(resolved, string.Join(eol, nextLines) + eol);
+                Fsx.WriteKeyFile(resolved, string.Join(eol, nextLines) + eol);
             }
             else
             {

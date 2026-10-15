@@ -38,8 +38,18 @@ public class EnvironmentTestBase : IDisposable
 
         _existingEnvironmentKeys.Add("DOTENVX_CONFIG"); // ClearEnvironment() removes it with the rest
 
-        // ... and never reach the real OS secret store
-        NativeStore.Current = NSubstitute.Substitute.For<INativeSecretStore>();
+        // ... and never reach the real OS secret store: the stand-in is an unavailable store, so keys fall back to files
+        INativeSecretStore unavailable = NSubstitute.Substitute.For<INativeSecretStore>();
+        NSubstitute.SubstituteExtensions.When(unavailable, store => store.Set(NSubstitute.Arg.Any<string>(), NSubstitute.Arg.Any<string>(), NSubstitute.Arg.Any<string>()))
+            .Do(_ => throw new global::Dotenvx.Providers.NativeStoreException("NATIVE_UNAVAILABLE", "OS secret store unavailable"));
+        NativeStore.Current = unavailable;
+
+        // colour depth is decided from the environment and platform: tests see a plain non-Windows terminal, whatever the dev shell is
+        ConsoleTty.Platform = new global::Dotenvx.Interop.DotenvxJs.Helpers.OsPlatform(false, 0, 0);
+        foreach (string name in new[] { "FORCE_COLOR", "NO_COLOR", "NODE_DISABLE_COLORS", "TMUX", "CI", "TF_BUILD", "TEAMCITY_VERSION", "TERM_PROGRAM", "COLORTERM" })
+        {
+            Environment.SetEnvironmentVariable(name, null);
+        }
     }
 
     public void Dispose()
@@ -80,12 +90,10 @@ public class EnvironmentTestBase : IDisposable
         ListenForOpenKey.ResetToDefaults();
         SystemInformation.ResetToDefaults();
         EnvPaths.ConfigOverride = null;
-        LockUp.ResetFactory();
         KeychainUp.ResetFactory();
         KeychainDown.ResetFactory();
         KeychainPush.ResetFactory();
         KeychainPull.ResetFactory();
-        LockDown.ResetFactory();
         Prompts.ResetToDefaults();
         Doctor.ResetFactory();
         Genexample.ResetFactory();

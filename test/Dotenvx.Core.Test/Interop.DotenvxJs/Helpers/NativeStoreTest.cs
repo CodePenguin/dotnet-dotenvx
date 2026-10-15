@@ -65,10 +65,77 @@ public class NativeStoreTest : EnvironmentTestBase
         Store("darwin").Set("public-key", "private-key", "dotenvx (PUB LIC)");
 
         _calls[0].Command.ShouldBe("/usr/bin/security");
-        _calls[0].Args.ShouldBe([
-            "add-generic-password", "-U", "-s", "dotenvx", "-a", "public-key", "-l", "dotenvx (PUB LIC)", "-w",
-            "private-key"
-        ]);
+        _calls[0].Args.ShouldBe(["-i"]);
+        _calls[0].Input.ShouldBe(
+            "\"add-generic-password\" \"-U\" \"-s\" \"dotenvx\" \"-a\" \"public-key\" \"-l\" \"dotenvx (PUB LIC)\" \"-w\" \"private-key\"\n");
+    }
+
+    /// <remarks>Refer to "quotes input for the security parser without shell evaluation"</remarks>
+    [Fact]
+    public void TestMacosQuotesInputForTheSecurityParserWithoutShellEvaluation()
+    {
+        Stub(new SecretCliResult(0, ""));
+
+        Store("darwin").Set("public-key", "secret\"\\value", "label ' $(ignored); value");
+
+        _calls[0].Args.ShouldBe(["-i"]);
+        _calls[0].Input.ShouldBe(
+            "\"add-generic-password\" \"-U\" \"-s\" \"dotenvx\" \"-a\" \"public-key\" \"-l\" \"label ' $(ignored); value\" \"-w\" \"secret\\\"\\\\value\"\n");
+    }
+
+    /// <remarks>Refer to "rejects command injection and oversized input before spawning"</remarks>
+    [Fact]
+    public void TestMacosRejectsCommandInjectionAndOversizedInputBeforeSpawning()
+    {
+        Stub(new SecretCliResult(0, ""));
+
+        foreach (string invalid in new[] { "bad\nhelp", "bad\rhelp", "bad\0value", new string('x', 4096), new string('é', 2048) })
+        {
+            for (int index = 0; index < 3; index++)
+            {
+                string[] args = ["public-key", "private-key", "label"];
+                args[index] = invalid;
+
+                var error = Should.Throw<global::Dotenvx.Providers.NativeStoreException>(() =>
+                    Store("darwin").Set(args[0], args[1], args[2]));
+                error.Code.ShouldBe("NATIVE_ACCESS_FAILED");
+                error.Message.ShouldBe("failed to save private key to macOS Keychain");
+            }
+        }
+
+        _calls.ShouldBeEmpty();
+    }
+
+    /// <remarks>Refer to "write failures are sanitized and preserve unavailable classification"</remarks>
+    [Theory]
+    [InlineData(true, "NATIVE_UNAVAILABLE")]
+    [InlineData(false, "NATIVE_ACCESS_FAILED")]
+    public void TestMacosWriteFailuresAreSanitizedAndPreserveUnavailableClassification(bool notFound, string code)
+    {
+        Stub(new SecretCliResult(-1, "", notFound) { Stderr = "private-key" });
+
+        var error = Should.Throw<global::Dotenvx.Providers.NativeStoreException>(() =>
+            Store("darwin").Set("public-key", "private-key", "label"));
+
+        error.Code.ShouldBe(code);
+        error.Message.ShouldBe("failed to save private key to macOS Keychain");
+        error.Message.ShouldNotContain("private-key");
+    }
+
+    /// <remarks>Refer to "rejects failed status, signals, and zero-exit diagnostics without leaking output"</remarks>
+    [Theory]
+    [InlineData(1, "")]
+    [InlineData(137, "")] // killed by a signal: no exit status
+    [InlineData(0, "private-key")]
+    public void TestMacosRejectsFailedStatusSignalsAndZeroExitDiagnosticsWithoutLeakingOutput(int exitCode, string stderr)
+    {
+        Stub(new SecretCliResult(exitCode, "") { Stderr = stderr });
+
+        var error = Should.Throw<global::Dotenvx.Providers.NativeStoreException>(() =>
+            Store("darwin").Set("public-key", "private-key", "label"));
+
+        error.Code.ShouldBe("NATIVE_ACCESS_FAILED");
+        error.Message.ShouldBe("failed to save private key to macOS Keychain");
     }
 
     /// <remarks>Refer to "deletes a generic password through security"</remarks>
@@ -128,7 +195,7 @@ public class NativeStoreTest : EnvironmentTestBase
     {
         Stub(new SecretCliResult(1, ""));
 
-        var error = Should.Throw<InvalidOperationException>(() =>
+        var error = Should.Throw<global::Dotenvx.Providers.NativeStoreException>(() =>
             Store("linux").Set("public-key", "private-key-that-must-not-leak", "label"));
 
         error.Message.ShouldBe("failed to save private key to Linux Secret Service");
@@ -188,7 +255,7 @@ public class NativeStoreTest : EnvironmentTestBase
     {
         Stub(new SecretCliResult(1, ""));
 
-        var error = Should.Throw<InvalidOperationException>(() =>
+        var error = Should.Throw<global::Dotenvx.Providers.NativeStoreException>(() =>
             Store("win32").Set("public-key", "private-key-that-must-not-leak", "label"));
 
         error.Message.ShouldBe("failed to save private key to Windows Credential Manager");
@@ -201,7 +268,7 @@ public class NativeStoreTest : EnvironmentTestBase
     {
         Stub(new SecretCliResult(1, ""));
 
-        Should.Throw<InvalidOperationException>(() => Store("win32").Delete("public-key"))
+        Should.Throw<global::Dotenvx.Providers.NativeStoreException>(() => Store("win32").Delete("public-key"))
             .Message.ShouldBe("failed to delete private key from Windows Credential Manager");
     }
 
@@ -212,7 +279,7 @@ public class NativeStoreTest : EnvironmentTestBase
         Stub(new SecretCliResult(0, "private-key"));
         NativeStore.Platform = "freebsd";
 
-        Providers.NativeProvider("public-key").ShouldBeEmpty();
+        KeyProviders.NativeProvider("public-key").ShouldBeEmpty();
 
         _calls.ShouldBeEmpty();
     }
@@ -224,7 +291,7 @@ public class NativeStoreTest : EnvironmentTestBase
         Stub(new SecretCliResult(0, "private-key\n"));
         NativeStore.Platform = "darwin";
 
-        Providers.NativeProvider("public-key").ShouldBe(new Dictionary<string, string> { ["public-key"] = "private-key" });
+        KeyProviders.NativeProvider("public-key").ShouldBe(new Dictionary<string, string> { ["public-key"] = "private-key" });
 
         _calls[0].Command.ShouldBe("/usr/bin/security");
     }
@@ -236,7 +303,7 @@ public class NativeStoreTest : EnvironmentTestBase
         Stub(new SecretCliResult(0, "private-key\n"));
         NativeStore.Platform = "win32";
 
-        Providers.NativeProvider("public-key").ShouldBe(new Dictionary<string, string> { ["public-key"] = "private-key" });
+        KeyProviders.NativeProvider("public-key").ShouldBe(new Dictionary<string, string> { ["public-key"] = "private-key" });
 
         _calls[0].Command.ShouldBe("powershell.exe");
     }
@@ -248,7 +315,7 @@ public class NativeStoreTest : EnvironmentTestBase
         Stub(new SecretCliResult(0, "private-key\n"));
         NativeStore.Platform = "linux";
 
-        Providers.NativeProvider("public-key").ShouldBe(new Dictionary<string, string> { ["public-key"] = "private-key" });
+        KeyProviders.NativeProvider("public-key").ShouldBe(new Dictionary<string, string> { ["public-key"] = "private-key" });
 
         _calls[0].Command.ShouldBe("secret-tool");
     }
@@ -263,7 +330,8 @@ public class NativeStoreTest : EnvironmentTestBase
         NativeStore.Set("public-key", "private-key", "dotenvx (PUB LIC)");
 
         _calls[0].Command.ShouldBe("/usr/bin/security");
-        _calls[0].Args.ShouldContain("dotenvx (PUB LIC)");
+        _calls[0].Args.ShouldBe(["-i"]);
+        _calls[0].Input.ShouldContain("dotenvx (PUB LIC)");
     }
 
     /// <remarks>Refer to "native provider defaults secret label to key"</remarks>
@@ -275,10 +343,9 @@ public class NativeStoreTest : EnvironmentTestBase
 
         NativeStore.Set("DOTENVX_ARMOR_TOKEN", "token-123");
 
-        _calls[0].Args.ShouldBe([
-            "add-generic-password", "-U", "-s", "dotenvx", "-a", "DOTENVX_ARMOR_TOKEN", "-l", "DOTENVX_ARMOR_TOKEN",
-            "-w", "token-123"
-        ]);
+        _calls[0].Args.ShouldBe(["-i"]);
+        _calls[0].Input.ShouldBe(
+            "\"add-generic-password\" \"-U\" \"-s\" \"dotenvx\" \"-a\" \"DOTENVX_ARMOR_TOKEN\" \"-l\" \"DOTENVX_ARMOR_TOKEN\" \"-w\" \"token-123\"\n");
     }
 
     /// <remarks>Refer to "native provider writes Windows Credential Manager on win32"</remarks>
@@ -355,7 +422,7 @@ public class NativeStoreTest : EnvironmentTestBase
         NativeStore.Platform = "linux";
         Environment.SetEnvironmentVariable("CI", ci);
 
-        Providers.UseNative(noNative).ShouldBe(expected);
+        KeyProviders.UseNative(noNative).ShouldBe(expected);
     }
 
     /// <remarks>Not from a JS test - providers/native/index.js swallows every store failure into "nothing found".</remarks>
@@ -366,6 +433,6 @@ public class NativeStoreTest : EnvironmentTestBase
         NativeStore.Current = Substitute.For<INativeSecretStore>();
         NativeStore.Current.Get("k").Returns(_ => throw new InvalidOperationException("boom"));
 
-        Providers.NativeProvider("k").ShouldBeEmpty();
+        KeyProviders.NativeProvider("k").ShouldBeEmpty();
     }
 }

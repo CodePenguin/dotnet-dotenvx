@@ -5,7 +5,10 @@ using System.Text;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>Outcome of running an external secret CLI (`op`, `bw`). <see cref="NotFound" /> is Node's `ENOENT`.</summary>
-public record SecretCliResult(int ExitCode, string Stdout, bool NotFound = false);
+public record SecretCliResult(int ExitCode, string Stdout, bool NotFound = false)
+{
+    public string Stderr { get; init; } = "";
+}
 
 /// <remarks>
 /// Shared process seam for resolveOnePassword.js / resolveBitwardenPassword.js (`execFile` / `execFileSync` with
@@ -32,126 +35,60 @@ public static class SecretCli
     public static Func<string, string[], string?, SecretCliResult> ExecWithInput { get; internal set; } =
         (command, args, input) => ExecProcess(command, args, null, input);
 
+    /// <summary>Like <see cref="ExecWithInput" /> with environment additions too (the Bitwarden session on a piped request).</summary>
+    public static Func<string, string[], IReadOnlyDictionary<string, string>?, string?, SecretCliResult> ExecFull
+    {
+        get;
+        internal set;
+    } = (command, args, env, input) => ExecProcess(command, args, env, input);
+
+    /// <summary>The one entry point the custodians use: picks the seam that matches what the request needs.</summary>
+    public static SecretCliResult Run(string command, string[] args, IReadOnlyDictionary<string, string>? env = null,
+        string? input = null)
+    {
+        if (input is null)
+        {
+            return Exec(command, args, env);
+        }
+
+        return env is null ? ExecWithInput(command, args, input) : ExecFull(command, args, env, input);
+    }
+
     internal static void ResetToDefaults()
     {
         Exec = DefaultExec;
         ExecWithInput = (command, args, input) => ExecProcess(command, args, null, input);
+        ExecFull = (command, args, env, input) => ExecProcess(command, args, env, input);
         IsInteractive = DefaultIsInteractive;
     }
 
-    /// <summary>
-    /// Node's `execFile('name')` lookup (libuv): the current directory first, then each PATH entry in order; on Windows
-    /// only `.com` and `.exe` files count (never `.cmd`/`.bat`/`.ps1`), and the System32 directory is not searched
-    /// before PATH the way `CreateProcess` would. Null is `ENOENT`.
-    /// </summary>
+    /// <summary>Node's `execFile('name')` lookup (see <see cref="Providers.ProcessRunner.ResolveExecutable" />).</summary>
     internal static string? ResolveExecutable(string command, string? pathVariable = null)
     {
-        bool hasDirectory = command.Contains(Path.DirectorySeparatorChar) || command.Contains(Path.AltDirectorySeparatorChar);
-        IEnumerable<string> directories = hasDirectory
-            ? [""]
-            // libuv searches the current directory first only on Windows; on Unix a file in the cwd must never run
-            : [.. OperatingSystem.IsWindows() ? new[] { Environment.CurrentDirectory } : [], .. (pathVariable ?? Environment.GetEnvironmentVariable("PATH") ?? "")
-                .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)];
-
-        foreach (string directory in directories)
-        {
-            foreach (string name in CandidateNames(command))
-            {
-                string candidate = directory == "" ? name : Path.Combine(directory.Trim('"'), name);
-                if (File.Exists(candidate))
-                {
-                    return candidate;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private static IEnumerable<string> CandidateNames(string command)
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            return [command];
-        }
-
-        string extension = Path.GetExtension(command).ToLowerInvariant();
-
-        return extension is ".exe" or ".com" ? [command] : [command + ".com", command + ".exe"];
+        return Providers.ProcessRunner.ResolveExecutable(command, pathVariable);
     }
 
     private static SecretCliResult ExecProcess(
         string command, string[] args, IReadOnlyDictionary<string, string>? env, string? input = null)
     {
-        ProcessStartInfo psi = new()
-        {
-            StandardInputEncoding = new UTF8Encoding(false),
-            FileName = command,
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            StandardOutputEncoding = new UTF8Encoding(false),
-            StandardErrorEncoding = new UTF8Encoding(false),
-            CreateNoWindow = true
-        };
-
-        foreach (string arg in args)
-        {
-            psi.ArgumentList.Add(arg);
-        }
-
+        Dictionary<string, string>? merged = null;
         if (env != null)
         {
+            merged = Helpers.CurrentProcessEnv().Where(pair => pair.Value is not null)
+                .ToDictionary(pair => pair.Key, pair => pair.Value!);
             foreach ((string key, string value) in env)
             {
-                psi.EnvironmentVariables[key] = value;
+                merged[key] = value;
             }
         }
 
-        string? resolved = ResolveExecutable(command);
-        if (resolved is null)
+        Providers.ProcessOutcome outcome = Providers.ProcessRunner.Execute(
+            new Providers.ProcessRequest(command, args, input, 120000, merged, true));
+        if (outcome.NotFound)
         {
             return new SecretCliResult(-1, "", true);
         }
 
-        psi.FileName = resolved;
-
-        Process process;
-        try
-        {
-            process = Process.Start(psi)!;
-        }
-        catch (Win32Exception error) when (error.NativeErrorCode == 2)
-        {
-            return new SecretCliResult(-1, "", true);
-        }
-        catch (Win32Exception)
-        {
-            return new SecretCliResult(-1, "");
-        }
-
-        using (process)
-        {
-            if (input != null)
-            {
-                try
-                {
-                    process.StandardInput.Write(input);
-                }
-                catch (IOException)
-                {
-                    // the child exited before reading its input: its exit code reports the failure
-                }
-            }
-
-            process.StandardInput.Close();
-            Task<string> stderr = process.StandardError.ReadToEndAsync();
-            string stdout = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-            stderr.Wait();
-
-            return new SecretCliResult(process.ExitCode, stdout);
-        }
+        return new SecretCliResult(outcome.ExitCode ?? -1, outcome.Stdout) { Stderr = outcome.Stderr };
     }
 }

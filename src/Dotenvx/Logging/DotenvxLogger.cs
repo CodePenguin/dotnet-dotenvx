@@ -29,6 +29,11 @@ public class DotenvxLogger(ILogger<DotenvxLogger> logger, DotenvxLoggerOptions o
             Shared.Bold(Shared.GetColor("red", ColorStream.StdErr)($"☠ {message}"), ColorStream.StdErr));
     }
 
+    public void InfoError(string message)
+    {
+        logger.LogError(DotenvxLogEvents.InfoError, "{Message}", Shared.GetColor("gray", ColorStream.StdErr)(message));
+    }
+
     public void Warn(string message)
     {
         logger.LogWarning(DotenvxLogEvents.Warn, "{Message}",

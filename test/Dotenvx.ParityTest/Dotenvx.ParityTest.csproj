@@ -28,6 +28,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Include="oracle/**" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <ItemGroup>
         <!-- Referenced so its build output (dotenvx.dll + deps) is copied next to this
              project's output automatically - gives a reliable path to the built CLI
              without any fragile relative-path climbing. -->

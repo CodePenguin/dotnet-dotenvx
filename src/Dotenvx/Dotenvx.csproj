@@ -13,9 +13,9 @@
         <!-- Tracks the exact upstream dotenvx release this port is pinned to/at parity with (see
              the dotenvx submodule pin and docs/porting-traps.md) - bump this in lockstep with the submodule
              pin, not independently. IncludeSourceRevisionInInformationalVersion false keeps the
-             version flag reporting exactly "2.24.1", matching Node's own version output, instead
+             version flag reporting exactly "2.34.2", matching Node's own version output, instead
              of the SDK's default "plus git hash" suffix. -->
-        <Version>2.24.1</Version>
+        <Version>2.34.2</Version>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>disable</ImplicitUsings>

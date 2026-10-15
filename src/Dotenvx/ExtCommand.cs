@@ -30,8 +30,8 @@ public class ExtCommand : Command
         SetAction(parseResult =>
         {
             string? command = parseResult.GetValue(commandArgument);
-            string[] rest = parseResult.GetValue(argsArgument) ?? [];
-            string[] rawArgs = command is null ? [] : [command, .. rest];
+            // `process.argv.slice(3)`: the command line as typed (flags and `--` included), after the first argument
+            string[] rawArgs = parseResult.Tokens.Select(token => token.Value).Skip(1).ToArray();
 
             return ExecuteDynamic.Extension(command, rawArgs, logger,
                 () => parseResult.RootCommandResult.Command.Parse(["ext", "--help"]).Invoke());
@@ -44,8 +44,11 @@ public class ExtCommand : Command
         // order to copy uniformly; this file specifically mirrors ext.js's own list.
         Subcommands.Add(lsAction);
         Subcommands.Add(genexampleAction);
+        // ext.js keeps the original descriptions; the top-level commands say "deprecated. use [dotenvx protect]"
+        gitignoreAction.Description = "append to .gitignore";
         Subcommands.Add(gitignoreAction);
         Subcommands.Add(prebuildAction);
+        precommitAction.Description = "prevent committing .env files to code";
         Subcommands.Add(precommitAction);
         Subcommands.Add(scanAction);
     }

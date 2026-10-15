@@ -9,11 +9,10 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 namespace Dotenvx.ParityTest;
 
 /// <remarks>
-/// Reference source: dotenvx/tests/e2e/{get,encrypt,decrypt,run,version,ext}.test.js. The upstream e2e tests shell out to
+/// Reference source: dotenvx/tests/e2e/{get,encrypt,decrypt,ext}.test.js. The upstream e2e tests shell out to
 /// the real CLI and assert on its output; each scenario here runs the same steps against BOTH the real Node CLI and this
-/// port, asserting the upstream test's expected values on each side. Not ported (out of scope): "#--help shows armor
-/// advanced command", "#armor --help shows login and logout commands", "#run --help shows redaction, armor, native, and
-/// secret manager flags", "ext missing" and "ext vault" (dynamic `dotenvx-ext-*` extension binaries).
+/// port, asserting the upstream test's expected values on each side. The three upstream "--help shows ..." e2e tests no longer exist at v2.34.2; help output is compared by HelpExactParityTest and HelpTextParityTest.
+/// "ext missing" and "ext vault" (dynamic `dotenvx-ext-*` extension binaries) are covered by ExtensionParityTest.
 /// </remarks>
 public class E2eParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 {
@@ -199,7 +198,7 @@ public class E2eParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                 Primitives.Primitives.Scan(ReadFile(".env"), new ScanOptions()).Parsed;
 
             Out(output).ShouldBe("");
-            output.StandardError.Trim().ShouldBe("◈ encrypted (.env)");
+            System.Text.RegularExpressions.Regex.IsMatch(output.StandardError.Trim(), "^◈ encrypted [.]env [(][0-9A-F]{3} [0-9A-F]{3}[)] via [^\n]+$").ShouldBeTrue(output.StandardError);
             parsed.Keys.Order().ShouldBe(["DOTENV_PUBLIC_KEY", "HELLO"]);
             Out(await cli(["get", "HELLO"])).ShouldBe("World");
         });
@@ -222,7 +221,7 @@ public class E2eParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             string privateKey = KeyFromKeysFile("DOTENV_PRIVATE_KEY");
 
             Out(output).ShouldBe("");
-            output.StandardError.Trim().ShouldBe("◈ encrypted (.env)");
+            System.Text.RegularExpressions.Regex.IsMatch(output.StandardError.Trim(), "^◈ encrypted [.]env [(][0-9A-F]{3} [0-9A-F]{3}[)] via [^\n]+$").ShouldBeTrue(output.StandardError);
 
             File.Delete(Path.Combine(WorkDir, ".env.keys"));
 
@@ -261,7 +260,7 @@ public class E2eParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             CliResult result = await cli(["decrypt"]);
 
             result.ExitCode.ShouldBe(1);
-            result.StandardOutput.ShouldBe("○ no change (.env)\n");
+            System.Text.RegularExpressions.Regex.IsMatch(result.StandardOutput, "^○ no change to [.]env [(][0-9A-F]{3} [0-9A-F]{3}[)] via source unknown\n$").ShouldBeTrue(result.StandardOutput);
             result.StandardError.ShouldBe(DecryptFailed);
         });
     }
@@ -347,7 +346,7 @@ public class E2eParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         "process.stdout.write('stdout ' + process.env.SECRET + ' ' + process.env.PUBLIC + ' ' + process.env.INLINE + ' ' + process.env.VISIBLE_PLAIN); " +
         "process.stderr.write('stderr ' + process.env.SECRET + ' ' + process.env.PUBLIC + ' ' + process.env.INLINE + ' ' + process.env.VISIBLE_PLAIN)";
 
-    /// <remarks>Refer to "#run - redacts injected values from stdout and stderr except _PLAIN values"</remarks>
+    /// <remarks>Upstream dropped the "#run - redacts injected values from stdout and stderr except _PLAIN values" test: the legacy --redact rule redacts every injected value except the ones of public keys, `_PLAIN` included.</remarks>
     [Fact]
     public async Task RunRedactsInjectedValuesFromStdoutAndStderrExceptPlainValues()
     {
@@ -365,8 +364,8 @@ public class E2eParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             Dictionary<string, string> env = NoSecretsEnv(("PUBLIC", "public-value"));
             CliResult output = await cli(["run", "--quiet", "--redact", "--env", "INLINE=inline-value", "--", "node", "index.js"], env);
 
-            output.StandardOutput.Trim().ShouldBe("stdout [REDACTED] [REDACTED] [REDACTED] visible-value");
-            output.StandardError.Trim().ShouldBe("stderr [REDACTED] [REDACTED] [REDACTED] visible-value");
+            output.StandardOutput.Trim().ShouldBe("stdout [REDACTED] public-value [REDACTED] [REDACTED]");
+            output.StandardError.Trim().ShouldBe("stderr [REDACTED] public-value [REDACTED] [REDACTED]");
 
             CliResult unredacted = await cli(["run", "--quiet", "--env", "INLINE=inline-value", "--", "node", "index.js"], env);
 
@@ -398,7 +397,7 @@ public class E2eParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         });
     }
 
-    /// <remarks>Refer to "#run - redacts pre-existing values when their keys are declared in .env"</remarks>
+    /// <remarks>Upstream dropped the "#run - redacts pre-existing values when their keys are declared in .env" test: without an Envfile the legacy --redact rule redacts them all.</remarks>
     [Fact]
     public async Task RunRedactsPreExistingValuesWhenTheirKeysAreDeclaredInEnv()
     {
@@ -415,7 +414,7 @@ public class E2eParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 
             CliResult output = await cli(["run", "--quiet", "--redact", "--", "node", "index.js"], env);
 
-            output.StandardOutput.Trim().ShouldBe("[REDACTED] external-visible");
+            output.StandardOutput.Trim().ShouldBe("[REDACTED] [REDACTED]");
             output.StandardOutput.ShouldNotContain("external-secret");
 
             CliResult unredacted = await cli(["run", "--quiet", "--", "node", "index.js"], env);

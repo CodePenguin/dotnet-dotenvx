@@ -54,7 +54,7 @@ public static class UpsertEnvKeyHelper
 
         if (changed)
         {
-            Fsx.WriteFileSync(resolved, nextSrc);
+            Fsx.WriteKeyFile(resolved, nextSrc);
         }
 
         return new UpsertEnvKeyResult(changed, key, value, created, keysFilepath);
