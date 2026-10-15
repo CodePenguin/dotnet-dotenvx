@@ -5,7 +5,7 @@
         <PackageId>Dotenvx.Configuration</PackageId>
         <Description>Adds .env files, encrypted ones included, to Microsoft.Extensions.Configuration with IConfigurationBuilder.UseDotenvx().</Description>
         <!-- tracks the dotenvx release this port matches, in lockstep with Dotenvx.csproj -->
-        <Version>2.34.2</Version>
+        <Version>2.35.0</Version>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>

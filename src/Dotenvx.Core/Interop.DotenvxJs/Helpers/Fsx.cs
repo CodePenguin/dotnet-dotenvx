@@ -24,7 +24,12 @@ public static class Fsx
     public static Func<string, byte[]> ReadFileSync { get; internal set; } = DefaultReadFileSync;
     public static Action<string, string> WriteFileSync { get; internal set; } = DefaultWriteFileSync;
     public static Action<string, string> WriteFileX { get; internal set; } = DefaultWriteFileX;
+    public static Action<string, string> WriteFileXNoFollow { get; internal set; } = DefaultWriteFileXNoFollow;
     public static Action<string, string> WriteKeyFile { get; internal set; } = DefaultWriteKeyFile;
+
+    // Test seams for the two steps of an atomic write that can fail or race (fs.writeSync into the temporary file; the final rename)
+    internal static Action<string, string> StageWrite { get; set; } = (path, data) => File.WriteAllText(path, data, Utf8NoBom);
+    internal static Action<string, string> StageMove { get; set; } = (from, to) => File.Move(from, to, true);
 
     private static void DefaultAppendFileSync(string path, string data)
     {
@@ -218,6 +223,63 @@ public static class Fsx
         WriteAtomic(filepath, str, null);
     }
 
+    // fsx.js writeFileNoFollowSync (`writeFileXSync(path, str, { followSymlinks: false })`): write-file-atomic resolves symlinks, so the
+    // content is staged in a private sibling directory and renamed over the directory entry, which never follows a destination link.
+    private static void DefaultWriteFileXNoFollow(string filepath, string str)
+    {
+        UnixFileMode? existingMode = RegularFileMode(filepath);
+        string directory = Path.GetDirectoryName(Path.GetFullPath(filepath)) ?? ".";
+        string staging = Path.Combine(directory, $".dotenvx-write-{Guid.NewGuid().ToString("N")[..6]}");
+        if (OperatingSystem.IsWindows())
+        {
+            Directory.CreateDirectory(staging);
+        }
+        else
+        {
+            Directory.CreateDirectory(staging, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        try
+        {
+            string stagedFile = Path.Combine(staging, "content");
+            WriteAtomic(stagedFile, str, existingMode);
+            RegularFileMode(filepath);
+            StageMove(stagedFile, filepath);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(staging, true);
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
+    // fsx.js `regularFile()`: lstat that refuses a directory or symbolic link, returning the existing file's mode (null when absent)
+    private static UnixFileMode? RegularFileMode(string filepath)
+    {
+        FileSystemInfo info = new FileInfo(filepath);
+        if (Directory.Exists(filepath))
+        {
+            info = new DirectoryInfo(filepath);
+        }
+
+        if (!info.Exists && info.LinkTarget is null)
+        {
+            return null;
+        }
+
+        if (info is not FileInfo || info.LinkTarget is not null)
+        {
+            throw new Exception($"Cannot replace file: expected a regular file ({filepath})");
+        }
+
+        return OperatingSystem.IsWindows() ? null : File.GetUnixFileMode(filepath);
+    }
+
     private static void DefaultWriteKeyFile(string filepath, string str)
     {
         WriteAtomic(filepath, str, UnixFileMode.UserRead | UnixFileMode.UserWrite);
@@ -247,13 +309,13 @@ public static class Fsx
         string temporary = Path.Combine(directory, $".{Guid.NewGuid():N}.tmp");
         try
         {
-            File.WriteAllText(temporary, str, Utf8NoBom);
+            StageWrite(temporary, str);
             if (!OperatingSystem.IsWindows() && (mode is not null || File.Exists(target)))
             {
                 File.SetUnixFileMode(temporary, mode ?? File.GetUnixFileMode(target));
             }
 
-            File.Move(temporary, target, true);
+            StageMove(temporary, target);
         }
         catch (UnauthorizedAccessException)
         {
@@ -299,6 +361,9 @@ public static class Fsx
         ReadFileSync = DefaultReadFileSync;
         WriteFileSync = DefaultWriteFileSync;
         WriteFileX = DefaultWriteFileX;
+        WriteFileXNoFollow = DefaultWriteFileXNoFollow;
         WriteKeyFile = DefaultWriteKeyFile;
+        StageWrite = (path, data) => File.WriteAllText(path, data, Utf8NoBom);
+        StageMove = (from, to) => File.Move(from, to, true);
     }
 }

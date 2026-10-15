@@ -249,6 +249,33 @@ public class CoreCommandsParityTest(NodeParityFixture fixture) : ParityTestBase(
         yield return Case(encrypted, null, "encrypt");
         yield return Case(none, null, "encrypt");
         yield return Case(none, null, "encrypt", "-f", ".nope");
+
+        // encrypt --with (2.35.0): a public key created elsewhere
+        string withKey = FixedKeypairFixture.PublicKey;
+        string otherKey = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+        Dictionary<string, string> encryptedNoKey = Files(".env", "HELLO=\"encrypted:BAAA\"\nFOO=bar\n");
+        Dictionary<string, string> plainWithKey = Files(".env", "DOTENV_PUBLIC_KEY=\"" + withKey + "\"\nHELLO=World\nFOO=bar\n");
+        Dictionary<string, string> plainWithTwoKeys = Files(".env", "DOTENV_PUBLIC_KEY=\"" + withKey + "\"\nDOTENV_PUBLIC_KEY_X=\"" + otherKey + "\"\nHELLO=World\n");
+        yield return Case(plain, null, "encrypt", "--with", withKey);
+        yield return Case(plain, null, "encrypt", "--with", withKey, "-v");
+        yield return Case(plain, null, "encrypt", "--with", withKey, "--stdout");
+        yield return Case(plain, null, "encrypt", "--with", withKey.ToUpperInvariant());
+        yield return Case(plain, null, "encrypt", "--with", withKey, "-k", "HELLO");
+        yield return Case(plain, null, "encrypt", "--with", withKey, "-ek", "FOO");
+        yield return Case(two, null, "encrypt", "--with", withKey, "-f", ".env", "-f", ".env.local");
+        yield return Case(plain, null, "encrypt", "--with", "nope");
+        yield return Case(plain, null, "encrypt", "--with", "");
+        yield return Case(plain, null, "encrypt", "--with", "04" + new string('1', 128));
+        yield return Case(plain, null, "encrypt", "--with", "02" + new string('0', 64));
+        yield return Case(plain, null, "encrypt", "--with", withKey, "--stdout", "--no-create");
+        yield return Case(none, null, "encrypt", "--with", withKey);
+        yield return Case(none, null, "encrypt", "--with", withKey, "--no-create");
+        yield return Case(encrypted, null, "encrypt", "--with", withKey);
+        yield return Case(encrypted, null, "encrypt", "--with", otherKey);
+        yield return Case(encryptedNoKey, null, "encrypt", "--with", withKey);
+        yield return Case(plainWithKey, null, "encrypt", "--with", withKey);
+        yield return Case(plainWithKey, null, "encrypt", "--with", otherKey);
+        yield return Case(plainWithTwoKeys, null, "encrypt", "--with", withKey);
         yield return Case(encrypted, null, "decrypt");
         yield return Case(encrypted, null, "decrypt", "--stdout");
         yield return Case(encrypted, null, "decrypt", "-k", "HELLO");

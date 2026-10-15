@@ -239,3 +239,15 @@ public class InvalidEnvException(string message, IReadOnlyList<Dotenvx.Primitive
 {
     public IReadOnlyList<Dotenvx.Primitives.CheckError> Diagnostics { get; } = diagnostics;
 }
+
+/// <remarks>Reference source: dotenvx/src/lib/helpers/errors.js alreadyEncrypted() (`encrypt --with`). No `fix: [url]` help and no Code lookup, exactly as upstream.</remarks>
+public class AlreadyEncryptedException(string envFilePath = ".env") : DotenvxException(
+    "ALREADY_ENCRYPTED",
+    $"[ALREADY_ENCRYPTED] {(string.IsNullOrEmpty(envFilePath) ? ".env" : envFilePath)} is already configured for encryption",
+    "fix: use a fresh .env file");
+
+/// <remarks>Reference source: dotenvx/src/lib/helpers/errors.js invalidPublicKey().</remarks>
+public class InvalidPublicKeyException(string publicKeyName, string publicKey) : DotenvxException(
+    "INVALID_PUBLIC_KEY",
+    $"[INVALID_PUBLIC_KEY] could not encrypt using public key '{publicKeyName}={Truncate(publicKey)}'",
+    "fix: [https://github.com/dotenvx/dotenvx/issues/756]");

@@ -987,6 +987,17 @@
    "lastArgumentVariadic": false,
    "registrations": [
     {
+     "attribute": "with",
+     "long": "--with",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
+    {
      "attribute": "profile",
      "long": "--profile",
      "short": null,
@@ -1136,6 +1147,10 @@
    "arguments": [],
    "options": [
     {
+     "term": "--with <public-key>",
+     "description": "encrypt with this public key; accepts a fresh file or matching existing public key"
+    },
+    {
      "term": "--profile <name>",
      "description": "select an Envfile profile"
     },
@@ -1199,6 +1214,17 @@
    "argumentCount": 0,
    "lastArgumentVariadic": false,
    "registrations": [
+    {
+     "attribute": "with",
+     "long": "--with",
+     "short": null,
+     "negate": false,
+     "variadic": false,
+     "takes": "required",
+     "hasDefault": false,
+     "default": null,
+     "parser": null
+    },
     {
      "attribute": "profile",
      "long": "--profile",
@@ -1348,6 +1374,10 @@
    "padWidth": 35,
    "arguments": [],
    "options": [
+    {
+     "term": "--with <public-key>",
+     "description": "encrypt with this public key; accepts a fresh file or matching existing public key"
+    },
     {
      "term": "--profile <name>",
      "description": "select an Envfile profile"

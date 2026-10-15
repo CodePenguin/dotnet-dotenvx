@@ -133,7 +133,7 @@ public static partial class Protect
         string updated = string.Concat(SplitLines(current).Where(line => !lines.Contains(TrimEol(line))));
         if (updated != current)
         {
-            File.WriteAllText(filename, updated, new UTF8Encoding(false));
+            Fsx.WriteFileX(filename, updated);
         }
     }
 
@@ -191,19 +191,17 @@ public static partial class Protect
             oldAttributes.Contains(TrimEol(line))
                 ? line.Replace("filter=dotenvx", "filter=dotenvx.protect", StringComparison.Ordinal)
                 : line));
-        if (migrated != current)
-        {
-            File.WriteAllText(attributesPath, migrated, new UTF8Encoding(false));
-        }
-
-        current = migrated;
-        HashSet<string> existing = [.. Regex.Split(current, "\r?\n")];
+        HashSet<string> existing = [.. Regex.Split(migrated, "\r?\n")];
         string[] missing = [.. attributes.Where(attribute => !existing.Contains(attribute))];
+        string next = migrated;
         if (missing.Length > 0)
         {
-            File.AppendAllText(attributesPath,
-                $"{(current != "" && !current.EndsWith('\n') ? "\n" : "")}{string.Join('\n', missing)}\n",
-                new UTF8Encoding(false));
+            next = $"{next}{(next != "" && !next.EndsWith('\n') ? "\n" : "")}{string.Join('\n', missing)}\n";
+        }
+
+        if (next != current)
+        {
+            Fsx.WriteFileX(attributesPath, next);
         }
 
         return attributesPath;
@@ -394,7 +392,7 @@ public static partial class Protect
             oldRules.Contains(TrimEol(line)) ? line.Replace("filter=dotenvx", "filter=dotenvx.protect", StringComparison.Ordinal) : line));
         if (updated != source)
         {
-            File.WriteAllText(attributesPath, updated, new UTF8Encoding(false));
+            Fsx.WriteFileX(attributesPath, updated);
         }
     }
 
@@ -478,7 +476,7 @@ public static partial class Protect
         }
         else
         {
-            File.WriteAllText(hookPath, next, new UTF8Encoding(false));
+            Fsx.WriteFileX(hookPath, next);
         }
 
         return new UninstallResult(true, PrecommitMentionRegex().IsMatch(next) ? Manual().Warning : null);

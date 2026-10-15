@@ -7,7 +7,7 @@
 - **encrypted envs**: commit an encrypted `.env`, keep the private key out of source control
 - **a .NET library** too: load `.env` files into environment variables or `IConfiguration`
 
-The port aims for byte-for-byte compatibility with the Node CLI at **v2.34.2**: same commands, flags, output, exit codes and file formats. A `.env` encrypted by one can be decrypted by the other. See [Compatibility](#compatibility).
+The port aims for byte-for-byte compatibility with the Node CLI at **v2.35.0**: same commands, flags, output, exit codes and file formats. A `.env` encrypted by one can be decrypted by the other. See [Compatibility](#compatibility).
 
 > This is a .NET port, not the upstream project. For the product, documentation and cloud features see [dotenvx.com](https://dotenvx.com). Requires the .NET 10 runtime.
 
@@ -17,7 +17,7 @@ Install the CLI as a .NET tool:
 
 ```sh
 dotnet tool install --global Dotenvx
-dotenvx --version   # 2.34.2
+dotenvx --version   # 2.35.0
 ```
 
 Create a `.env` and run any command with it:
@@ -134,7 +134,7 @@ See [`samples/`](samples) for runnable versions.
 
 ## Compatibility
 
-- **Pinned target.** `dotenvx --version` prints `2.34.2`, the upstream release this port matches. The upstream repository is included as a git submodule (`dotenvx/`) at that exact tag and is used as the reference and as a source of test fixtures.
+- **Pinned target.** `dotenvx --version` prints `2.35.0`, the upstream release this port matches. The upstream repository is included as a git submodule (`dotenvx/`) at that exact tag and is used as the reference and as a source of test fixtures.
 - **How it is checked.** Besides the unit tests ported from upstream, the test suite runs the real Node CLI and this one side by side on the same inputs and compares exit codes, stdout, stderr and resulting files. This includes the exact `--help` text of every command and a sweep of more than a thousand command, flag and syntax combinations.
 - **Known differences.** Operating-system error text stays native to .NET, spinner and prompt redraw sequences differ, and a few corner cases are documented in [docs/parity-checklist.md](docs/parity-checklist.md).
 

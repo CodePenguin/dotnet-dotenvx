@@ -1,4 +1,4 @@
-# Parity checklist: dotenvx v2.34.2
+# Parity checklist: dotenvx v2.35.0
 
 The goal is byte-for-byte parity with the Node `@dotenvx/dotenvx` CLI at the pinned tag: **anything that exists in that version is in scope.** This file lists every upstream component, whether it is ported, and how it is verified. A component is "done" when it is ported, covered by unit tests ported from `dotenvx/tests` (or by oracle/parity tests when upstream has none) and compared against the real Node CLI by a parity test. Update this file in the same change as the code.
 
@@ -20,7 +20,7 @@ The goal is byte-for-byte parity with the Node `@dotenvx/dotenvx` CLI at the pin
 | `get` | done | |
 | `set` | done | hidden-value prompt on a terminal, key-storage selection, `--no-armor`/`--no-native` |
 | `del` | done | |
-| `encrypt` (`enc`), `decrypt` (`dec`) | done | `enc`/`dec` are hidden aliases |
+| `encrypt` (`enc`), `decrypt` (`dec`) | done | `enc`/`dec` are hidden aliases; `encrypt --with <public-key>` (2.35.0) |
 | `keypair` | done | |
 | `ls` | done | file order can differ on some filesystems (trap #64) |
 | `genexample` | done | |

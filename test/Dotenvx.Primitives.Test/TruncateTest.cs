@@ -26,7 +26,7 @@ public class TruncateTest
 
         string result = Truncate(privateKey, 11);
 
-        result.ShouldBe("dxo_123456…");
+        result.ShouldBe("dxo_1234567…");
     }
 
     /// <remarks>Refer to "#truncate - null privateKey"</remarks>

@@ -680,7 +680,7 @@ public static partial class EnvfileInit
             return new InitEnvfileResult(false);
         }
 
-        if (existing is not null && existing is not FileInfo)
+        if (existing is not null && (existing is not FileInfo || existing.LinkTarget is not null))
         {
             throw new Exception($"Cannot replace Envfile: expected a regular file ({target})");
         }
@@ -751,9 +751,22 @@ public static partial class EnvfileInit
 
         try
         {
-            using FileStream stream = new(target, overwrite ? FileMode.Create : FileMode.CreateNew, FileAccess.Write);
-            byte[] bytes = new UTF8Encoding(false).GetBytes(content);
-            stream.Write(bytes, 0, bytes.Length);
+            if (overwrite)
+            {
+                FileSystemInfo? current = Lstat(target);
+                if (current is not null && (current is not FileInfo || current.LinkTarget is not null))
+                {
+                    throw new Exception($"Cannot replace Envfile: expected a regular file ({target})");
+                }
+
+                Fsx.WriteFileXNoFollow(target, content);
+            }
+            else
+            {
+                using FileStream stream = new(target, FileMode.CreateNew, FileAccess.Write);
+                byte[] bytes = new UTF8Encoding(false).GetBytes(content);
+                stream.Write(bytes, 0, bytes.Length);
+            }
         }
         catch (IOException) when (!overwrite && File.Exists(target))
         {

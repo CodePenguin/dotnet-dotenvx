@@ -239,6 +239,225 @@ public class E2eParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         });
     }
 
+    private Dictionary<string, string> ParseEnv(string filepath = ".env")
+    {
+        return Primitives.Primitives.Scan(ReadFile(filepath), new ScanOptions()).Parsed.ToDictionary(pair => pair.Key, pair => pair.Value.Last());
+    }
+
+    /// <remarks>Refer to "#encrypt --with uses the supplied public key without a local private key"</remarks>
+    [Fact]
+    public async Task EncryptWithUsesTheSuppliedPublicKeyWithoutALocalPrivateKey()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        await ForBothAsync(async cli =>
+        {
+            (string publicKey, string privateKey) = Primitives.Primitives.Keypair();
+            WriteFile(".env.production", "HELLO=World\n");
+            WriteFile(".env.keys", "# unrelated keys must remain untouched\n");
+
+            CliResult result = await cli(["encrypt", "-f", ".env.production", "--with", publicKey]);
+            Dictionary<string, string> parsed = ParseEnv(".env.production");
+
+            result.ExitCode.ShouldBe(0, result.StandardError);
+            parsed["DOTENV_PUBLIC_KEY_PRODUCTION"].ShouldBe(publicKey);
+            Primitives.Primitives.Decrypt(privateKey, parsed["HELLO"]).ShouldBe("World");
+            ReadFile(".env.keys").ShouldBe("# unrelated keys must remain untouched\n");
+        });
+    }
+
+    /// <remarks>Refer to "#encrypt --with rejects existing encryption before applying filters"</remarks>
+    [Fact]
+    public async Task EncryptWithRejectsExistingEncryptionBeforeApplyingFilters()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        await ForBothAsync(async cli =>
+        {
+            (string publicKey, _) = Primitives.Primitives.Keypair();
+            string otherPublicKey = Primitives.Primitives.Keypair().PublicKey;
+            string[] fixtures =
+            [
+                $"DOTENV_PUBLIC_KEY=\"{otherPublicKey}\"\n",
+                $"DOTENV_PUBLIC_KEY=\"{publicKey}\"\nDOTENV_PUBLIC_KEY_CI=\"{otherPublicKey}\"\n",
+                $"DOTENV_PUBLIC_KEY=\"{publicKey}\"\nDOTENV_PUBLIC_KEY=\"{otherPublicKey}\"\n",
+                "export DOTENV_PUBLIC_KEY_PRODUCTION=\"\"\n",
+                "DOTENV_PUBLIC_KEY_CUSTOM=invalid\n",
+                $"SECRET=\"{Primitives.Primitives.Encrypt("secret", publicKey)}\"\n",
+                "SECRET=\"encrypted:malformed\"\n",
+                "SECRET=\"encrypted:\"\nSECRET=plaintext\n"
+            ];
+            foreach (string fixture in fixtures)
+            {
+                foreach (string[] flags in new[] { Array.Empty<string>(), ["--stdout"], ["-k", "HELLO"], ["-ek", "SECRET"] })
+                {
+                    string source = fixture + "HELLO=World\n";
+                    WriteFile(".env", source);
+
+                    CliResult result = await cli(["encrypt", "--with", publicKey, .. flags]);
+
+                    result.ExitCode.ShouldBe(1, result.StandardError);
+                    result.StandardError.ShouldContain("[ALREADY_ENCRYPTED] .env is already configured for encryption. fix: use a fresh .env file");
+                    Out(result).ShouldBe("");
+                    ReadFile(".env").ShouldBe(source);
+                    File.Exists(Path.Combine(WorkDir, ".env.keys")).ShouldBeFalse();
+                }
+            }
+        });
+    }
+
+    /// <remarks>Refer to "#enc --with --stdout encrypts without writing files"</remarks>
+    [Fact]
+    public async Task EncWithStdoutEncryptsWithoutWritingFiles()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        await ForBothAsync(async cli =>
+        {
+            (string publicKey, string privateKey) = Primitives.Primitives.Keypair();
+            const string source = "HELLO=World\n";
+            WriteFile(".env", source);
+
+            CliResult result = await cli(["enc", "--with", publicKey, "--stdout"]);
+            Dictionary<string, string> parsed = Primitives.Primitives.Scan(result.StandardOutput, new ScanOptions()).Parsed
+                .ToDictionary(pair => pair.Key, pair => pair.Value.Last());
+
+            result.ExitCode.ShouldBe(0, result.StandardError);
+            parsed["DOTENV_PUBLIC_KEY"].ShouldBe(publicKey);
+            Primitives.Primitives.Decrypt(privateKey, parsed["HELLO"]).ShouldBe("World");
+            ReadFile(".env").ShouldBe(source);
+            File.Exists(Path.Combine(WorkDir, ".env.keys")).ShouldBeFalse();
+        });
+    }
+
+    /// <remarks>Refer to "#encrypt --with validates the public key even with no selected values"</remarks>
+    [Fact]
+    public async Task EncryptWithValidatesThePublicKeyEvenWithNoSelectedValues()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        await ForBothAsync(async cli =>
+        {
+            foreach (string key in new[] { "invalid", "02" + string.Concat(Enumerable.Repeat("00", 32)) })
+            {
+                const string source = "HELLO_PLAIN=World\n";
+                WriteFile(".env", source);
+
+                CliResult result = await cli(["encrypt", "--with", key]);
+
+                result.ExitCode.ShouldBe(1, result.StandardError);
+                result.StandardError.ShouldContain("[INVALID_PUBLIC_KEY]");
+                result.StandardError.ShouldContain("fix:");
+                ReadFile(".env").ShouldBe(source);
+                File.Exists(Path.Combine(WorkDir, ".env.keys")).ShouldBeFalse();
+            }
+        });
+    }
+
+    /// <remarks>Refer to "#encrypt --with records the key even with no selected values"</remarks>
+    [Fact]
+    public async Task EncryptWithRecordsTheKeyEvenWithNoSelectedValues()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        await ForBothAsync(async cli =>
+        {
+            string publicKey = Primitives.Primitives.Keypair().PublicKey;
+            WriteFile(".env", "HELLO_PLAIN=World\n");
+
+            CliResult result = await cli(["encrypt", "--with", publicKey]);
+            Dictionary<string, string> parsed = ParseEnv();
+
+            result.ExitCode.ShouldBe(0, result.StandardError);
+            parsed["DOTENV_PUBLIC_KEY"].ShouldBe(publicKey);
+            parsed["HELLO_PLAIN"].ShouldBe("World");
+            File.Exists(Path.Combine(WorkDir, ".env.keys")).ShouldBeFalse();
+        });
+    }
+
+    /// <remarks>Refer to "#encrypt --with creates an encrypted sample unless --no-create is set"</remarks>
+    [Fact]
+    public async Task EncryptWithCreatesAnEncryptedSampleUnlessNoCreateIsSet()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        await ForBothAsync(async cli =>
+        {
+            (string publicKey, string privateKey) = Primitives.Primitives.Keypair();
+
+            CliResult missing = await cli(["encrypt", "--with", publicKey, "--no-create"]);
+            missing.ExitCode.ShouldBe(1);
+            missing.StandardError.ShouldContain("[MISSING_ENV_FILE]");
+            File.Exists(Path.Combine(WorkDir, ".env")).ShouldBeFalse();
+            File.Exists(Path.Combine(WorkDir, ".env.keys")).ShouldBeFalse();
+
+            CliResult created = await cli(["encrypt", "--with", publicKey]);
+            Dictionary<string, string> parsed = ParseEnv();
+
+            created.ExitCode.ShouldBe(0, created.StandardError);
+            parsed["DOTENV_PUBLIC_KEY"].ShouldBe(publicKey);
+            Primitives.Primitives.Decrypt(privateKey, parsed["HELLO"]).ShouldBe("World");
+            File.Exists(Path.Combine(WorkDir, ".env.keys")).ShouldBeFalse();
+        });
+    }
+
+    /// <remarks>Refer to "#encrypt --with accepts matching public keys and preserves existing ciphertext"</remarks>
+    [Fact]
+    public async Task EncryptWithAcceptsMatchingPublicKeysAndPreservesExistingCiphertext()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        await ForBothAsync(async cli =>
+        {
+            (string publicKey, string privateKey) = Primitives.Primitives.Keypair();
+            foreach (string keyName in new[] { "DOTENV_PUBLIC_KEY", "DOTENV_PUBLIC_KEY_CI" })
+            {
+                string ciphertext = Primitives.Primitives.Encrypt("existing secret", publicKey);
+                WriteFile(".env", $"{keyName}=\"{publicKey}\"\nSECRET=\"{ciphertext}\"\nHELLO=World\n");
+
+                CliResult result = await cli(["encrypt", "--with", publicKey]);
+                result.ExitCode.ShouldBe(0, result.StandardError);
+                result.StandardError.ShouldNotContain("ALREADY_ENCRYPTED");
+                string source = ReadFile(".env");
+                Dictionary<string, string> parsed = ParseEnv();
+                parsed[keyName].ShouldBe(publicKey);
+                parsed.Keys.Count(key => key.StartsWith("DOTENV_PUBLIC_KEY", StringComparison.Ordinal)).ShouldBe(1);
+                parsed["SECRET"].ShouldBe(ciphertext);
+                Primitives.Primitives.Decrypt(privateKey, parsed["HELLO"]).ShouldBe("World");
+                File.Exists(Path.Combine(WorkDir, ".env.keys")).ShouldBeFalse();
+
+                CliResult repeated = await cli(["encrypt", "--with", publicKey]);
+                repeated.ExitCode.ShouldBe(0, repeated.StandardError);
+                ReadFile(".env").ShouldBe(source);
+
+                CliResult stdout = await cli(["encrypt", "--with", publicKey, "--stdout"]);
+                stdout.ExitCode.ShouldBe(0, stdout.StandardError);
+                Out(stdout).ShouldBe(source.Trim());
+            }
+        });
+    }
+
     private const string DecryptFailed =
         "☠ [DECRYPTION_FAILED] could not decrypt HELLO. fix: [https://github.com/dotenvx/dotenvx/issues/757]\n";
 

@@ -33,7 +33,7 @@ public class PrimitivesCommand : Command
         profile.Add(profileFile);
         profile.SetAction(parse => Guard(() =>
         {
-            string source = File.ReadAllText("Envfile", Encoding.UTF8);
+            string source = Fsx.ReadFileX("Envfile");
             string file = Primitives.Primitives.Profile(source, new ProfileOptions
             {
                 F = Joined(parse.GetValue(profileFile)),
@@ -86,7 +86,7 @@ public class PrimitivesCommand : Command
         policy.Add(policyFile);
         policy.SetAction(parse => Guard(() =>
         {
-            string source = File.ReadAllText("Envfile", Encoding.UTF8);
+            string source = Fsx.ReadFileX("Envfile");
             string file = Primitives.Primitives.Profile(source, new ProfileOptions { F = Joined(parse.GetValue(policyFile)) ?? ".env" });
             Console.Out.Write(PolicyJson(Primitives.Primitives.Policy(source, file)).ToJsonString(Indented).ReplaceLineEndings("\n") + "\n");
 
@@ -178,7 +178,7 @@ public class PrimitivesCommand : Command
 
     private static int Check(string fileArg)
     {
-        string source = File.ReadAllText("Envfile", Encoding.UTF8);
+        string source = Fsx.ReadFileX("Envfile");
         string file = Primitives.Primitives.Profile(source, new ProfileOptions { F = fileArg });
         EnvPolicy rules = Primitives.Primitives.Policy(source, file);
         Dictionary<string, string> processEnv = ProcessEnv();
@@ -186,7 +186,7 @@ public class PrimitivesCommand : Command
         foreach (string filename in file == "" ? [] : file.Split(','))
         {
             PrimitivesParseOutput output = Primitives.Primitives.ParseSync(
-                File.ReadAllText(filename, Encoding.UTF8),
+                Fsx.ReadFileX(filename),
                 new PrimitivesParseOptions
                 {
                     ProcessEnv = processEnv,

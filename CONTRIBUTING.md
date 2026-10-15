@@ -17,7 +17,7 @@ The upstream JS project is a git submodule at `dotenvx/`, used as porting refere
 
 ### Pinning rules
 
-- The submodule is pinned to the exact tag **`v2.34.2`** (never upstream HEAD, never a commit past the tag). `src/Dotenvx/Dotenvx.csproj` `Version` stays equal to the pinned tag, so `dotenvx --version` states which release this port matches.
+- The submodule is pinned to the exact tag **`v2.35.0`** (never upstream HEAD, never a commit past the tag). `src/Dotenvx/Dotenvx.csproj` `Version` stays equal to the pinned tag, so `dotenvx --version` states which release this port matches.
 - `src/Dotenvx.Primitives/Dotenvx.Primitives.csproj` `Version` equals the installed `@dotenvx/primitives` version (`dotenvx/node_modules/@dotenvx/primitives/package.json`, currently **3.3.0**).
 - Bump versions only through the "Version bump checklist" below. Do not run `git submodule update --remote`.
 - Scope rule: **anything that exists in the targeted version is in scope**, and all of it is ported: Dotenvx Armor (session/device stores, API client, login/logout/curl/settings/armor commands, key providers and decryptors), native secret stores and `native`, 1Password/Bitwarden resolution, `lock`, `doctor`/`update`/`help`, spinner, pty for `--redact`, signal forwarding and dynamic extensions. [docs/parity-checklist.md](docs/parity-checklist.md) lists every component, its status and the accepted differences; keep it current.

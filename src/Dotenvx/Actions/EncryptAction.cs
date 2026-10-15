@@ -65,6 +65,12 @@ public class EncryptAction : Command
     private readonly Option<bool> _no1PasswordOption = SecretResolverOptions.No1Password("disable 1Password features");
     private readonly Option<bool> _noBitwardenOption = SecretResolverOptions.NoBitwarden("disable Bitwarden features");
 
+    private readonly Option<string?> _withOption = new("--with")
+    {
+        Description = "encrypt with this public key; accepts a fresh file or matching existing public key",
+        HelpName = "public-key"
+    };
+
     private readonly Option<string?> _profileOption = new("--profile") { Description = "select an Envfile profile", HelpName = "name" };
 
     private readonly Option<bool> _noCreateOption =
@@ -78,6 +84,7 @@ public class EncryptAction : Command
     {
         Aliases.Add("enc"); // shorthand
         _logger = logger;
+        Add(_withOption);
         Add(_profileOption);
         Add(_envFileOption);
         Add(_envKeysFileOption);
@@ -117,6 +124,7 @@ public class EncryptAction : Command
         string[]? key = parseResult.GetValue(_keyOption);
         string[]? excludeKey = parseResult.GetValue(_excludeKeyOption);
         string? profile = parseResult.GetValue(_profileOption);
+        string? with = parseResult.GetValue(_withOption);
         bool stdout = parseResult.GetValue(_stdoutOption);
         bool noCreate = parseResult.GetValue(_noCreateOption);
 
@@ -144,7 +152,7 @@ public class EncryptAction : Command
         {
             Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate)
             {
-                KeyAccess = KeyAccess(parseResult), Profile = profile
+                KeyAccess = KeyAccess(parseResult), Profile = profile, With = with
             };
             EncryptResult result = encryptService.Run();
 
@@ -173,11 +181,11 @@ public class EncryptAction : Command
             KeyAccessOptions access = KeyAccess(parseResult, spinner.OnStatus);
             Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate)
             {
-                KeyAccess = access, Profile = profile
+                KeyAccess = access, Profile = profile, With = with
             };
             EncryptResult result = encryptService.Run();
 
-            if (!string.IsNullOrEmpty(result.KeysSrc))
+            if (!string.IsNullOrEmpty(result.KeysSrc) && with is null)
             {
                 Fsx.WriteKeyFile(fk, result.KeysSrc);
             }
@@ -212,7 +220,7 @@ public class EncryptAction : Command
             // encryption into a failure.
             foreach (EncryptProcessedEnv row in processedEnvs)
             {
-                if (row.Error != null || row.KeySources != null || PublicKeys(row.EnvSrc).Length == 0)
+                if (with is not null || row.Error != null || row.KeySources != null || PublicKeys(row.EnvSrc).Length == 0)
                 {
                     continue;
                 }

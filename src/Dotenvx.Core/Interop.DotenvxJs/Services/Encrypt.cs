@@ -21,6 +21,9 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 {
     private const string SampleEnvKit = "HELLO=\"World\"\n";
 
+    private static readonly System.Text.RegularExpressions.Regex WithPublicKeyFormat =
+        new(@"^(?:0[23][0-9a-f]{64}|04[0-9a-f]{128})\z", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
     private readonly HashSet<string> _changedFilePaths = [];
     private readonly List<EncryptProcessedEnv> _processedEnvs = [];
     private readonly HashSet<string> _unchangedFilePaths = [];
@@ -33,6 +36,9 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
     /// <summary>`--profile`: the Envfile profile that selects the env files.</summary>
     public string? Profile { get; set; }
 
+    /// <summary>`--with <public-key>`: encrypt with a public key created elsewhere (no private key is made or stored).</summary>
+    public string? With { get; set; }
+
     public EncryptResult Run()
     {
         string fk = string.IsNullOrEmpty(envKeysFilePath) ? ".env.keys" : envKeysFilePath;
@@ -42,7 +48,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
         // set up keysSrc
         string fkPath = NodePath.Resolve(fk);
-        if (Fsx.ExistsSync(fkPath))
+        if (With is null && Fsx.ExistsSync(fkPath))
         {
             try
             {
@@ -98,6 +104,41 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
             {
                 envSrc = SampleEnvKit;
                 row.Changed = true;
+            }
+
+            if (With is not null)
+            {
+                // Inspect every assignment before selection or schema rules can hide it.
+                ScanResult existing = Scan(envSrc, new ScanOptions());
+                List<string> declaredKeys = existing.Parsed.Where(pair => IsPublicKey(pair.Key, ""))
+                    .SelectMany(pair => pair.Value).ToList();
+                bool matchingKey = declaredKeys.Count > 0 && declaredKeys.All(value =>
+                    string.Equals(value, With, StringComparison.OrdinalIgnoreCase));
+                if (!matchingKey && (declaredKeys.Count > 0 || existing.Parsed.Values.Any(values => values.Any(Encrypted))))
+                {
+                    throw new AlreadyEncryptedException(envFilePath);
+                }
+
+                string withPublicKeyName = GuessPublicKeyName(envFilePath);
+                try
+                {
+                    if (!WithPublicKeyFormat.IsMatch(With))
+                    {
+                        throw new FormatException("Invalid public key format");
+                    }
+
+                    Primitives.Primitives.Encrypt("", With); // Validate the curve point even if no values need encryption.
+                }
+                catch (Exception)
+                {
+                    throw new InvalidPublicKeyException(withPublicKeyName, With);
+                }
+
+                if (!matchingKey)
+                {
+                    envSrc = MutateSrc(envSrc, envFilePath, "", withPublicKeyName, With);
+                    row.Changed = true;
+                }
             }
 
             ScanResult scanned = Scan(envSrc, new ScanOptions { Ik = keys, Ek = excludeKeys });
