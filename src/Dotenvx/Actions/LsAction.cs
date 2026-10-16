@@ -90,7 +90,6 @@ public class LsAction : Command
         // debug args
         _logger.Debug($"directory: {directory}");
 
-        var options = new { envFile, excludeEnvFile };
         _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         Ls lsService = Ls.Factory(directory, envFile, excludeEnvFile);

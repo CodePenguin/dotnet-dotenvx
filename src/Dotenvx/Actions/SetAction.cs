@@ -121,7 +121,6 @@ public class SetAction : Command
         _logger.Debug($"key: {key}");
         _logger.Debug($"value: {value}");
 
-        var options = new { profile = parseResult.GetValue(_profileOption), envFile, envKeysFile, encrypt, plain };
         _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         // `-c`/`--encrypt` has no real "off" state upstream (commander registers it as a bare

@@ -128,16 +128,6 @@ public class EncryptAction : Command
         bool stdout = parseResult.GetValue(_stdoutOption);
         bool noCreate = parseResult.GetValue(_noCreateOption);
 
-        var options = new
-        {
-            profile,
-            envFile,
-            envKeysFile,
-            key,
-            excludeKey,
-            stdout,
-            noCreate
-        };
         _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         List<EnvItem> envItems = [];

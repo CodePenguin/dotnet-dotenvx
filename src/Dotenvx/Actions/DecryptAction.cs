@@ -97,14 +97,6 @@ public class DecryptAction : Command
         string[]? keys = parseResult.GetValue(_keysOption);
         bool stdout = parseResult.GetValue(_stdoutOption);
 
-        var options = new
-        {
-            envFile,
-            envKeysFile,
-            excludeKey,
-            keys,
-            stdout
-        };
         _logger.Debug($"options: {JsonStringify(Help.CommanderOpts.Build(parseResult))}");
 
         List<EnvItem> envItems = [];
