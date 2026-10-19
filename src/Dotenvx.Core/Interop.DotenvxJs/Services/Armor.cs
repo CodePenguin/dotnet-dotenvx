@@ -83,6 +83,15 @@ internal static class ArmorTeam
 /// <remarks>Reference source: dotenvx/src/lib/services/armorUp.js</remarks>
 public class ArmorUp(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
 {
+    private static readonly Func<string, string?, string, string?, string?, ArmorUp> DefaultFactory =
+        (hostname, token, devicePublicKey, envFile, team) => new ArmorUp(hostname, token, devicePublicKey, envFile, team);
+
+    public static Func<string, string?, string, string?, string?, ArmorUp> Factory { get; internal set; } = DefaultFactory;
+
+    internal static void ResetFactory()
+    {
+        Factory = DefaultFactory;
+    }
     public virtual ArmorResult Run()
     {
         LocalKey source = ResolveLocalKey.Resolve(envFile ?? ".env", true);
@@ -143,6 +152,15 @@ public class ArmorPull(string hostname, string? token, string devicePublicKey, s
 /// <remarks>Reference source: dotenvx/src/lib/services/armorPush.js</remarks>
 public class ArmorPush(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
 {
+    private static readonly Func<string, string?, string, string?, string?, ArmorPush> DefaultFactory =
+        (hostname, token, devicePublicKey, envFile, team) => new ArmorPush(hostname, token, devicePublicKey, envFile, team);
+
+    public static Func<string, string?, string, string?, string?, ArmorPush> Factory { get; internal set; } = DefaultFactory;
+
+    internal static void ResetFactory()
+    {
+        Factory = DefaultFactory;
+    }
     public virtual ArmorResult Run()
     {
         LocalKey source = ResolveLocalKey.Resolve(envFile ?? ".env");

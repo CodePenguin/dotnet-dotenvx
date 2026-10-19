@@ -32,13 +32,13 @@ public class ArmorCommand : Command
         Add(_argsArgument);
 
         Subcommands.Add(new Step("up", "armor key", "team to armor private key for", logger,
-            (host, token, device, file, team) => new ArmorUp(host, token, device, file, team).Run(),
+            (host, token, device, file, team) => ArmorUp.Factory(host, token, device, file, team).Run(),
             (result, display, file) => $"⛨ armored {file} ({display})"));
         Subcommands.Add(new Step("down", "dearmor key", "team to dearmor private key from", logger,
             (host, token, device, file, team) => new ArmorDown(host, token, device, file, team).Run(),
             (result, display, file) => $"◇ dearmored {file} ({display}) to .env.keys"));
         Subcommands.Add(new Step("push", "push armored key (from .env.keys)", "team to push armored private key for", logger,
-            (host, token, device, file, team) => new ArmorPush(host, token, device, file, team).Run(),
+            (host, token, device, file, team) => ArmorPush.Factory(host, token, device, file, team).Run(),
             (result, display, file) => $"⛨ pushed {file} ({display}) to Armor"));
         Subcommands.Add(new Step("pull", "pull armored key (into .env.keys)", "team to pull armored private key from", logger,
             (host, token, device, file, team) => new ArmorPull(host, token, device, file, team).Run(),

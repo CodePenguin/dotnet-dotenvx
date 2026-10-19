@@ -1,3 +1,5 @@
+using NSubstitute;
+using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Api;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Primitives;
@@ -316,30 +318,88 @@ public class ParseWithDecryptorTest : EnvironmentTestBase
         }
     }
 
-    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
-    // scan sees them and the reason is visible here. Add a new one only after asking.
+    // Reference source for the four tests below: dotenvx/tests/lib/decryptors/index.test.js. Upstream swaps the Session class and the
+    // Armor decryptor with proxyquire; here `ArmorProviders.SessionFactory` and `KeyProviders.ArmorDecryptor` are the seams, and
+    // there is no worker (the one synchronous implementation serves both upstream variants).
+    private static Session ArmorSession(bool noArmor)
+    {
+        Session session = NSubstitute.Substitute.For<Session>((global::Dotenvx.Interop.DotenvxJs.Shared.IDotenvxLogger?)null);
+        session.NoArmor().Returns(noArmor);
+        ArmorProviders.SessionFactory = _ => session;
+
+        return session;
+    }
+
     /// <remarks>Refer to "decryptors returns a custom decryptor unchanged"</remarks>
-    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    [Fact]
     public void DecryptorsReturnsACustomDecryptorUnchanged()
     {
+        ArmorSession(noArmor: false);
+        Decryptor custom = (_, _) => new DecryptorResult("");
+
+        KeyProviders.ResolveDecryptor(new KeyAccessOptions { HasCustomDecryptor = true, CustomDecryptor = custom }).ShouldBeSameAs(custom);
+        KeyProviders.ResolveDecryptor(new KeyAccessOptions { HasCustomDecryptor = true, CustomDecryptor = null }).ShouldBeNull();
     }
 
     /// <remarks>Refer to "decryptors returns null when Armor is unavailable or disabled"</remarks>
-    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    [Fact]
     public void DecryptorsReturnsNullWhenArmorIsUnavailableOrDisabled()
     {
+        ArmorSession(noArmor: true);
+        KeyProviders.ResolveDecryptor(new KeyAccessOptions()).ShouldBeNull();
+
+        ArmorSession(noArmor: false);
+        KeyProviders.ResolveDecryptor(new KeyAccessOptions { NoArmor = true }).ShouldBeNull();
     }
 
     /// <remarks>Refer to "decryptors returns an Armor decryptor"</remarks>
-    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    [Fact]
     public void DecryptorsReturnsAnArmorDecryptor()
     {
+        ArmorSession(noArmor: false);
+        string? seenSrc = null;
+        DecryptorOptions? seenOptions = null;
+        KeyProviders.ArmorDecryptor = (src, options, _) =>
+        {
+            seenSrc = src;
+            seenOptions = options;
+
+            return new DecryptorResult("HELLO=World\n");
+        };
+
+        Decryptor decryptor = KeyProviders.ResolveDecryptor(new KeyAccessOptions { Token = "token-1", Command = "run" })!;
+        DecryptorResult result = decryptor("HELLO=encrypted:ciphertext\n", new DecryptorOptions("public-key", "grant-token-1", null));
+
+        result.ShouldBe(new DecryptorResult("HELLO=World\n"));
+        seenSrc.ShouldBe("HELLO=encrypted:ciphertext\n");
+        seenOptions!.PublicKey.ShouldBe("public-key");
+        seenOptions.GrantToken.ShouldBe("grant-token-1");
+        seenOptions.Token.ShouldBe("token-1");
+        seenOptions.Command.ShouldBe("run");
+        seenOptions.OnStatus.ShouldBeNull();
     }
 
     /// <remarks>Refer to "decryptors.sync runs the Armor decryptor through a worker"</remarks>
-    [Fact(Skip = "Not ported: These stub JS module internals (proxyquire of the decryptor factory, the worker-thread sync variant, the resolver's provider chain) that have no counterpart here: key lookup runs through KeyProviders and the Dotenvx.Providers assembly, and Armor decryption through ParseWithDecryptor. The same behaviors (file keys before providers, --no-armor, provider origin reporting, Armor keyring requests with the Bearer token, unchanged output when Armor is off) are proven against the real Node CLI by ArmorProviderParityTest, NativeStoreParityTest and the keypair/get/decrypt parity tests.")]
+    [Fact]
     public void DecryptorsSyncRunsTheArmorDecryptorThroughAWorker()
     {
-    }
+        // The port has no worker: the decryptor is already synchronous, so the same call returns the result directly,
+        // and the status callback travels with it like the other options.
+        ArmorSession(noArmor: false);
+        DecryptorOptions? seenOptions = null;
+        KeyProviders.ArmorDecryptor = (_, options, _) =>
+        {
+            seenOptions = options;
 
+            return new DecryptorResult("HELLO=World\n");
+        };
+        Action<string> onStatus = _ => { };
+
+        Decryptor decryptor = KeyProviders.ResolveDecryptor(new KeyAccessOptions { Token = "token-1", Command = "run", OnStatus = onStatus })!;
+        DecryptorResult result = decryptor("HELLO=encrypted:ciphertext\n", new DecryptorOptions("public-key", "grant-token-1", null));
+
+        result.Src.ShouldBe("HELLO=World\n");
+        seenOptions!.OnStatus.ShouldBeSameAs(onStatus);
+        seenOptions.Token.ShouldBe("token-1");
+    }
 }

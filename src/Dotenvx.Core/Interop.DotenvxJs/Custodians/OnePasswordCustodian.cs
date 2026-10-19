@@ -13,7 +13,7 @@ namespace Dotenvx.Interop.DotenvxJs.Custodians;
 /// nonsecret locator (`account|op://vault/item/password`) is written to the dotenvx settings, under
 /// `DOTENVX_ONEPASSWORD_&lt;public key&gt;`.
 /// </remarks>
-public sealed partial class OnePasswordCustodian : ILocalCustodian
+public sealed partial class OnePasswordCustodian : ILocalCustodian, ISyncCustodian
 {
     private const string Prefix = "DOTENVX_ONEPASSWORD_";
 
@@ -140,6 +140,11 @@ public sealed partial class OnePasswordCustodian : ILocalCustodian
     public IDictionary<string, string> Get(string publicKey)
     {
         return new OnePasswordProvider(new ProviderOptions()).GetSync(publicKey);
+    }
+
+    public IDictionary<string, string> GetSync(string publicKey)
+    {
+        return Get(publicKey);
     }
 
     public StoreResult Store(string publicKey, string privateKey, StoreContext context)

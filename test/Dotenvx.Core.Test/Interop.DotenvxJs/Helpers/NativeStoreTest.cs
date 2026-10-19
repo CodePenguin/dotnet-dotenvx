@@ -436,30 +436,57 @@ public class NativeStoreTest : EnvironmentTestBase
         KeyProviders.NativeProvider("k").ShouldBeEmpty();
     }
 
-    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
-    // scan sees them and the reason is visible here. Add a new one only after asking.
+    // The raw (backend) reads of dotenvx/tests/lib/providers/native.test.js: NativeStore.Get is the backend `get`, dispatching on the platform
+    private void RawReadOn(string platform, string command)
+    {
+        Stub(new SecretCliResult(0, "private-key\n"));
+        NativeStore.Platform = platform;
+
+        NativeStore.Get("public-key").ShouldBe("private-key");
+
+        _calls[0].Command.ShouldBe(command);
+        // the Credential Manager helper receives its request (including the key) as JSON on stdin
+        string request = platform == "win32" ? _calls[0].Input! : string.Join(' ', _calls[0].Args);
+        request.ShouldContain("public-key");
+    }
+
     /// <remarks>Refer to "native backend reads raw secrets from macOS Keychain on darwin"</remarks>
-    [Fact(Skip = "Not ported: The raw OS-store reads are tested at the Dotenvx.Providers level (NativeStoreTest: Keychain, Credential Manager, Secret Service command lines and results); the delegation test stubs @dotenvx/providers itself.")]
+    [Fact]
     public void NativeBackendReadsRawSecretsFromMacOSKeychainOnDarwin()
     {
+        RawReadOn("darwin", "/usr/bin/security");
     }
 
     /// <remarks>Refer to "native backend reads raw secrets from Windows Credential Manager on win32"</remarks>
-    [Fact(Skip = "Not ported: The raw OS-store reads are tested at the Dotenvx.Providers level (NativeStoreTest: Keychain, Credential Manager, Secret Service command lines and results); the delegation test stubs @dotenvx/providers itself.")]
+    [Fact]
     public void NativeBackendReadsRawSecretsFromWindowsCredentialManagerOnWin32()
     {
+        RawReadOn("win32", "powershell.exe");
     }
 
     /// <remarks>Refer to "native backend reads raw secrets from Linux Secret Service on linux"</remarks>
-    [Fact(Skip = "Not ported: The raw OS-store reads are tested at the Dotenvx.Providers level (NativeStoreTest: Keychain, Credential Manager, Secret Service command lines and results); the delegation test stubs @dotenvx/providers itself.")]
+    [Fact]
     public void NativeBackendReadsRawSecretsFromLinuxSecretServiceOnLinux()
     {
+        RawReadOn("linux", "secret-tool");
     }
 
     /// <remarks>Refer to "native provider delegates ${method} key lookup to @dotenvx/providers"</remarks>
-    [Fact(Skip = "Not ported: The raw OS-store reads are tested at the Dotenvx.Providers level (NativeStoreTest: Keychain, Credential Manager, Secret Service command lines and results); the delegation test stubs @dotenvx/providers itself.")]
-    public void NativeProviderDelegatesKeyLookupToDotenvxProviders()
+    [Fact]
+    public void NativeProviderDelegatesKeyLookupToTheProviders()
     {
-    }
+        // upstream runs this for `sync` and `async`; the port has one synchronous read behind both
+        NativeStore.Platform = "linux";
+        INativeSecretStore store = Substitute.For<INativeSecretStore>();
+        store.Get("public-key").Returns("private-key");
+        store.Get("missing-key").Returns((string?)null);
+        NativeStore.Current = store;
 
+        KeyProviders.NativeProvider("public-key").ShouldBe(new Dictionary<string, string> { ["public-key"] = "private-key" });
+        KeyProviders.NativeProvider("missing-key").ShouldBeEmpty();
+        new global::Dotenvx.Interop.DotenvxJs.Custodians.NativeCustodian().Get("public-key").ShouldBe(new Dictionary<string, string> { ["public-key"] = "private-key" });
+        new global::Dotenvx.Interop.DotenvxJs.Custodians.NativeCustodian().Get("missing-key").ShouldBeEmpty();
+        store.Received(2).Get("public-key");
+        store.Received(2).Get("missing-key");
+    }
 }

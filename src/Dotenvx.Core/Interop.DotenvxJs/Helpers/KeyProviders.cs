@@ -80,7 +80,7 @@ public class KeyAccessOptions
 /// </remarks>
 public static class KeyProviders
 {
-    private static readonly Dictionary<string, string> NativeNames = new()
+    internal static readonly Dictionary<string, string> NativeNames = new()
     {
         ["darwin"] = "macosKeychain", ["win32"] = "windowsCredentialManager", ["linux"] = "linuxSecretService"
     };
@@ -186,7 +186,9 @@ public static class KeyProviders
 
         try
         {
-            IDictionary<string, string> ring = keys.GetSync(publicKey);
+            // providers/index.js: `keys.getSync(publicKey)` for the synchronous variant, `await keys.get(publicKey)` for the async one,
+            // whose Armor lookup is the one that reports an access approval through `onStatus`
+            IDictionary<string, string> ring = sync ? keys.GetSync(publicKey) : keys.Get(publicKey).GetAwaiter().GetResult();
             if (!sync && !(ring.TryGetValue(publicKey, out string? have) && !string.IsNullOrEmpty(have)) &&
                 new BitwardenCustodian().Enabled(options))
             {
@@ -216,6 +218,14 @@ public static class KeyProviders
         return publicKey => Lookup(publicKey, options, !options.Interactive);
     }
 
+    /// <summary>`require('./armor/index')` of decryptors/index.js (upstream tests stub it).</summary>
+    internal static Func<string, DecryptorOptions, IDotenvxLogger?, DecryptorResult> ArmorDecryptor { get; set; } = ArmorProviders.DecryptSrc;
+
+    internal static void ResetToDefaults()
+    {
+        ArmorDecryptor = ArmorProviders.DecryptSrc;
+    }
+
     /// <summary>`decryptors(options)`: the Armor server-side decryptor, or null when Armor is off.</summary>
     public static Decryptor? ResolveDecryptor(KeyAccessOptions options)
     {
@@ -229,13 +239,13 @@ public static class KeyProviders
             return null;
         }
 
-        bool noArmor = string.IsNullOrEmpty(options.Token) && new Db.Session(options.Logger).NoArmor();
+        bool noArmor = string.IsNullOrEmpty(options.Token) && ArmorProviders.SessionFactory(options.Logger).NoArmor();
         if (noArmor)
         {
             return null;
         }
 
-        return (src, decryptOptions) => ArmorProviders.DecryptSrc(src,
+        return (src, decryptOptions) => ArmorDecryptor(src,
             decryptOptions with { OnStatus = options.OnStatus, Token = options.Token, Command = options.Command },
             options.Logger);
     }

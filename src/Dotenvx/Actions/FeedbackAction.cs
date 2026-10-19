@@ -40,7 +40,7 @@ public class FeedbackAction : Command
             string? body = parseResult.GetValue(_messageArgument);
             if (body is null)
             {
-                if (Console.IsInputRedirected)
+                if (!ConsoleTty.IsStdInTty())
                 {
                     throw new Exception("provide a message: dotenvx feedback \"Your feedback\"");
                 }

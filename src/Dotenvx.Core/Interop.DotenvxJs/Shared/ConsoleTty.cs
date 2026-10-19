@@ -13,6 +13,9 @@ public static class ConsoleTty
     public static Func<bool> IsStdOutTty { get; internal set; } = DefaultIsStdOutTty;
     public static Func<bool> IsStdErrTty { get; internal set; } = DefaultIsStdErrTty;
 
+    /// <summary>`process.stdin.isTTY`.</summary>
+    public static Func<bool> IsStdInTty { get; internal set; } = DefaultIsStdInTty;
+
     /// <summary>`process.platform` / `os.release()` as the colour-depth probe sees them.</summary>
     public static OsPlatform Platform { get; internal set; } = OsPlatform.Current;
 
@@ -21,6 +24,12 @@ public static class ConsoleTty
         Platform = OsPlatform.Current;
         IsStdOutTty = DefaultIsStdOutTty;
         IsStdErrTty = DefaultIsStdErrTty;
+        IsStdInTty = DefaultIsStdInTty;
+    }
+
+    private static bool DefaultIsStdInTty()
+    {
+        return !Console.IsInputRedirected;
     }
 
     private static bool DefaultIsStdOutTty()

@@ -5,6 +5,7 @@ using Dotenvx;
 using Dotenvx.Actions;
 using Dotenvx.Core.Test;
 using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Interop.DotenvxJs.Shared;
 
 using Shouldly;
 
@@ -12,9 +13,8 @@ namespace dotnet_dotenvx.Test.Actions;
 
 /// <remarks>
 /// Reference source: dotenvx/tests/cli/actions/feedback.test.js. Upstream stubs PostFeedback and the prompt; here the HTTP
-/// seam answers the request and the working directory holds the session settings. The terminal prompt scenarios ("prompts
-/// in a terminal and supports hostname override", "cancellation exits without submitting") need a real TTY on stdin and are
-/// covered by the node-vs-.NET comparison instead.
+/// seam answers the request and the working directory holds the session settings; `ConsoleTty.IsStdInTty` and `Prompts.InputText`
+/// stand in for `process.stdin.isTTY` and `prompts.input`.
 /// </remarks>
 public class FeedbackActionTest : EnvironmentTestBase
 {
@@ -122,18 +122,39 @@ public class FeedbackActionTest : EnvironmentTestBase
         action.Description.ShouldBe("send feedback to dotenvx");
     }
 
-    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
-    // scan sees them and the reason is visible here. Add a new one only after asking.
     /// <remarks>Refer to "prompts in a terminal and supports hostname override"</remarks>
-    [Fact(Skip = "Not ported: Both need a real TTY on stdin (process.stdin.isTTY = true), which the test host cannot provide. Their cases are compared against the real Node CLI instead. (the hostname half is `FeedbackActionTest.TestHostnameOverride`)")]
+    [Fact]
     public void PromptsInATerminalAndSupportsHostnameOverride()
     {
+        // upstream: setTTY(true), stub prompts.input, run feedback with a hostname option
+        ConsoleTty.IsStdInTty = () => true;
+        string? asked = null;
+        Prompts.InputText = message =>
+        {
+            asked = message;
+
+            return "A suggestion";
+        };
+        Respond(() => (200, """{"ok":true}"""));
+
+        Run("feedback", "--hostname", "https://custom.example.com").ShouldBe(0);
+
+        asked.ShouldBe("Send feedback");
+        _requests.Count.ShouldBe(1);
+        _requests[0].Url.ShouldBe("https://custom.example.com/api/feedback");
+        JsonNode.Parse(_requests[0].Body!)!["body"]!.ToString().ShouldBe("A suggestion");
     }
 
     /// <remarks>Refer to "cancellation exits without submitting"</remarks>
-    [Fact(Skip = "Not ported: Both need a real TTY on stdin (process.stdin.isTTY = true), which the test host cannot provide. Their cases are compared against the real Node CLI instead.")]
+    [Fact]
     public void CancellationExitsWithoutSubmitting()
     {
-    }
+        ConsoleTty.IsStdInTty = () => true;
+        Prompts.InputText = _ => throw new PromptCancelledException();
+        Respond(() => (200, """{"ok":true}"""));
 
+        Run("feedback").ShouldBe(130);
+
+        _requests.ShouldBeEmpty();
+    }
 }

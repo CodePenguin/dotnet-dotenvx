@@ -15,7 +15,7 @@ namespace Dotenvx.Interop.DotenvxJs.Custodians;
 /// `DOTENVX_BITWARDEN_&lt;public key&gt;`. A locked vault is unlocked with the master password on an interactive terminal;
 /// the unlocked session is kept for the rest of the process.
 /// </remarks>
-public sealed partial class BitwardenCustodian : ILocalCustodian
+public sealed partial class BitwardenCustodian : ILocalCustodian, ISyncCustodian
 {
     private const string Prefix = "DOTENVX_BITWARDEN_";
     private const string PasswordEnv = "DOTENVX_BITWARDEN_PASSWORD";

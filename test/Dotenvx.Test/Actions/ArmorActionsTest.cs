@@ -1,3 +1,4 @@
+using NSubstitute;
 using System.CommandLine;
 using System.Text.Json.Nodes;
 
@@ -634,18 +635,31 @@ public class ArmorActionsTest : EnvironmentTestBase
         ArmorGroup(Root()).Subcommands.Any(c => c.Name == "keypair").ShouldBeFalse("armor keypair is not registered");
     }
 
-    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
-    // scan sees them and the reason is visible here. Add a new one only after asking.
+    // The two upstream "falls back to private key name when public key display is unavailable" tests stub the service to return a
+    // null public key; ArmorUp.Factory / ArmorPush.Factory are the seams that let the action see the same result here.
     /// <remarks>Refer to "armor up falls back to private key name when public key display is unavailable"</remarks>
-    [Fact(Skip = "Not ported: Both \"falls back to private key name when public key display is unavailable\" tests stub the service to return a null public key. The real ArmorUp/ArmorPush always resolve and verify the public key (ResolveLocalKey), so the state is unreachable here; the fallback is a one-line branch in the action.")]
+    [Fact]
     public void ArmorUpFallsBackToPrivateKeyNameWhenPublicKeyDisplayIsUnavailable()
     {
+        var service = NSubstitute.Substitute.For<global::Dotenvx.Interop.DotenvxJs.Services.ArmorUp>("h", null, "d", null, null);
+        service.Run().Returns(new global::Dotenvx.Interop.DotenvxJs.Services.ArmorResult(true, "DOTENV_PRIVATE_KEY", null, null));
+        global::Dotenvx.Interop.DotenvxJs.Services.ArmorUp.Factory = (_, _, _, _, _) => service;
+
+        Run("armor", "up").ShouldBe(0);
+
+        MockLogger.InfoMessages.ShouldContain("⛨ armored .env (DOTENV_PRIVATE_KEY)");
     }
 
     /// <remarks>Refer to "armor push falls back to private key name when public key display is unavailable"</remarks>
-    [Fact(Skip = "Not ported: Both \"falls back to private key name when public key display is unavailable\" tests stub the service to return a null public key. The real ArmorUp/ArmorPush always resolve and verify the public key (ResolveLocalKey), so the state is unreachable here; the fallback is a one-line branch in the action.")]
+    [Fact]
     public void ArmorPushFallsBackToPrivateKeyNameWhenPublicKeyDisplayIsUnavailable()
     {
-    }
+        var service = NSubstitute.Substitute.For<global::Dotenvx.Interop.DotenvxJs.Services.ArmorPush>("h", null, "d", null, null);
+        service.Run().Returns(new global::Dotenvx.Interop.DotenvxJs.Services.ArmorResult(true, "DOTENV_PRIVATE_KEY", null, null));
+        global::Dotenvx.Interop.DotenvxJs.Services.ArmorPush.Factory = (_, _, _, _, _) => service;
 
+        Run("armor", "push").ShouldBe(0);
+
+        MockLogger.InfoMessages.ShouldContain("⛨ pushed .env (DOTENV_PRIVATE_KEY) to Armor");
+    }
 }

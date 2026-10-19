@@ -45,7 +45,10 @@ public interface ICustodian
 
     IDictionary<string, string> Get(string publicKey);
 
-    StoreResult Store(string publicKey, string privateKey, StoreContext context);
+    StoreResult? Store(string publicKey, string privateKey, StoreContext context);
+
+    /// <summary>Whether the custodian has a read at all (`custodian.get`); the file custodian has none, its keys are resolved with the env files.</summary>
+    bool CanGet => true;
 }
 
 /// <summary>A custodian that can also read and remove the keys it holds (everything but Armor).</summary>
@@ -62,33 +65,35 @@ public interface ILocalCustodian : ICustodian
 /// </remarks>
 public static class Custodians
 {
-    private static readonly Dictionary<string, ICustodian> Entries = new()
+    /// <summary>`module.exports = createRegistry(builtins)`.</summary>
+    public static CustodianRegistry Registry { get; } = new(
+    [
+        new NativeCustodian(), new OnePasswordCustodian(), new BitwardenCustodian(), new FileCustodian(), new ArmorCustodian()
+    ]);
+
+    /// <summary>`createRegistry(custodians)`.</summary>
+    public static CustodianRegistry CreateRegistry(IEnumerable<ICustodian> custodians)
     {
-        ["native"] = new NativeCustodian(),
-        ["onepassword"] = new OnePasswordCustodian(),
-        ["bitwarden"] = new BitwardenCustodian(),
-        ["file"] = new FileCustodian(),
-        ["armored"] = new ArmorCustodian()
-    };
+        return new CustodianRegistry(custodians);
+    }
 
     public static ICustodian Get(string id)
     {
-        return Entries.TryGetValue(id, out ICustodian? custodian) ? custodian : throw new Exception($"unknown custodian: {id}");
+        return Registry.Get(id);
     }
 
     /// <summary>`store(selection, ...)`: stores the key with the chosen custodian, following a requested fallback.</summary>
     public static StoreResult Store(string id, string publicKey, string privateKey, StoreContext context)
     {
-        StoreResult result = Get(id).Store(publicKey, privateKey, context);
-        // Only the native custodian's unavailable-write path requests fallback.
-        // Authentication and verification errors propagate without writing a file.
-        return result.Fallback is not null ? Get(result.Fallback).Store(publicKey, privateKey, context) : result;
+        return Registry.Store(id, publicKey, privateKey, context);
     }
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/custodians/local/file.js. File keys are staged for the caller to commit with the encrypted env files.</remarks>
 public sealed class FileCustodian : ICustodian
 {
+    public bool CanGet => false;
+
     public string Id => "file";
     public string Name => "File (.env.keys)";
     public string Custody => "local";
@@ -124,7 +129,7 @@ public sealed class FileCustodian : ICustodian
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/custodians/local/native/{index,store}.js.</remarks>
-public sealed class NativeCustodian : ILocalCustodian
+public sealed class NativeCustodian : ILocalCustodian, ISyncCustodian
 {
     public string Id => "native";
 
@@ -169,6 +174,11 @@ public sealed class NativeCustodian : ILocalCustodian
         return string.IsNullOrEmpty(value)
             ? new Dictionary<string, string>()
             : new Dictionary<string, string> { [publicKey] = value };
+    }
+
+    public IDictionary<string, string> GetSync(string publicKey)
+    {
+        return Get(publicKey);
     }
 
     public void Set(string publicKey, string privateKey)

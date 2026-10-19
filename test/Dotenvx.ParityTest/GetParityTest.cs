@@ -540,12 +540,30 @@ public class GetParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         }
     }
 
-    // Intentionally NOT ported upstream tests (approved by the user, 2026-10-15); kept as skipped tests so the upstream-test-titles
-    // scan sees them and the reason is visible here. Add a new one only after asking.
-    /// <remarks>Refer to "command outcomes preserve piped stdout and stderr"</remarks>
-    [Fact(Skip = "Not ported: drives the JS `commandAction` wrapper directly; the .NET CLI's piped output is compared byte-for-byte with Node's by every parity test.")]
-    public void CommandOutcomesPreservePipedStdoutAndStderr()
+    /// <remarks>
+    /// Refer to "command outcomes preserve piped stdout and stderr". Upstream drives the JS `commandAction` wrapper with 1,000,000
+    /// bytes on each stream and exit codes 0, 7 and 130; here the real CLI runs a child that does the same through `run`.
+    /// </remarks>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(7)]
+    [InlineData(130)]
+    public async Task CommandOutcomesPreservePipedStdoutAndStderr(int exitCode)
     {
-    }
+        if (!EnsureAvailable())
+        {
+            return;
+        }
 
+        string script = "process.stdout.write('o'.repeat(1000000));process.stderr.write('e'.repeat(1000000));process.exitCode=" + exitCode;
+        (CliResult node, CliResult dotnet) = await RunBothAsync(
+            () => WriteFile(".env", "HELLO=World\n"), null, "run", "--", "node", "-e", script);
+
+        dotnet.ExitCode.ShouldBe(node.ExitCode);
+        dotnet.ExitCode.ShouldBe(exitCode);
+        dotnet.StandardOutput.Length.ShouldBe(1000000);
+        dotnet.StandardError.Length.ShouldBeGreaterThanOrEqualTo(1000000);
+        (dotnet.StandardOutput == node.StandardOutput).ShouldBeTrue("stdout matches exactly");
+        (dotnet.StandardError == node.StandardError).ShouldBeTrue("stderr matches exactly");
+    }
 }

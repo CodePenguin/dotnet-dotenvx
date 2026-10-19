@@ -77,6 +77,8 @@ public class EnvironmentTestBase : IDisposable
 
         // Reset Mock Factories
         Del.ResetFactory();
+        ArmorUp.ResetFactory();
+        ArmorPush.ResetFactory();
         SecretCli.ResetToDefaults();
         NativeStore.ResetToDefaults();
         Session.ResetToDefaults();
@@ -87,6 +89,7 @@ public class EnvironmentTestBase : IDisposable
         ParseWithDecryptor.ResetToDefaults();
         Spinners.ResetToDefaults();
         ArmorProviders.ResetToDefaults();
+        KeyProviders.ResetToDefaults();
         ListenForOpenKey.ResetToDefaults();
         SystemInformation.ResetToDefaults();
         EnvPaths.ConfigOverride = null;
