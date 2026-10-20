@@ -130,7 +130,8 @@ See [`samples/`](samples) for runnable versions.
 | `Dotenvx` | the `dotenvx` .NET tool |
 | `Dotenvx.Core` | the library API above and the ported CLI logic |
 | `Dotenvx.Configuration` | `IConfigurationBuilder.UseDotenvx()` |
-| `Dotenvx.Primitives` | port of the `@dotenvx/primitives` package (parse, encrypt, decrypt, keyring, ...); versioned like that package (3.0.2), not like the CLI |
+| `Dotenvx.Primitives` | port of the `@dotenvx/primitives` package (parse, encrypt, decrypt, keyring, ...); versioned like that package (3.3.0), not like the CLI |
+| `Dotenvx.Providers` | port of the `@dotenvx/providers` package (key lookup in `.env.keys`, the OS secret store, Armor, 1Password, Bitwarden); versioned like that package, not like the CLI |
 
 ## Compatibility
 

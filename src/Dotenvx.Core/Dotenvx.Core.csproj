@@ -14,16 +14,17 @@
     <ItemGroup>
         <InternalsVisibleTo Include="Dotenvx.Configuration.Test"/>
         <InternalsVisibleTo Include="Dotenvx.Core.Test"/>
+        <InternalsVisibleTo Include="Dotenvx.Ports.Test"/>
         <InternalsVisibleTo Include="Dotenvx.Test"/>
         <InternalsVisibleTo Include="Dotenvx.ParityTest"/>
     </ItemGroup>
 
+    <!-- Internal ports of npm packages (not separate packages), each tracking the version it was ported from:
+         Interop.IgnoreJs = ignore 7.0.5 (^7.0.5 per @dotenvx/tooling), Interop.EnquirerJs = enquirer 2.4.1 (bundled in @dotenvx/tooling),
+         Interop.YoctoSpinnerJs = yocto-spinner 1.2.1. -->
     <ItemGroup>
         <ProjectReference Include="..\Dotenvx.Primitives\Dotenvx.Primitives.csproj"/>
         <ProjectReference Include="..\Dotenvx.Providers\Dotenvx.Providers.csproj"/>
-        <ProjectReference Include="..\Dotenvx.Enquirer\Dotenvx.Enquirer.csproj"/>
-        <ProjectReference Include="..\Dotenvx.Ignore\Dotenvx.Ignore.csproj"/>
-        <ProjectReference Include="..\Dotenvx.YoctoSpinner\Dotenvx.YoctoSpinner.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

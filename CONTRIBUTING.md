@@ -4,13 +4,14 @@ How this repository is organized and how to change it without breaking parity wi
 
 ## What this is
 
-A .NET 10 port of [`@dotenvx/dotenvx`](https://github.com/dotenvx/dotenvx) that aims for **byte-for-byte parity** with the Node CLI and library. It ships four NuGet packages plus a `dotnet tool`:
+A .NET 10 port of [`@dotenvx/dotenvx`](https://github.com/dotenvx/dotenvx) that aims for **byte-for-byte parity** with the Node CLI and library. It ships these NuGet packages plus a `dotnet tool`:
 
 | Project | Role |
 | --- | --- |
 | `src/Dotenvx` | the `dotenvx` CLI (`dotnet tool`), built on `System.CommandLine` |
 | `src/Dotenvx.Core` | ported library logic (`Dotenvx.Config/Get/Parse/Set`), used by the CLI and `Dotenvx.Configuration` |
 | `src/Dotenvx.Primitives` | port of the external `@dotenvx/primitives` npm package (every export has a public `Primitives.*` counterpart) |
+| `src/Dotenvx.Providers` | port of the external `@dotenvx/providers` npm package (private-key lookup in `.env.keys`, the OS secret store, Armor, 1Password, Bitwarden) |
 | `src/Dotenvx.Configuration` | `IConfigurationBuilder.UseDotenvx()` for `Microsoft.Extensions.Configuration` |
 
 The upstream JS project is a git submodule at `dotenvx/`, used as porting reference and as the source of test fixtures. After cloning: `git submodule update --init --recursive` (test projects fail without it).
@@ -46,7 +47,7 @@ The code is a near line-for-line port. Check the referenced JS file in `dotenvx/
 - `src/Dotenvx.Core/Interop.DotenvxJs/Helpers/` ports `dotenvx/src/lib/helpers/*.js`; `Services/` keeps the old `services/*.js` layout (upstream now has `resolvers/` and `transforms/`); `Main.cs` ports `main.js`; `Types/` holds option/result POCOs.
 - `src/Dotenvx/Actions/*.cs` port `dotenvx/src/cli/actions/*.js` (each a `System.CommandLine` `Command`).
 - Most files carry `/// <remarks>Reference source: dotenvx/src/lib/helpers/fsx.js</remarks>`. Re-verify that the named file still exists at the pin when you touch a file (the upstream reorg moved many).
-- `Interop.IgnoreJs` (gitignore matching) is Core's; `Interop.PicomatchJs` and `Interop.EciesJs` live in `Dotenvx.Primitives`.
+- `Interop.IgnoreJs` (gitignore matching), `Interop.EnquirerJs` (prompts) and `Interop.YoctoSpinnerJs` (spinner) are folders in Core; `Interop.PicomatchJs` and `Interop.EciesJs` live in `Dotenvx.Primitives`.
 
 ### `Dotenvx.Primitives`
 

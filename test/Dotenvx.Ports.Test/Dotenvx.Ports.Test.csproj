@@ -29,8 +29,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\Dotenvx.Enquirer\Dotenvx.Enquirer.csproj" />
-        <ProjectReference Include="..\..\src\Dotenvx.YoctoSpinner\Dotenvx.YoctoSpinner.csproj" />
+        <ProjectReference Include="..\..\src\Dotenvx.Core\Dotenvx.Core.csproj" />
     </ItemGroup>
 
 </Project>
