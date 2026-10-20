@@ -102,7 +102,14 @@ public sealed class FakeArmorServer : IDisposable
             }
             catch (Exception)
             {
-                context.Response.Abort();
+                try
+                {
+                    context.Response.Abort();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // the listener was disposed while this request was in flight (test teardown)
+                }
             }
         }
     }

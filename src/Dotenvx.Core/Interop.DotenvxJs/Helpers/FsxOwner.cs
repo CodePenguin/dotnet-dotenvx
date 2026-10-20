@@ -5,9 +5,8 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// <remarks>
 /// Reference source: write-file-atomic (used by dotenvx/src/lib/helpers/fsx.js): when `process.getuid` exists, the replacement file is
 /// `chown`ed to the existing file's uid/gid, and a chown error is ignored when it is ENOSYS, or EINVAL/EPERM for a non-root caller.
-/// .NET has no owner API, so this reads `st_uid`/`st_gid` through libc `stat` (the struct offsets of Linux x64/arm64 and macOS) and
-/// calls libc `chown`. A platform whose layout is unknown, or without a `stat` symbol (glibc before 2.33), reports no owner, so the
-/// chown is skipped there.
+/// .NET has no owner API, so this reads `st_uid`/`st_gid` through the runtime's own System.Native `SystemNative_Stat` (one fixed layout on every
+/// Unix platform the runtime supports) and calls libc `chown`. Windows has no owner to copy, as in Node.
 /// </remarks>
 internal static class FsxOwner
 {
@@ -15,6 +14,8 @@ internal static class FsxOwner
     private const int ENOSYS_LINUX = 38;
     private const int ENOSYS_MAC = 78;
     private const int EPERM = 1;
+    private const int UidOffset = 8;
+    private const int GidOffset = 12;
 
     public static (uint Uid, uint Gid)? Read(string filepath)
     {
@@ -23,13 +24,7 @@ internal static class FsxOwner
             return null;
         }
 
-        (int uidOffset, int gidOffset)? layout = Layout();
-        if (layout is null)
-        {
-            return null;
-        }
-
-        byte[] buffer = new byte[512];
+        byte[] buffer = new byte[256];
         try
         {
             if (Stat(filepath, buffer) != 0)
@@ -42,7 +37,7 @@ internal static class FsxOwner
             return null;
         }
 
-        return (BitConverter.ToUInt32(buffer, layout.Value.uidOffset), BitConverter.ToUInt32(buffer, layout.Value.gidOffset));
+        return (BitConverter.ToUInt32(buffer, UidOffset), BitConverter.ToUInt32(buffer, GidOffset));
     }
 
     // write-file-atomic's `fs.chownSync(tmpfile, uid, gid)` with its isChownErrOk filter
@@ -79,27 +74,9 @@ internal static class FsxOwner
         throw new IOException($"chown failed (errno {errno}): {filepath}");
     }
 
-    private static (int, int)? Layout()
-    {
-        if (OperatingSystem.IsMacOS())
-        {
-            return (16, 20);
-        }
-
-        if (OperatingSystem.IsLinux())
-        {
-            return RuntimeInformation.ProcessArchitecture switch
-            {
-                Architecture.X64 => (28, 32),
-                Architecture.Arm64 => (24, 28),
-                _ => null
-            };
-        }
-
-        return null;
-    }
-
-    [DllImport("libc", EntryPoint = "stat", SetLastError = true)]
+    // The runtime's own System.Native shim fills a FileStatus whose layout is the same on every Unix platform the runtime supports
+    // (int Flags, int Mode, uint Uid, uint Gid, ...; see pal_io.h), so no per-platform struct offsets are needed.
+    [DllImport("libSystem.Native", EntryPoint = "SystemNative_Stat")]
     private static extern int Stat([MarshalAs(UnmanagedType.LPUTF8Str)] string path, byte[] buffer);
 
     [DllImport("libc", EntryPoint = "chown", SetLastError = true)]
