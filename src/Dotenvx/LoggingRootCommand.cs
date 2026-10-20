@@ -58,7 +58,7 @@ public class LoggingRootCommand : RootCommand
 
     private static string? EnvQuietToLogLevel()
     {
-        return NormalizeDotenvConfigQuiet(new Interop.DotenvxJs.Types.ConfigOptions()).Quiet == true
+        return NormalizeDotenvConfigQuiet(new ConfigOptions()).Quiet == true
             ? "error"
             : null;
     }

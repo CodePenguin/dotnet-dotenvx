@@ -1,6 +1,6 @@
 using Dotenvx.Interop.DotenvxJs.Shared;
 
-namespace Dotenvx.Interop.DotenvxJs.Types;
+namespace Dotenvx;
 
 public class ParseOptions
 {

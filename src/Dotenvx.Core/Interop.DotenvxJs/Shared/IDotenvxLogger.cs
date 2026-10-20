@@ -1,6 +1,6 @@
 using Dotenvx.Interop.DotenvxJs.Types;
 
-namespace Dotenvx.Interop.DotenvxJs.Shared;
+namespace Dotenvx;
 
 public interface IDotenvxLogger
 {

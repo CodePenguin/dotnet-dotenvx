@@ -223,5 +223,5 @@ public sealed class NativeCustodian : ILocalCustodian, ISyncCustodian
     }
 
     /// <summary>The logger the unavailable-store warning goes to (set by the CLI).</summary>
-    public static Shared.IDotenvxLogger? Logger { get; set; }
+    public static IDotenvxLogger? Logger { get; set; }
 }

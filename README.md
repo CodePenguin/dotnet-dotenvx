@@ -36,7 +36,7 @@ It works with any language or tool, because it only sets environment variables f
 
 ```sh
 dotenvx encrypt
-# ◈ encrypted (.env)
+# ◈ encrypted .env (03F B56) via .env.keys ⛉
 ```
 
 `.env` now holds a public key and ciphertext, and a new `.env.keys` holds the private key:
@@ -52,7 +52,7 @@ HELLO="encrypted:BCtGJMSPQbej/ZQ6yILA8ZhVGFKJFYhs..."
 
 ```sh
 dotenvx run -- node -e 'console.log("Hello " + process.env.HELLO)'
-# ⟐ injected env (2) from .env
+# ⟐ injected env (2) from .env (03F B56) via .env.keys ⛉
 # Hello World
 
 dotenvx get HELLO
@@ -96,39 +96,22 @@ Use `-f` more than once to layer files (the first file wins unless you pass `--o
 
 Values can reference other variables (`${HELLO}`, `${NAME:-default}`, `$(command)`), and with 1Password or Bitwarden installed, `op://...` and `bw://...` references are resolved at run time.
 
-## Library
+## Documentation
 
-The CLI's engine is also available as NuGet libraries.
+Behaviour that is the same as the Node version (commands, flags, file formats, encryption) is documented upstream at [dotenvx.com/docs](https://dotenvx.com/docs) and in `dotenvx <command> --help`. These pages cover what is specific to the .NET port:
 
-**Environment variables.** `Dotenvx.Config()` loads `.env` (decrypting as needed) into the process environment, like `dotenv`:
+- [Using the CLI](docs/using-the-cli.md): installing the tool, running .NET programs with `dotenvx run`, and where the CLI differs from Node.
+- [Using the library](docs/library.md): `Dotenvx.Config()`, `Get`, `Parse` and `Set` from your own code.
+- [Automatic configuration](docs/configuration.md): `UseDotenvx()`, `.env` as an `IConfiguration` source.
 
-```csharp
-Dotenvx.Dotenvx.Config();
+Runnable versions of each are in [`samples/`](samples).
 
-Console.WriteLine($"Hello, {Environment.GetEnvironmentVariable("HELLO")}!");
-```
-
-`Dotenvx.Dotenvx.Get("KEY")`, `Parse(string src)` and `Set("KEY", "value")` are the other entry points, each taking an options object (paths, `Overload`, `Strict`, `ProcessEnv`, `Convention`, ...).
-
-**`IConfiguration`.** `Dotenvx.Configuration` adds your `.env` files to `Microsoft.Extensions.Configuration`:
-
-```csharp
-using Dotenvx.Configuration;
-
-IHost host = Host.CreateDefaultBuilder(args)
-    .ConfigureHostConfiguration(builder => builder.UseDotenvx())
-    .Build();
-
-IConfiguration configuration = host.Services.GetRequiredService<IConfiguration>();
-Console.WriteLine($"Hello, {configuration["HELLO"] ?? "[Not Set]"}!");
-```
-
-See [`samples/`](samples) for runnable versions.
+## Packages
 
 | Package | Contents |
 | --- | --- |
 | `Dotenvx` | the `dotenvx` .NET tool |
-| `Dotenvx.Core` | the library API above and the ported CLI logic |
+| `Dotenvx.Core` | the library API (`Config`, `Get`, `Parse`, `Set`) and the ported CLI logic |
 | `Dotenvx.Configuration` | `IConfigurationBuilder.UseDotenvx()` |
 | `Dotenvx.Primitives` | port of the `@dotenvx/primitives` package (parse, encrypt, decrypt, keyring, ...); versioned like that package (3.3.0), not like the CLI |
 | `Dotenvx.Providers` | port of the `@dotenvx/providers` package (key lookup in `.env.keys`, the OS secret store, Armor, 1Password, Bitwarden); versioned like that package, not like the CLI |

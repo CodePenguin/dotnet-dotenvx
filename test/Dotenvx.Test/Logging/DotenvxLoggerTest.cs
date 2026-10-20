@@ -1,3 +1,4 @@
+using Dotenvx;
 using Dotenvx.Core.Test;
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;

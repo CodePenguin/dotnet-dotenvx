@@ -323,7 +323,7 @@ public class ParseWithDecryptorTest : EnvironmentTestBase
     // there is no worker (the one synchronous implementation serves both upstream variants).
     private static Session ArmorSession(bool noArmor)
     {
-        Session session = NSubstitute.Substitute.For<Session>((global::Dotenvx.Interop.DotenvxJs.Shared.IDotenvxLogger?)null);
+        Session session = NSubstitute.Substitute.For<Session>((global::Dotenvx.IDotenvxLogger?)null);
         session.NoArmor().Returns(noArmor);
         ArmorProviders.SessionFactory = _ => session;
 
