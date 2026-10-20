@@ -633,7 +633,7 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             // the fake `op` / `bw` of test/fakes/secretcli.cs over a vault kept outside the work directory (the tree comparison)
             vault = WorkDir + "-fake";
             string bin = Path.Combine(vault, "bin");
-            FakeCliInstaller.Install(bin, [.. env["FAKE_CLIS"].Split(',')]);
+            FakeCliInstaller.Install(bin, [.. env["FAKE_CLIS"].Split(',', StringSplitOptions.RemoveEmptyEntries)]);
             env = new Dictionary<string, string>(env)
             {
                 ["PATH"] = bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH"),
@@ -723,11 +723,35 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             string portTree = Snapshot();
             string portCalls = Calls() + ArmorRequests();
 
-            string Show(JsonNode? value) => Normalise(value!["calls"]!.ToJsonString(new System.Text.Json.JsonSerializerOptions
+            // `get` of every key lists the process environment. Node's child gets its variables in the order of a
+            // ProcessStartInfo dictionary while the port reads the test host's own block, so on Unix (where that block is
+            // not sorted, unlike Windows') only the order of that listing differs between the two sides: compare it sorted.
+            string Show(JsonNode? value)
             {
-                WriteIndented = true,
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            }), WorkDir);
+                if (!OperatingSystem.IsWindows())
+                {
+                    foreach (JsonNode? row in value!["calls"]!.AsArray())
+                    {
+                        if (row?["fn"]?.GetValue<string>() == "get" && row["result"]?["value"] is JsonObject listing)
+                        {
+                            var sorted = listing.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                                .Select(pair => KeyValuePair.Create(pair.Key, pair.Value?.DeepClone())).ToList();
+                            listing.Clear();
+                            foreach ((string key, JsonNode? item) in sorted)
+                            {
+                                listing[key] = item;
+                            }
+                        }
+                    }
+                }
+
+                return Normalise(value!["calls"]!.ToJsonString(new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                }), WorkDir);
+            }
+
 
             if (Environment.GetEnvironmentVariable("SDK_DUMP") is { Length: > 0 } dump)
             {

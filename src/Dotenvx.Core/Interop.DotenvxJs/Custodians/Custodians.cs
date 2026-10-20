@@ -167,13 +167,10 @@ public sealed class NativeCustodian : ILocalCustodian, ISyncCustodian
         return true;
     }
 
+    /// <summary>index.js get: backend.async, which is providers native().get: a failed lookup is "nothing found".</summary>
     public IDictionary<string, string> Get(string publicKey)
     {
-        string? value = NativeStore.Get(publicKey);
-
-        return string.IsNullOrEmpty(value)
-            ? new Dictionary<string, string>()
-            : new Dictionary<string, string> { [publicKey] = value };
+        return KeyProviders.NativeProvider(publicKey);
     }
 
     public IDictionary<string, string> GetSync(string publicKey)

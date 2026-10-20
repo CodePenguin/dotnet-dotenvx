@@ -18,14 +18,33 @@ public static class FakeCliInstaller
         string suffix = OperatingSystem.IsWindows() ? ".exe" : "";
         string source = Path.Combine(AppContext.BaseDirectory, "fakes", fake);
 
+        // The events worker runs with a filtered environment that has no DOTNET_ROOT, so an apphost cannot find a runtime installed
+        // outside the default location (for example ~/.dotnet). On Unix each tool then becomes a script that restores it.
+        string? dotnetRoot = OperatingSystem.IsWindows() || fake != "secretcli" ? null : Environment.GetEnvironmentVariable("DOTNET_ROOT");
+
         foreach (string file in Directory.GetFiles(source))
         {
             string name = Path.GetFileName(file);
             if (name == fake + suffix)
             {
+                if (dotnetRoot is not null)
+                {
+                    Replace(file, Path.Combine(binDirectory, fake));
+                }
+
                 foreach (string tool in tools)
                 {
-                    Replace(file, Path.Combine(binDirectory, tool + suffix));
+                    if (dotnetRoot is null)
+                    {
+                        Replace(file, Path.Combine(binDirectory, tool + suffix));
+                        continue;
+                    }
+
+                    string script = Path.Combine(binDirectory, tool);
+                    File.WriteAllText(script,
+                        $"#!/bin/sh\nDOTNET_ROOT='{dotnetRoot.Replace("'", "'\''")}' FAKE_TOOL_NAME='{tool}' exec \"$(dirname \"$0\")/{fake}\" \"$@\"\n");
+                    File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                                                 UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
                 }
             }
             else

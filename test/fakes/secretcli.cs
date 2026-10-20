@@ -16,7 +16,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-string tool = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "op");
+string tool = Environment.GetEnvironmentVariable("FAKE_TOOL_NAME") ?? Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "op");
 // the delivery worker of the events subsystem gets a filtered environment without FAKE_SECRET_CLI_DIR: fall back to the vault beside the shim directory
 string dir = Environment.GetEnvironmentVariable("FAKE_SECRET_CLI_DIR")
     ?? Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Environment.ProcessPath) ?? ".", "..", "vault"));
