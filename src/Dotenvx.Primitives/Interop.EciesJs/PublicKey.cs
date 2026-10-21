@@ -1,4 +1,4 @@
-using NBitcoin.Secp256k1;
+using Org.BouncyCastle.Math.EC;
 
 namespace Dotenvx.Primitives.Interop.EciesJs;
 
@@ -7,17 +7,16 @@ namespace Dotenvx.Primitives.Interop.EciesJs;
 /// </summary>
 public class PublicKey
 {
-    private readonly Context _context = Context.Instance;
-    private readonly ECPubKey _publicKey;
+    private readonly ECPoint _publicKey;
 
     public PublicKey(byte[] publicKey)
     {
-        if (!ECPubKey.TryCreate(publicKey, _context, out _, out ECPubKey? ecPublicKey))
+        if (!Secp256k1.TryDecodePoint(publicKey, out ECPoint point))
         {
             throw new ArgumentException("Invalid public key", nameof(publicKey));
         }
 
-        _publicKey = ecPublicKey;
+        _publicKey = point;
     }
 
     public byte[] Decapsulate(byte[] privateKey, bool compressed = false)
@@ -28,15 +27,15 @@ public class PublicKey
             throw new ArgumentException("Private key must be 32 bytes", nameof(privateKey));
         }
 
-        if (!_context.TryCreateECPrivKey(privateKey, out ECPrivKey? ecPrivateKey))
+        if (!Secp256k1.TryParsePrivateKey(privateKey, out var scalar))
         {
             throw new ArgumentException("Invalid private key", nameof(privateKey));
         }
 
         // Get Shared Public Key
-        ECPubKey sharedPoint = _publicKey.GetSharedPubkey(ecPrivateKey);
+        ECPoint sharedPoint = Secp256k1.Multiply(_publicKey, scalar);
 
-        return Utils.GetSharedKey(_publicKey.ToBytes(compressed), sharedPoint.ToBytes(compressed));
+        return Utils.GetSharedKey(Secp256k1.Encode(_publicKey, compressed), Secp256k1.Encode(sharedPoint, compressed));
     }
 
     public static PublicKey FromHex(string hex)
@@ -46,11 +45,11 @@ public class PublicKey
 
     public byte[] ToBytes(bool compressed = true)
     {
-        return _publicKey.ToBytes(compressed);
+        return Secp256k1.Encode(_publicKey, compressed);
     }
 
     public string ToHex(bool compressed = true)
     {
-        return Convert.ToHexString(_publicKey.ToBytes(compressed)).ToLower();
+        return Convert.ToHexString(ToBytes(compressed)).ToLower();
     }
 }

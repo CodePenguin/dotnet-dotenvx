@@ -1,8 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
-using NBitcoin.Secp256k1;
-
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -96,13 +94,12 @@ public static partial class Utils
             throw new ArgumentException("Private key must be 32 bytes", nameof(privateKey));
         }
 
-        if (!Context.Instance.TryCreateECPrivKey(privateKey, out ECPrivKey? ecPrivateKey))
+        if (!Secp256k1.TryParsePrivateKey(privateKey, out var scalar))
         {
             throw new ArgumentException("Invalid private key", nameof(privateKey));
         }
 
-        ECPubKey publicKey = ecPrivateKey.CreatePubKey();
-        return publicKey.ToBytes(compressed);
+        return Secp256k1.Encode(Secp256k1.CreatePublicKey(scalar), compressed);
     }
 
     /// <summary>
