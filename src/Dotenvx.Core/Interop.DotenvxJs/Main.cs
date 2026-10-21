@@ -69,7 +69,7 @@ public static class Main
             run.DetermineOnExecute = false;
             run.NoNative = options.NoNative == true;
             run.KeyAccess.NoArmor = noArmor;
-            run.KeyAccess.Logger = options?.Logger;
+            run.KeyAccess.Logger = options.Logger;
             run.KeyAccess.Token = options.Token;
             run.No1Password = options.No1Password == true;
             run.NoBitwarden = options.NoBitwarden == true;
@@ -265,7 +265,7 @@ public static class Main
             string.IsNullOrEmpty(options.EnvKeysFile) ? null : [options.EnvKeysFile]);
         getService.NoNative = options.NoNative == true;
         getService.KeyAccess.NoArmor = ResolveNoArmor(options);
-        getService.KeyAccess.Logger = options?.Logger;
+        getService.KeyAccess.Logger = options.Logger;
         getService.No1Password = options.No1Password == true;
         getService.KeyAccess.No1Password = getService.No1Password;
         getService.KeyAccess.NoBitwarden = options.NoBitwarden == true;

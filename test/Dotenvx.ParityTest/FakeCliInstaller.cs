@@ -42,9 +42,12 @@ public static class FakeCliInstaller
 
                     string script = Path.Combine(binDirectory, tool);
                     File.WriteAllText(script,
-                        $"#!/bin/sh\nDOTNET_ROOT='{dotnetRoot.Replace("'", "'\''")}' FAKE_TOOL_NAME='{tool}' exec \"$(dirname \"$0\")/{fake}\" \"$@\"\n");
-                    File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                                                 UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+                        $"#!/bin/sh\nDOTNET_ROOT='{dotnetRoot.Replace("'", "'\\''")}' FAKE_TOOL_NAME='{tool}' exec \"$(dirname \"$0\")/{fake}\" \"$@\"\n");
+                    if (!OperatingSystem.IsWindows())
+                    {
+                        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                                                     UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+                    }
                 }
             }
             else

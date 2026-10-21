@@ -252,6 +252,7 @@ public sealed class YoctoSpinner
 
         public override IFormatProvider FormatProvider => original.FormatProvider;
 
+        [System.Diagnostics.CodeAnalysis.AllowNull]
         public override string NewLine
         {
             get => original.NewLine;

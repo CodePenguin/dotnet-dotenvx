@@ -100,11 +100,11 @@ Values can reference other variables (`${HELLO}`, `${NAME:-default}`, `$(command
 
 Behaviour that is the same as the Node version (commands, flags, file formats, encryption) is documented upstream at [dotenvx.com/docs](https://dotenvx.com/docs) and in `dotenvx <command> --help`. These pages cover what is specific to the .NET port:
 
-- [Using the CLI](docs/using-the-cli.md): installing the tool, running .NET programs with `dotenvx run`, and where the CLI differs from Node.
-- [Using the library](docs/library.md): `Dotenvx.Config()`, `Get`, `Parse` and `Set` from your own code.
-- [Automatic configuration](docs/configuration.md): `UseDotenvx()`, `.env` as an `IConfiguration` source.
+- [Using the CLI](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/docs/using-the-cli.md): installing the tool, running .NET programs with `dotenvx run`, and where the CLI differs from Node.
+- [Using the library](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/docs/library.md): `Dotenvx.Config()`, `Get`, `Parse` and `Set` from your own code.
+- [Automatic configuration](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/docs/configuration.md): `UseDotenvx()`, `.env` as an `IConfiguration` source.
 
-Runnable versions of each are in [`samples/`](samples).
+Runnable versions of each are in [`samples/`](https://github.com/CodePenguin/dotnet-dotenvx/tree/main/samples).
 
 ## Packages
 
@@ -120,7 +120,7 @@ Runnable versions of each are in [`samples/`](samples).
 
 - **Pinned target.** `dotenvx --version` prints `2.35.0`, the upstream release this port matches. The upstream repository is included as a git submodule (`dotenvx/`) at that exact tag and is used as the reference and as a source of test fixtures.
 - **How it is checked.** Besides the unit tests ported from upstream, the test suite runs the real Node CLI and this one side by side on the same inputs and compares exit codes, stdout, stderr and resulting files. This includes the exact `--help` text of every command and a sweep of more than a thousand command, flag and syntax combinations.
-- **Known differences.** Operating-system error text stays native to .NET, spinner and prompt redraw sequences differ, and a few corner cases are documented in [docs/parity-checklist.md](docs/parity-checklist.md).
+- **Known differences.** Operating-system error text stays native to .NET, spinner and prompt redraw sequences differ, and a few corner cases are documented in [docs/parity-checklist.md](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/docs/parity-checklist.md).
 
 ## Building from source
 
@@ -132,8 +132,8 @@ dotnet test
 dotnet run --project src/Dotenvx -- run -- echo hello
 ```
 
-The parity tests need Node.js and the `dotenvx/` submodule; they skip themselves when either is missing. See [CONTRIBUTING.md](CONTRIBUTING.md) for the project layout, test conventions and how to move to a newer upstream version, and [docs/porting-traps.md](docs/porting-traps.md) for pitfalls found along the way.
+The parity tests need Node.js and the `dotenvx/` submodule; they skip themselves when either is missing. See [CONTRIBUTING.md](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/CONTRIBUTING.md) for the project layout, test conventions and how to move to a newer upstream version, and [docs/porting-traps.md](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/docs/porting-traps.md) for pitfalls found along the way.
 
 ## License
 
-[BSD 3-Clause](LICENSE). Copyright (c) 2024 Scott Motte; Copyright (c) 2026 David Lambert (.NET port).
+[BSD 3-Clause](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/LICENSE). Copyright (c) 2024 Scott Motte; Copyright (c) 2026 David Lambert (.NET port).

@@ -138,13 +138,24 @@ Detailed, numbered lessons from past bugs are in [docs/porting-traps.md](docs/po
 - Before changing a shared helper, grep every caller (trap #26). Before concluding something is unreachable or settled, check the submodule's git history and a second scenario (traps #27, #29).
 - Do not make a stale test pass: confirm the real behavior live against Node first (trap #51).
 
+## Releasing a fix for the same upstream version
+
+Package versions track the upstream release (`2.35.0`), and nuget.org never lets a published version be replaced. A bug fixed in our port of a version that is already published ships as a four-part version:
+
+- The first three numbers stay the upstream version; the fourth is our own fix counter: `2.35.0` (first release), `2.35.0.1`, `2.35.0.2`. It sorts above the previous release and below the next upstream version, and it disappears again when the port moves to a new upstream version (`2.36.0`).
+- Set `<Version>2.35.0.1</Version>` in `Dotenvx.csproj`, `Dotenvx.Core.csproj` and `Dotenvx.Configuration.csproj` (they are released together; Configuration depends on the Core version, so it must move with it). `Dotenvx.Primitives` and `Dotenvx.Providers` follow their own upstream npm versions: a fix there gets a fourth number of its own (`3.3.0.1`).
+- In `Dotenvx.csproj` also set `<InformationalVersion>2.35.0</InformationalVersion>`. `dotenvx --version` reads it and must keep printing exactly the upstream version (`GlobalOptionsParityTest.RootVersionFlagMatchesExactly`).
+- The commit is recorded by packing (`<repository commit=...>` in the nuspec). To also put it in the version, pass build metadata when packing: `dotnet pack -p:Version=2.35.0.1+abc1234`. NuGet ignores the part after `+` when ordering versions and drops it from the file name. A commit hash cannot be the fourth number: it must be an integer, and commits do not increase in order.
+- Try a release before publishing it with a pre-release suffix (`2.35.0.1-rc.1`); it sorts below `2.35.0.1`.
+- Never reuse or move a published version. If a published package is bad, unlist it on nuget.org and release the next fourth number.
+
 ## Version bump checklist (retarget dotenvx and/or @dotenvx/primitives)
 
 Goal: retarget, run the suites, and let the failures plus a few diffs say exactly what to update. Work top to bottom; do not skip step 2 (a green suite only proves what is already asserted).
 
 **1. Retarget**
 1. `cd dotenvx && git fetch --tags && git checkout <new-tag>` (exact tag), then `git add dotenvx` from the repo root.
-2. `Version` = the new dotenvx tag in `src/Dotenvx/Dotenvx.csproj`, `src/Dotenvx.Core/Dotenvx.Core.csproj` and `src/Dotenvx.Configuration/Dotenvx.Configuration.csproj` (they are released together).
+2. `Version` = the new dotenvx tag in `src/Dotenvx/Dotenvx.csproj`, `src/Dotenvx.Core/Dotenvx.Core.csproj` and `src/Dotenvx.Configuration/Dotenvx.Configuration.csproj` (they are released together). A new upstream version starts again without a fourth number; see "Releasing a fix for the same upstream version".
 3. `cd dotenvx && npm install --no-audit --no-fund --omit=dev`, read the installed `@dotenvx/primitives` version, set `src/Dotenvx.Primitives/Dotenvx.Primitives.csproj` `Version` to it, and update the version numbers quoted in this file.
 4. Snapshot primitives function sources before and after the bump, from inside `dotenvx/`: `node -e "const p=require('@dotenvx/primitives');const o={};for(const k of Object.keys(p))o[k]=p[k].toString();require('fs').writeFileSync(process.argv[1],JSON.stringify(o,null,1))" <tmp>/primitives-<ver>.json`.
 

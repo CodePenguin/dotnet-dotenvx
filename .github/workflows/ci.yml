@@ -51,6 +51,7 @@ jobs:
       run: |
         dotnet pack src/Dotenvx -c Release -o artifacts
         dotnet pack src/Dotenvx.Primitives -c Release -o artifacts
+        dotnet pack src/Dotenvx.Providers -c Release -o artifacts
         dotnet pack src/Dotenvx.Core -c Release -o artifacts
         dotnet pack src/Dotenvx.Configuration -c Release -o artifacts
     - name: Upload packages

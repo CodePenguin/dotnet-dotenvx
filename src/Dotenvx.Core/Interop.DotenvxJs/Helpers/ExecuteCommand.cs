@@ -404,9 +404,11 @@ public static partial class Helpers
                 return pathExt.Any(item => item.Length > 0 && path.EndsWith(item, StringComparison.OrdinalIgnoreCase));
             }
 
+            #pragma warning disable CA1416 // reached only when not Windows: isWindows is a parameter so tests can exercise both branches
             const UnixFileMode anyExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
 
             return (File.GetUnixFileMode(path) & anyExecute) != 0;
+            #pragma warning restore CA1416
         }
         catch (Exception)
         {
