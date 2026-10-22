@@ -9,7 +9,7 @@ using Dotenvx.Providers;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>`decryptOptions(error)` of parseWithDecryptor.js: what the Armor API reported about a server-side-only key.</summary>
-public record DecryptorOptions(string? PublicKey, string? GrantToken, Exception? Error)
+internal record DecryptorOptions(string? PublicKey, string? GrantToken, Exception? Error)
 {
     public Action<string>? OnStatus { get; init; }
     public string? Token { get; init; }
@@ -17,12 +17,12 @@ public record DecryptorOptions(string? PublicKey, string? GrantToken, Exception?
 }
 
 /// <summary>`{ src }`: the source with its values decrypted server side.</summary>
-public record DecryptorResult(string Src);
+internal record DecryptorResult(string Src);
 
-public delegate DecryptorResult Decryptor(string src, DecryptorOptions options);
+internal delegate DecryptorResult Decryptor(string src, DecryptorOptions options);
 
 /// <remarks>Reference source: dotenvx/src/lib/decryptors/armor/index.js (the server-side decryptor).</remarks>
-public static class ArmorProviders
+internal static class ArmorProviders
 {
     private static readonly Func<IDotenvxLogger?, Session> DefaultSessionFactory = logger => new Session(logger);
 

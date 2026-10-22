@@ -10,7 +10,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// repo/git-version/locale actually C-quoting a café/... path the way precommit.js's own code
 /// comment describes.
 /// </remarks>
-public static class GitHelper
+internal static class GitHelper
 {
     public static Func<bool> IsInsideGitWorkTree { get; internal set; } = DefaultIsInsideGitWorkTree;
 

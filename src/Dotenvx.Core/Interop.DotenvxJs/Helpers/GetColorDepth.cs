@@ -15,13 +15,27 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// so the branch is unreachable; do not add it back. The 4 upstream colorDepth tests that stub the probe are kept as
 /// skipped tests in GetColorDepthTest.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     private static readonly Dictionary<string, int> TermEnvs = new()
     {
-        ["eterm"] = 4, ["cons25"] = 4, ["console"] = 4, ["cygwin"] = 4, ["dtterm"] = 4, ["gnome"] = 4, ["hurd"] = 4,
-        ["jfbterm"] = 4, ["konsole"] = 4, ["kterm"] = 4, ["mlterm"] = 4, ["mosh"] = 24, ["putty"] = 4, ["st"] = 4,
-        ["rxvt-unicode-24bit"] = 24, ["terminator"] = 24, ["xterm-kitty"] = 24
+        ["eterm"] = 4,
+        ["cons25"] = 4,
+        ["console"] = 4,
+        ["cygwin"] = 4,
+        ["dtterm"] = 4,
+        ["gnome"] = 4,
+        ["hurd"] = 4,
+        ["jfbterm"] = 4,
+        ["konsole"] = 4,
+        ["kterm"] = 4,
+        ["mlterm"] = 4,
+        ["mosh"] = 24,
+        ["putty"] = 4,
+        ["st"] = 4,
+        ["rxvt-unicode-24bit"] = 24,
+        ["terminator"] = 24,
+        ["xterm-kitty"] = 24
     };
 
     private static readonly (string Name, int Colors)[] CiEnvs =
@@ -161,7 +175,7 @@ public static partial class Helpers
 }
 
 /// <summary>What Node's color probe reads from `process.platform` and `os.release()`.</summary>
-public readonly record struct OsPlatform(bool IsWindows, int Major, int Build)
+internal readonly record struct OsPlatform(bool IsWindows, int Major, int Build)
 {
     public static OsPlatform Current { get; } = OperatingSystem.IsWindows()
         ? new OsPlatform(true, Environment.OSVersion.Version.Major, Environment.OSVersion.Version.Build)

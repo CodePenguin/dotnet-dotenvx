@@ -25,7 +25,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// belongs instead.
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = null)
+internal class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = null)
 {
     private static readonly Func<string, string[]?, KeyPair> DefaultFactory =
         (envFile, envKeysFile) => new KeyPair(envFile, envKeysFile);
@@ -109,12 +109,12 @@ public class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = null)
             try
             {
                 ring = KeyringSync(new KeyringOptions
-            {
-                Ring = ring,
-                Fk = publicKey != null ? [] : fk,
-                ProcessEnv = EnvironmentHelper.GetEnvironmentVariablesAsDictionary(),
-                ReadFile = path => Fsx.ReadFileX(path),
-                Provider = lookup
+                {
+                    Ring = ring,
+                    Fk = publicKey != null ? [] : fk,
+                    ProcessEnv = EnvironmentHelper.GetEnvironmentVariablesAsDictionary(),
+                    ReadFile = path => Fsx.ReadFileX(path),
+                    Provider = lookup
                 });
             }
             finally

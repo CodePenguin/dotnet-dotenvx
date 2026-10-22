@@ -11,7 +11,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// called plain BuildEnvs directly, so a directory path (e.g. `./configdir`) never resolved to
 /// `./configdir/.env` the way the CLI commands already correctly do for the same input shape.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static EnvItem[] BuildConfigEnvs(ConfigOptions options)
     {

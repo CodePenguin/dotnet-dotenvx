@@ -29,7 +29,7 @@ public class EnvironmentTestBase : IDisposable
 
     protected EnvironmentTestBase()
     {
-        _existingEnvironmentKeys = _originalEnvironmentVariables.Keys.ToList();
+        _existingEnvironmentKeys = [.. _originalEnvironmentVariables.Keys];
 
         // unit tests never read the developer's real Armor session or device key (the directory has no settings file, so
         // Armor is off) ...
@@ -52,7 +52,7 @@ public class EnvironmentTestBase : IDisposable
         }
     }
 
-    public void Dispose()
+    public virtual void Dispose()
     {
         TearDown();
         if (Environment.CurrentDirectory != _originalDirectory)

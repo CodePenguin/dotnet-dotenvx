@@ -1,6 +1,6 @@
 namespace Dotenvx.Interop.DotenvxJs.Types;
 
-public class GenexampleResult
+internal class GenexampleResult
 {
     public required string EnvExampleFile { get; init; }
     public required string[] EnvFile { get; init; }

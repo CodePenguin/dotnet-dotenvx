@@ -125,9 +125,7 @@ public static class CommanderErrors
         string suggestion = "";
         if (flag.StartsWith("--"))
         {
-            List<string> candidates = Chain(path)
-                .SelectMany(spec => spec.Options.SelectMany(o => TermFlags(o.Term)).Where(f => f.StartsWith("--")))
-                .ToList();
+            List<string> candidates = [.. Chain(path).SelectMany(spec => spec.Options.SelectMany(o => TermFlags(o.Term)).Where(f => f.StartsWith("--")))];
             suggestion = SuggestSimilar(flag, candidates);
         }
 
@@ -137,7 +135,7 @@ public static class CommanderErrors
     /// <summary>commander's suggestSimilar.</summary>
     public static string SuggestSimilar(string word, IEnumerable<string> candidates)
     {
-        List<string> unique = candidates.Distinct().ToList();
+        List<string> unique = [.. candidates.Distinct()];
         if (unique.Count == 0)
         {
             return "";
@@ -147,7 +145,7 @@ public static class CommanderErrors
         if (searchingOptions)
         {
             word = word[2..];
-            unique = unique.Select(c => c[2..]).ToList();
+            unique = [.. unique.Select(c => c[2..])];
         }
 
         var similar = new List<string>();
@@ -178,7 +176,7 @@ public static class CommanderErrors
         similar.Sort((a, b) => string.Compare(a, b, StringComparison.InvariantCulture));
         if (searchingOptions)
         {
-            similar = similar.Select(c => $"--{c}").ToList();
+            similar = [.. similar.Select(c => $"--{c}")];
         }
 
         return similar.Count switch

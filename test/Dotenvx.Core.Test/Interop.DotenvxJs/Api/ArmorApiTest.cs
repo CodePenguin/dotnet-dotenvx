@@ -55,7 +55,8 @@ public class ArmorApiTest : EnvironmentTestBase
         _requests[0].Method.ShouldBe("GET");
         _requests[0].Headers.ShouldBe(new Dictionary<string, string>
         {
-            ["Authorization"] = "Bearer token-123", ["Content-Type"] = "application/json"
+            ["Authorization"] = "Bearer token-123",
+            ["Content-Type"] = "application/json"
         });
         ShouldBeJson(result, """{"organizations":[{"provider_slug":"dotenvx"}]}""");
     }
@@ -343,7 +344,8 @@ public class ArmorApiTest : EnvironmentTestBase
         _requests[0].Method.ShouldBe("POST");
         _requests[0].Headers.ShouldBe(new Dictionary<string, string>
         {
-            ["Authorization"] = "Bearer token-123", ["Content-Type"] = "application/json"
+            ["Authorization"] = "Bearer token-123",
+            ["Content-Type"] = "application/json"
         });
         ShouldBeJson(Body(), "{}");
     }

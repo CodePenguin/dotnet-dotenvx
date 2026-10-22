@@ -4,7 +4,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// Reference source: dotenvx/src/lib/helpers/cryptography/mutateKeysSrc.js: appends a private key (under a
 /// `# comment` line) to a keys file source, starting the standard header when the source is empty.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     private static readonly string FirstTimeKeysSrc = string.Join("\n",
         "#/------------------!DOTENV_PRIVATE_KEYS!-------------------/",

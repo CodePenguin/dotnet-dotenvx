@@ -61,7 +61,7 @@ public class ExtensionParityTest(NodeParityFixture fixture) : ParityTestBase(fix
             CliResult node = await Fixture.RunNodeAsync(WorkDir, env, args);
             CliResult dotnet = await Fixture.RunDotnetAsync(WorkDir, env, args);
 
-            string Describe(CliResult result) => $"exit {result.ExitCode}\nout:\n{result.StandardOutput.Replace("\r\n", "\n")}\nerr:\n{result.StandardError.Replace("\r\n", "\n")}";
+            static string Describe(CliResult result) => $"exit {result.ExitCode}\nout:\n{result.StandardOutput.Replace("\r\n", "\n")}\nerr:\n{result.StandardError.Replace("\r\n", "\n")}";
 
             Describe(dotnet).ShouldBe(Describe(node), name);
         }

@@ -33,7 +33,7 @@ IReadOnlyDictionary<string, string> loaded = result.Parsed;
 
 Other options: `Strict = true` throws on the first error (including a listed file that does not exist) instead of logging it, and `Convention = "nextjs"` loads a framework's file set.
 
-`Config` logs problems through `ConfigOptions.Logger` (nothing is printed when it is left unset). Use `Ignore = ["MISSING_ENV_FILE"]` to skip specific error codes.
+`Config` logs through `ConfigOptions.Logger`. When none is given it uses `Dotenvx.Dotenvx.Logger`, the same as Node's `logger`: a `⟐ injected env (N)` line and any errors go to stderr in color. `Quiet = true` limits it to errors, `Verbose` and `Debug` add detail, and `Dotenvx.Dotenvx.SetLogLevel(options)` changes its level. Pass your own `IDotenvxLogger` to route the messages elsewhere. Use `Ignore = ["MISSING_ENV_FILE"]` to skip specific error codes.
 
 ## `Get`: read values
 
@@ -68,6 +68,12 @@ Encrypts the value by default, creating the key pair if needed. `Plain = true` k
 ## Keys
 
 Private keys are looked up the same way as the CLI (`.env.keys`, the `DOTENV_PRIVATE_KEY` environment variable, the OS secret store, 1Password, Bitwarden and Dotenvx Armor). Turn sources off with `NoNative`, `No1Password`, `NoBitwarden` and `NoArmor` on the options, or point `EnvKeysFile` at another keys file.
+
+## Also on `Dotenvx.Dotenvx`
+
+`Ls(directory, envFile, excludeEnvFile)` lists the `.env*` files under a directory, `WithEvents()` returns an SDK client that reports calls to connected Armor, `Logger` and `SetLogLevel(options)` are Node's `logger` and `setLogLevel`, and `GetColor(color, stream)` and `Bold(message, stream)` color a message for what the stream's terminal supports.
+
+Two options exist because the Node package reads them: `Override` (an alias of `Overload`, on `Config` and `Parse`) and `Native = false` (the same as `NoNative`).
 
 ## Packages
 

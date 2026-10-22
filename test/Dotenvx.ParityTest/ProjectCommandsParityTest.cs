@@ -30,7 +30,10 @@ public class ProjectCommandsParityTest(NodeParityFixture fixture) : ParityTestBa
     {
         var info = new ProcessStartInfo("git")
         {
-            WorkingDirectory = WorkDir, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false
+            WorkingDirectory = WorkDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
         };
         foreach (string arg in new[] { "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false" }.Concat(args))
         {

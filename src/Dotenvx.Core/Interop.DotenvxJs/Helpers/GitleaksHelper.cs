@@ -23,7 +23,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// RunShellCommand at a small FakeGitleaks fixture executable instead of the real `gitleaks`
 /// binary, so this suite needs no gitleaks installation.
 /// </remarks>
-public static class GitleaksHelper
+internal static class GitleaksHelper
 {
     // (ExitCode, CombinedOutput) - matches execSync capturing stdout+stderr merged via `2>&1`
     // for the detect call; the version-probe call only cares about the exit code.

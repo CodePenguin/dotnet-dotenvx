@@ -112,7 +112,9 @@ public class SetActionTest : EnvironmentTestBase
         Sets mockSets = Substitute.For<Sets>();
         mockSets.Run().Returns(new SetsResult
         {
-            ProcessedEnvs = [], ChangedFilePaths = [], UnchangedFilePaths = []
+            ProcessedEnvs = [],
+            ChangedFilePaths = [],
+            UnchangedFilePaths = []
         });
         Sets.Factory = (_, _, _, _, _, _) => mockSets;
 

@@ -1,6 +1,6 @@
-using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
-
 using Shouldly;
+
+using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Helpers;
 

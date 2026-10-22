@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Dotenvx.Helpers;
 
-public static class EnvironmentHelper
+internal static class EnvironmentHelper
 {
     /// <summary>
     /// `process.env` as Node lists it: the names in the order of the process's environment block (Windows
@@ -63,7 +63,7 @@ public static class EnvironmentHelper
                 IntPtr block = GetEnvironmentStringsW();
                 try
                 {
-                    for (IntPtr cursor = block; ; )
+                    for (IntPtr cursor = block; ;)
                     {
                         string entry = Marshal.PtrToStringUni(cursor) ?? "";
                         if (entry.Length == 0)

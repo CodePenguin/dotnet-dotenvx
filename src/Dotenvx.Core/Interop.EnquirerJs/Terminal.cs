@@ -3,7 +3,7 @@ using System.Text;
 namespace Dotenvx.Interop.EnquirerJs;
 
 /// <summary>The prompts' render stream: stderr, so stdout stays machine-readable (prompts.js `enquirerOptions`).</summary>
-public sealed class ConsolePromptOutput : IPromptOutput
+internal sealed class ConsolePromptOutput : IPromptOutput
 {
     public static ConsolePromptOutput Instance { get; } = new();
 
@@ -42,7 +42,7 @@ public sealed class ConsolePromptOutput : IPromptOutput
 /// yields whatever the stream returns per read (a whole chunk), exactly as Node's 'data' event does, so a prompt that finishes
 /// early drops the rest of its chunk like enquirer does.
 /// </remarks>
-public sealed class ConsoleKeySource : IKeySource
+internal sealed class ConsoleKeySource : IKeySource
 {
     private static readonly Stream Stream = Console.OpenStandardInput();
 

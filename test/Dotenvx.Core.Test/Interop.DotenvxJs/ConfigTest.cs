@@ -61,6 +61,17 @@ public class ConfigTest : EnvironmentTestBase
         Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
     }
 
+    /// <remarks>Refer to main.js `options.overload || options.override`</remarks>
+    [Fact]
+    public void TestWritesOverKeysAlreadyInProcessEnvIfOverrideTrue()
+    {
+        Environment.SetEnvironmentVariable("BASIC", "existing");
+        ConfigResult result = Main.Config(new ConfigOptions { Path = [EnvFileName], Override = true });
+
+        result.Parsed["BASIC"].ShouldBe("basic");
+        Environment.GetEnvironmentVariable("BASIC").ShouldBe("basic");
+    }
+
     /// <remarks>Refer to "does not write over keys already in process.env if the key has a falsy value"</remarks>
     [Fact]
     public void TestDoesNotOverrideExistingFalsyValues()

@@ -3,7 +3,7 @@ namespace Dotenvx.Primitives.Interop.EciesJs;
 /// <summary>
 ///     C# equivalent for eciesjs src/index.ts (https://github.com/ecies/js).
 /// </summary>
-public static class EciesJs
+internal static class EciesJs
 {
     private const int PublicKeyUncompressedLength = 65;
 
@@ -28,6 +28,6 @@ public static class EciesJs
         byte[] sharedKey = privateKey.Encapsulate(receiverPublicKey);
         byte[] publicKey = privateKey.PublicKey.ToBytes(false);
         byte[] encrypted = Utils.AesEncrypt(sharedKey, data);
-        return [..publicKey, ..encrypted];
+        return [.. publicKey, .. encrypted];
     }
 }

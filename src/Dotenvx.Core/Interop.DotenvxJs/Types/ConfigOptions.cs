@@ -10,6 +10,13 @@ public class ConfigOptions
     // JS `options.path` given as a single string: split on commas, trimmed, blanks dropped (an array in `Path` is used as-is)
     public string? PathString { get; set; }
     public bool? Overload { get; set; }
+
+    /// <summary>`options.override`: an alias of <see cref="Overload" /> that `Config` honors (main.js `options.overload || options.override`).</summary>
+    public bool? Override { get; set; }
+
+    /// <summary>`options.native: false`: the same as <see cref="NoNative" /> (main.js `resolveNoNative`).</summary>
+    public bool? Native { get; set; }
+
     public IDictionary<string, string>? ProcessEnv { get; set; }
     public List<string>? Ignore { get; set; }
     public bool? Strict { get; set; }

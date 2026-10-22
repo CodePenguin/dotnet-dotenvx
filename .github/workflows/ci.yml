@@ -42,6 +42,8 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
+    - name: Verify formatting
+      run: dotnet format --no-restore --verify-no-changes
     - name: Test
       run: dotnet test --no-build --verbosity normal
       # Includes Dotenvx.ParityTest (part of Dotenvx.sln): it shells out to the real Node CLI in the dotenvx/ submodule

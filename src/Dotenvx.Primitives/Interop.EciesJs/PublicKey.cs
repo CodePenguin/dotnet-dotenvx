@@ -5,7 +5,7 @@ namespace Dotenvx.Primitives.Interop.EciesJs;
 /// <summary>
 ///     C# equivalent for eciesjs src/keys/PublicKey.ts (https://github.com/ecies/js).
 /// </summary>
-public class PublicKey
+internal class PublicKey
 {
     private readonly ECPoint _publicKey;
 

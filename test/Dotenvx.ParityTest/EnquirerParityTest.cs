@@ -55,13 +55,42 @@ public class EnquirerParityTest(NodeParityFixture fixture)
     {
         var names = new Dictionary<string, string>
         {
-            ["up"] = "\u001b[A", ["down"] = "\u001b[B", ["right"] = "\u001b[C", ["left"] = "\u001b[D", ["home"] = "\u001b[H",
-            ["end"] = "\u001b[F", ["pgup"] = "\u001b[5~", ["pgdn"] = "\u001b[6~", ["del"] = "\u001b[3~", ["esc"] = "\u001b",
-            ["enter"] = "\r", ["lf"] = "\n", ["tab"] = "\t", ["s-tab"] = "\u001b[Z", ["bs"] = "\u007f", ["space"] = " ",
-            ["ctrl-c"] = "\u0003", ["ctrl-a"] = "\u0001", ["ctrl-e"] = "\u0005", ["ctrl-b"] = "\u0002", ["ctrl-f"] = "\u0006",
-            ["ctrl-d"] = "\u0004", ["ctrl-k"] = "\u000b", ["ctrl-w"] = "\u0017", ["ctrl-x"] = "\u0018", ["ctrl-v"] = "\u0016",
-            ["ctrl-g"] = "\u0007", ["ctrl-n"] = "\u000e", ["ctrl-u"] = "\u0015", ["alt-b"] = "\u001bb", ["alt-left"] = "\u001b[1;3D",
-            ["s-up"] = "\u001b[1;2A", ["s-down"] = "\u001b[1;2B", ["c-up"] = "\u001b[1;5A", ["f1"] = "\u001bOP", ["ins"] = "\u001b[2~"
+            ["up"] = "\u001b[A",
+            ["down"] = "\u001b[B",
+            ["right"] = "\u001b[C",
+            ["left"] = "\u001b[D",
+            ["home"] = "\u001b[H",
+            ["end"] = "\u001b[F",
+            ["pgup"] = "\u001b[5~",
+            ["pgdn"] = "\u001b[6~",
+            ["del"] = "\u001b[3~",
+            ["esc"] = "\u001b",
+            ["enter"] = "\r",
+            ["lf"] = "\n",
+            ["tab"] = "\t",
+            ["s-tab"] = "\u001b[Z",
+            ["bs"] = "\u007f",
+            ["space"] = " ",
+            ["ctrl-c"] = "\u0003",
+            ["ctrl-a"] = "\u0001",
+            ["ctrl-e"] = "\u0005",
+            ["ctrl-b"] = "\u0002",
+            ["ctrl-f"] = "\u0006",
+            ["ctrl-d"] = "\u0004",
+            ["ctrl-k"] = "\u000b",
+            ["ctrl-w"] = "\u0017",
+            ["ctrl-x"] = "\u0018",
+            ["ctrl-v"] = "\u0016",
+            ["ctrl-g"] = "\u0007",
+            ["ctrl-n"] = "\u000e",
+            ["ctrl-u"] = "\u0015",
+            ["alt-b"] = "\u001bb",
+            ["alt-left"] = "\u001b[1;3D",
+            ["s-up"] = "\u001b[1;2A",
+            ["s-down"] = "\u001b[1;2B",
+            ["c-up"] = "\u001b[1;5A",
+            ["f1"] = "\u001bOP",
+            ["ins"] = "\u001b[2~"
         };
 
         return System.Text.RegularExpressions.Regex.Replace(text, "<([a-z0-9-]+)>", match => names[match.Groups[1].Value]);
@@ -328,7 +357,9 @@ public class EnquirerParityTest(NodeParityFixture fixture)
                 case "select" or "custody":
                     string? selected = Prompts.Select(new Prompts.SelectRequest(scenario.Message, choices)
                     {
-                        Navigation = scenario.Kind == "custody", BackValue = scenario.BackValue, Initial = scenario.Initial,
+                        Navigation = scenario.Kind == "custody",
+                        BackValue = scenario.BackValue,
+                        Initial = scenario.Initial,
                         Prefix = scenario.Prefix
                     });
                     result["result"] = selected;

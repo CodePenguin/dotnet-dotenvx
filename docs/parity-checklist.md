@@ -56,6 +56,7 @@ All verified against the real CLI; none hides a behavior gap.
 10. macOS only: Node exits before a large write (over about 64 KB) to a pipe drains and cuts the output (`encrypt --stdout` of a 600-key file stops near key 417); .NET prints all of it. The sweep accepts `r16 many keys encrypt --stdout` on macOS only. Writing to a file or a terminal is complete in both.
 11. Linux and macOS: the real Keychain and Secret Service stay behind fakes (see 5); on Windows the Credential Manager is also tested for real.
 12. Interactive menus (custody, `spec`, `protect`, feedback, passwords) run on a port of enquirer (`Interop.EnquirerJs`): `EnquirerParityTest` (piped keys, byte-identical stderr) and `PtyParityTest` (real pseudo-terminal, screens compared cell by cell) check them against Node. Verified on Windows; Linux/macOS runs pending.
+13. Options Node declares or passes along but never reads are not ported: `encoding` and `DOTENV_KEY` (declared in `main.d.ts` only), `noSpinner` (`main.js` hands it to the envs resolver, which ignores it; a leftover of the child-process path removed in June 2026) and `logName` and `logVersion` (stored on the logger, never read back). A property that does nothing would misrepresent the library. `UnreadOptionsSentinelTest` scans the pinned upstream source and fails when one of them starts being read, so a version bump cannot miss it. The upstream test "config supports noSpinner option" is skipped for the same reason.
 
 ## Platforms and CI
 

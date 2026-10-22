@@ -19,7 +19,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// current file and remains accurate.
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class Run
+internal class Run
 {
     private static readonly Func<EnvItem[], bool, IDictionary<string, string>?, string[]?, Run> DefaultFactory =
         (envs, overload, processEnv, envKeysFilePaths) => new Run(envs, overload, processEnv, envKeysFilePaths);
@@ -84,7 +84,8 @@ public class Run
     }
 
     public static Func<EnvItem[], bool, IDictionary<string, string>?, string[]?, Run>
-        Factory { get; internal set; } = DefaultFactory;
+        Factory
+    { get; internal set; } = DefaultFactory;
 
     internal static void ResetFactory()
     {
@@ -120,10 +121,10 @@ public class Run
 
         return new RunResult
         {
-            ProcessedEnvs = _processedEnvs.ToArray(),
-            ReadableStrings = _readableStrings.ToArray(),
-            ReadableFilePaths = _readableFilePaths.ToArray(),
-            UniqueInjectedKeys = _uniqueInjectedKeys.ToArray(),
+            ProcessedEnvs = [.. _processedEnvs],
+            ReadableStrings = [.. _readableStrings],
+            ReadableFilePaths = [.. _readableFilePaths],
+            UniqueInjectedKeys = [.. _uniqueInjectedKeys],
             BeforeEnv = _beforeEnv.ToDictionary(),
             AfterEnv = new Dictionary<string, string>(_processEnv)
         };
@@ -313,7 +314,7 @@ public class Run
             return mapped;
         }
 
-        string[] keys = parsed.Parsed.Where(kv => Encrypted(kv.Value)).Select(kv => kv.Key).ToArray();
+        string[] keys = [.. parsed.Parsed.Where(kv => Encrypted(kv.Value)).Select(kv => kv.Key)];
         return keys.Length == 0
             ? []
             : [new DecryptionFailedException($"could not decrypt {string.Join(", ", keys)}")];

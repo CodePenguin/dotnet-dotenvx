@@ -6,7 +6,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// first. The header's `# -fk` comment shows the keys file path relative to the env file's directory,
 /// and is omitted when that path is exactly `.env.keys`.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string MutateSrc(string envSrc, string envFilePath, string keysFilePath, string publicKeyName,
         string publicKeyValue)

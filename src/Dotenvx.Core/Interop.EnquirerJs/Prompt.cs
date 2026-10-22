@@ -3,7 +3,7 @@ using System.Text;
 namespace Dotenvx.Interop.EnquirerJs;
 
 /// <summary>Where a prompt renders (enquirer's `stdout`; dotenvx points it at stderr so stdout stays machine-readable).</summary>
-public interface IPromptOutput
+internal interface IPromptOutput
 {
     int? Columns { get; }
 
@@ -13,19 +13,19 @@ public interface IPromptOutput
 }
 
 /// <summary>Where a prompt reads keys from (enquirer's `stdin`): chunks of input, null at the end of the stream.</summary>
-public interface IKeySource
+internal interface IKeySource
 {
     string? ReadChunk();
 }
 
 /// <summary>The input ended before the prompt was answered: upstream's promise never settles and Node exits quietly.</summary>
-public sealed class PromptInputEndedException : Exception;
+internal sealed class PromptInputEndedException : Exception;
 
 /// <summary>The prompt was cancelled (Ctrl+C, Escape on custody menus); upstream rejects with a non-Error value.</summary>
-public sealed class PromptCancelled : Exception;
+internal sealed class PromptCancelled : Exception;
 
 /// <summary>Mutable view of a choice (enquirer normalises user choices into these).</summary>
-public sealed class PromptChoice
+internal sealed class PromptChoice
 {
     public string Name { get; set; } = string.Empty;
 
@@ -63,10 +63,10 @@ public sealed class PromptChoice
 }
 
 /// <summary>A choice as prompts.js hands it to enquirer (`choicesForSelect`).</summary>
-public sealed record ChoiceSpec(string Name, string? Message = null, string? Role = null, bool? Disabled = null, string? DisabledHint = null);
+internal sealed record ChoiceSpec(string Name, string? Message = null, string? Role = null, bool? Disabled = null, string? DisabledHint = null);
 
 /// <summary>The options the dotenvx prompts pass to enquirer.</summary>
-public sealed class PromptOptions
+internal sealed class PromptOptions
 {
     public string Message { get; set; } = string.Empty;
 
@@ -112,7 +112,7 @@ public sealed class PromptOptions
 /// cancel sequences, so the bytes written to the terminal are the bytes Node writes. enquirer's promises are sequential here,
 /// so everything is synchronous.
 /// </remarks>
-public abstract class Prompt
+internal abstract class Prompt
 {
     protected Prompt(PromptOptions options, string type)
     {
@@ -201,7 +201,7 @@ public abstract class Prompt
 
     private void ApplySymbolOverrides()
     {
-        void Override(Dictionary<string, string> target, string key, string? value)
+        static void Override(Dictionary<string, string> target, string key, string? value)
         {
             if (value is not null)
             {
@@ -535,7 +535,7 @@ public abstract class Prompt
 }
 
 /// <summary>enquirer's State: the mutable facts a prompt renders from.</summary>
-public sealed class PromptState
+internal sealed class PromptState
 {
     public string Input { get; set; } = string.Empty;
 

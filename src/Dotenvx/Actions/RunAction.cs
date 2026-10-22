@@ -1,4 +1,3 @@
-using Dotenvx.Interop.DotenvxJs.Helpers;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -10,6 +9,7 @@ using System.Threading.Tasks;
 
 using Dotenvx.Helpers;
 using Dotenvx.Interop.DotenvxJs.Events;
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 using Dotenvx.Interop.DotenvxJs.Types;
@@ -32,7 +32,8 @@ public class RunAction : Command
     private readonly Option<string> _conventionOption =
         new("--convention")
         {
-            Description = "load a .env convention (available conventions: ['nextjs', 'flow'])", HelpName = "name"
+            Description = "load a .env convention (available conventions: ['nextjs', 'flow'])",
+            HelpName = "name"
         };
 
     private readonly Option<string[]?> _envFileOption =
@@ -57,7 +58,8 @@ public class RunAction : Command
     private readonly Option<string[]?> _ignoreOption =
         new("--ignore")
         {
-            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes...",
+            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)",
+            HelpName = "errorCodes...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };
@@ -168,7 +170,7 @@ public class RunAction : Command
         string? convention = parseResult.GetValue(_conventionOption);
         string[] ignoreList = parseResult.GetValue(_ignoreOption) ?? [];
         string[] commandArgs = parseResult.GetValue(_args) ?? [];
-        string[] processArgs = Environment.GetCommandLineArgs().Skip(1).ToArray();
+        string[] processArgs = [.. Environment.GetCommandLineArgs().Skip(1)];
         if (commandArgs.Length < 1)
         {
             commandArgs = InferCommandArgsFromProcessArgv(processArgs);
@@ -186,7 +188,8 @@ public class RunAction : Command
         ConfigOptions normalizedOptions =
             NormalizeDotenvConfigIgnore(NormalizeDotenvConfigConvention(new ConfigOptions
             {
-                Convention = convention, Ignore = ignoreList.ToList()
+                Convention = convention,
+                Ignore = [.. ignoreList]
             }));
         convention = normalizedOptions.Convention;
         ignoreList = normalizedOptions.Ignore?.ToArray() ?? [];

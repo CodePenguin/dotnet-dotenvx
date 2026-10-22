@@ -1,7 +1,7 @@
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>The slice of `process.stdin` that listenForOpenKey.js uses.</summary>
-public interface IKeyInput
+internal interface IKeyInput
 {
     bool IsTty { get; }
     bool IsRaw { get; }
@@ -14,7 +14,7 @@ public interface IKeyInput
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/listenForOpenKey.js (TTY only).</remarks>
-public static class ListenForOpenKey
+internal static class ListenForOpenKey
 {
     // built from char codes: this file must not contain literal escape characters (see CONTRIBUTING.md tooling cautions)
     private static readonly string CarriageReturn = ((char)13).ToString();
@@ -173,7 +173,8 @@ public static class ListenForOpenKey
                             : key.KeyChar.ToString();
                     Data?.Invoke(text);
                 }
-            }) { IsBackground = true }.Start();
+            })
+            { IsBackground = true }.Start();
         }
 
         public void Pause()
@@ -184,7 +185,7 @@ public static class ListenForOpenKey
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/formatCode.js</remarks>
-public static class FormatCodeHelper
+internal static class FormatCodeHelper
 {
     /// <summary>Groups of four characters joined by dashes.</summary>
     public static string FormatCode(string value)

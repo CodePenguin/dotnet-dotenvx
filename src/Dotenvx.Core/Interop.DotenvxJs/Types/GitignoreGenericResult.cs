@@ -1,6 +1,6 @@
 namespace Dotenvx.Interop.DotenvxJs.Types;
 
-public class GitignoreGenericResult
+internal class GitignoreGenericResult
 {
     public required string Filename { get; init; }
     public required string[] Patterns { get; init; }

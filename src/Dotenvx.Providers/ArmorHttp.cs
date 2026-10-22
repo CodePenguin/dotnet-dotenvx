@@ -6,10 +6,10 @@ using System.Text;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>A response from <see cref="ArmorHttp.Request" />: status code and the raw body text.</summary>
-public record HttpResult(int StatusCode, string Body);
+internal record HttpResult(int StatusCode, string Body);
 
 /// <summary>A failed request; <see cref="Code" /> is Node's `error.code` (`ECONNREFUSED`, `ENOTFOUND`, `ERR_INVALID_URL`, ...).</summary>
-public class HttpRequestFailedException(string code, string message) : Exception(message)
+internal class HttpRequestFailedException(string code, string message) : Exception(message)
 {
     public string Code { get; } = code;
 }
@@ -19,7 +19,7 @@ public class HttpRequestFailedException(string code, string message) : Exception
 /// dotenvx/src/lib/helpers/isNetworkError.js. Network failures carry undici's own messages
 /// (`connect ECONNREFUSED 127.0.0.1:1`, `getaddrinfo ENOTFOUND host`) since the CLIs print them.
 /// </remarks>
-public static class ArmorHttp
+internal static class ArmorHttp
 {
     private static readonly HashSet<string> NetworkErrorCodes =
     [

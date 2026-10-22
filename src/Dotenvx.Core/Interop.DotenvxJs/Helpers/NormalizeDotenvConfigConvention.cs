@@ -3,7 +3,7 @@ using Dotenvx.Interop.DotenvxJs.Types;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/normalizeDotenvConfigConvention.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static ConfigOptions NormalizeDotenvConfigConvention(ConfigOptions options)
     {

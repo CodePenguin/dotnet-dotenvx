@@ -152,7 +152,7 @@ public class CoreCommandsParityTest(NodeParityFixture fixture) : ParityTestBase(
         Dictionary<string, string> preset = new() { ["HELLO"] = "preset" };
         Dictionary<string, string> dollar = Files(".env", "A=1\nB=${A}2\nC=$(echo hi)\nD=\"multi\nline\"\n");
 
-        object[] Case(Dictionary<string, string> files, Dictionary<string, string>? env, params string[] args) => [files, env!, args];
+        static object[] Case(Dictionary<string, string> files, Dictionary<string, string>? env, params string[] args) => [files, env!, args];
 
         // run: command inference, separators and every logging/ignore/strict branch
         yield return Case(plain, null, "run");

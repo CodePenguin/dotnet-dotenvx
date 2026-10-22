@@ -14,7 +14,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// language; there's no bare-string entry point to wrap, so no equivalent of upstream's
 /// "#run (string envFile)" test scenario exists here.
 /// </remarks>
-public class Genexample(string directory = ".", string[]? envFile = null)
+internal class Genexample(string directory = ".", string[]? envFile = null)
 {
     private static readonly Func<string, string[]?, Genexample> DefaultFactory =
         (directory, envFile) => new Genexample(directory, envFile);

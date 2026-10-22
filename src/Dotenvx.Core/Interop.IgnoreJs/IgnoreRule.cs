@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace Dotenvx.Interop.IgnoreJs;
 
-public partial class IgnoreRule(string pattern, bool negation)
+internal partial class IgnoreRule(string pattern, bool negation)
 {
     private readonly Regex _regex = ConvertToRegex(pattern);
 

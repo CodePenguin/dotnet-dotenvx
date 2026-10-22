@@ -1,11 +1,11 @@
-using Dotenvx.Helpers;
-using Dotenvx.Interop.DotenvxJs.Events;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 using System.Text.Json;
 
+using Dotenvx.Helpers;
+using Dotenvx.Interop.DotenvxJs.Events;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -55,7 +55,7 @@ public class DelAction : Command
             envItems.AddRange(
                 SplitCommaSeparatedEnvFiles(envFile).Select(f => new EnvItem { Type = EnvType.EnvFile, Value = f }));
 
-            Del delService = Del.Factory(key, envItems.ToArray());
+            Del delService = Del.Factory(key, [.. envItems]);
             DelResult result = delService.Run();
 
             int errorCount = 0;

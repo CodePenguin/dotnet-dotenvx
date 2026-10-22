@@ -1,4 +1,3 @@
-using NSubstitute;
 using System.CommandLine;
 using System.Text.Json.Nodes;
 
@@ -6,6 +5,8 @@ using Dotenvx;
 using Dotenvx.Actions;
 using Dotenvx.Core.Test;
 using Dotenvx.Interop.DotenvxJs.Helpers;
+
+using NSubstitute;
 
 using Shouldly;
 

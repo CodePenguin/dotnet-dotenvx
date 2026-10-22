@@ -11,13 +11,14 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// reorg docs/porting-traps.md already documents elsewhere).
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]? envKeysFilePaths)
+internal class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]? envKeysFilePaths)
 {
     private static readonly Func<string?, EnvItem[], bool, bool, string[]?, Get> DefaultFactory =
         (key, envs, overload, all, envKeysFile) => new Get(key, envs, overload, all, envKeysFile);
 
     public static Func<string?, EnvItem[], bool, bool, string[]?, Get>
-        Factory { get; internal set; } = DefaultFactory;
+        Factory
+    { get; internal set; } = DefaultFactory;
 
     internal static void ResetFactory()
     {
@@ -81,13 +82,13 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]?
                 errors.Add(new MissingKeyException(key));
             }
 
-            return new GetResult { Parsed = parsed, Errors = errors.ToArray() };
+            return new GetResult { Parsed = parsed, Errors = [.. errors] };
         }
         else
         {
             if (all)
             {
-                return new GetResult { Parsed = processEnv, Errors = errors.ToArray() };
+                return new GetResult { Parsed = processEnv, Errors = [.. errors] };
             }
 
             Dictionary<string, string> parsed = [];
@@ -107,7 +108,7 @@ public class Get(string? key, EnvItem[] envs, bool overload, bool all, string[]?
                 }
             }
 
-            return new GetResult { Parsed = parsed, Errors = errors.ToArray() };
+            return new GetResult { Parsed = parsed, Errors = [.. errors] };
         }
     }
 }

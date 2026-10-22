@@ -28,7 +28,7 @@ public class UtilsTest
         byte[] tag = Utils.DecodeHex("ec3b71e17c11dbe31484da9450edcf6c");
         byte[] encrypted = Utils.DecodeHex("02d2ffed93b856f148b9");
 
-        byte[] data = [..nonce, ..tag, ..encrypted];
+        byte[] data = [.. nonce, .. tag, .. encrypted];
         byte[] decrypted = Utils.AesDecrypt(key, data);
         decrypted.ShouldBe("helloworld"u8.ToArray());
     }

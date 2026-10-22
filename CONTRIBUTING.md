@@ -49,6 +49,16 @@ The code is a near line-for-line port. Check the referenced JS file in `dotenvx/
 - Most files carry `/// <remarks>Reference source: dotenvx/src/lib/helpers/fsx.js</remarks>`. Re-verify that the named file still exists at the pin when you touch a file (the upstream reorg moved many).
 - `Interop.IgnoreJs` (gitignore matching), `Interop.EnquirerJs` (prompts) and `Interop.YoctoSpinnerJs` (spinner) are folders in Core; `Interop.PicomatchJs` and `Interop.EciesJs` live in `Dotenvx.Primitives`.
 
+### Public surface
+
+Only these are public; everything else is `internal`, and `PublicSurfaceTest` fails when a type in an `Interop.*` namespace becomes public.
+
+- `Dotenvx.Core`: the `Dotenvx` namespace (the `Dotenvx` class, the option and result types, `IDotenvxLogger` and `DotenvxConsoleLogger`, `EventSdk`, and every exception that derives from `DotenvxException`).
+- `Dotenvx.Primitives`: `Primitives.*` (one public method per `@dotenvx/primitives` export) with its option and result types.
+- `Dotenvx.Providers`: what `@dotenvx/providers` exports (`file`, `native`, `onepassword`, `bitwarden`, `armor`, `provider` and `providerOrder`) with `ProviderOptions` and `IKeyProvider`.
+- Code that needs an internal type from another assembly gets it through `InternalsVisibleTo` in the csproj (the CLI, the test projects and `DynamicProxyGenAssembly2` for NSubstitute are already listed). A new test seam is `internal`, not `public`.
+- Raw string literals that hold upstream text (the Windows credential script) are compared byte for byte: a bulk edit of `public` to `internal` must not touch them.
+
 ### `Dotenvx.Primitives`
 
 Flat `namespace Dotenvx.Primitives`, one `public static partial class Primitives`, methods named after the real exports. Exports: `decrypt, derive, encrypt, encrypted, evaluate, expand, keypair, keyring, keyringSync, match, parse, parseSync, parsearrays, parsearraysSync, publickeys, remove, scan, sealed, upsert` (C# names: `Decrypt`, `Derive`, ..., `Parse`/`ParseSync`/`ParseArrays`/`ParseArraysSync`, `Scan`, `Sealed`, `Upsert`). `Primitives.Scan` is the one shared JS-faithful line parser. The `DotenvxException` hierarchy lives here too (primitives throws errors.js-shaped errors) but keeps the namespace `Dotenvx.Interop.DotenvxJs.Types`.
@@ -178,7 +188,8 @@ Goal: retarget, run the suites, and let the failures plus a few diffs say exactl
 5. Primitives internals: keep the old tarball (`npm pack @dotenvx/primitives@<old>`), pretty-print both `dist/index.cjs` files (`npx prettier --parser babel`), and `git diff --no-index` them. Vendored crypto changes matter only if ciphertext format, key derivation or error messages change (rerun the keypair/encrypt/decrypt oracles); engine changes (scan/parse/expand/keyring/upsert/remove/sealed) need the matching C# edit.
 6. New or changed commands and flags: diff the `dotenvx.js` registrations and run `dotenvx <cmd> --help` per command. Re-check commander shapes (`<x>` vs `<x...>`, defaults, negations).
 7. Re-check version-dependent scope notes: native-store default, `precommit`/`prebuild` to `protect`, Armor/cloud, `ext` additions.
-8. Regenerate the help spec: `node scripts/gen-help-spec.js` rewrites `src/Dotenvx/Help/help-spec.json` (every command's usage, description, option/argument/subcommand rows and pad width, as commander computes them); commit the diff and read it for new or changed flags. `--help` output comes from that file, so a stale spec fails `HelpExactParityTest`.
+8. `UnreadOptionsSentinelTest` (in `Dotenvx.ParityTest`) fails when upstream starts reading an option we left out on purpose (`parity-checklist.md`, accepted difference 13): port the option as a real property, add it to the parity scenarios, and remove it from the test and that list.
+9. Regenerate the help spec: `node scripts/gen-help-spec.js` rewrites `src/Dotenvx/Help/help-spec.json` (every command's usage, description, option/argument/subcommand rows and pad width, as commander computes them); commit the diff and read it for new or changed flags. `--help` output comes from that file, so a stale spec fails `HelpExactParityTest`.
 
 **3. Run the suites; read failures as the to-do list**
 1. `dotnet build`, then `Dotenvx.Primitives.Test`, `Dotenvx.Core.Test`, `Dotenvx.Configuration.Test`, `Dotenvx.Test`, `Dotenvx.ParityTest`, each separately.
@@ -197,6 +208,12 @@ Goal: retarget, run the suites, and let the failures plus a few diffs say exactl
 ## CLI logging
 
 `src/Dotenvx/Logging/` is a custom `ILogger`/`ILoggerProvider` (`DotenvxLogger`, `DotenvxCustomLogger*`) wired via `LoggingBuilderExtensions.AddDotenvx(...)`, matching dotenvx's leveled, colored output (quiet/error/info/verbose/debug) through `IDotenvxLogger` (`Interop.DotenvxJs/Shared/IDotenvxLogger.cs`). `DotenvxRootCommand.GetDotenvxLoggerConfiguration` pre-parses `args` once, silently, to pick the level before the host and command run. Only `info` goes to stdout; every other level goes to stderr (keeps stdout script-safe).
+
+## Line endings and formatting
+
+- The repo is LF everywhere (`.gitattributes`: `* text=auto eol=lf`), except `*.sln` (CRLF). C# raw and verbatim strings keep the file's newlines, so LF keeps test expectations identical on every OS.
+- The `dotenvx/` submodule is outside our `.gitattributes`: run `git -C dotenvx config core.autocrlf false` before checking it out on Windows. `FixtureLineEndingsTest` fails if a fixture (other than `.env.crlf`, `.env.latin1`, `.env.utf16le`) contains ``.
+- Run `dotnet format` before committing; CI runs `dotnet format --verify-no-changes`.
 
 ## Source encoding cautions
 

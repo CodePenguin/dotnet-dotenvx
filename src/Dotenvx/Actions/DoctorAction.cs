@@ -1,5 +1,5 @@
-using System.Linq;
 using System.CommandLine;
+using System.Linq;
 
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -16,7 +16,8 @@ public class DoctorAction : Command
     private readonly Argument<string?> _directoryArgument =
         new("directory")
         {
-            Arity = ArgumentArity.ZeroOrOne, Description = "directory to scan"
+            Arity = ArgumentArity.ZeroOrOne,
+            Description = "directory to scan"
         };
 
     private readonly IDotenvxLogger _logger;

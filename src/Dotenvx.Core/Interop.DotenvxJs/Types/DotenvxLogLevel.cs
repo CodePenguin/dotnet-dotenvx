@@ -10,7 +10,7 @@ public enum DotenvxLogLevel
     Silly = 6
 }
 
-public static class DotenvxLogLevelExtensions
+internal static class DotenvxLogLevelExtensions
 {
     public static DotenvxLogLevel FromString(string value)
     {

@@ -13,7 +13,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// containing `&amp;` printed by `get` differed from Node's bytes. Indented output uses "\n", not
 /// Environment.NewLine.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     private static readonly JsonSerializerOptions CompactJson = new()
     {
@@ -22,7 +22,9 @@ public static partial class Helpers
 
     private static readonly JsonSerializerOptions IndentedJson = new()
     {
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, WriteIndented = true, NewLine = "\n"
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        WriteIndented = true,
+        NewLine = "\n"
     };
 
     public static string JsonStringify(object? value, bool indented = false)

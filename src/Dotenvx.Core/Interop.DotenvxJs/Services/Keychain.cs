@@ -6,11 +6,11 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.UpsertEnvKeyHelper;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-public record KeychainResult(
+internal record KeychainResult(
     bool Changed, string? Label, string PrivateKeyName, string? PrivateKeyValue, string PublicKeyValue);
 
 /// <summary>Shared bits of the four `native` services (keychainUp/Down/Push/Pull.js).</summary>
-public abstract class KeychainService(string? envFile, string? envKeysFile)
+internal abstract class KeychainService(string? envFile, string? envKeysFile)
 {
     protected string EnvFile { get; } = envFile ?? ".env";
     protected string EnvKeysFile { get; } = envKeysFile ?? ".env.keys";
@@ -36,7 +36,7 @@ public abstract class KeychainService(string? envFile, string? envKeysFile)
 
 /// <remarks>Reference source: dotenvx/src/lib/services/keychainUp.js</remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class KeychainUp(string? envFile = null, string? envKeysFile = null) : KeychainService(envFile, envKeysFile)
+internal class KeychainUp(string? envFile = null, string? envKeysFile = null) : KeychainService(envFile, envKeysFile)
 {
     private static readonly Func<string?, string?, KeychainUp> DefaultFactory = (f, k) => new KeychainUp(f, k);
 
@@ -94,7 +94,7 @@ public class KeychainUp(string? envFile = null, string? envKeysFile = null) : Ke
 
 /// <remarks>Reference source: dotenvx/src/lib/services/keychainDown.js</remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class KeychainDown(string? envFile = null, string? envKeysFile = null) : KeychainService(envFile, envKeysFile)
+internal class KeychainDown(string? envFile = null, string? envKeysFile = null) : KeychainService(envFile, envKeysFile)
 {
     private static readonly Func<string?, string?, KeychainDown> DefaultFactory = (f, k) => new KeychainDown(f, k);
 
@@ -140,7 +140,7 @@ public class KeychainDown(string? envFile = null, string? envKeysFile = null) : 
 
 /// <remarks>Reference source: dotenvx/src/lib/services/keychainPush.js</remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class KeychainPush(string? envFile = null, string? envKeysFile = null) : KeychainService(envFile, envKeysFile)
+internal class KeychainPush(string? envFile = null, string? envKeysFile = null) : KeychainService(envFile, envKeysFile)
 {
     private static readonly Func<string?, string?, KeychainPush> DefaultFactory = (f, k) => new KeychainPush(f, k);
 
@@ -178,7 +178,7 @@ public class KeychainPush(string? envFile = null, string? envKeysFile = null) : 
 
 /// <remarks>Reference source: dotenvx/src/lib/services/keychainPull.js</remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class KeychainPull(string? envFile = null, string? envKeysFile = null) : KeychainService(envFile, envKeysFile)
+internal class KeychainPull(string? envFile = null, string? envKeysFile = null) : KeychainService(envFile, envKeysFile)
 {
     private static readonly Func<string?, string?, KeychainPull> DefaultFactory = (f, k) => new KeychainPull(f, k);
 

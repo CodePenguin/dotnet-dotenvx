@@ -13,7 +13,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// as an actual newline character (unlike the earlier `\\033` escapes, which are doubled in source
 /// specifically so the shell interprets them later, not JS at template-literal-evaluation time).
 /// </remarks>
-public class InstallPrecommitHook(string? hookPath = null)
+internal class InstallPrecommitHook(string? hookPath = null)
 {
     public const string HookScript =
         "#!/bin/sh\n" +

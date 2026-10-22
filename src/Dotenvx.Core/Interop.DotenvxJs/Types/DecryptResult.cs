@@ -1,6 +1,6 @@
 namespace Dotenvx.Interop.DotenvxJs.Types;
 
-public class DecryptResult
+internal class DecryptResult
 {
     public ProcessedDecrypt[] ProcessedEnvs { get; init; } = [];
     public string[] ChangedFilePaths { get; init; } = [];

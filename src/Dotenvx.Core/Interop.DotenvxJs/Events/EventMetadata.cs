@@ -10,7 +10,7 @@ namespace Dotenvx.Interop.DotenvxJs.Events;
 /// Reference source: dotenvx/src/lib/events/metadata.js and catalog.js. Event metadata is an allowlist, not a copy of command
 /// options or debug logs. Values are JS-like: null, bool, numbers, strings and arrays of those (anything else is dropped).
 /// </remarks>
-public static partial class EventMetadata
+internal static partial class EventMetadata
 {
     private static readonly string[] Fields =
     [

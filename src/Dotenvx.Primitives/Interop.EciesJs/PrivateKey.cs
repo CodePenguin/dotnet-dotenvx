@@ -7,7 +7,7 @@ namespace Dotenvx.Primitives.Interop.EciesJs;
 /// <summary>
 ///     C# equivalent for eciesjs src/keys/PrivateKey.ts (https://github.com/ecies/js).
 /// </summary>
-public class PrivateKey
+internal class PrivateKey
 {
     private readonly byte[] _bytes;
     private readonly BigInteger _scalar;

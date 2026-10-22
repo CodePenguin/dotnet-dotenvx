@@ -81,7 +81,8 @@ public class DetermineEnvsTest
     {
         EnvItem[] result = DetermineEnvs([], new Dictionary<string, string>
         {
-            ["DOTENV_PRIVATE_KEY"] = "deadbeef", ["DOTENV_PRIVATE_KEY_PRODUCTION"] = "beefdead"
+            ["DOTENV_PRIVATE_KEY"] = "deadbeef",
+            ["DOTENV_PRIVATE_KEY_PRODUCTION"] = "beefdead"
         });
 
         result.ShouldBeEquivalentTo(new[]

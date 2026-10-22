@@ -13,7 +13,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// exempt files are NOT exempt here, the opposite of Precommit (see Precommit.cs's doc comment) -
 /// confirmed via a dedicated upstream test proving this asymmetry is deliberate, not a bug to fix.
 /// </remarks>
-public class Prebuild(string directory = "./")
+internal class Prebuild(string directory = "./")
 {
     private static readonly Func<string, Prebuild> DefaultFactory = directory => new Prebuild(directory);
 

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.CommandLine;
 using System.CommandLine.Parsing;
+using System.Linq;
 using System.Text.Json.Nodes;
 
 namespace Dotenvx.Help;
@@ -162,43 +162,43 @@ public static class CommanderOpts
         switch (registration.Parser)
         {
             case "envFile":
-            {
-                JsonArray array = AsArray(current);
-                foreach (string value in values)
                 {
-                    foreach (string item in value.Split(',').Select(part => part.Trim()).Where(part => part.Length > 0))
+                    JsonArray array = AsArray(current);
+                    foreach (string value in values)
                     {
-                        array.Add(item);
+                        foreach (string item in value.Split(',').Select(part => part.Trim()).Where(part => part.Length > 0))
+                        {
+                            array.Add(item);
+                        }
                     }
-                }
 
-                return array;
-            }
+                    return array;
+                }
             case "env":
-            {
-                JsonArray array = AsArray(current);
-                foreach (string value in values)
                 {
-                    array.Add(value);
-                }
-
-                return array;
-            }
-            case "envKeys":
-            {
-                JsonNode? previous = current;
-                foreach (string value in values)
-                {
-                    previous = previous switch
+                    JsonArray array = AsArray(current);
+                    foreach (string value in values)
                     {
-                        null => JsonValue.Create(value),
-                        JsonArray existing => new JsonArray([.. existing.Select(item => item?.DeepClone()), JsonValue.Create(value)]),
-                        _ => new JsonArray(previous.DeepClone(), JsonValue.Create(value))
-                    };
-                }
+                        array.Add(value);
+                    }
 
-                return previous;
-            }
+                    return array;
+                }
+            case "envKeys":
+                {
+                    JsonNode? previous = current;
+                    foreach (string value in values)
+                    {
+                        previous = previous switch
+                        {
+                            null => JsonValue.Create(value),
+                            JsonArray existing => new JsonArray([.. existing.Select(item => item?.DeepClone()), JsonValue.Create(value)]),
+                            _ => new JsonArray(previous.DeepClone(), JsonValue.Create(value))
+                        };
+                    }
+
+                    return previous;
+                }
         }
 
         if (registration.Variadic)

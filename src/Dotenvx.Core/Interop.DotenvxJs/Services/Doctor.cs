@@ -7,7 +7,7 @@ using static Dotenvx.Primitives.Primitives;
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
 /// <summary>One possible dotenv loader call found by <see cref="Doctor" />.</summary>
-public record DoctorFinding(string Lang, string Filepath, int Line, string Code, string Msg);
+internal record DoctorFinding(string Lang, string Filepath, int Line, string Code, string Msg);
 
 /// <remarks>
 /// Reference source: dotenvx/src/lib/services/doctor.js. The crawl mirrors `new Fdir().withRelativePaths().exclude(...)`:
@@ -16,7 +16,7 @@ public record DoctorFinding(string Lang, string Filepath, int Line, string Code,
 /// relative with the platform separator, sorted with JS's default UTF-16 code unit order.
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class Doctor
+internal class Doctor
 {
     private sealed record Pattern(string Lang, Regex File, Regex Loader, string Msg);
 

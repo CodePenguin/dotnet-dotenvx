@@ -12,7 +12,7 @@ namespace Dotenvx.Interop.DotenvxJs.Db;
 /// already exists, so read-only commands never create it.
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class Session(IDotenvxLogger? logger = null)
+internal class Session(IDotenvxLogger? logger = null)
 {
     private const long Hours24 = 60L * 60 * 24 * 1000;
     private const string VersionUrl = "https://dotenvx.sh/VERSION";

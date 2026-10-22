@@ -3,10 +3,16 @@ root = true
 # All files
 [*]
 indent_style = space
+end_of_line = lf
+insert_final_newline = true
 
 # Xml files
 [*.xml]
 indent_size = 2
+
+# Visual Studio solution files
+[*.sln]
+end_of_line = crlf
 
 # C# files
 [*.cs]
@@ -18,9 +24,9 @@ indent_size = 4
 tab_width = 4
 max_line_length = 120
 
-# New line preferences
-end_of_line = crlf
-insert_final_newline = false
+# New line preferences: LF everywhere (see .gitattributes); the Visual Studio solution file is the one CRLF exception
+end_of_line = lf
+insert_final_newline = true
 
 #### .NET Coding Conventions ####
 [*.{cs,vb}]
@@ -123,10 +129,11 @@ csharp_style_prefer_index_operator = true:suggestion
 csharp_style_prefer_range_operator = true:suggestion
 csharp_style_throw_expression = true:suggestion
 csharp_style_unused_value_assignment_preference = discard_variable:warning
-csharp_style_unused_value_expression_statement_preference = discard_variable:warning
+csharp_style_unused_value_expression_statement_preference = discard_variable:suggestion
 
 # 'using' directive preferences
 csharp_using_directive_placement = outside_namespace:silent
+csharp_style_namespace_declarations = file_scoped:warning
 
 #### C# Formatting Rules ####
 

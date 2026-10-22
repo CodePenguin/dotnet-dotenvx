@@ -3,7 +3,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 namespace Dotenvx.Interop.DotenvxJs.Custodians;
 
 /// <summary>The inputs a custodian needs to store a new private key (the `context` of custodians/index.js).</summary>
-public sealed class StoreContext
+internal sealed class StoreContext
 {
     public string? KeysSrc { get; set; }
     public string PrivateKeyName { get; set; } = "";
@@ -19,7 +19,7 @@ public sealed class StoreContext
 /// What storing a private key changed: the new `.env.keys` text (file custody), a key added to the OS secret store, or a
 /// request to use another custodian when the store is unavailable.
 /// </summary>
-public sealed class StoreResult
+internal sealed class StoreResult
 {
     public bool HasKeysSrc { get; init; }
     public string? KeysSrc { get; init; }
@@ -28,7 +28,7 @@ public sealed class StoreResult
 }
 
 /// <summary>A place private keys live (custodians/index.js): local (file, OS store, password managers) or managed (Armor).</summary>
-public interface ICustodian
+internal interface ICustodian
 {
     string Id { get; }
     string Name { get; }
@@ -52,7 +52,7 @@ public interface ICustodian
 }
 
 /// <summary>A custodian that can also read and remove the keys it holds (everything but Armor).</summary>
-public interface ILocalCustodian : ICustodian
+internal interface ILocalCustodian : ICustodian
 {
     void Set(string publicKey, string privateKey);
 
@@ -63,7 +63,7 @@ public interface ILocalCustodian : ICustodian
 /// Reference source: dotenvx/src/lib/custodians/index.js. An explicit registration of the built-in custodians:
 /// native, 1Password, Bitwarden, file, Armor.
 /// </remarks>
-public static class Custodians
+internal static class Custodians
 {
     /// <summary>`module.exports = createRegistry(builtins)`.</summary>
     public static CustodianRegistry Registry { get; } = new(
@@ -90,7 +90,7 @@ public static class Custodians
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/custodians/local/file.js. File keys are staged for the caller to commit with the encrypted env files.</remarks>
-public sealed class FileCustodian : ICustodian
+internal sealed class FileCustodian : ICustodian
 {
     public bool CanGet => false;
 
@@ -129,7 +129,7 @@ public sealed class FileCustodian : ICustodian
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/custodians/local/native/{index,store}.js.</remarks>
-public sealed class NativeCustodian : ILocalCustodian, ISyncCustodian
+internal sealed class NativeCustodian : ILocalCustodian, ISyncCustodian
 {
     public string Id => "native";
 

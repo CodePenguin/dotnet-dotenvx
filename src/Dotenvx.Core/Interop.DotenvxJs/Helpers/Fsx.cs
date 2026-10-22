@@ -5,10 +5,10 @@ using Dotenvx.Interop.DotenvxJs.Types;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
-public delegate string ReadFileXDelegate(string filepath, string? encoding = null);
+internal delegate string ReadFileXDelegate(string filepath, string? encoding = null);
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/fsx.js</remarks>
-public static class Fsx
+internal static class Fsx
 {
     private const string Encoding = "utf8";
 

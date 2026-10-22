@@ -1,7 +1,7 @@
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/isPublicKey.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static bool IsPublicKey(string key, string _)
     {

@@ -15,7 +15,8 @@ public class CatchAndLogTest : EnvironmentTestBase
     {
         DotenvxException error = new("WRONG_PRIVATE_KEY",
             "[WRONG_PRIVATE_KEY] could not decrypt HELLO using private key 'DOTENV_PRIVATE_KEY=199bdd6…'",
-            "fix: [https://github.com/dotenvx/dotenvx/issues/466]") { Debug = "debug details" };
+            "fix: [https://github.com/dotenvx/dotenvx/issues/466]")
+        { Debug = "debug details" };
 
         CatchAndLog(MockLogger, error);
 

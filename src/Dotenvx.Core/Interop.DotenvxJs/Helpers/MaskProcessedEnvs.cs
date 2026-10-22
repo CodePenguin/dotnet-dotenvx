@@ -12,7 +12,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// variable that already pre-existed with a real value gets its live value overwritten with the
 /// masked form too, not just what gets logged/returned.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static void MaskProcessedEnvs(
         IEnumerable<RunProcessedEnv> processedEnvs, IDictionary<string, string> processEnv, object? showChar)

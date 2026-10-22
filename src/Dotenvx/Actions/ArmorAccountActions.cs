@@ -233,7 +233,8 @@ public class CurlAction : Command
 
     private static readonly JsonSerializerOptions IndentedOptions = new()
     {
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping, WriteIndented = true
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        WriteIndented = true
     };
 
     /// <summary>curl.js `requestBody`: `JSON.stringify(JSON.parse(value))`.</summary>

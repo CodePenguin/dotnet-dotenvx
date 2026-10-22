@@ -3,7 +3,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 namespace Dotenvx.Interop.DotenvxJs.Custodians;
 
 /// <summary>The options `selectKeyStorage` reads: the custodian switches, whether keys may be created, and the keys file.</summary>
-public sealed class KeyStorageOptions
+internal sealed class KeyStorageOptions
 {
     public KeyAccessOptions Access { get; init; } = new();
     public bool NoCreate { get; init; }
@@ -15,11 +15,13 @@ public sealed class KeyStorageOptions
 /// key may be created) the key goes to the OS secret store when enabled, else to the file; on a terminal the user picks the
 /// custody in a menu (local, Armor, password managers).
 /// </remarks>
-public static class KeyStorage
+internal static class KeyStorage
 {
     private static readonly Dictionary<string, string> NativeNames = new()
     {
-        ["darwin"] = "macOS Keychain", ["win32"] = "Windows Credential Manager", ["linux"] = "Linux Secret Service"
+        ["darwin"] = "macOS Keychain",
+        ["win32"] = "Windows Credential Manager",
+        ["linux"] = "Linux Secret Service"
     };
 
     /// <summary>`process.stdin.isTTY && process.stderr.isTTY`.</summary>
@@ -105,7 +107,9 @@ public static class KeyStorage
                     storage = Prompts.Select(new Prompts.SelectRequest(category == "local" ? "Choose local custody" : "Choose password manager",
                         [.. entries, new Prompts.Choice("← back", ArmorCustodian.BackValue)])
                     {
-                        Prefix = category == "local" ? "⛉" : "⛊", Navigation = true, BackValue = ArmorCustodian.BackValue
+                        Prefix = category == "local" ? "⛉" : "⛊",
+                        Navigation = true,
+                        BackValue = ArmorCustodian.BackValue
                     }) ?? throw new PromptCancelledException();
                     if (storage == ArmorCustodian.BackValue)
                     {

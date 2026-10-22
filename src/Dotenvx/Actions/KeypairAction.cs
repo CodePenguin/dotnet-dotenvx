@@ -11,9 +11,9 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 
-using DotenvxJsHelpers = Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 
+using DotenvxJsHelpers = Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
@@ -47,7 +47,8 @@ public class KeyPairAction : Command
     private readonly Option<string> _formatOption =
         new("--format")
         {
-            Description = "format of the output (json, shell, colon) (default: \"json\")", HelpName = "type"
+            Description = "format of the output (json, shell, colon) (default: \"json\")",
+            HelpName = "type"
         };
 
     private readonly Argument<string?> _keyArgument =

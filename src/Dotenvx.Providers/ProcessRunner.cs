@@ -4,14 +4,14 @@ using System.Text;
 namespace Dotenvx.Providers;
 
 /// <summary>What <see cref="ProcessRunner.Run" /> runs: a program, its arguments, optional stdin, a timeout and environment.</summary>
-public sealed record ProcessRequest(string File, IReadOnlyList<string> Args, string? Input, int TimeoutMs,
+internal sealed record ProcessRequest(string File, IReadOnlyList<string> Args, string? Input, int TimeoutMs,
     IReadOnlyDictionary<string, string>? Env, bool CaptureStderr);
 
 /// <summary>
 /// How a program ended (`execFileSync`): <see cref="NotFound" /> is the spawn failure ENOENT; a non-zero exit, a signal or a
 /// timeout have no code (Node raises for all of them).
 /// </summary>
-public sealed record ProcessOutcome(int? ExitCode, string Stdout, string Stderr, bool NotFound = false,
+internal sealed record ProcessOutcome(int? ExitCode, string Stdout, string Stderr, bool NotFound = false,
     bool TimedOut = false)
 {
     public bool Succeeded => !NotFound && !TimedOut && ExitCode == 0;
@@ -21,7 +21,7 @@ public sealed record ProcessOutcome(int? ExitCode, string Stdout, string Stderr,
 /// Runs the secret-store and password-manager programs the way @dotenvx/providers does (`execFileSync` with a timeout and
 /// SIGKILL). Swappable so unit tests never start a real program or touch a real store.
 /// </summary>
-public static class ProcessRunner
+internal static class ProcessRunner
 {
     private static readonly Func<ProcessRequest, ProcessOutcome> DefaultRun = Execute;
 

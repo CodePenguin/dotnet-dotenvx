@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace Dotenvx.Providers;
 
 /// <summary>An OS secret store failed: <see cref="Code" /> is `NATIVE_UNAVAILABLE` (no store here) or `NATIVE_ACCESS_FAILED`.</summary>
-public sealed class NativeStoreException(string code, string message) : Exception(message)
+internal sealed class NativeStoreException(string code, string message) : Exception(message)
 {
     public string Code { get; } = code;
 }
@@ -15,7 +15,7 @@ public sealed class NativeStoreException(string code, string message) : Exceptio
 /// windowsCredentialManager.js read backends. A lookup that fails for any reason is "nothing found", so the parser reports an
 /// unresolved key instead. The store is off in CI (`CI` set), with `DOTENVX_NO_NATIVE=true`, `noNative` or `native: false`.
 /// </remarks>
-internal sealed class NativeProvider(ProviderOptions options) : IKeyProvider
+public sealed class NativeProvider(ProviderOptions options) : IKeyProvider
 {
     private const int TimeoutMs = 10000;
     private const string Service = "dotenvx";

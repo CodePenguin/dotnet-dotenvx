@@ -7,7 +7,7 @@ using System.Text;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/packageJson.js (name, version, description of the dotenvx package).</remarks>
-public static class PackageJson
+internal static class PackageJson
 {
     private const string PinnedVersion = "2.35.0";
 
@@ -19,7 +19,7 @@ public static class PackageJson
 }
 
 /// <remarks>Reference source: `systeminformation` as used by dotenvx/src/db/session.js (`system_uuid`, `os_platform`, `os_arch`).</remarks>
-public static class SystemInformation
+internal static class SystemInformation
 {
     public record Info(string SystemUuid, string OsPlatform, string OsArch);
 

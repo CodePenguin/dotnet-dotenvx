@@ -15,7 +15,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// package by PrimitivesOracleParityTest).
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class Del
+internal class Del
 {
     private static readonly Func<string, EnvItem[], Del> DefaultFactory = (key, envs) => new Del(key, envs);
 
@@ -90,9 +90,9 @@ public class Del
 
         return new DelResult
         {
-            ProcessedEnvs = processedEnvs.ToArray(),
-            ChangedFilePaths = changedFilePaths.ToArray(),
-            UnchangedFilePaths = unchangedFilePaths.ToArray()
+            ProcessedEnvs = [.. processedEnvs],
+            ChangedFilePaths = [.. changedFilePaths],
+            UnchangedFilePaths = [.. unchangedFilePaths]
         };
     }
 }

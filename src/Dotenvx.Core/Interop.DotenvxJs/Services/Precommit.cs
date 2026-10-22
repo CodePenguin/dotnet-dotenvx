@@ -16,7 +16,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// actually staged/changed isn't enforced, defaulting to "always check" (true) whenever git itself
 /// isn't available or errors, matching upstream's two independent defensive-default paths exactly.
 /// </remarks>
-public class Precommit(string directory = "./", bool install = false)
+internal class Precommit(string directory = "./", bool install = false)
 {
     private static readonly Func<string, bool, Precommit> DefaultFactory =
         (directory, install) => new Precommit(directory, install);

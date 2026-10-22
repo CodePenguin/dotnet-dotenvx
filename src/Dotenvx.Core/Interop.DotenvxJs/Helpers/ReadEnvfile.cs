@@ -7,10 +7,10 @@ using Dotenvx.Primitives;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>The `Envfile` document in a directory: its path, whether it exists and its text.</summary>
-public sealed record EnvfileSource(string Filepath, bool Exists, string? Source);
+internal sealed record EnvfileSource(string Filepath, bool Exists, string? Source);
 
 /// <summary>The rules of an Envfile compiled for some env files (`{ keys, exists }`); `Keys` is empty without an Envfile.</summary>
-public sealed class EnvfileSchema
+internal sealed class EnvfileSchema
 {
     public static readonly EnvfileSchema None = new() { Exists = false };
 
@@ -24,7 +24,7 @@ public sealed class EnvfileSchema
 /// always the one named `Envfile` in the working directory (or the given directory); a missing one is "no Envfile", a dangling
 /// link or an unreadable one is an error.
 /// </remarks>
-public static class ReadEnvfile
+internal static class ReadEnvfile
 {
     private static readonly Regex Newlines = new("\r\n|\n|\r", RegexOptions.CultureInvariant);
 
@@ -155,9 +155,9 @@ public static class ReadEnvfile
     }
 
 
-    private static readonly char[] JsWhitespace = new[]
+    private static readonly char[] JsWhitespace = [.. new[]
     {
         0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x20, 0xA0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007,
         0x2008, 0x2009, 0x200A, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF
-    }.Select(code => (char)code).ToArray();
+    }.Select(code => (char)code)];
 }

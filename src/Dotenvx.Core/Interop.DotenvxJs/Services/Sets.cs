@@ -17,7 +17,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// rewritten when the requested value differs from it.
 /// </remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class Sets
+internal class Sets
 {
     private static readonly Func<string?, string?, EnvItem[], bool, string?, bool, Sets> DefaultFactory =
         (key, value, envs, encrypt, envKeysFile, noCreate) =>
@@ -68,7 +68,8 @@ public class Sets
     }
 
     public static Func<string?, string?, EnvItem[], bool, string?, bool, Sets>
-        Factory { get; internal set; } = DefaultFactory;
+        Factory
+    { get; internal set; } = DefaultFactory;
 
     internal static void ResetFactory()
     {
@@ -105,9 +106,9 @@ public class Sets
         return new SetsResult
         {
             KeysSrc = _keysSrc,
-            ProcessedEnvs = _processedEnvs.ToArray(),
-            ChangedFilePaths = _changedFilePaths.ToArray(),
-            UnchangedFilePaths = _unchangedFilePaths.ToArray()
+            ProcessedEnvs = [.. _processedEnvs],
+            ChangedFilePaths = [.. _changedFilePaths],
+            UnchangedFilePaths = [.. _unchangedFilePaths]
         };
     }
 

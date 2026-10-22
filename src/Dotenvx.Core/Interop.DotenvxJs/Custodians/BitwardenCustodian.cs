@@ -15,7 +15,7 @@ namespace Dotenvx.Interop.DotenvxJs.Custodians;
 /// `DOTENVX_BITWARDEN_&lt;public key&gt;`. A locked vault is unlocked with the master password on an interactive terminal;
 /// the unlocked session is kept for the rest of the process.
 /// </remarks>
-public sealed partial class BitwardenCustodian : ILocalCustodian, ISyncCustodian
+internal sealed partial class BitwardenCustodian : ILocalCustodian, ISyncCustodian
 {
     private const string Prefix = "DOTENVX_BITWARDEN_";
     private const string PasswordEnv = "DOTENVX_BITWARDEN_PASSWORD";
@@ -289,7 +289,10 @@ public sealed partial class BitwardenCustodian : ILocalCustodian, ISyncCustodian
             ["fields"] = new JsonArray(new JsonObject { ["name"] = "public_key", ["value"] = publicKey, ["type"] = 0 }),
             ["login"] = new JsonObject
             {
-                ["username"] = "private_key", ["password"] = privateKey, ["totp"] = null, ["uris"] = new JsonArray()
+                ["username"] = "private_key",
+                ["password"] = privateKey,
+                ["totp"] = null,
+                ["uris"] = new JsonArray()
             }
         };
         // Pass encoded JSON on stdin, never secrets in command arguments or files.
@@ -309,7 +312,9 @@ public sealed partial class BitwardenCustodian : ILocalCustodian, ISyncCustodian
 
         JsonObject location = new()
         {
-            ["item"] = itemId, ["userId"] = Str(status["userId"]), ["serverUrl"] = Str(status["serverUrl"]) ?? ""
+            ["item"] = itemId,
+            ["userId"] = Str(status["userId"]),
+            ["serverUrl"] = Str(status["serverUrl"]) ?? ""
         };
         new Session().CreateStore().Set($"{Prefix}{publicKey}",
             Convert.ToBase64String(Encoding.UTF8.GetBytes(ArmorWire.Stringify(location))));

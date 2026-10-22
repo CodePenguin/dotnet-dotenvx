@@ -5,7 +5,7 @@ namespace Dotenvx.Interop.PicomatchJs;
 /// <summary>
 ///     C# equivalent of Node.js 'picomatch' package (https://github.com/micromatch/picomatch)
 /// </summary>
-public static partial class IndexJs
+internal static partial class IndexJs
 {
     /// <remarks>
     /// `dot` mirrors real picomatch/`@dotenvx/primitives`' `match()`/`scan()` `dot` option, found
@@ -35,8 +35,8 @@ public static partial class IndexJs
             return _ => true;
         }
 
-        List<Func<string, bool>> includes = (globs ?? []).SelectMany(ExpandBraces).Select(g => Compile(g, dot)).ToList();
-        List<Func<string, bool>> excludes = (ignore ?? []).SelectMany(ExpandBraces).Select(g => Compile(g, dot)).ToList();
+        List<Func<string, bool>> includes = [.. (globs ?? []).SelectMany(ExpandBraces).Select(g => Compile(g, dot))];
+        List<Func<string, bool>> excludes = [.. (ignore ?? []).SelectMany(ExpandBraces).Select(g => Compile(g, dot))];
 
         return s =>
         {

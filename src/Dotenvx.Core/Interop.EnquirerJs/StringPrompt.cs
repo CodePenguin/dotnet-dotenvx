@@ -6,7 +6,7 @@ namespace Dotenvx.Interop.EnquirerJs;
 /// Reference source: enquirer lib/types/string.js (`StringPrompt`), lib/prompts/input.js and lib/prompts/password.js. Typing,
 /// cursor movement and the clipboard behave as enquirer's; the password prompt only differs in how it formats the input.
 /// </remarks>
-public class StringPrompt : Prompt
+internal class StringPrompt : Prompt
 {
     public StringPrompt(PromptOptions options, string type)
         : base(options, type)
@@ -378,7 +378,7 @@ public class StringPrompt : Prompt
 }
 
 /// <remarks>Reference source: enquirer lib/prompts/password.js. The input shows as asterisks (muted while typing, primary once submitted).</remarks>
-public sealed class PasswordPrompt : StringPrompt
+internal sealed class PasswordPrompt : StringPrompt
 {
     public PasswordPrompt(PromptOptions options)
         : base(options, "password")
@@ -405,10 +405,10 @@ public sealed class PasswordPrompt : StringPrompt
 }
 
 /// <remarks>Reference source: enquirer lib/prompts/input.js (without the history store, which dotenvx never configures).</remarks>
-public sealed class InputPrompt(PromptOptions options) : StringPrompt(options, "input");
+internal sealed class InputPrompt(PromptOptions options) : StringPrompt(options, "input");
 
 /// <remarks>Reference source: enquirer lib/types/boolean.js and lib/prompts/confirm.js.</remarks>
-public sealed class ConfirmPrompt : Prompt
+internal sealed class ConfirmPrompt : Prompt
 {
     private readonly string _default;
 

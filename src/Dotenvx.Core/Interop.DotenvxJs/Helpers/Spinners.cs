@@ -3,7 +3,7 @@ using Dotenvx.Interop.YoctoSpinnerJs;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>The slice of yocto-spinner the actions use.</summary>
-public interface ISpinner
+internal interface ISpinner
 {
     /// <summary>The text next to the frame; assigning redraws.</summary>
     string Text { get; set; }
@@ -14,7 +14,7 @@ public interface ISpinner
 }
 
 /// <summary>`createSpinner(options)`'s input: the global flags plus the text and frames of this command.</summary>
-public record SpinnerOptions(
+internal record SpinnerOptions(
     bool? Spinner = null, bool Quiet = false, bool Verbose = false, bool Debug = false, string? Text = null,
     string[]? Frames = null);
 
@@ -23,7 +23,7 @@ public record SpinnerOptions(
 /// `--quiet`, `--verbose` or `--debug`) and the `yocto-spinner` package behind it. Non-terminal runs (every scripted and
 /// parity-tested use) get null, exactly like upstream.
 /// </remarks>
-public static class Spinners
+internal static class Spinners
 {
     /// <summary>createSpinner.js `FRAMES`.</summary>
     private static readonly string[] DefaultFrames = ["◇", "⬖", "◆", "⬗"];
@@ -93,7 +93,7 @@ public static class Spinners
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/createElapsedStatus.js</remarks>
-public static class ElapsedStatus
+internal static class ElapsedStatus
 {
     /// <summary>
     /// Reports <paramref name="text" /> now and `text (Ns)` every second until the returned stop action runs. With no

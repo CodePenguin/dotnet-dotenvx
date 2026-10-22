@@ -50,7 +50,9 @@ public class PrimitivesCommand : Command
         Argument<string?> text = new("text") { Arity = ArgumentArity.ZeroOrOne, Description = "text to redact" };
         Option<string[]> secret = new("--secret", "-s")
         {
-            Description = "literal secret to redact (repeat for multiple secrets)", HelpName = "value", Required = true,
+            Description = "literal secret to redact (repeat for multiple secrets)",
+            HelpName = "value",
+            Required = true,
             AllowMultipleArgumentsPerToken = false
         };
         Option<bool> stdin = new("--stdin") { Description = "read text from stdin" };
@@ -161,14 +163,15 @@ public class PrimitivesCommand : Command
 
             if (rule.Env.Enum != null)
             {
-                env["enum"] = new JsonArray(rule.Env.Enum.Select(item => (JsonNode?)item).ToArray());
+                env["enum"] = new JsonArray([.. rule.Env.Enum.Select(item => (JsonNode?)item)]);
             }
 
             env["required"] = rule.Env.Required;
             env["strict"] = rule.Env.Strict;
             keys[key] = new JsonObject
             {
-                ["env"] = env, ["fs"] = new JsonObject { ["encrypted"] = rule.Encrypted },
+                ["env"] = env,
+                ["fs"] = new JsonObject { ["encrypted"] = rule.Encrypted },
                 ["stdio"] = new JsonObject { ["redacted"] = rule.Redacted }
             };
         }
@@ -221,11 +224,14 @@ public class PrimitivesCommand : Command
             checkedValues[key] = value;
         }
 
-        JsonArray errors = new(result.Errors.Select(error => (JsonNode?)new JsonObject
+        JsonArray errors = new([.. result.Errors.Select(error => (JsonNode?)new JsonObject
         {
-            ["key"] = error.Key, ["code"] = error.Code, ["rule"] = error.Rule, ["message"] = error.Message,
+            ["key"] = error.Key,
+            ["code"] = error.Code,
+            ["rule"] = error.Rule,
+            ["message"] = error.Message,
             ["strict"] = error.Strict
-        }).ToArray());
+        })]);
         Console.Out.Write(new JsonObject { ["checked"] = checkedValues, ["errors"] = errors }.ToJsonString(Indented).ReplaceLineEndings("\n") + "\n");
 
         return result.Errors.Count > 0 ? 1 : 0;

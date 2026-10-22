@@ -13,7 +13,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// into the key-aware INVALID_PRIVATE_KEY / WRONG_PRIVATE_KEY / MALFORMED_ENCRYPTED_DATA / DECRYPTION_FAILED
 /// errors.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string DecryptKeyValue(string key, string value, string privateKeyName, string? privateKey)
     {

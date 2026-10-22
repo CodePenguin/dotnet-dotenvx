@@ -1,6 +1,8 @@
+using Dotenvx.Interop.DotenvxJs;
+using Dotenvx.Interop.DotenvxJs.Events;
 using Dotenvx.Interop.DotenvxJs.Types;
 
-namespace Dotenvx.Interop.DotenvxJs.Events;
+namespace Dotenvx;
 
 /// <remarks>
 /// Reference source: dotenvx/src/lib/events/sdk.js. An explicit, scoped SDK facade: calls report an `sdk/&lt;name&gt;` event to
@@ -13,7 +15,7 @@ public sealed class EventSdk
     private readonly HashSet<Task> _pending = [];
 
     /// <summary>Delivery backend factory (swappable so unit tests never touch the network).</summary>
-    public static Func<IReadOnlyDictionary<string, object?>, IEventBackend?> CreateBackend { get; set; } =
+    internal static Func<IReadOnlyDictionary<string, object?>, IEventBackend?> CreateBackend { get; set; } =
         options => ArmorEventsBackend.Create(options);
 
     public ConfigResult Config(ConfigOptions? options = null)

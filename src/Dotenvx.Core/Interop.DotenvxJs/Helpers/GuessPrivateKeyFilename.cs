@@ -1,7 +1,7 @@
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/guessPrivateKeyFilename.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     internal static string GuessPrivateKeyFilename(string privateKeyName)
     {

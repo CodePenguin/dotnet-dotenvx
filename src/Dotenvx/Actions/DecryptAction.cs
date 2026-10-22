@@ -34,13 +34,15 @@ public class DecryptAction : Command
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
         {
-            Description = "path(s) to your .env.keys file(s) (default: same path as your env file)", HelpName = "path"
+            Description = "path(s) to your .env.keys file(s) (default: same path as your env file)",
+            HelpName = "path"
         };
 
     private readonly Option<string[]?> _excludeKeyOption =
         new("--exclude-key", "-ek")
         {
-            Description = "keys(s) to exclude from decryption (default: none)", HelpName = "excludeKeys...",
+            Description = "keys(s) to exclude from decryption (default: none)",
+            HelpName = "excludeKeys...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };
@@ -48,7 +50,8 @@ public class DecryptAction : Command
     private readonly Option<string[]?> _keysOption =
         new("--key", "-k")
         {
-            Description = "keys(s) to decrypt (default: all keys in file)", HelpName = "keys...",
+            Description = "keys(s) to decrypt (default: all keys in file)",
+            HelpName = "keys...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };
@@ -109,7 +112,7 @@ public class DecryptAction : Command
         // stdout - should not have a try so that exit codes can surface to stdout
         if (stdout)
         {
-            Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath)
+            Decrypt decryptService = new([.. envItems], keys, excludeKey, envKeysFilePath)
             {
                 KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session,
                 spinner.OnStatus)
@@ -151,7 +154,7 @@ public class DecryptAction : Command
 
         try
         {
-            Decrypt decryptService = new(envItems.ToArray(), keys, excludeKey, envKeysFilePath)
+            Decrypt decryptService = new([.. envItems], keys, excludeKey, envKeysFilePath)
             {
                 KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.Session,
                 spinner.OnStatus)

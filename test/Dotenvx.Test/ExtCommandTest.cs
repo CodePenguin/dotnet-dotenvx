@@ -1,11 +1,11 @@
+using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
-using System.Collections.Generic;
 
 using Dotenvx;
-using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Actions;
 using Dotenvx.Core.Test;
+using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 
 using NSubstitute;

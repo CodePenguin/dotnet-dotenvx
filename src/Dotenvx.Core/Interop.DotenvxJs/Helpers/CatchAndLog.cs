@@ -5,7 +5,7 @@ using Dotenvx.Providers;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/catchAndLog.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static void CatchAndLog(IDotenvxLogger logger, Exception error)
     {

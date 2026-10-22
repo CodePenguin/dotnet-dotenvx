@@ -7,10 +7,10 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.UpsertEnvKeyHelper;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
-public record CustodyTransferResult(bool Changed, string PrivateKeyName, string PublicKeyValue);
+internal record CustodyTransferResult(bool Changed, string PrivateKeyName, string PublicKeyValue);
 
 /// <remarks>Reference source: dotenvx/src/lib/services/custodyTransfer.js (up/down/push/pull between `.env.keys` and a local custodian).</remarks>
-public static class CustodyTransfer
+internal static class CustodyTransfer
 {
     private static void Verify(string publicKey, string privateKey)
     {

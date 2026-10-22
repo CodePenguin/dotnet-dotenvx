@@ -6,7 +6,7 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 namespace Dotenvx.Interop.DotenvxJs.Events;
 
 /// <summary>Where recorded events go (delivery.js / background.js).</summary>
-public interface IEventSink
+internal interface IEventSink
 {
     void Write(JsonObject @event, bool terminal = false);
 
@@ -19,7 +19,7 @@ public interface IEventSink
 /// Reference source: dotenvx/src/lib/events/index.js (`createEvents`). Records one operation's events: `file` rows, free-form
 /// `add`ed details, a failure, and the terminal `complete` event, all filtered through <see cref="EventMetadata" />.
 /// </remarks>
-public sealed class EventRecorder
+internal sealed class EventRecorder
 {
     private readonly string _name;
     private readonly IReadOnlyDictionary<string, object?> _options;

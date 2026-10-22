@@ -6,7 +6,7 @@ namespace Dotenvx.Interop.YoctoSpinnerJs;
 /// Reference source: the yocto-spinner npm package (index.js). Redraws `frame text` every 80ms on the stderr lines it owns (a plain line per update when not
 /// interactive), clearing what it drew before each redraw, inside synchronized-output markers.
 /// </summary>
-public sealed class YoctoSpinner
+internal sealed class YoctoSpinner
 {
     private const int IntervalMs = 80;
     private readonly string[] _frames;

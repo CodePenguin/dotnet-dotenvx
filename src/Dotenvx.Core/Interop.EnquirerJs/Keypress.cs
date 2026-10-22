@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 namespace Dotenvx.Interop.EnquirerJs;
 
 /// <summary>A decoded key (the object enquirer's keypress handlers receive).</summary>
-public sealed class KeyEvent
+internal sealed class KeyEvent
 {
     public string? Name { get; set; }
 
@@ -33,24 +33,77 @@ public sealed class KeyEvent
 /// Reference source: enquirer lib/keypress.js and lib/combos.js, plus Node's readline `emitKeys` (lib/internal/readline/utils.js),
 /// which splits the input stream into the keys enquirer then re-parses from their raw sequence.
 /// </remarks>
-public static partial class KeypressDecoder
+internal static partial class KeypressDecoder
 {
     private static readonly Dictionary<string, string> KeyNames = new()
     {
-        ["OP"] = "f1", ["OQ"] = "f2", ["OR"] = "f3", ["OS"] = "f4",
-        ["[11~"] = "f1", ["[12~"] = "f2", ["[13~"] = "f3", ["[14~"] = "f4",
-        ["[[A"] = "f1", ["[[B"] = "f2", ["[[C"] = "f3", ["[[D"] = "f4", ["[[E"] = "f5",
-        ["[15~"] = "f5", ["[17~"] = "f6", ["[18~"] = "f7", ["[19~"] = "f8", ["[20~"] = "f9", ["[21~"] = "f10",
-        ["[23~"] = "f11", ["[24~"] = "f12",
-        ["[A"] = "up", ["[B"] = "down", ["[C"] = "right", ["[D"] = "left", ["[E"] = "clear", ["[F"] = "end", ["[H"] = "home",
-        ["OA"] = "up", ["OB"] = "down", ["OC"] = "right", ["OD"] = "left", ["OE"] = "clear", ["OF"] = "end", ["OH"] = "home",
-        ["[1~"] = "home", ["[2~"] = "insert", ["[3~"] = "delete", ["[4~"] = "end", ["[5~"] = "pageup", ["[6~"] = "pagedown",
-        ["[[5~"] = "pageup", ["[[6~"] = "pagedown",
-        ["[7~"] = "home", ["[8~"] = "end",
-        ["[a"] = "up", ["[b"] = "down", ["[c"] = "right", ["[d"] = "left", ["[e"] = "clear",
-        ["[2$"] = "insert", ["[3$"] = "delete", ["[5$"] = "pageup", ["[6$"] = "pagedown", ["[7$"] = "home", ["[8$"] = "end",
-        ["Oa"] = "up", ["Ob"] = "down", ["Oc"] = "right", ["Od"] = "left", ["Oe"] = "clear",
-        ["[2^"] = "insert", ["[3^"] = "delete", ["[5^"] = "pageup", ["[6^"] = "pagedown", ["[7^"] = "home", ["[8^"] = "end",
+        ["OP"] = "f1",
+        ["OQ"] = "f2",
+        ["OR"] = "f3",
+        ["OS"] = "f4",
+        ["[11~"] = "f1",
+        ["[12~"] = "f2",
+        ["[13~"] = "f3",
+        ["[14~"] = "f4",
+        ["[[A"] = "f1",
+        ["[[B"] = "f2",
+        ["[[C"] = "f3",
+        ["[[D"] = "f4",
+        ["[[E"] = "f5",
+        ["[15~"] = "f5",
+        ["[17~"] = "f6",
+        ["[18~"] = "f7",
+        ["[19~"] = "f8",
+        ["[20~"] = "f9",
+        ["[21~"] = "f10",
+        ["[23~"] = "f11",
+        ["[24~"] = "f12",
+        ["[A"] = "up",
+        ["[B"] = "down",
+        ["[C"] = "right",
+        ["[D"] = "left",
+        ["[E"] = "clear",
+        ["[F"] = "end",
+        ["[H"] = "home",
+        ["OA"] = "up",
+        ["OB"] = "down",
+        ["OC"] = "right",
+        ["OD"] = "left",
+        ["OE"] = "clear",
+        ["OF"] = "end",
+        ["OH"] = "home",
+        ["[1~"] = "home",
+        ["[2~"] = "insert",
+        ["[3~"] = "delete",
+        ["[4~"] = "end",
+        ["[5~"] = "pageup",
+        ["[6~"] = "pagedown",
+        ["[[5~"] = "pageup",
+        ["[[6~"] = "pagedown",
+        ["[7~"] = "home",
+        ["[8~"] = "end",
+        ["[a"] = "up",
+        ["[b"] = "down",
+        ["[c"] = "right",
+        ["[d"] = "left",
+        ["[e"] = "clear",
+        ["[2$"] = "insert",
+        ["[3$"] = "delete",
+        ["[5$"] = "pageup",
+        ["[6$"] = "pagedown",
+        ["[7$"] = "home",
+        ["[8$"] = "end",
+        ["Oa"] = "up",
+        ["Ob"] = "down",
+        ["Oc"] = "right",
+        ["Od"] = "left",
+        ["Oe"] = "clear",
+        ["[2^"] = "insert",
+        ["[3^"] = "delete",
+        ["[5^"] = "pageup",
+        ["[6^"] = "pagedown",
+        ["[7^"] = "home",
+        ["[8^"] = "end",
         ["[Z"] = "tab"
     };
 
@@ -61,28 +114,66 @@ public static partial class KeypressDecoder
     // combos.js
     private static readonly Dictionary<string, string> CtrlActions = new()
     {
-        ["a"] = "first", ["b"] = "backward", ["c"] = "cancel", ["d"] = "deleteForward", ["e"] = "last", ["f"] = "forward",
-        ["g"] = "reset", ["i"] = "tab", ["k"] = "cutForward", ["l"] = "reset", ["n"] = "newItem", ["m"] = "cancel",
-        ["j"] = "submit", ["p"] = "search", ["r"] = "remove", ["s"] = "save", ["u"] = "undo", ["w"] = "cutLeft",
-        ["x"] = "toggleCursor", ["v"] = "paste"
+        ["a"] = "first",
+        ["b"] = "backward",
+        ["c"] = "cancel",
+        ["d"] = "deleteForward",
+        ["e"] = "last",
+        ["f"] = "forward",
+        ["g"] = "reset",
+        ["i"] = "tab",
+        ["k"] = "cutForward",
+        ["l"] = "reset",
+        ["n"] = "newItem",
+        ["m"] = "cancel",
+        ["j"] = "submit",
+        ["p"] = "search",
+        ["r"] = "remove",
+        ["s"] = "save",
+        ["u"] = "undo",
+        ["w"] = "cutLeft",
+        ["x"] = "toggleCursor",
+        ["v"] = "paste"
     };
 
     private static readonly Dictionary<string, string> ShiftActions = new()
     {
-        ["up"] = "shiftUp", ["down"] = "shiftDown", ["left"] = "shiftLeft", ["right"] = "shiftRight", ["tab"] = "prev"
+        ["up"] = "shiftUp",
+        ["down"] = "shiftDown",
+        ["left"] = "shiftLeft",
+        ["right"] = "shiftRight",
+        ["tab"] = "prev"
     };
 
     private static readonly Dictionary<string, string> OptionActions = new()
     {
-        ["b"] = "backward", ["f"] = "forward", ["d"] = "cutRight", ["left"] = "cutLeft", ["up"] = "altUp", ["down"] = "altDown"
+        ["b"] = "backward",
+        ["f"] = "forward",
+        ["d"] = "cutRight",
+        ["left"] = "cutLeft",
+        ["up"] = "altUp",
+        ["down"] = "altDown"
     };
 
     private static readonly Dictionary<string, string> KeyActions = new()
     {
-        ["pageup"] = "pageUp", ["pagedown"] = "pageDown", ["home"] = "home", ["end"] = "end", ["cancel"] = "cancel",
-        ["delete"] = "deleteForward", ["backspace"] = "delete", ["down"] = "down", ["enter"] = "submit", ["escape"] = "cancel",
-        ["left"] = "left", ["space"] = "space", ["number"] = "number", ["return"] = "submit", ["right"] = "right",
-        ["tab"] = "next", ["up"] = "up"
+        ["pageup"] = "pageUp",
+        ["pagedown"] = "pageDown",
+        ["home"] = "home",
+        ["end"] = "end",
+        ["cancel"] = "cancel",
+        ["delete"] = "deleteForward",
+        ["backspace"] = "delete",
+        ["down"] = "down",
+        ["enter"] = "submit",
+        ["escape"] = "cancel",
+        ["left"] = "left",
+        ["space"] = "space",
+        ["number"] = "number",
+        ["return"] = "submit",
+        ["right"] = "right",
+        ["tab"] = "next",
+        ["up"] = "up"
     };
 
     [GeneratedRegex("^(?:\u001b)([a-zA-Z0-9])$")]

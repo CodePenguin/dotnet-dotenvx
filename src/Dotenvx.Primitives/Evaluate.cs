@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
-using Dotenvx.Interop.DotenvxJs.Types;
 
 namespace Dotenvx.Primitives;
 

@@ -11,9 +11,9 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// builds it (so the first original PATH entry is merged into the first one there; verified against the Node CLI).
 /// </remarks>
 /// <summary>Node's `spawnSync` result: `status` (null when killed or never started) and whether `error` was set.</summary>
-public record SpawnResult(int? Status, bool Failed);
+internal record SpawnResult(int? Status, bool Failed);
 
-public static class ExecuteDynamic
+internal static class ExecuteDynamic
 {
     private static readonly Func<string, string[], string?, SpawnResult> DefaultSpawn = Spawn;
 

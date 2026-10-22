@@ -1,7 +1,7 @@
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/cli/help.js - generated from that file's output (do not edit by hand).</remarks>
-public static class HelpExamples
+internal static class HelpExamples
 {
     /// <summary>`help.run()`: the "Examples:" / "Try it:" trailer of `dotenvx run --help`.</summary>
     public static string Run()

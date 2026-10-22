@@ -18,7 +18,8 @@ public class PrebuildAction : Command
     private readonly Argument<string?> _directoryArgument =
         new("directory")
         {
-            Arity = ArgumentArity.ZeroOrOne, Description = "directory to prevent including .env files from (default: \".\")"
+            Arity = ArgumentArity.ZeroOrOne,
+            Description = "directory to prevent including .env files from (default: \".\")"
         };
 
     private readonly IDotenvxLogger _logger;

@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/openUrl.js (`open(url, { wait: false })` from @dotenvx/tooling).</remarks>
-public static class OpenUrl
+internal static class OpenUrl
 {
     private static readonly Action<string> DefaultOpen = LaunchBrowser;
 

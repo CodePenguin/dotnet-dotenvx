@@ -49,12 +49,11 @@ public static class HelpTextParser
                 return;
             }
 
-            string[] aliases = currentAliasPart
+            string[] aliases = [.. currentAliasPart
                 .Split(',')
                 .Select(a => a.Trim())
                 .Select(StripArgumentPlaceholder)
-                .Where(a => a.Length > 0)
-                .ToArray();
+                .Where(a => a.Length > 0)];
 
             if (aliases.Length > 0)
             {

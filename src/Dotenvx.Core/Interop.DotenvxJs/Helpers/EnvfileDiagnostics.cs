@@ -11,7 +11,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// Reference sources: dotenvx/src/lib/envfile/validation/diagnosticLocation.js and
 /// envfile/rendering/previewEnvfile.js (where each checked value came from, and the `check` preview table).
 /// </remarks>
-public static partial class EnvfileDiagnostics
+internal static partial class EnvfileDiagnostics
 {
     // Match the assignment grammar used by primitives.scan, including multiline values.
     [GeneratedRegex(
@@ -71,7 +71,9 @@ public static partial class EnvfileDiagnostics
     [GeneratedRegex(@"[\s#""'`\\\u007f-\u009f]")]
     private static partial Regex NeedsQuoting();
 
-    [GeneratedRegex(@"[\u007f-\u009f  ]")]
+    [GeneratedRegex(@"[\u007f-\u009f
+
+]")]
     private static partial Regex Escapable();
 
     private static string DisplayValue(string value)

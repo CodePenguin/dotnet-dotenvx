@@ -24,7 +24,8 @@ public class GenexampleAction : Command
     private readonly Option<string[]?> _envFileOption =
         new("--file", "-f", "--env-file")
         {
-            Description = "path(s) to your env file(s) (default: \".env\")", HelpName = "paths...",
+            Description = "path(s) to your env file(s) (default: \".env\")",
+            HelpName = "paths...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };

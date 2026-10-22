@@ -20,7 +20,8 @@ public class PrecommitAction : Command
     private readonly Argument<string?> _directoryArgument =
         new("directory")
         {
-            Arity = ArgumentArity.ZeroOrOne, Description = "directory to prevent committing .env files from (default: \".\")"
+            Arity = ArgumentArity.ZeroOrOne,
+            Description = "directory to prevent committing .env files from (default: \".\")"
         };
 
     private readonly Option<bool> _installOption =

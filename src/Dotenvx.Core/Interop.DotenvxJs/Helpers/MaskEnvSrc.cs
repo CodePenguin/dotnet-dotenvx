@@ -9,7 +9,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// expanded before masking, which decides the masked length) and one `upsert` per key with the masked version of
 /// EVERY occurrence, not just the last.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string MaskEnvSrc(string envSrc, object? showChar = null)
     {
@@ -17,7 +17,7 @@ public static partial class Helpers
 
         foreach ((string key, List<string> values) in scanned.Parsed)
         {
-            envSrc = Upsert(envSrc, key, values.Select(value => Mask(value, showChar)).ToArray());
+            envSrc = Upsert(envSrc, key, [.. values.Select(value => Mask(value, showChar))]);
         }
 
         return envSrc;

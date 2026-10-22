@@ -3,7 +3,7 @@ using Dotenvx.Interop.IgnoreJs;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/isIgnoringDotenvKeys.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     /// <summary>
     ///     .gitignore equivalent-ish check like the NodeJS ignore package.

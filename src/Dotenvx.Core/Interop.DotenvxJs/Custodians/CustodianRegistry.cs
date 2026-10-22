@@ -3,10 +3,10 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 namespace Dotenvx.Interop.DotenvxJs.Custodians;
 
 /// <summary>One entry of the custody menu (`{ name, value, disabled }`).</summary>
-public sealed record CustodianChoice(string Name, string Value, bool Disabled);
+internal sealed record CustodianChoice(string Name, string Value, bool Disabled);
 
 /// <summary>A custodian whose keys can also be read synchronously (`getSync`); the others fail an ordered synchronous lookup.</summary>
-public interface ISyncCustodian : ICustodian
+internal interface ISyncCustodian : ICustodian
 {
     IDictionary<string, string> GetSync(string publicKey);
 }
@@ -16,7 +16,7 @@ public interface ISyncCustodian : ICustodian
 /// <see cref="Custodians.Registry" />; a registry can also be made from any set of <see cref="ICustodian" /> instances (custom
 /// custodians). Upstream's duck-typed checks ("custodian x requires enabled()") are the interface here, so only the id is validated.
 /// </remarks>
-public sealed class CustodianRegistry
+internal sealed class CustodianRegistry
 {
     private readonly Dictionary<string, ICustodian> _entries = [];
 

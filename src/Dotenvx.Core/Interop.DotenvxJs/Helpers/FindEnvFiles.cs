@@ -3,7 +3,7 @@ using Dotenvx.Interop.DotenvxJs.Types;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/findEnvFiles.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     private static readonly string[] ReservedEnvFiles =
         [".env.project", ".env.keys", ".env.me", ".env.x", ".env.example"];
@@ -20,9 +20,8 @@ public static partial class Helpers
             throw new MissingDirectoryException(directory);
         }
 
-        return files
+        return [.. files
             .Where(file => file.StartsWith(".env") && !file.EndsWith(".previous") &&
-                           !ReservedEnvFiles.Contains(file))
-            .ToArray();
+                           !ReservedEnvFiles.Contains(file))];
     }
 }

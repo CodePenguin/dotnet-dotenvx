@@ -1,6 +1,6 @@
 namespace Dotenvx.Interop.DotenvxJs.Types;
 
-public class ProcessedDel
+internal class ProcessedDel
 {
     public string Key { get; set; } = string.Empty;
     public EnvType Type { get; set; }

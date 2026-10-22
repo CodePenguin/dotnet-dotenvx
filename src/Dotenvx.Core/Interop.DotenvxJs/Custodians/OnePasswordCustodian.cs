@@ -13,7 +13,7 @@ namespace Dotenvx.Interop.DotenvxJs.Custodians;
 /// nonsecret locator (`account|op://vault/item/password`) is written to the dotenvx settings, under
 /// `DOTENVX_ONEPASSWORD_&lt;public key&gt;`.
 /// </remarks>
-public sealed partial class OnePasswordCustodian : ILocalCustodian, ISyncCustodian
+internal sealed partial class OnePasswordCustodian : ILocalCustodian, ISyncCustodian
 {
     private const string Prefix = "DOTENVX_ONEPASSWORD_";
 
@@ -185,12 +185,18 @@ public sealed partial class OnePasswordCustodian : ILocalCustodian, ISyncCustodi
             ["fields"] = new JsonArray(
                 new JsonObject
                 {
-                    ["id"] = "password", ["label"] = "private_key", ["type"] = "CONCEALED", ["purpose"] = "PASSWORD",
+                    ["id"] = "password",
+                    ["label"] = "private_key",
+                    ["type"] = "CONCEALED",
+                    ["purpose"] = "PASSWORD",
                     ["value"] = privateKey
                 },
                 new JsonObject
                 {
-                    ["id"] = "public_key", ["label"] = "public_key", ["type"] = "STRING", ["value"] = publicKey
+                    ["id"] = "public_key",
+                    ["label"] = "public_key",
+                    ["type"] = "STRING",
+                    ["value"] = publicKey
                 })
         };
         JsonNode item = ParseResponse(Run(["item", "create", "-", "--format=json", $"--account={account}"],

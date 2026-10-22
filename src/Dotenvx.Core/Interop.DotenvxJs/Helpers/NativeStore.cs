@@ -6,7 +6,7 @@ using Dotenvx.Providers;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>An OS secret store holding dotenvx private keys, addressed by public key (providers/native/index.js).</summary>
-public interface INativeSecretStore
+internal interface INativeSecretStore
 {
     /// <summary>The stored private key, or null when absent. Throws when the store itself fails.</summary>
     string? Get(string publicKey);
@@ -22,7 +22,7 @@ public interface INativeSecretStore
 /// upstream (`/usr/bin/security`, `secret-tool`, and `powershell.exe` with upstream's script) through
 /// <see cref="SecretCli" />, so the entries are byte-for-byte the ones Node writes and reads.
 /// </remarks>
-public static class NativeStore
+internal static class NativeStore
 {
     private const string Service = "dotenvx";
 

@@ -7,7 +7,7 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/sanitizeCommandForMetadata.js</remarks>
-public static partial class SanitizeCommandForMetadata
+internal static partial class SanitizeCommandForMetadata
 {
     [GeneratedRegex("\"([^\"\\\\]*(?:\\\\.[^\"\\\\]*)*)\"|'([^'\\\\]*(?:\\\\.[^'\\\\]*)*)'|(\\S+)")]
     private static partial Regex PartsRegex();
@@ -79,7 +79,7 @@ public static partial class SanitizeCommandForMetadata
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/keypairMetadata.js</remarks>
-public static class KeypairMetadata
+internal static class KeypairMetadata
 {
     private static string? GitRoot()
     {
@@ -174,7 +174,7 @@ public static class KeypairMetadata
 /// for commander's help text. They are ported (and tested) as pure line functions; this port's help text comes from
 /// System.CommandLine, so they are not applied to it.
 /// </remarks>
-public static partial class HelpTextFilters
+internal static partial class HelpTextFilters
 {
     /// <summary>Removes the "Arguments:" block (that line and the 3 after it) from the help lines.</summary>
     public static List<string> RemoveDynamicHelpSection(List<string> lines)

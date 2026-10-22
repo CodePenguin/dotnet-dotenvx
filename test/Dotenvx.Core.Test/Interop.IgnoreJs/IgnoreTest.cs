@@ -271,7 +271,7 @@ public class IgnoreTests : IDisposable
         ig.Add("*.log");
         ig.Add(".env");
         string[] paths = ["README.md", "test.log", ".env", "package.json"];
-        List<string> filtered = ig.Filter(paths).ToList();
+        List<string> filtered = [.. ig.Filter(paths)];
 
         filtered.Count.ShouldBe(2);
         filtered.ShouldContain("README.md");

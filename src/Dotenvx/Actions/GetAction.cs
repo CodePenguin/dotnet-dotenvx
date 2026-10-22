@@ -36,7 +36,8 @@ public class GetAction : Command
     private readonly Option<string> _conventionOption =
         new("--convention")
         {
-            Description = "load a .env convention (available conventions: ['nextjs', 'flow'])", HelpName = "name"
+            Description = "load a .env convention (available conventions: ['nextjs', 'flow'])",
+            HelpName = "name"
         };
 
     private readonly Option<string[]?> _envFileOption =
@@ -61,7 +62,8 @@ public class GetAction : Command
     private readonly Option<string[]?> _excludeKeyOption =
         new("--exclude-key", "-ek")
         {
-            Description = "keys(s) to exclude from output (default: none)", HelpName = "excludeKeys...",
+            Description = "keys(s) to exclude from output (default: none)",
+            HelpName = "excludeKeys...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };
@@ -76,7 +78,8 @@ public class GetAction : Command
     private readonly Option<string[]?> _ignoreOption =
         new("--ignore")
         {
-            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes...",
+            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)",
+            HelpName = "errorCodes...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };
@@ -84,7 +87,8 @@ public class GetAction : Command
     private readonly Option<string[]?> _includeKeyOption =
         new("--include-key", "-ik")
         {
-            Description = "keys(s) to include in output (default: all)", HelpName = "includeKeys...",
+            Description = "keys(s) to include in output (default: all)",
+            HelpName = "includeKeys...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };
@@ -119,7 +123,8 @@ public class GetAction : Command
     private readonly Option<bool> _strictOption =
         new("--strict")
         {
-            Description = "process.exit(1) on any errors (default: false)", DefaultValueFactory = _ => false
+            Description = "process.exit(1) on any errors (default: false)",
+            DefaultValueFactory = _ => false
         };
 
     public GetAction(IDotenvxLogger logger) : base("get",
@@ -180,7 +185,8 @@ public class GetAction : Command
         ConfigOptions normalizedOptions =
             NormalizeDotenvConfigIgnore(NormalizeDotenvConfigConvention(new ConfigOptions
             {
-                Convention = convention, Ignore = ignoreList.ToList()
+                Convention = convention,
+                Ignore = [.. ignoreList]
             }));
         convention = normalizedOptions.Convention;
         ignoreList = normalizedOptions.Ignore?.ToArray() ?? [];
@@ -199,7 +205,7 @@ public class GetAction : Command
         List<EnvItem> explicitEnvItems =
             EnvItemOrdering.BuildExplicitEnvItemsInOrder(parseResult, _envOption, _envFileOption);
 
-        EnvItem[] envItems = explicitEnvItems.ToArray();
+        EnvItem[] envItems = [.. explicitEnvItems];
 
         try
         {

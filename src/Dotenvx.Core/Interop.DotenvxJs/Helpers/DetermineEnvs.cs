@@ -5,7 +5,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// <remarks>Reference source: dotenvx/src/lib/helpers/envResolution/determine.js (moved there from
 /// src/lib/helpers/determineEnvs.js, which no longer exists at this pin - confirmed 2026-09-24).
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     private static readonly EnvItem[] DefaultEnvs = [new() { Type = EnvType.EnvFile, Value = ".env" }];
 
@@ -18,7 +18,7 @@ public static partial class Helpers
 
         if (envs == null || envs.Length == 0)
         {
-            return [..defaults];
+            return [.. defaults];
         }
 
         bool fileAlreadySpecified = envs.Any(env => env.Type == EnvType.EnvFile);
@@ -33,7 +33,7 @@ public static partial class Helpers
         // and reuses it in both places. This branch previously hardcoded DefaultEnvs here instead,
         // silently ignoring DOTENV_PRIVATE_KEY* whenever the caller passed only --env strings with
         // no -f (confirmed 2026-09-24, no existing test exercised this combination).
-        return [..defaults, ..envs];
+        return [.. defaults, .. envs];
     }
 
     private static EnvItem[] DetermineEnvsFromDotenvPrivateKey(string[] privateKeyNames)
@@ -45,6 +45,6 @@ public static partial class Helpers
             envs.Add(new EnvItem { Type = EnvType.EnvFile, Value = filename });
         }
 
-        return envs.ToArray();
+        return [.. envs];
     }
 }

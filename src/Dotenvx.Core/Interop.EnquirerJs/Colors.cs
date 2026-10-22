@@ -7,7 +7,7 @@ namespace Dotenvx.Interop.EnquirerJs;
 /// the last style of the stack wraps the text first, so <c>Cyan.Underline</c> renders as ESC[36m ESC[4m text ESC[24m ESC[39m.
 /// Colours are on unless FORCE_COLOR=0 (ansi-colors does not look at the terminal or NO_COLOR).
 /// </remarks>
-public sealed class Style
+internal sealed class Style
 {
     private static readonly Regex AnsiRegex = new(
         "[\u001b\u009b][\\[\\]#;?()]*(?:(?:(?:[^\\W_]*;?[^\\W_]*)\u0007)|(?:(?:[0-9]{1,4}(;[0-9]{0,4})*)?[~0-9=<>cf-nqrtyA-PRZ]))",
@@ -125,7 +125,7 @@ public sealed class Style
 /// Reference source: enquirer lib/styles.js (the default palette) and lib/symbols.js (merged over ansi-colors' symbols, which
 /// differ on Windows).
 /// </remarks>
-public static class Palette
+internal static class Palette
 {
     public static Style Primary => Style.Cyan;
 
@@ -159,7 +159,7 @@ public static class Palette
 }
 
 /// <summary>The symbols one prompt uses, after the per-prompt overrides were merged over the defaults.</summary>
-public sealed class Symbols
+internal sealed class Symbols
 {
     public static bool IsWindows { get; set; } = OperatingSystem.IsWindows();
 

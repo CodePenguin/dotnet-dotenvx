@@ -7,7 +7,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// the legacy rule (every injected value except the ones of public keys); with an Envfile each key's own `stdio.redacted` decides
 /// (redacted unless the Envfile says otherwise), including the values of Envfile keys that are only in the environment.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     /// <summary>`isPublicKey(name)`.</summary>
     public static bool IsPublicKeyName(string name)

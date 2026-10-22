@@ -5,7 +5,7 @@ using Dotenvx.Interop.DotenvxJs.Types;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/normalizeDotenvConfigPath.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static EnvItem[] NormalizeDotenvConfigPath(EnvItem[] envs, IDictionary<string, string?>? processEnv = null)
     {
@@ -35,13 +35,12 @@ public static partial class Helpers
             return envs;
         }
 
-        EnvItem[] envFiles = configuredEnvFiles
+        EnvItem[] envFiles = [.. configuredEnvFiles
             .Split(',')
             .Select(value => value.Trim())
             .Where(value => value.Length > 0)
-            .Select(value => new EnvItem { Type = EnvType.EnvFile, Value = value })
-            .ToArray();
+            .Select(value => new EnvItem { Type = EnvType.EnvFile, Value = value })];
 
-        return [..envFiles, ..envs];
+        return [.. envFiles, .. envs];
     }
 }

@@ -1,7 +1,7 @@
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/armoredKeyDisplay.js</remarks>
-public static class ArmoredKeyDisplay
+internal static class ArmoredKeyDisplay
 {
     public static string Display(string? publicKey)
     {

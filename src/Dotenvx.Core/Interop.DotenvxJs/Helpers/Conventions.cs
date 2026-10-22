@@ -3,7 +3,7 @@ using Dotenvx.Interop.DotenvxJs.Types;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/conventions.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     private static readonly string[] ValidEnvs = ["development", "test", "production"];
 
@@ -18,7 +18,7 @@ public static partial class Helpers
             case "nextjs":
                 string? canonicalEnv = ValidEnvs.Contains(env) ? env : null;
 
-                return new[]
+                return [.. new[]
                 {
                     canonicalEnv != null
                         ? new EnvItem { Type = EnvType.EnvFile, Value = $".env.{canonicalEnv}.local" }
@@ -30,7 +30,7 @@ public static partial class Helpers
                         ? new EnvItem { Type = EnvType.EnvFile, Value = $".env.{canonicalEnv}" }
                         : null,
                     new EnvItem { Type = EnvType.EnvFile, Value = ".env" }
-                }.Where(x => x != null).OfType<EnvItem>().ToArray();
+                }.Where(x => x != null).OfType<EnvItem>()];
             case "flow":
                 return
                 [

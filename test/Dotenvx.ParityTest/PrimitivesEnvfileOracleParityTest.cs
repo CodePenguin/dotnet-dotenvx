@@ -59,14 +59,15 @@ public sealed class PrimitivesEnvfileOracleParityTest(NodeParityFixture fixture)
 
             if (rule.Env.Enum != null)
             {
-                env["enum"] = new JsonArray(rule.Env.Enum.Select(item => (JsonNode?)item).ToArray());
+                env["enum"] = new JsonArray([.. rule.Env.Enum.Select(item => (JsonNode?)item)]);
             }
 
             env["required"] = rule.Env.Required;
             env["strict"] = rule.Env.Strict;
             keys[key] = new JsonObject
             {
-                ["env"] = env, ["fs"] = new JsonObject { ["encrypted"] = rule.Encrypted },
+                ["env"] = env,
+                ["fs"] = new JsonObject { ["encrypted"] = rule.Encrypted },
                 ["stdio"] = new JsonObject { ["redacted"] = rule.Redacted }
             };
         }
@@ -270,7 +271,7 @@ public sealed class PrimitivesEnvfileOracleParityTest(NodeParityFixture fixture)
         mismatches.ShouldBeEmpty(string.Join("\n", mismatches.Take(15)) + $"\n({mismatches.Count} of {sources.Count})");
     }
 
-    private static readonly string[] ProfileEnvvars =["", "production", "development", "nope", "  "];
+    private static readonly string[] ProfileEnvvars = ["", "production", "development", "nope", "  "];
 
     [Fact]
     public async Task ProfileMatchesRealPrimitives()
@@ -411,10 +412,14 @@ public sealed class PrimitivesEnvfileOracleParityTest(NodeParityFixture fixture)
             return new JsonObject
             {
                 ["checked"] = checkedValues,
-                ["errors"] = new JsonArray(r.Errors.Select(e => (JsonNode?)new JsonObject
+                ["errors"] = new JsonArray([.. r.Errors.Select(e => (JsonNode?)new JsonObject
                 {
-                    ["key"] = e.Key, ["code"] = e.Code, ["rule"] = e.Rule, ["message"] = e.Message, ["strict"] = e.Strict
-                }).ToArray())
+                    ["key"] = e.Key,
+                    ["code"] = e.Code,
+                    ["rule"] = e.Rule,
+                    ["message"] = e.Message,
+                    ["strict"] = e.Strict
+                })])
             };
         }
 
@@ -518,7 +523,7 @@ public sealed class PrimitivesEnvfileOracleParityTest(NodeParityFixture fixture)
         }
 
         values.AddRange(["  http://a.b  ", "http:/\t/a.b", "ht\ntp://a.b", "\u0001http://a.b", "http://a.b\u0001", " ", "http", ":", ":a"]);
-        values = values.Distinct().ToList();
+        values = [.. values.Distinct()];
 
         string script = $$"""
                           const p = require('@dotenvx/primitives');
@@ -617,7 +622,8 @@ public sealed class PrimitivesEnvfileOracleParityTest(NodeParityFixture fixture)
         Compare(mismatches, "sources", node["srcs"],
             new JsonObject
             {
-                ["files"] = new JsonArray(sourceResult.Files.Select(f => (JsonNode?)f).ToArray()), ["suffix"] = sourceResult.Suffix
+                ["files"] = new JsonArray([.. sourceResult.Files.Select(f => (JsonNode?)f)]),
+                ["suffix"] = sourceResult.Suffix
             });
 
         mismatches.ShouldBeEmpty(string.Join("\n", mismatches.Take(25)));

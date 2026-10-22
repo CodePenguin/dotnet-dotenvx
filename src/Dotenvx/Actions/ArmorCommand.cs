@@ -118,7 +118,11 @@ public class ArmorCommand : Command
         {
             return name switch
             {
-                "up" => "armoring", "down" => "dearmoring", "push" => "pushing", "pull" => "pulling", _ => "moving"
+                "up" => "armoring",
+                "down" => "dearmoring",
+                "push" => "pushing",
+                "pull" => "pulling",
+                _ => "moving"
             };
         }
 

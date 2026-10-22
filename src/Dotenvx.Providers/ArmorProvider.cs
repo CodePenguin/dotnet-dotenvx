@@ -2,14 +2,13 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-using Dotenvx.Interop.DotenvxJs.Api;
 using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 
 namespace Dotenvx.Providers;
 
 /// <summary>The wire format shared by every Armor call (armorRequest.js, buildApiError.js).</summary>
-public static class ArmorWire
+internal static class ArmorWire
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -82,7 +81,8 @@ public static class ArmorWire
         HttpResult response = ArmorHttp.Request($"{host}/api/armor/{endpoint}", "POST",
             new Dictionary<string, string>
             {
-                ["Authorization"] = $"Bearer {options.Token ?? ""}", ["Content-Type"] = "application/json"
+                ["Authorization"] = $"Bearer {options.Token ?? ""}",
+                ["Content-Type"] = "application/json"
             }, Stringify(payload));
         JsonNode json = ParseJson(response.Body);
         if (response.StatusCode >= 400)

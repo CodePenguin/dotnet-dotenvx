@@ -25,7 +25,8 @@ public class GitignoreAction : Command
     private readonly Option<string[]?> _patternOption =
         new("--pattern")
         {
-            Description = "pattern(s) to gitignore (default: [\".env*\"])", HelpName = "patterns...",
+            Description = "pattern(s) to gitignore (default: [\".env*\"])",
+            HelpName = "patterns...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };

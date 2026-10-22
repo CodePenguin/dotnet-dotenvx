@@ -19,7 +19,9 @@ public class LoggingRootCommand : RootCommand
     private readonly Option<string> _logLevel =
         new("--log-level", "-l")
         {
-            Description = "set log level (default: \"info\")", HelpName = "level", Recursive = true
+            Description = "set log level (default: \"info\")",
+            HelpName = "level",
+            Recursive = true
         };
 
     private readonly Option<bool> _quietLogLevel =

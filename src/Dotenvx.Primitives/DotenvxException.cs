@@ -1,6 +1,6 @@
 using static Dotenvx.Primitives.Primitives;
 
-namespace Dotenvx.Interop.DotenvxJs.Types;
+namespace Dotenvx;
 
 /// <remarks>
 /// Reference source: dotenvx/src/lib/helpers/errors.js. Every upstream error factory sets

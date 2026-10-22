@@ -3,7 +3,7 @@ using Dotenvx.Interop.DotenvxJs.Types;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/buildEnvs.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     internal static EnvItem[] BuildEnvs(ConfigOptions options)
     {
@@ -25,6 +25,6 @@ public static partial class Helpers
             envs.Add(new EnvItem { Type = EnvType.EnvFile, Value = optionPath });
         }
 
-        return envs.ToArray();
+        return [.. envs];
     }
 }

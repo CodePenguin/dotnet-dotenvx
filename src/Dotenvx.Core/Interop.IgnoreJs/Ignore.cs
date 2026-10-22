@@ -3,7 +3,7 @@ namespace Dotenvx.Interop.IgnoreJs;
 /// <summary>
 ///     C# equivalent of Node.js 'ignore' package (https://github.com/kaelzhang/node-ignore)
 /// </summary>
-public class Ignore
+internal class Ignore
 {
     private readonly List<IgnoreRule> _rules = [];
 

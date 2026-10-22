@@ -471,7 +471,7 @@ public class SetsTest : EnvironmentTestBase
     [Fact]
     public void TestRunFindsEnvWithAShebangWithEncrypt()
     {
-        string envKeysFilePath = Path.Combine("tests", "monorepo", "apps", "shebang", ".env.keys");
+        _ = Path.Combine("tests", "monorepo", "apps", "shebang", ".env.keys");
         const string envFile = "tests/monorepo/apps/shebang/.env";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 
@@ -522,7 +522,7 @@ public class SetsTest : EnvironmentTestBase
     [Fact]
     public void TestRunFindsEnvFileWithEncryptAndSettingFromUnencryptedToEncryptedSameValue()
     {
-        string envKeysFilePath = Path.Combine("tests", "monorepo", "apps", "unencrypted", ".env.keys");
+        _ = Path.Combine("tests", "monorepo", "apps", "unencrypted", ".env.keys");
         const string envFile = "tests/monorepo/apps/unencrypted/.env";
         EnvItem[] envs = [new() { Type = EnvType.EnvFile, Value = envFile }];
 

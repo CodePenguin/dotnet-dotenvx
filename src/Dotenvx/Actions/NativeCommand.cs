@@ -7,8 +7,9 @@ using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
 
-using ParseResult = System.CommandLine.ParseResult;
 using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
+
+using ParseResult = System.CommandLine.ParseResult;
 
 namespace Dotenvx.Actions;
 

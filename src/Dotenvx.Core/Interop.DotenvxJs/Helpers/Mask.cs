@@ -3,7 +3,7 @@ using System.Globalization;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/mask.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string Mask(string? str, object? showChar = null)
     {

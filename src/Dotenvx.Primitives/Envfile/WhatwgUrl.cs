@@ -27,7 +27,7 @@ internal static class WhatwgUrl
             end--;
         }
 
-        string text = new(input[start..end].Where(c => c is not ('\t' or '\n' or '\r')).ToArray());
+        string text = new([.. input[start..end].Where(c => c is not ('\t' or '\n' or '\r'))]);
 
         int colon = text.IndexOf(':');
         if (colon <= 0 || !char.IsAsciiLetter(text[0]) ||
@@ -239,7 +239,7 @@ internal static class WhatwgUrl
             }
         }
 
-        return new UTF8Encoding(false, false).GetString(bytes.ToArray());
+        return new UTF8Encoding(false, false).GetString([.. bytes]);
     }
 
     private static string ToAscii(string domain)
@@ -274,7 +274,7 @@ internal static class WhatwgUrl
 
     private static bool EndsInNumber(string host)
     {
-        List<string> parts = host.Split('.').ToList();
+        List<string> parts = [.. host.Split('.')];
         if (parts[^1].Length == 0)
         {
             if (parts.Count == 1)
@@ -331,7 +331,7 @@ internal static class WhatwgUrl
 
     private static bool ParseIpv4(string host)
     {
-        List<string> parts = host.Split('.').ToList();
+        List<string> parts = [.. host.Split('.')];
         if (parts[^1].Length == 0 && parts.Count > 1)
         {
             parts.RemoveAt(parts.Count - 1);

@@ -30,7 +30,7 @@ public class DetectEncodingTest : EnvironmentTestBase
         // Mock ReadFileSync to return UTF-16LE BOM + content
         byte[] utf16LeBom = [0xFF, 0xFE];
         byte[] content = Encoding.Unicode.GetBytes("BASIC=basic\n");
-        byte[] buffer = utf16LeBom.Concat(content).ToArray();
+        byte[] buffer = [.. utf16LeBom, .. content];
 
         Fsx.ReadFileSync = path => buffer;
 
@@ -44,7 +44,7 @@ public class DetectEncodingTest : EnvironmentTestBase
     public void TestDetectEncodingFallbackUtf8Latin1()
     {
         // Mock ReadFileSync to return bytes without BOM (simulating latin1 or other)
-        Fsx.ReadFileSync = path => new byte[] { 0x42, 0x41, 0x53, 0x49, 0x43 }; // "BASIC" in ASCII
+        Fsx.ReadFileSync = path => [0x42, 0x41, 0x53, 0x49, 0x43]; // "BASIC" in ASCII
 
         string encoding = DetectEncoding("tests/.env.latin1");
 

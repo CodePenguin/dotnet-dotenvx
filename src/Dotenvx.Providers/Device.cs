@@ -9,7 +9,7 @@ namespace Dotenvx.Interop.DotenvxJs.Db;
 /// (`DOTENVX_CONFIG` or the OS default), encrypted with the same fixed key as upstream so the Node and .NET CLIs share
 /// one device.
 /// </remarks>
-public class Device
+internal class Device
 {
     private const string PrivateKeySlot = "private_key/1";
 

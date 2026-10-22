@@ -20,7 +20,9 @@ internal static class CustodyOptions
     {
         return new("--env-keys-file", "-fk")
         {
-            Description = "path to your .env.keys file", HelpName = "path", DefaultValueFactory = _ => ".env.keys"
+            Description = "path to your .env.keys file",
+            HelpName = "path",
+            DefaultValueFactory = _ => ".env.keys"
         };
     }
 

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace Dotenvx.Providers;
 
 /// <summary>`matchesStoredKey(publicKey, value)`: the stored value derives the public key asked for.</summary>
-public static class MatchesStoredKey
+internal static class MatchesStoredKey
 {
     public static bool Matches(string publicKey, string value)
     {
@@ -48,7 +48,7 @@ internal sealed class PasswordCommand(string binary, ProviderOptions options, Fu
 /// in the dotenvx settings) is `account|op://vault/item/(private_key|password)`; the value read with `op read` must derive the
 /// public key.
 /// </remarks>
-internal sealed class OnePasswordProvider(ProviderOptions options) : IKeyProvider
+public sealed class OnePasswordProvider(ProviderOptions options) : IKeyProvider
 {
     private static readonly Regex Account = new("^[a-z0-9]{26}\\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
@@ -127,7 +127,7 @@ internal sealed class OnePasswordProvider(ProviderOptions options) : IKeyProvide
 /// base64 of `{ item, userId, serverUrl }`; `bw status` must show an unlocked vault of that user and server, then
 /// `bw get password &lt;item&gt;` must derive the public key. Needs an unlocked `BW_SESSION`.
 /// </remarks>
-internal sealed class BitwardenProvider(ProviderOptions options) : IKeyProvider
+public sealed class BitwardenProvider(ProviderOptions options) : IKeyProvider
 {
     private static readonly Regex Id = new("^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}\\z",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);

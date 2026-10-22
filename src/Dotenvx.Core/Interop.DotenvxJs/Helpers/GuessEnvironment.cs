@@ -1,14 +1,14 @@
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/guessEnvironment.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string GuessEnvironment(string filepath)
     {
         string filename = CanonicalEnvFilename(filepath);
 
         string[] parts = filename.Split('.');
-        string[] possibleEnvironmentList = parts.Skip(2).ToArray();
+        string[] possibleEnvironmentList = [.. parts.Skip(2)];
 
         return possibleEnvironmentList.Length switch
         {

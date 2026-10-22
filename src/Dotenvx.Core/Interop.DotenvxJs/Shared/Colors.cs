@@ -10,7 +10,7 @@ namespace Dotenvx.Interop.DotenvxJs.Shared;
 /// true-color branch (`colorsTrueColor` in the JS source) for amber/orangered/red, which this port
 /// never implemented even though GetColorDepth can return 24.
 /// </remarks>
-public static class Shared
+internal static class Shared
 {
     private static readonly Dictionary<string, int> Colors16 = new()
     {

@@ -3,7 +3,7 @@ using System.Text;
 namespace Dotenvx.Interop.EnquirerJs;
 
 /// <remarks>Reference source: enquirer lib/ansi.js (cursor movement, erasing and the cursor-restore arithmetic).</remarks>
-public static class Ansi
+internal static class Ansi
 {
     public const string Esc = "\u001b[";
 

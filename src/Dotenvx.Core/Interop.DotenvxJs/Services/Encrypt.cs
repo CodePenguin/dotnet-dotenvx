@@ -16,7 +16,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// (`fs.encrypted`, else "not *_PLAIN"), encrypted unless already encrypted, and upserted per occurrence; DOTENV_PUBLIC_KEY*
 /// keys are never encrypted. When an Envfile exempts everything, no key is created.
 /// </remarks>
-public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath,
+internal class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string? envKeysFilePath,
     bool noCreate = false)
 {
     private const string SampleEnvKit = "HELLO=\"World\"\n";
@@ -71,9 +71,9 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
         return new EncryptResult
         {
             KeysSrc = _keysSrc,
-            ProcessedEnvs = _processedEnvs.ToArray(),
-            ChangedFilePaths = _changedFilePaths.ToArray(),
-            UnchangedFilePaths = _unchangedFilePaths.ToArray()
+            ProcessedEnvs = [.. _processedEnvs],
+            ChangedFilePaths = [.. _changedFilePaths],
+            UnchangedFilePaths = [.. _unchangedFilePaths]
         };
     }
 
@@ -110,8 +110,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
             {
                 // Inspect every assignment before selection or schema rules can hide it.
                 ScanResult existing = Scan(envSrc, new ScanOptions());
-                List<string> declaredKeys = existing.Parsed.Where(pair => IsPublicKey(pair.Key, ""))
-                    .SelectMany(pair => pair.Value).ToList();
+                List<string> declaredKeys = [.. existing.Parsed.Where(pair => IsPublicKey(pair.Key, "")).SelectMany(pair => pair.Value)];
                 bool matchingKey = declaredKeys.Count > 0 && declaredKeys.All(value =>
                     string.Equals(value, With, StringComparison.OrdinalIgnoreCase));
                 if (!matchingKey && (declaredKeys.Count > 0 || existing.Parsed.Values.Any(values => values.Any(Encrypted))))
@@ -142,7 +141,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
             }
 
             ScanResult scanned = Scan(envSrc, new ScanOptions { Ik = keys, Ek = excludeKeys });
-            List<KeyValuePair<string, List<string>>> selected = scanned.Parsed.Where(pair =>
+            List<KeyValuePair<string, List<string>>> selected = [.. scanned.Parsed.Where(pair =>
             {
                 if (IsPublicKey(pair.Key, ""))
                 {
@@ -152,7 +151,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
                 return schema.Exists
                     ? !schema.Keys.TryGetValue(pair.Key, out KeyPolicy? policy) || policy.Encrypted
                     : !IsPlainKey(pair.Key);
-            }).ToList();
+            })];
             if (schema.Exists && !selected.Any(pair => pair.Value.Any(value => !Encrypted(value))))
             {
                 // A missing file still needs writing even when its initial values are exempt from encryption.
@@ -204,8 +203,7 @@ public class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
             foreach ((string key, List<string> values) in selected)
             {
-                string[] transformed = values.Select(value => Encrypted(value) ? value : Encrypt(value, publicKey))
-                    .ToArray();
+                string[] transformed = [.. values.Select(value => Encrypted(value) ? value : Encrypt(value, publicKey))];
 
                 string before = envSrc;
                 envSrc = Upsert(envSrc, key, transformed);

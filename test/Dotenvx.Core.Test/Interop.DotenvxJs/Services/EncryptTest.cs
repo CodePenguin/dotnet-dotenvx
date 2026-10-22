@@ -405,7 +405,7 @@ public class EncryptTest : EnvironmentTestBase
         EncryptResult result = new Encrypt(envs, null, null, null).Run();
 
         result.ProcessedEnvs.ShouldHaveSingleItem();
-        EncryptProcessedEnv p = result.ProcessedEnvs[0];
+        _ = result.ProcessedEnvs[0];
         result.UnchangedFilePaths.ShouldBe([envFile]);
     }
 

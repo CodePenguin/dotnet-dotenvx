@@ -1,6 +1,6 @@
 namespace Dotenvx.Interop.DotenvxJs.Types;
 
-public class RunResult
+internal class RunResult
 {
     public required RunProcessedEnv[] ProcessedEnvs { get; init; }
     public required string[] ReadableStrings { get; init; }

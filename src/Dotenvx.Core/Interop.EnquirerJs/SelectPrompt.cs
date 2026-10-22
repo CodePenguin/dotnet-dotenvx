@@ -5,9 +5,9 @@ namespace Dotenvx.Interop.EnquirerJs;
 /// class stands for the three because only `Select` and `MultiSelect` are instantiated (`Multiple` is what `MultiSelect`
 /// adds). Member names follow the JS methods so a change upstream can be found by name.
 /// </remarks>
-public class SelectPrompt : Prompt
+internal class SelectPrompt : Prompt
 {
-    private List<PromptChoice> _normalized = [];
+    private readonly List<PromptChoice> _normalized = [];
 
     private bool _initialDone;
 
@@ -538,8 +538,8 @@ public class SelectPrompt : Prompt
 
             if (focused.Index > actualIndex)
             {
-                List<PromptChoice> start = choices.Skip(actualIndex).Take(Limit).ToList();
-                List<PromptChoice> end = choices.Where(item => !start.Contains(item)).ToList();
+                List<PromptChoice> start = [.. choices.Skip(actualIndex).Take(Limit)];
+                List<PromptChoice> end = [.. choices.Where(item => !start.Contains(item))];
                 Choices = [.. start, .. end];
             }
             else
@@ -1014,7 +1014,7 @@ public class SelectPrompt : Prompt
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/checklist.js - a multiselect with a trailing action choice.</remarks>
-public sealed class Checklist : SelectPrompt
+internal sealed class Checklist : SelectPrompt
 {
     public Checklist(PromptOptions options)
         : base(options, true, "multiselect")
@@ -1093,7 +1093,7 @@ public sealed class Checklist : SelectPrompt
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/custodySelect.js - Escape cancels, Left jumps to the back choice.</remarks>
-public sealed class CustodySelect : SelectPrompt
+internal sealed class CustodySelect : SelectPrompt
 {
     public CustodySelect(PromptOptions options)
         : base(options)

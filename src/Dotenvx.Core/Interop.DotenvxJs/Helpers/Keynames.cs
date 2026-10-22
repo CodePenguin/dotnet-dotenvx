@@ -3,7 +3,7 @@ using Dotenvx.Primitives;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/conventions/keynames.js. A public key name found in the source wins over the file name.</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static (string PublicKeyName, string PrivateKeyName) Keynames(string filepath = ".env", string src = "")
     {

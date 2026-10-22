@@ -1,4 +1,3 @@
-using Dotenvx.Interop.DotenvxJs.Api;
 
 namespace Dotenvx.Providers;
 
@@ -60,10 +59,23 @@ public sealed class ProviderOptions
     {
         return new ProviderOptions
         {
-            ProcessEnv = ProcessEnv, Fk = Fk, Cwd = Cwd, NoNative = NoNative, NativeOff = NativeOff, NativeGet = NativeGet,
-            NoOnePassword = NoOnePassword, NoBitwarden = NoBitwarden, NoArmor = NoArmor, ArmorOff = ArmorOff,
-            Hostname = hostname, Token = token, DevicePublicKey = devicePublicKey, CliVersion = CliVersion,
-            OnLookup = OnLookup, OnLookupEnd = OnLookupEnd, OnArmorError = OnArmorError,
+            ProcessEnv = ProcessEnv,
+            Fk = Fk,
+            Cwd = Cwd,
+            NoNative = NoNative,
+            NativeOff = NativeOff,
+            NativeGet = NativeGet,
+            NoOnePassword = NoOnePassword,
+            NoBitwarden = NoBitwarden,
+            NoArmor = NoArmor,
+            ArmorOff = ArmorOff,
+            Hostname = hostname,
+            Token = token,
+            DevicePublicKey = devicePublicKey,
+            CliVersion = CliVersion,
+            OnLookup = OnLookup,
+            OnLookupEnd = OnLookupEnd,
+            OnArmorError = OnArmorError,
             OnApprovalRequired = OnApprovalRequired
         };
     }

@@ -1,6 +1,6 @@
 namespace Dotenvx.Interop.DotenvxJs.Types;
 
-public class EncryptResult
+internal class EncryptResult
 {
     public string? KeysSrc { get; init; }
     public EncryptProcessedEnv[] ProcessedEnvs { get; init; } = [];

@@ -3,10 +3,10 @@ using System.Text.RegularExpressions;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
-public record UpsertEnvKeyResult(bool Changed, string Key, string Value, bool Created, string Filepath);
+internal record UpsertEnvKeyResult(bool Changed, string Key, string Value, bool Created, string Filepath);
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/upsertEnvKey.js</remarks>
-public static class UpsertEnvKeyHelper
+internal static class UpsertEnvKeyHelper
 {
     public static UpsertEnvKeyResult UpsertEnvKey(string key, string value, string keysFilepath = ".env.keys")
     {

@@ -11,7 +11,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// key files (`fk`), then the custom provider chain; every key found is attributed to the place it came from
 /// (<see cref="Outcome{T}.KeySources" />). A server-side-only key is decrypted by the decryptor instead.
 /// </remarks>
-public static class ParseWithDecryptor
+internal static class ParseWithDecryptor
 {
     private const string ServerSideDecryptionRequired = "SERVER_SIDE_DECRYPTION_REQUIRED";
 
@@ -39,7 +39,9 @@ public static class ParseWithDecryptor
         // keys exported in the environment
         Dictionary<string, string> environment = Primitives.Primitives.KeyringSync(new KeyringOptions
         {
-            ProcessEnv = options.ProcessEnv, Fk = [], Provider = null
+            ProcessEnv = options.ProcessEnv,
+            Fk = [],
+            Provider = null
         });
         foreach (string key in publicKeys)
         {

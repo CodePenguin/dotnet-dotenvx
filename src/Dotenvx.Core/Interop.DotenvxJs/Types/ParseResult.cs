@@ -1,6 +1,6 @@
 namespace Dotenvx.Interop.DotenvxJs.Types;
 
-public class ParseResult
+internal class ParseResult
 {
     public required IReadOnlyDictionary<string, string> Parsed { get; init; }
     public required IReadOnlyDictionary<string, string> ProcessEnv { get; init; }

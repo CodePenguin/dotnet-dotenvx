@@ -23,7 +23,8 @@ public class CheckAction : Command
     private readonly Option<string?> _conventionOption =
         new("--convention")
         {
-            Description = "load a .env convention (available conventions: ['nextjs', 'flow'])", HelpName = "name"
+            Description = "load a .env convention (available conventions: ['nextjs', 'flow'])",
+            HelpName = "name"
         };
 
     private readonly Option<string[]?> _envFileOption =
@@ -48,7 +49,8 @@ public class CheckAction : Command
     private readonly Option<string[]?> _ignoreOption =
         new("--ignore")
         {
-            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)", HelpName = "errorCodes...",
+            Description = "error code(s) to ignore (example: --ignore=MISSING_ENV_FILE)",
+            HelpName = "errorCodes...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };
@@ -99,7 +101,8 @@ public class CheckAction : Command
         string[] ignore = parseResult.GetValue(_ignoreOption) ?? [];
         ConfigOptions normalized = NormalizeDotenvConfigIgnore(NormalizeDotenvConfigConvention(new ConfigOptions
         {
-            Convention = convention, Ignore = ignore.ToList()
+            Convention = convention,
+            Ignore = [.. ignore]
         }));
         convention = normalized.Convention;
         ignore = normalized.Ignore?.ToArray() ?? [];

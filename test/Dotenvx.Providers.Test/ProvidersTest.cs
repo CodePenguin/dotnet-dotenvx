@@ -1,4 +1,3 @@
-using Dotenvx.Interop.DotenvxJs.Api;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 
 using Shouldly;
@@ -218,8 +217,12 @@ public sealed class ProvidersTest : IDisposable
         ProviderOptions options = Options();
         ProviderOptions signedIn = new()
         {
-            ProcessEnv = options.ProcessEnv, Cwd = _dir, Token = "tok", Hostname = "https://h.example",
-            DevicePublicKey = "device", CliVersion = "9.9.9"
+            ProcessEnv = options.ProcessEnv,
+            Cwd = _dir,
+            Token = "tok",
+            Hostname = "https://h.example",
+            DevicePublicKey = "device",
+            CliVersion = "9.9.9"
         };
 
         new ArmorProvider(signedIn).GetSync(PublicKey).ShouldBe(new Dictionary<string, string> { [PublicKey] = PrivateKey });
@@ -234,15 +237,23 @@ public sealed class ProvidersTest : IDisposable
         Exception? reported = null;
         ProviderOptions options = new()
         {
-            ProcessEnv = new Dictionary<string, string> { ["DOTENVX_CONFIG"] = _dir, ["CI"] = "1" }, Cwd = _dir, Token = "t",
-            Hostname = "https://h", DevicePublicKey = "d", OnArmorError = error => reported = error
+            ProcessEnv = new Dictionary<string, string> { ["DOTENVX_CONFIG"] = _dir, ["CI"] = "1" },
+            Cwd = _dir,
+            Token = "t",
+            Hostname = "https://h",
+            DevicePublicKey = "d",
+            OnArmorError = error => reported = error
         };
 
         new ProviderChain(options).GetSync(PublicKey).ShouldBeEmpty();
         reported.ShouldBeOfType<ApiException>().Message.ShouldBe("[UNAUTHORIZED] no");
         Should.Throw<ApiException>(() => new ProviderChain(new ProviderOptions
         {
-            ProcessEnv = options.ProcessEnv, Cwd = _dir, Token = "t", Hostname = "https://h", DevicePublicKey = "d"
+            ProcessEnv = options.ProcessEnv,
+            Cwd = _dir,
+            Token = "t",
+            Hostname = "https://h",
+            DevicePublicKey = "d"
         }).GetSync(PublicKey));
     }
 

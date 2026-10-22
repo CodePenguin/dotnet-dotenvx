@@ -8,7 +8,7 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
 /// <summary>What `prepareValidatedEnv` returns: the loaded rows and the outcome of the Envfile checks.</summary>
-public sealed class ValidatedEnv
+internal sealed class ValidatedEnv
 {
     public required IDictionary<string, string> ProcessEnv { get; init; }
     public required RunProcessedEnv[] ProcessedEnvs { get; init; }
@@ -21,7 +21,7 @@ public sealed class ValidatedEnv
 }
 
 /// <summary>The options `prepareValidatedEnv` reads from the command (`options`) and its caller.</summary>
-public sealed class ValidateEnvOptions
+internal sealed class ValidateEnvOptions
 {
     public string? Profile { get; init; }
     public string? Convention { get; init; }
@@ -37,7 +37,7 @@ public sealed class ValidateEnvOptions
 /// Reference source: dotenvx/src/lib/services/validate.js. Loads once and validates the final values against the Envfile;
 /// callers own presentation and execution.
 /// </remarks>
-public static class PrepareValidatedEnv
+internal static class PrepareValidatedEnv
 {
     public static ValidatedEnv Execute(EnvItem[] envs, ValidateEnvOptions options, IDictionary<string, string>? processEnv = null,
         bool requireEnvfile = true)

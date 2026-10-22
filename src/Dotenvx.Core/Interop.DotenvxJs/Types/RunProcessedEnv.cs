@@ -1,6 +1,6 @@
 namespace Dotenvx.Interop.DotenvxJs.Types;
 
-public class RunProcessedEnv
+internal class RunProcessedEnv
 {
     public EnvType Type { get; set; }
     public string FilePath { get; set; } = string.Empty;

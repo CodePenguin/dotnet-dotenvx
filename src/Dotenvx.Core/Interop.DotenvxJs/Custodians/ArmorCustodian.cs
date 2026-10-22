@@ -6,7 +6,7 @@ using Dotenvx.Interop.DotenvxJs.Services;
 namespace Dotenvx.Interop.DotenvxJs.Custodians;
 
 /// <summary>The user chose "back" in the team prompt to return to the custody menu (`KEY_CUSTODY_BACK`).</summary>
-public sealed class KeyCustodyBackException() : Exception("Return to private key custody")
+internal sealed class KeyCustodyBackException() : Exception("Return to private key custody")
 {
     public string Code => "KEY_CUSTODY_BACK";
 }
@@ -15,7 +15,7 @@ public sealed class KeyCustodyBackException() : Exception("Return to private key
 /// Reference source: dotenvx/src/lib/custodians/managed/armor/{index,store}.js. Armor holds the key on the server: storing
 /// posts the keypair (asking for a team when the account has several) and writes nothing local.
 /// </remarks>
-public sealed class ArmorCustodian : ICustodian
+internal sealed class ArmorCustodian : ICustodian
 {
     public const string BackValue = "__back";
 

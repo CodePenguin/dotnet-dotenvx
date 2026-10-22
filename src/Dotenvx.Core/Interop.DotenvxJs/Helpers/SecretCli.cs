@@ -5,7 +5,7 @@ using System.Text;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>Outcome of running an external secret CLI (`op`, `bw`). <see cref="NotFound" /> is Node's `ENOENT`.</summary>
-public record SecretCliResult(int ExitCode, string Stdout, bool NotFound = false)
+internal record SecretCliResult(int ExitCode, string Stdout, bool NotFound = false)
 {
     public string Stderr { get; init; } = "";
 }
@@ -14,7 +14,7 @@ public record SecretCliResult(int ExitCode, string Stdout, bool NotFound = false
 /// Shared process seam for resolveOnePassword.js / resolveBitwardenPassword.js (`execFile` / `execFileSync` with
 /// `encoding: 'utf8', windowsHide: true`, stdin closed). Swappable so unit tests never spawn a real `op`/`bw`.
 /// </remarks>
-public static class SecretCli
+internal static class SecretCli
 {
     private static readonly Func<string, string[], IReadOnlyDictionary<string, string>?, SecretCliResult> DefaultExec =
         (command, args, env) => ExecProcess(command, args, env);

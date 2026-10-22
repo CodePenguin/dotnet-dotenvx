@@ -171,6 +171,10 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         // parse
         yield return Scenario("parse plain", none, null, Call("parse", Args("A=1\nB=two\n")));
         yield return Scenario("parse quotes", none, null, Call("parse", Args("A=\"x y\"\nB='z'\nC=`k`\n# c\nD=1 # trailing\n")));
+        yield return Scenario("config override", two, null, Call("config", null, Opts("""{"processEnv":{"FOO":"x"},"path":[".env",".env.local"],"override":true}""")));
+        yield return Scenario("parse override", none, null, Call("parse", Args("A=1\n"), Opts("""{"processEnv":{"A":"mine"},"override":true}""")));
+        yield return Scenario("get override is ignored", two, null, Call("get", Args((string?)null), Opts("""{"path":[".env",".env.local"],"override":true}""")));
+        yield return Scenario("config native false", two, null, Call("config", null, Opts("""{"processEnv":{"X":"1"},"path":[".env",".env.local"],"native":false}""")));
         yield return Scenario("parse overload", none, null, Call("parse", Args("A=1\n"), Opts("""{"processEnv":{"A":"mine"},"overload":true}""")));
         yield return Scenario("parse existing", none, null, Call("parse", Args("A=1\n"), Opts("""{"processEnv":{"A":"mine"}}""")));
         yield return Scenario("parse encrypted no key", none, null, Call("parse", Args(Encrypted)));
@@ -333,10 +337,21 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             target.PathString = path;
         }
 
-        if (Flag(options, "overload") || Flag(options, "override"))
+        if (Flag(options, "overload"))
         {
             target.Overload = true;
         }
+
+        if (Flag(options, "override"))
+        {
+            target.Override = true;
+        }
+
+        if (options["native"] is not null)
+        {
+            target.Native = !Flag(options, "native") ? false : null;
+        }
+
 
         if (options["processEnv"] is JsonObject processEnv)
         {
@@ -448,7 +463,7 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         RedactProcessOutput.Reset();
         Console.SetOut(capturedOut);
         Console.SetError(capturedError);
-        var eventSdk = new global::Dotenvx.Interop.DotenvxJs.Events.EventSdk();
+        var eventSdk = new global::Dotenvx.EventSdk();
         try
         {
             var rows = new JsonArray();
@@ -467,123 +482,124 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                     switch (fn)
                     {
                         case "config":
-                        {
-                            ConfigOptions mapped = Map<ConfigOptions>(options);
-                            mapped.Logger = logger;
-                            processEnv = mapped.ProcessEnv;
-                            ConfigResult result = Main.Config(mapped);
-                            row["result"] = new JsonObject { ["parsed"] = Dict(result.Parsed), ["error"] = DescribeError(result.Error) };
-                            break;
-                        }
-                        case "parse":
-                        {
-                            var parseOptions = new ParseOptions
                             {
-                                Logger = logger,
-                                PrivateKey = Str(options["privateKey"]),
-                                Overload = Flag(options, "overload") || Flag(options, "override"),
-                                Ignore = options["ignore"] is JsonArray ignore ? [.. ignore.Select(item => item!.GetValue<string>())] : null,
-                                ProcessEnv = options["processEnv"] is JsonObject penv
-                                    ? penv.ToDictionary(pair => pair.Key, pair => pair.Value!.GetValue<string>())
-                                    : null
-                            };
-                            processEnv = parseOptions.ProcessEnv?.ToDictionary();
-                            row["result"] = new JsonObject { ["parsed"] = Dict(Main.Parse(Str(args[0]), parseOptions)) };
-                            break;
-                        }
-                        case "get":
-                        {
-                            GetOptions mapped = Map<GetOptions>(options);
-                            mapped.Logger = logger;
-                            processEnv = mapped.ProcessEnv;
-                            object? value = Main.Get(Str(args[0]), mapped);
-                            JsonNode? shown = value switch
-                            {
-                                null => new JsonObject { ["undefined"] = true },
-                                string text => text,
-                                IReadOnlyDictionary<string, string> dictionary => Dict(dictionary),
-                                IDictionary<string, string> dictionary => Dict(dictionary),
-                                _ => throw new InvalidOperationException(value.GetType().FullName)
-                            };
-                            row["result"] = new JsonObject { ["value"] = shown };
-                            break;
-                        }
-                        case "set":
-                        {
-                            SetsOptions mapped = Map<SetsOptions>(options);
-                            mapped.Logger = logger;
-                            SetsResult result = Main.Set(Str(args[0])!, Str(args[1])!, mapped);
-                            row["result"] = new JsonObject
-                            {
-                                ["changed"] = new JsonArray([.. result.ChangedFilePaths.Select(path => (JsonNode?)JsonValue.Create(path))]),
-                                ["unchanged"] = new JsonArray([.. result.UnchangedFilePaths.Select(path => (JsonNode?)JsonValue.Create(path))])
-                            };
-                            break;
-                        }
-                        case "ls":
-                        {
-                            string[] files = Main.Ls(Str(args[0])!, args.Count > 1 && args[1] is not null ? [Str(args[1])!] : null,
-                                args.Count > 2 && args[2] is not null ? [Str(args[2])!] : null);
-                            row["result"] = new JsonObject { ["files"] = new JsonArray([.. files.Select(path => (JsonNode?)JsonValue.Create(path))]) };
-                            break;
-                        }
-                        case "events.config":
-                        {
-                            ConfigOptions mapped = Map<ConfigOptions>(options);
-                            mapped.Logger = logger;
-                            processEnv = mapped.ProcessEnv;
-                            ConfigResult result = eventSdk.Config(mapped);
-                            await_(eventSdk.FlushEvents());
-                            row["result"] = new JsonObject { ["parsed"] = Dict(result.Parsed), ["error"] = DescribeError(result.Error) };
-                            break;
-                        }
-                        case "events.get":
-                        {
-                            GetOptions mapped = Map<GetOptions>(options);
-                            mapped.Logger = logger;
-                            processEnv = mapped.ProcessEnv;
-                            object? value = eventSdk.Get(Str(args[0]), mapped);
-                            await_(eventSdk.FlushEvents());
-                            JsonNode? shown = value switch
-                            {
-                                null => new JsonObject { ["undefined"] = true },
-                                string text => text,
-                                IReadOnlyDictionary<string, string> dictionary => Dict(dictionary),
-                                IDictionary<string, string> dictionary => Dict(dictionary),
-                                _ => throw new InvalidOperationException(value.GetType().FullName)
-                            };
-                            row["result"] = new JsonObject { ["value"] = shown };
-                            break;
-                        }
-                        case "events.set":
-                        {
-                            SetsOptions mapped = Map<SetsOptions>(options);
-                            mapped.Logger = logger;
-                            SetsResult result = eventSdk.Set(Str(args[0])!, Str(args[1])!, mapped);
-                            await_(eventSdk.FlushEvents());
-                            row["result"] = new JsonObject
-                            {
-                                ["changed"] = new JsonArray([.. result.ChangedFilePaths.Select(path => (JsonNode?)JsonValue.Create(path))]),
-                                ["unchanged"] = new JsonArray([.. result.UnchangedFilePaths.Select(path => (JsonNode?)JsonValue.Create(path))])
-                            };
-                            break;
-                        }
-                        case "write":
-                        {
-                            capturedOut.GetStringBuilder().Clear();
-                            capturedError.GetStringBuilder().Clear();
-                            TextWriter target = Str(args[0]) == "stdout" ? Console.Out : Console.Error;
-                            foreach (JsonNode? text in args.Skip(1))
-                            {
-                                target.Write(Str(text));
+                                ConfigOptions mapped = Map<ConfigOptions>(options);
+                                mapped.Logger = logger;
+                                processEnv = mapped.ProcessEnv;
+                                ConfigResult result = Main.Config(mapped);
+                                row["result"] = new JsonObject { ["parsed"] = Dict(result.Parsed), ["error"] = DescribeError(result.Error) };
+                                break;
                             }
-
-                            row["result"] = new JsonObject
+                        case "parse":
                             {
-                                ["output"] = (Str(args[0]) == "stdout" ? capturedOut : capturedError).ToString()
-                            };
-                            break;
-                        }
+                                var parseOptions = new ParseOptions
+                                {
+                                    Logger = logger,
+                                    PrivateKey = Str(options["privateKey"]),
+                                    Overload = Flag(options, "overload"),
+                                    Override = Flag(options, "override"),
+                                    Ignore = options["ignore"] is JsonArray ignore ? [.. ignore.Select(item => item!.GetValue<string>())] : null,
+                                    ProcessEnv = options["processEnv"] is JsonObject penv
+                                        ? penv.ToDictionary(pair => pair.Key, pair => pair.Value!.GetValue<string>())
+                                        : null
+                                };
+                                processEnv = parseOptions.ProcessEnv?.ToDictionary();
+                                row["result"] = new JsonObject { ["parsed"] = Dict(Main.Parse(Str(args[0]), parseOptions)) };
+                                break;
+                            }
+                        case "get":
+                            {
+                                GetOptions mapped = Map<GetOptions>(options);
+                                mapped.Logger = logger;
+                                processEnv = mapped.ProcessEnv;
+                                object? value = Main.Get(Str(args[0]), mapped);
+                                JsonNode? shown = value switch
+                                {
+                                    null => new JsonObject { ["undefined"] = true },
+                                    string text => text,
+                                    IReadOnlyDictionary<string, string> dictionary => Dict(dictionary),
+                                    IDictionary<string, string> dictionary => Dict(dictionary),
+                                    _ => throw new InvalidOperationException(value.GetType().FullName)
+                                };
+                                row["result"] = new JsonObject { ["value"] = shown };
+                                break;
+                            }
+                        case "set":
+                            {
+                                SetsOptions mapped = Map<SetsOptions>(options);
+                                mapped.Logger = logger;
+                                SetsResult result = Main.Set(Str(args[0])!, Str(args[1])!, mapped);
+                                row["result"] = new JsonObject
+                                {
+                                    ["changed"] = new JsonArray([.. result.ChangedFilePaths.Select(path => (JsonNode?)JsonValue.Create(path))]),
+                                    ["unchanged"] = new JsonArray([.. result.UnchangedFilePaths.Select(path => (JsonNode?)JsonValue.Create(path))])
+                                };
+                                break;
+                            }
+                        case "ls":
+                            {
+                                string[] files = Main.Ls(Str(args[0])!, args.Count > 1 && args[1] is not null ? [Str(args[1])!] : null,
+                                    args.Count > 2 && args[2] is not null ? [Str(args[2])!] : null);
+                                row["result"] = new JsonObject { ["files"] = new JsonArray([.. files.Select(path => (JsonNode?)JsonValue.Create(path))]) };
+                                break;
+                            }
+                        case "events.config":
+                            {
+                                ConfigOptions mapped = Map<ConfigOptions>(options);
+                                mapped.Logger = logger;
+                                processEnv = mapped.ProcessEnv;
+                                ConfigResult result = eventSdk.Config(mapped);
+                                await_(eventSdk.FlushEvents());
+                                row["result"] = new JsonObject { ["parsed"] = Dict(result.Parsed), ["error"] = DescribeError(result.Error) };
+                                break;
+                            }
+                        case "events.get":
+                            {
+                                GetOptions mapped = Map<GetOptions>(options);
+                                mapped.Logger = logger;
+                                processEnv = mapped.ProcessEnv;
+                                object? value = eventSdk.Get(Str(args[0]), mapped);
+                                await_(eventSdk.FlushEvents());
+                                JsonNode? shown = value switch
+                                {
+                                    null => new JsonObject { ["undefined"] = true },
+                                    string text => text,
+                                    IReadOnlyDictionary<string, string> dictionary => Dict(dictionary),
+                                    IDictionary<string, string> dictionary => Dict(dictionary),
+                                    _ => throw new InvalidOperationException(value.GetType().FullName)
+                                };
+                                row["result"] = new JsonObject { ["value"] = shown };
+                                break;
+                            }
+                        case "events.set":
+                            {
+                                SetsOptions mapped = Map<SetsOptions>(options);
+                                mapped.Logger = logger;
+                                SetsResult result = eventSdk.Set(Str(args[0])!, Str(args[1])!, mapped);
+                                await_(eventSdk.FlushEvents());
+                                row["result"] = new JsonObject
+                                {
+                                    ["changed"] = new JsonArray([.. result.ChangedFilePaths.Select(path => (JsonNode?)JsonValue.Create(path))]),
+                                    ["unchanged"] = new JsonArray([.. result.UnchangedFilePaths.Select(path => (JsonNode?)JsonValue.Create(path))])
+                                };
+                                break;
+                            }
+                        case "write":
+                            {
+                                capturedOut.GetStringBuilder().Clear();
+                                capturedError.GetStringBuilder().Clear();
+                                TextWriter target = Str(args[0]) == "stdout" ? Console.Out : Console.Error;
+                                foreach (JsonNode? text in args.Skip(1))
+                                {
+                                    target.Write(Str(text));
+                                }
+
+                                row["result"] = new JsonObject
+                                {
+                                    ["output"] = (Str(args[0]) == "stdout" ? capturedOut : capturedError).ToString()
+                                };
+                                break;
+                            }
                         default:
                             throw new InvalidOperationException(fn);
                     }

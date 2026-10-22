@@ -66,7 +66,8 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
         Stub((_, _, _) => new SecretCliResult(0, "super-secret"));
         var parsed = new Dictionary<string, string>
         {
-            ["SECRET"] = "op://vault/item/password; echo unsafe", ["PLAIN"] = "value"
+            ["SECRET"] = "op://vault/item/password; echo unsafe",
+            ["PLAIN"] = "value"
         };
 
         ResolveSecretsResult result = ResolveOnePassword.Resolve(parsed);
@@ -83,7 +84,8 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
         Stub((_, _, _) => new SecretCliResult(-1, "", true));
         var parsed = new Dictionary<string, string>
         {
-            ["DATABASE_PASSWORD"] = "op://private/reference", ["PLAIN"] = "value"
+            ["DATABASE_PASSWORD"] = "op://private/reference",
+            ["PLAIN"] = "value"
         };
 
         ResolveSecretsResult result = ResolveOnePassword.Resolve(parsed);
@@ -117,7 +119,9 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
         Stub((_, _, _) => new SecretCliResult(0, "super-secret\n"));
         var parsed = new Dictionary<string, string>
         {
-            ["SECRET"] = $"bw://{ItemId}/password", ["SECOND_SECRET"] = $"bw://{ItemId}/username", ["PLAIN"] = "value"
+            ["SECRET"] = $"bw://{ItemId}/password",
+            ["SECOND_SECRET"] = $"bw://{ItemId}/username",
+            ["PLAIN"] = "value"
         };
 
         var statuses = new List<string>();
@@ -146,7 +150,8 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
             : new SecretCliResult(0, $"{args[1]}-value\n"));
         var parsed = new Dictionary<string, string>
         {
-            ["PASSWORD"] = $"bw://{ItemId}/password", ["URI"] = $"bw://{ItemId}/uri"
+            ["PASSWORD"] = $"bw://{ItemId}/password",
+            ["URI"] = $"bw://{ItemId}/uri"
         };
 
         var spinnerCalls = new List<string>();
@@ -207,7 +212,9 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
 
         parsed.ShouldBe(new Dictionary<string, string>
         {
-            ["USERNAME"] = "username-value", ["PASSWORD"] = "password-value", ["URI"] = "uri-value"
+            ["USERNAME"] = "username-value",
+            ["PASSWORD"] = "password-value",
+            ["URI"] = "uri-value"
         });
         _calls.Select(call => call.Args).ShouldBe(
             [["get", "username", ItemId], ["get", "password", ItemId], ["get", "uri", ItemId]]);
@@ -236,7 +243,8 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
         Stub((_, _, _) => new SecretCliResult(0, "super-secret\n"));
         var parsed = new Dictionary<string, string>
         {
-            ["PASSWORD"] = "bw://My GitHub Account/password", ["PLAIN"] = "value"
+            ["PASSWORD"] = "bw://My GitHub Account/password",
+            ["PLAIN"] = "value"
         };
 
         ResolveSecretsResult result = ResolveBitwardenPassword.Resolve(parsed, false);
@@ -270,7 +278,8 @@ public class ResolveSecretReferencesTest : EnvironmentTestBase
         Stub((_, _, _) => new SecretCliResult(-1, "", true));
         var parsed = new Dictionary<string, string>
         {
-            ["PASSWORD"] = $"bw://{ItemId}/password", ["PLAIN"] = "value"
+            ["PASSWORD"] = $"bw://{ItemId}/password",
+            ["PLAIN"] = "value"
         };
 
         ResolveSecretsResult result = ResolveBitwardenPassword.Resolve(parsed, false);

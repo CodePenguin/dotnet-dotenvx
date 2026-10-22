@@ -3,14 +3,14 @@ using Dotenvx.Interop.EnquirerJs;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>Raised when the user cancels a prompt (Ctrl+C); upstream's `PROMPT_CANCELLED` error.</summary>
-public class PromptCancelledException() : Exception("prompt cancelled");
+internal class PromptCancelledException() : Exception("prompt cancelled");
 
 /// <remarks>
 /// Reference source: dotenvx/src/lib/helpers/prompts.js. Upstream wraps enquirer; the wrapping here is the same, over a C# port of
 /// enquirer's prompts (Interop.EnquirerJs), so the terminal sees the same bytes. Stdin ending before a prompt is answered leaves
 /// upstream's promise pending, which makes Node exit 0 quietly - <see cref="EndOfInput" />.
 /// </remarks>
-public static class Prompts
+internal static class Prompts
 {
     /// <summary>A choice for <see cref="Select" />: the text shown and the value returned.</summary>
     public record Choice(string Name, string Value, bool Disabled = false);

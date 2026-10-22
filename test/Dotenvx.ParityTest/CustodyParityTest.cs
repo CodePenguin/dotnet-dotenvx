@@ -39,7 +39,7 @@ public class CustodyParityTest(NodeParityFixture fixture) : ParityTestBase(fixtu
 
     private static IEnumerable<(string Name, Step[] Steps)> Scenarios()
     {
-        (string, Step[]) Scenario(string name, params Step[] steps) => (name, steps);
+        static (string, Step[]) Scenario(string name, params Step[] steps) => (name, steps);
 
         // 1Password
         yield return Scenario("op up get down get", S(OpUp), S(Get), S(OpDown), S(Get));

@@ -12,7 +12,7 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.UpsertEnvKeyHelper;
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
 /// <summary>What the `armor` services return: the API's own JSON plus the key names (`{ ...json, privateKeyName, ... }`).</summary>
-public record ArmorResult(
+internal record ArmorResult(
     bool Changed, string PrivateKeyName, string? PrivateKeyValue, string? PublicKeyValue, string? Team = null);
 
 /// <summary>Shared team-selection flow of armorUp/Down/Pull/Push (`isTeamRequiredError` + `teamChoicesFromMeta`).</summary>
@@ -81,7 +81,7 @@ internal static class ArmorTeam
 
 
 /// <remarks>Reference source: dotenvx/src/lib/services/armorUp.js</remarks>
-public class ArmorUp(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
+internal class ArmorUp(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
 {
     private static readonly Func<string, string?, string, string?, string?, ArmorUp> DefaultFactory =
         (hostname, token, devicePublicKey, envFile, team) => new ArmorUp(hostname, token, devicePublicKey, envFile, team);
@@ -110,7 +110,7 @@ public class ArmorUp(string hostname, string? token, string devicePublicKey, str
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/services/armorDown.js</remarks>
-public class ArmorDown(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
+internal class ArmorDown(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
 {
     public virtual ArmorResult Run()
     {
@@ -130,7 +130,7 @@ public class ArmorDown(string hostname, string? token, string devicePublicKey, s
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/services/armorPull.js</remarks>
-public class ArmorPull(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
+internal class ArmorPull(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
 {
     public virtual ArmorResult Run()
     {
@@ -150,7 +150,7 @@ public class ArmorPull(string hostname, string? token, string devicePublicKey, s
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/services/armorPush.js</remarks>
-public class ArmorPush(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
+internal class ArmorPush(string hostname, string? token, string devicePublicKey, string? envFile = null, string? team = null)
 {
     private static readonly Func<string, string?, string, string?, string?, ArmorPush> DefaultFactory =
         (hostname, token, devicePublicKey, envFile, team) => new ArmorPush(hostname, token, devicePublicKey, envFile, team);
@@ -175,7 +175,7 @@ public class ArmorPush(string hostname, string? token, string devicePublicKey, s
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/services/armorMove.js</remarks>
-public class ArmorMove(string hostname, string? token, string devicePublicKey, string? envFile = null)
+internal class ArmorMove(string hostname, string? token, string devicePublicKey, string? envFile = null)
 {
     public virtual ArmorResult Run()
     {
@@ -199,10 +199,10 @@ public class ArmorMove(string hostname, string? token, string devicePublicKey, s
     }
 }
 
-public record ArmorOpenResult(string Url, string PublicKeyName, string PublicKeyValue);
+internal record ArmorOpenResult(string Url, string PublicKeyName, string PublicKeyValue);
 
 /// <remarks>Reference source: dotenvx/src/lib/services/armorOpen.js</remarks>
-public class ArmorOpen(string hostname, string? envFile = null)
+internal class ArmorOpen(string hostname, string? envFile = null)
 {
     public virtual ArmorOpenResult Run()
     {
@@ -215,7 +215,7 @@ public class ArmorOpen(string hostname, string? envFile = null)
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/services/armorKeyring.js (access approval polling)</remarks>
-public class ArmorKeyring(string? hostname, string? token, string devicePublicKey, string? publicKey)
+internal class ArmorKeyring(string? hostname, string? token, string devicePublicKey, string? publicKey)
 {
     private const int PollIntervalMs = 1000;
     private const int PollTimeoutMs = 5 * 60 * 1000;
@@ -280,11 +280,11 @@ public class ArmorKeyring(string? hostname, string? token, string devicePublicKe
     }
 }
 
-public record LoginStart(
+internal record LoginStart(
     string DeviceCode, string UserCode, string VerificationUri, string VerificationUriComplete, int Interval);
 
 /// <remarks>Reference source: dotenvx/src/lib/services/login.js</remarks>
-public class Login(string hostname, Session? session = null)
+internal class Login(string hostname, Session? session = null)
 {
     private readonly Session _session = session ?? new Session();
 
@@ -325,10 +325,10 @@ public class Login(string hostname, Session? session = null)
     }
 }
 
-public record LogoutResult(string? Username, string? AccessToken, string SettingsDevicesUrl);
+internal record LogoutResult(string? Username, string? AccessToken, string SettingsDevicesUrl);
 
 /// <remarks>Reference source: dotenvx/src/lib/services/logout.js</remarks>
-public class Logout(string hostname, Session? session = null)
+internal class Logout(string hostname, Session? session = null)
 {
     private readonly Session _session = session ?? new Session();
 

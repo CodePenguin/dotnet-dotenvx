@@ -39,6 +39,6 @@ internal static class OptionParsers
             values.Add(token.Value);
         }
 
-        return values.ToArray();
+        return [.. values];
     }
 }

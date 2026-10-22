@@ -1,7 +1,7 @@
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/detectEncoding.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string DetectEncoding(string filepath)
     {

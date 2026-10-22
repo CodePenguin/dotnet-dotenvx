@@ -62,7 +62,10 @@ public class PtyParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
     {
         var info = new ProcessStartInfo("git")
         {
-            WorkingDirectory = WorkDir, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false
+            WorkingDirectory = WorkDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false
         };
         foreach (string arg in args)
         {
@@ -497,7 +500,7 @@ public class PtyParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 
     [Fact]
     public Task SpecWithManyEnvFilesScrolls() =>
-        Compare(Files(Enumerable.Range(0, 30).SelectMany(i => new[] { $".env.e{i:00}", $"K{i}=1\n" }).ToArray()), false, null, null,
+        Compare(Files([.. Enumerable.Range(0, 30).SelectMany(i => new[] { $".env.e{i:00}", $"K{i}=1\n" })]), false, null, null,
             [Wait("Create Envfile from", Up), Send(Up + Up), Send(Down + Down + Down), Send("a"), Send(Up + Enter)], "spec");
 
     // ---- login (listenForOpenKey.js) -------------------------------------------------------------------------------------
@@ -607,7 +610,9 @@ public class PtyParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
 
     private static readonly Dictionary<string, string> LockedVault = new()
     {
-        ["session"] = "unlocked-session", ["master"] = "master-pw", ["bw-status"] = "locked"
+        ["session"] = "unlocked-session",
+        ["master"] = "master-pw",
+        ["bw-status"] = "locked"
     };
 
     private Task BitwardenPrompt(Step[] steps, params string[] args)

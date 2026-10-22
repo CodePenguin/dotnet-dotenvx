@@ -10,16 +10,15 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// byte multi-byte-split concern left to guard against - only the partial-sensitive-value holdback
 /// buffering (this file's actual reason for existing) still applies and is ported below.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     private static string[] NormalizedValues(IEnumerable<string?> values)
     {
-        return values
+        return [.. values
             .Where(value => !string.IsNullOrEmpty(value))
             .Select(value => value!)
             .Distinct()
-            .OrderByDescending(value => value.Length)
-            .ToArray();
+            .OrderByDescending(value => value.Length)];
     }
 
     /// <remarks>

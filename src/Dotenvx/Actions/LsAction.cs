@@ -41,13 +41,15 @@ public class LsAction : Command
     private readonly Argument<string?> _directoryArgument =
         new("directory")
         {
-            Arity = ArgumentArity.ZeroOrOne, Description = "directory to list .env files from (default: \".\")"
+            Arity = ArgumentArity.ZeroOrOne,
+            Description = "directory to list .env files from (default: \".\")"
         };
 
     private readonly Option<string[]?> _envFileOption =
         new("--file", "-f", "--env-file")
         {
-            Description = "path(s) to your env file(s) (default: \".env*\")", HelpName = "filenames...",
+            Description = "path(s) to your env file(s) (default: \".env*\")",
+            HelpName = "filenames...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };
@@ -99,8 +101,7 @@ public class LsAction : Command
         if (json)
         {
             string cwd = NodePath.Resolve(directory);
-            string[] absoluteFilepaths = filepaths.Select(filepath => NodePath.Resolve(Path.Combine(cwd, filepath)))
-                .ToArray();
+            string[] absoluteFilepaths = [.. filepaths.Select(filepath => NodePath.Resolve(Path.Combine(cwd, filepath)))];
             Spinners.StopActive();
             Console.WriteLine(JsonStringify(absoluteFilepaths, true));
         }

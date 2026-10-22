@@ -7,7 +7,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// stdout/stderr (logs, errors) once an Envfile is in play. A possible secret prefix is held back between writes; at exit an
 /// unfinished prefix is masked rather than released.
 /// </remarks>
-public static class RedactProcessOutput
+internal static class RedactProcessOutput
 {
     private sealed class Redactor(TextWriter inner, List<string> secrets) : TextWriter
     {

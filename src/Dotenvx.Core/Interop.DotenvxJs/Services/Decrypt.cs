@@ -16,7 +16,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// the source, so a failed key leaves its ciphertext and reports one combined DECRYPTION_FAILED error
 /// without stopping the rest of the file.
 /// </remarks>
-public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string[]? envKeysFilePaths)
+internal class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, string[]? envKeysFilePaths)
 {
     private readonly HashSet<string> _changedFilePaths = [];
 
@@ -61,9 +61,9 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
         return new DecryptResult
         {
-            ProcessedEnvs = _processedEnvs.ToArray(),
-            ChangedFilePaths = _changedFilePaths.ToArray(),
-            UnchangedFilePaths = _unchangedFilePaths.ToArray()
+            ProcessedEnvs = [.. _processedEnvs],
+            ChangedFilePaths = [.. _changedFilePaths],
+            UnchangedFilePaths = [.. _unchangedFilePaths]
         };
     }
 
@@ -82,13 +82,13 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
 
             ParseWithDecryptor.Outcome<PrimitivesParseArraysOutput> outcome = ParseWithDecryptor.ArraysSync(row.EnvSrc,
                 new PrimitivesParseOptions
-            {
-                Ik = keys,
-                Ek = excludeKeys,
-                Fk = envKeysFilePaths is { Length: > 0 } ? envKeysFilePaths : null,
-                ReadFile = path => Fsx.ReadFileX(path),
-                Provider = _provider
-            }, _decryptor, key => _sources.GetValueOrDefault(key));
+                {
+                    Ik = keys,
+                    Ek = excludeKeys,
+                    Fk = envKeysFilePaths is { Length: > 0 } ? envKeysFilePaths : null,
+                    ReadFile = path => Fsx.ReadFileX(path),
+                    Provider = _provider
+                }, _decryptor, key => _sources.GetValueOrDefault(key));
             PrimitivesParseArraysOutput result = outcome.Output;
             row.KeySources = outcome.KeySources;
 
@@ -104,7 +104,7 @@ public class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, stri
             foreach ((string key, List<string> values) in result.Parsed)
             {
                 string before = row.EnvSrc;
-                string after = Upsert(before, key, values.ToArray());
+                string after = Upsert(before, key, [.. values]);
                 if (after == before)
                 {
                     continue;

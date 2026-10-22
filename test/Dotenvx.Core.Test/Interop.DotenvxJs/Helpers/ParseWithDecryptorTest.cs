@@ -1,8 +1,9 @@
-using NSubstitute;
-using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Api;
+using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Primitives;
+
+using NSubstitute;
 
 using Shouldly;
 
@@ -59,7 +60,8 @@ public class ParseWithDecryptorTest : EnvironmentTestBase
 
         result.Output.Parsed.ShouldBe(new Dictionary<string, string>
         {
-            ["DOTENV_PUBLIC_KEY"] = PublicKey, ["HELLO"] = encryptedValue
+            ["DOTENV_PUBLIC_KEY"] = PublicKey,
+            ["HELLO"] = encryptedValue
         });
         result.LeadingError.ShouldBeSameAs(permissionError);
         result.Output.Errors[0].Code.ShouldBe("DECRYPTION_FAILED");
@@ -295,7 +297,9 @@ public class ParseWithDecryptorTest : EnvironmentTestBase
         {
             options = new PrimitivesParseOptions
             {
-                Fk = [], ProcessEnv = processEnv, Provider = _ => throw ServerSideDecryptionRequired()
+                Fk = [],
+                ProcessEnv = processEnv,
+                Provider = _ => throw ServerSideDecryptionRequired()
             };
             decryptor = (_, _) => scenario == "decryptor-offline"
                 ? throw offline

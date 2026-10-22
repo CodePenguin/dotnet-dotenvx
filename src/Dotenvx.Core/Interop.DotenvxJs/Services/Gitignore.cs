@@ -9,7 +9,7 @@ namespace Dotenvx.Interop.DotenvxJs.Services;
 /// own established convention (every other service returns data, only the Action layer logs), so
 /// GitignoreGeneric.Run() returns a GitignoreGenericResult and GitignoreAction does the logging.
 /// </remarks>
-public class Gitignore(string[]? patterns = null)
+internal class Gitignore(string[]? patterns = null)
 {
     private static readonly Func<string[]?, Gitignore> DefaultFactory = patterns => new Gitignore(patterns);
 
@@ -38,7 +38,7 @@ public class Gitignore(string[]? patterns = null)
 }
 
 /// <remarks>Reference source: dotenvx/src/cli/actions/ext/gitignore.js's Generic class.</remarks>
-public class GitignoreGeneric(string filename, string[]? patterns = null, bool touchFile = false)
+internal class GitignoreGeneric(string filename, string[]? patterns = null, bool touchFile = false)
 {
     private static readonly string[] DefaultPatterns = [".env*"];
 
@@ -63,7 +63,10 @@ public class GitignoreGeneric(string filename, string[]? patterns = null, bool t
             {
                 return new GitignoreGenericResult
                 {
-                    Filename = Filename, Patterns = Patterns, Changed = false, Skipped = true,
+                    Filename = Filename,
+                    Patterns = Patterns,
+                    Changed = false,
+                    Skipped = true,
                     VerboseMessage = verboseMessage
                 };
             }
@@ -82,14 +85,17 @@ public class GitignoreGeneric(string filename, string[]? patterns = null, bool t
 
         return new GitignoreGenericResult
         {
-            Filename = Filename, Patterns = Patterns, Changed = changedPatterns.Count > 0, Skipped = false,
+            Filename = Filename,
+            Patterns = Patterns,
+            Changed = changedPatterns.Count > 0,
+            Skipped = false,
             VerboseMessage = verboseMessage
         };
     }
 }
 
 /// <remarks>Reference source: dotenvx/src/cli/actions/ext/gitignore.js's Git class.</remarks>
-public class GitignoreGit(string[]? patterns = null)
+internal class GitignoreGit(string[]? patterns = null)
 {
     public GitignoreGenericResult Run()
     {
@@ -98,7 +104,7 @@ public class GitignoreGit(string[]? patterns = null)
 }
 
 /// <remarks>Reference source: dotenvx/src/cli/actions/ext/gitignore.js's Docker class.</remarks>
-public class GitignoreDocker(string[]? patterns = null)
+internal class GitignoreDocker(string[]? patterns = null)
 {
     public GitignoreGenericResult Run()
     {
@@ -107,7 +113,7 @@ public class GitignoreDocker(string[]? patterns = null)
 }
 
 /// <remarks>Reference source: dotenvx/src/cli/actions/ext/gitignore.js's Npm class.</remarks>
-public class GitignoreNpm(string[]? patterns = null)
+internal class GitignoreNpm(string[]? patterns = null)
 {
     public GitignoreGenericResult Run()
     {
@@ -116,7 +122,7 @@ public class GitignoreNpm(string[]? patterns = null)
 }
 
 /// <remarks>Reference source: dotenvx/src/cli/actions/ext/gitignore.js's Vercel class.</remarks>
-public class GitignoreVercel(string[]? patterns = null)
+internal class GitignoreVercel(string[]? patterns = null)
 {
     public GitignoreGenericResult Run()
     {

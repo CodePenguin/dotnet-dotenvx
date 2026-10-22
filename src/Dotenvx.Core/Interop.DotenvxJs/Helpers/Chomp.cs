@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/chomp.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string Chomp(string value)
     {

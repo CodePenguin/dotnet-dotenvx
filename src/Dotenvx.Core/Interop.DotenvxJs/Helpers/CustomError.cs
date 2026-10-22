@@ -8,7 +8,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// code and the (already prefixed) message; help is the generic `fix: [issue url]` for the code. Only
 /// DECRYPTION_FAILED is ever returned by primitives, and it maps onto the typed exception.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static Exception CustomError(PrimitivesError error)
     {

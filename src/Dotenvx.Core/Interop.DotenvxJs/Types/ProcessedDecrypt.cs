@@ -1,6 +1,6 @@
 namespace Dotenvx.Interop.DotenvxJs.Types;
 
-public class ProcessedDecrypt
+internal class ProcessedDecrypt
 {
     public IList<string> Keys { get; init; } = [];
     public EnvType Type { get; init; }

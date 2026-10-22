@@ -4,13 +4,13 @@ using Dotenvx.Interop.DotenvxJs.Types;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
-public record ResolveSecretsResult(List<Exception> Errors, List<string> Unresolved);
+internal record ResolveSecretsResult(List<Exception> Errors, List<string> Unresolved);
 
 /// <remarks>
 /// Reference source: dotenvx/src/lib/helpers/resolveOnePassword.js (`resolveOnePasswordSync` and the async variant, which
 /// differs only by the "awaiting 1password" status text).
 /// </remarks>
-public static class ResolveOnePassword
+internal static class ResolveOnePassword
 {
     private static bool IsSecretReference(string value)
     {
@@ -78,7 +78,7 @@ public static class ResolveOnePassword
 }
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/resolveBitwardenPassword.js</remarks>
-public static partial class ResolveBitwardenPassword
+internal static partial class ResolveBitwardenPassword
 {
     private const string PasswordEnv = "DOTENVX_BITWARDEN_PASSWORD";
     private static readonly string[] Fields = ["username", "password", "uri"];
@@ -174,44 +174,44 @@ public static partial class ResolveBitwardenPassword
 
         try
         {
-        foreach ((string key, string value) in parsed.ToList())
-        {
-            if (!IsSecretReference(value))
+            foreach ((string key, string value) in parsed.ToList())
             {
-                continue;
-            }
-
-            try
-            {
-                (string item, string field) = ParseSecretReference(value);
-                if (session is not null)
+                if (!IsSecretReference(value))
                 {
-                    StartStatus();
-                }
-
-                session ??= UnlockSession(allowPrompt, StartStatus);
-
-                SecretCliResult result = SecretCli.Exec("bw", ["get", field, item],
-                    new Dictionary<string, string> { ["BW_SESSION"] = session });
-                if (result.NotFound || result.ExitCode != 0)
-                {
-                    errors.Add(ResolutionError(key, null, result.NotFound));
-                    unresolved.Add(key);
                     continue;
                 }
 
-                parsed[key] = SecretValue(result.Stdout);
+                try
+                {
+                    (string item, string field) = ParseSecretReference(value);
+                    if (session is not null)
+                    {
+                        StartStatus();
+                    }
+
+                    session ??= UnlockSession(allowPrompt, StartStatus);
+
+                    SecretCliResult result = SecretCli.Exec("bw", ["get", field, item],
+                        new Dictionary<string, string> { ["BW_SESSION"] = session });
+                    if (result.NotFound || result.ExitCode != 0)
+                    {
+                        errors.Add(ResolutionError(key, null, result.NotFound));
+                        unresolved.Add(key);
+                        continue;
+                    }
+
+                    parsed[key] = SecretValue(result.Stdout);
+                }
+                catch (PromptCancelledException)
+                {
+                    throw;
+                }
+                catch (SecretException error)
+                {
+                    errors.Add(ResolutionError(key, error, false));
+                    unresolved.Add(key);
+                }
             }
-            catch (PromptCancelledException)
-            {
-                throw;
-            }
-            catch (SecretException error)
-            {
-                errors.Add(ResolutionError(key, error, false));
-                unresolved.Add(key);
-            }
-        }
 
         }
         finally

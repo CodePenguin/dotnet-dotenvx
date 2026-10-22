@@ -6,7 +6,7 @@ namespace Dotenvx.Interop.DotenvxJs.Events;
 /// Reference source: dotenvx/src/lib/events/workerEnvironment.js. Only account discovery, native credential-store access and
 /// network settings reach the delivery worker; application secrets and runtime injection flags never do.
 /// </remarks>
-public static class WorkerEnvironment
+internal static class WorkerEnvironment
 {
     private static readonly HashSet<string> Allowed =
     [

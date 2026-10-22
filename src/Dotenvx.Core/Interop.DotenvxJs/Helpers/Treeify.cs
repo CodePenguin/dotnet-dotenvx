@@ -12,7 +12,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// unlike `Interop.PicomatchJs`/`Interop.IgnoreJs` (see traps #59/#60), which both had real drift
 /// from their own live-callable real counterparts.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string Treeify(Dictionary<string, object> tree, string prefix = "")
     {
@@ -27,7 +27,7 @@ public static partial class Helpers
     {
         StringBuilder sb = new();
 
-        List<KeyValuePair<string, object>> items = tree.ToList();
+        List<KeyValuePair<string, object>> items = [.. tree];
         for (int i = 0; i < items.Count; i++)
         {
             bool last = i == items.Count - 1;

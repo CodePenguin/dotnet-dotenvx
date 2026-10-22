@@ -23,6 +23,16 @@ public class ParseTest : EnvironmentTestBase
         parsed.ShouldNotBeNull("should return an object");
     }
 
+    /// <remarks>Refer to main.js `options.overload || options.override`</remarks>
+    [Fact]
+    public void TestOverrideIsAnAliasOfOverload()
+    {
+        var processEnv = new Dictionary<string, string> { ["A"] = "mine" };
+
+        Main.Parse("A=1\n", new ParseOptions { ProcessEnv = processEnv })["A"].ShouldBe("mine");
+        Main.Parse("A=1\n", new ParseOptions { ProcessEnv = processEnv, Override = true })["A"].ShouldBe("1");
+    }
+
     /// <remarks>Refer to "sets basic environment variable"</remarks>
     [Fact]
     public void TestSetsBasicEnvironmentVariable()

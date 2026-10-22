@@ -6,7 +6,7 @@ using Dotenvx.Primitives;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>The options of <see cref="Helpers.SelectEnvfileEnvs" />.</summary>
-public sealed class SelectEnvfileOptions
+internal sealed class SelectEnvfileOptions
 {
     public string? Profile { get; init; }
     public string? Convention { get; init; }
@@ -20,7 +20,7 @@ public sealed class SelectEnvfileOptions
 /// (DOTENV_FILE / DOTENV_PATH / DOTENV_F, then `.env`); with one, the profile of the Envfile picks the files, while explicit
 /// `-f` files and `-e` strings keep their order.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     internal static Dictionary<string, string?> CurrentProcessEnv()
     {
@@ -54,7 +54,7 @@ public static partial class Helpers
 
         // Keep explicit CLI file/inline-env ordering; profiles only supply file selection.
         EnvItem[] explicitEnvs = Resolve(envs);
-        EnvItem[] files = explicitEnvs.Where(env => env.Type == EnvType.EnvFile).ToArray();
+        EnvItem[] files = [.. explicitEnvs.Where(env => env.Type == EnvType.EnvFile)];
         string selected;
         try
         {

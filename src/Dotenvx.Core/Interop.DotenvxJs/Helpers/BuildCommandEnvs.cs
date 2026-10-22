@@ -11,7 +11,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// an older, simpler "prepend Conventions() unconditionally, then append explicit items" pattern
 /// that never resolved a directory argument at all.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static EnvItem[] BuildCommandEnvs(EnvItem[] envs, string? convention)
     {
@@ -56,6 +56,6 @@ public static partial class Helpers
             return [.. Conventions(convention), .. resolvedEnvs];
         }
 
-        return resolvedEnvs.ToArray();
+        return [.. resolvedEnvs];
     }
 }

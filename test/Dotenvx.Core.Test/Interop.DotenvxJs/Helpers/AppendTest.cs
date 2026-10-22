@@ -554,7 +554,7 @@ GROUP='$1$2'";
         newSrc.ShouldBe(expected);
         Main.Parse(newSrc)["QUOTE"].ShouldBe("',\"");
     }
-    
+
     /// <remarks>Refer to "#QUOTE2"</remarks>
     [Fact]
     public void TestQuote2()

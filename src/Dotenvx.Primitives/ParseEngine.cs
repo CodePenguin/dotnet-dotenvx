@@ -18,7 +18,12 @@ public sealed class PrimitivesParseOptions
     {
         return new PrimitivesParseOptions
         {
-            Overload = Overload, Ik = Ik, Ek = Ek, ProcessEnv = ProcessEnv, Fk = Fk, ReadFile = ReadFile
+            Overload = Overload,
+            Ik = Ik,
+            Ek = Ek,
+            ProcessEnv = ProcessEnv,
+            Fk = Fk,
+            ReadFile = ReadFile
         };
     }
 }

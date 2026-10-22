@@ -11,8 +11,7 @@ using Shouldly;
 namespace Dotenvx.Core.Test.Interop.DotenvxJs;
 
 /// <remarks>
-/// Reference source: dotenvx/tests/lib/main.test.js. No C# counterpart for "config supports noArmor option", "config supports
-/// noSpinner option" and "config supports token option": they cover Armor, spinner and token options, which are out of scope.
+/// Reference source: dotenvx/tests/lib/main.test.js.
 /// </remarks>
 public class MainTest : EnvironmentTestBase
 {
@@ -47,6 +46,65 @@ public class MainTest : EnvironmentTestBase
         mockRun.Received(1).Execute();
         result.ShouldNotBeNull();
         result.Error.ShouldBeNull();
+    }
+
+    private static Run MockRun()
+    {
+        Run mockRun = Substitute.For<Run>(Array.Empty<EnvItem>(), false, new Dictionary<string, string>(), null!, false);
+        mockRun.Execute().Returns(new RunResult
+        {
+            ProcessedEnvs = [],
+            ReadableStrings = [],
+            ReadableFilePaths = [],
+            UniqueInjectedKeys = [],
+            BeforeEnv = new Dictionary<string, string>(),
+            AfterEnv = new Dictionary<string, string>()
+        });
+        Run.Factory = (_, _, _, _) => mockRun;
+
+        return mockRun;
+    }
+
+    /// <remarks>Refer to "config supports noArmor option"</remarks>
+    [Fact]
+    public void TestConfigSupportsNoArmorOption()
+    {
+        Run mockRun = MockRun();
+
+        Main.Config(new ConfigOptions { NoArmor = true });
+
+        mockRun.Received(1).Execute();
+        mockRun.KeyAccess.NoArmor.ShouldBeTrue();
+    }
+
+    /// <remarks>Refer to "config supports noSpinner option"</remarks>
+    [Fact(Skip = "Not ported: main.js hands noSpinner to the envs resolver, which never reads it, so there is no such option here")]
+    public void TestConfigSupportsNoSpinnerOption()
+    {
+    }
+
+    /// <remarks>Refer to "config supports token option"</remarks>
+    [Fact]
+    public void TestConfigSupportsTokenOption()
+    {
+        Run mockRun = MockRun();
+
+        Main.Config(new ConfigOptions { Token = "token-123" });
+
+        mockRun.Received(1).Execute();
+        mockRun.KeyAccess.NoArmor.ShouldBeFalse();
+        mockRun.KeyAccess.Token.ShouldBe("token-123");
+    }
+
+    /// <remarks>main.js `resolveNoNative`: `native: false` is `noNative`</remarks>
+    [Fact]
+    public void TestConfigNativeFalseIsNoNative()
+    {
+        Run mockRun = MockRun();
+
+        Main.Config(new ConfigOptions { Native = false });
+
+        mockRun.NoNative.ShouldBeTrue();
     }
 
     /// <remarks>Refer to "config with convention - calls envs resolver with proper envs"</remarks>
@@ -252,7 +310,9 @@ public class MainTest : EnvironmentTestBase
         Dictionary<string, string> processEnv = new();
         ConfigOptions options = new()
         {
-            ProcessEnv = processEnv, Path = [BackendEnvFile, FrontendEnvFile], Overload = true
+            ProcessEnv = processEnv,
+            Path = [BackendEnvFile, FrontendEnvFile],
+            Overload = true
         };
 
         ConfigResult result = Main.Config(options);
@@ -269,7 +329,8 @@ public class MainTest : EnvironmentTestBase
         Dictionary<string, string> processEnv = new();
         ConfigOptions options = new()
         {
-            ProcessEnv = processEnv, Path = [BackendEnvFile, "tests/monorepo/apps/frontend/missing"]
+            ProcessEnv = processEnv,
+            Path = [BackendEnvFile, "tests/monorepo/apps/frontend/missing"]
         };
 
         ConfigResult result = Main.Config(options);
@@ -624,7 +685,9 @@ public class MainTest : EnvironmentTestBase
         ];
         mockSets.Run().Returns(new SetsResult
         {
-            ProcessedEnvs = processedEnvs, ChangedFilePaths = [], UnchangedFilePaths = []
+            ProcessedEnvs = processedEnvs,
+            ChangedFilePaths = [],
+            UnchangedFilePaths = []
         });
         Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
@@ -662,7 +725,9 @@ public class MainTest : EnvironmentTestBase
         ];
         mockSets.Run().Returns(new SetsResult
         {
-            ProcessedEnvs = processedEnvs, ChangedFilePaths = [], UnchangedFilePaths = []
+            ProcessedEnvs = processedEnvs,
+            ChangedFilePaths = [],
+            UnchangedFilePaths = []
         });
         Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
@@ -795,7 +860,9 @@ public class MainTest : EnvironmentTestBase
         ];
         mockSets.Run().Returns(new SetsResult
         {
-            ProcessedEnvs = processedEnvs, ChangedFilePaths = [], UnchangedFilePaths = [".env"]
+            ProcessedEnvs = processedEnvs,
+            ChangedFilePaths = [],
+            UnchangedFilePaths = [".env"]
         });
         Sets.Factory = (_, _, _, _, _, _) => mockSets;
 
@@ -908,7 +975,8 @@ public class MainTest : EnvironmentTestBase
         Exception error = new("some error");
         mockGet.Run().Returns(new GetResult
         {
-            Parsed = new Dictionary<string, string> { ["KEY"] = "value" }, Errors = [error]
+            Parsed = new Dictionary<string, string> { ["KEY"] = "value" },
+            Errors = [error]
         });
         Get.Factory = (_, _, _, _, _) => mockGet;
 
@@ -945,7 +1013,8 @@ public class MainTest : EnvironmentTestBase
         DotenvxException error = new("SOME_ERROR", "some error");
         mockGet.Run().Returns(new GetResult
         {
-            Parsed = new Dictionary<string, string> { ["KEY"] = "value" }, Errors = [error]
+            Parsed = new Dictionary<string, string> { ["KEY"] = "value" },
+            Errors = [error]
         });
         Get.Factory = (_, _, _, _, _) => mockGet;
 
@@ -1154,7 +1223,9 @@ public class MainTest : EnvironmentTestBase
         Main.Parse(src,
             new ParseOptions
             {
-                ProcessEnv = new Dictionary<string, string>(), Ignore = ["MISSING_PRIVATE_KEY"], Logger = MockLogger
+                ProcessEnv = new Dictionary<string, string>(),
+                Ignore = ["MISSING_PRIVATE_KEY"],
+                Logger = MockLogger
             });
 
         MockLogger.ErrorMessages.ShouldBeEmpty();

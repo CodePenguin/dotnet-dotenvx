@@ -22,7 +22,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// for every branch below (trailing/doubled separators, ".." above an empty relative root, an
 /// absolute POSIX-style root, and a Windows drive-letter root) before porting.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string NodePathJoin(string directory, string file)
     {

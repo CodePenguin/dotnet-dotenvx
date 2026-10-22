@@ -10,7 +10,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// The key-access switches every resolver takes: `noNative`, `noArmor` (`--no-armor`), `token` (`--token`) and the password
 /// manager switches.
 /// </summary>
-public class KeyAccessOptions
+internal class KeyAccessOptions
 {
     public bool NoNative { get; set; }
     private bool _noArmor;
@@ -78,11 +78,13 @@ public class KeyAccessOptions
 /// when it has nothing). The lookup is the @dotenvx/providers chain: key files, the OS secret store, Armor, 1Password and
 /// Bitwarden, in that order.
 /// </remarks>
-public static class KeyProviders
+internal static class KeyProviders
 {
     internal static readonly Dictionary<string, string> NativeNames = new()
     {
-        ["darwin"] = "macosKeychain", ["win32"] = "windowsCredentialManager", ["linux"] = "linuxSecretService"
+        ["darwin"] = "macosKeychain",
+        ["win32"] = "windowsCredentialManager",
+        ["linux"] = "linuxSecretService"
     };
 
     /// <summary>`useNative(options)`: a supported platform, no `CI` variable and not disabled with --no-native.</summary>

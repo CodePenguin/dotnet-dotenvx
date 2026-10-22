@@ -11,7 +11,7 @@ namespace Dotenvx.Primitives.Interop.EciesJs;
 /// <summary>
 ///     C# equivalent for eciesjs src/utils.js (https://github.com/ecies/js).
 /// </summary>
-public static partial class Utils
+internal static partial class Utils
 {
     private const int NonceLength = 16;
     private const int TagLength = 16;
@@ -35,7 +35,7 @@ public static partial class Utils
         cipher.Init(false, parameters);
 
         // Decrypt the CipherText/Tag
-        byte[] ciphertextTagBytes = [..cipherText, ..tag];
+        byte[] ciphertextTagBytes = [.. cipherText, .. tag];
         byte[] decrypted = new byte[cipher.GetOutputSize(ciphertextTagBytes.Length)];
         int processedLength = cipher.ProcessBytes(ciphertextTagBytes, 0, ciphertextTagBytes.Length, decrypted, 0);
         cipher.DoFinal(decrypted, processedLength);
@@ -107,7 +107,7 @@ public static partial class Utils
     /// </summary>
     public static byte[] GetSharedKey(byte[] publicKeyBytes, byte[] sharedPointBytes)
     {
-        byte[] master = [..publicKeyBytes, ..sharedPointBytes];
+        byte[] master = [.. publicKeyBytes, .. sharedPointBytes];
         return HKDF.DeriveKey(HashAlgorithmName.SHA256, master, 32);
     }
 

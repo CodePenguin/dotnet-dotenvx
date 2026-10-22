@@ -45,7 +45,7 @@ public static partial class Primitives
             }
         }
 
-        List<string> secretList = secrets.ToList();
+        List<string> secretList = [.. secrets];
         CheckResult result = new();
         foreach ((string key, string value) in entries)
         {
@@ -108,10 +108,10 @@ public static partial class Primitives
     /// <summary>The order JavaScript's Object.entries gives for property names: array indexes ascending, then the rest as inserted.</summary>
     internal static List<KeyValuePair<string, string>> JsKeyOrder(IEnumerable<KeyValuePair<string, string>> values)
     {
-        List<KeyValuePair<string, string>> all = values.ToList();
-        List<KeyValuePair<string, string>> indexes = all.Where(pair => IsArrayIndex(pair.Key)).ToList();
+        List<KeyValuePair<string, string>> all = [.. values];
+        List<KeyValuePair<string, string>> indexes = [.. all.Where(pair => IsArrayIndex(pair.Key))];
         indexes.Sort((a, b) => ulong.Parse(a.Key).CompareTo(ulong.Parse(b.Key)));
-        return indexes.Concat(all.Where(pair => !IsArrayIndex(pair.Key))).ToList();
+        return [.. indexes, .. all.Where(pair => !IsArrayIndex(pair.Key))];
     }
 
     private static bool IsArrayIndex(string key)

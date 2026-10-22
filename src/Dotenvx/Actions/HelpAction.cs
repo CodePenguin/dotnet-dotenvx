@@ -1,5 +1,5 @@
-using System.Linq;
 using System.CommandLine;
+using System.Linq;
 
 using ParseResult = System.CommandLine.ParseResult;
 

@@ -4,7 +4,7 @@ namespace Dotenvx.Interop.DotenvxJs.Events;
 /// Reference source: the `{ exitCode, error, errorCount, signal }` result object the upstream CLI actions return to
 /// lib/events/cli.js. Actions here return an exit code only, so they report the rest to the running command's scope.
 /// </remarks>
-public sealed class EventScope
+internal sealed class EventScope
 {
     private static readonly AsyncLocal<EventScope?> Scope = new();
 

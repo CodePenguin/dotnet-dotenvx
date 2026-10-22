@@ -112,10 +112,9 @@ public class HelpTextParityTest(NodeParityFixture fixture) : ParityTestBase(fixt
 
             matchedDotnetEntries.Add(match);
 
-            string[] unexpectedAliases = match.Aliases
+            string[] unexpectedAliases = [.. match.Aliases
                 .Except(nodeEntry.Aliases)
-                .Except(DotnetOnlyAliases)
-                .ToArray();
+                .Except(DotnetOnlyAliases)];
             if (unexpectedAliases.Length > 0)
             {
                 errors.Add($"'{string.Join(", ", nodeEntry.Aliases)}': .NET has unexpected extra " +

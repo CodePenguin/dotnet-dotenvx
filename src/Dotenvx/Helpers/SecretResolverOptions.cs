@@ -37,12 +37,16 @@ public static class SecretResolverOptions
         FlagOnly
     }
 
-    public static KeyAccessOptions KeyAccess(IDotenvxLogger logger, bool noNative, bool noArmorFlag, string? token,
+    internal static KeyAccessOptions KeyAccess(IDotenvxLogger logger, bool noNative, bool noArmorFlag, string? token,
         ArmorMode mode, Action<string>? onStatus = null)
     {
         var access = new KeyAccessOptions
         {
-            NoNative = noNative, NoArmor = noArmorFlag, Token = token, Logger = logger, OnStatus = onStatus
+            NoNative = noNative,
+            NoArmor = noArmorFlag,
+            Token = token,
+            Logger = logger,
+            OnStatus = onStatus
         };
         if (!noArmorFlag && mode == ArmorMode.Session)
         {

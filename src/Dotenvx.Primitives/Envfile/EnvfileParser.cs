@@ -142,7 +142,9 @@ internal sealed class EnvfileParser
         {
             throw new MalformedEnvfileException(error.Message)
             {
-                Location = error.Start, Expected = error.Expected, CauseMessage = error.Message
+                Location = error.Start,
+                Expected = error.Expected,
+                CauseMessage = error.Message
             };
         }
     }
@@ -381,9 +383,9 @@ internal sealed class EnvfileParser
         document = new EnvfileDocument
         {
             Strict = stricts.Count == 1 ? stricts[0] : null,
-            Declarations = statements.OfType<EnvDeclaration>().ToList(),
-            Files = statements.OfType<EnvfileFileBlock>().ToList(),
-            Profiles = statements.OfType<EnvfileProfile>().ToList()
+            Declarations = [.. statements.OfType<EnvDeclaration>()],
+            Files = [.. statements.OfType<EnvfileFileBlock>()],
+            Profiles = [.. statements.OfType<EnvfileProfile>()]
         };
 
         if (_pos != _src.Length)
@@ -561,7 +563,7 @@ internal sealed class EnvfileParser
         }
 
         _ruleStart = start;
-        List<StrictSetting> stricts = items.OfType<StrictSetting>().ToList();
+        List<StrictSetting> stricts = [.. items.OfType<StrictSetting>()];
         if (stricts.Count > 1)
         {
             throw RuleError("Duplicate Envfile setting: strict");
@@ -571,7 +573,7 @@ internal sealed class EnvfileParser
         {
             File = file,
             Strict = stricts.Count == 1 ? stricts[0].Value : null,
-            Declarations = items.OfType<EnvDeclaration>().ToList()
+            Declarations = [.. items.OfType<EnvDeclaration>()]
         };
     }
 
@@ -1012,7 +1014,7 @@ internal sealed class EnvfileParser
 
     private static string BuildMessage(List<EnvfileExpectation> expected, string? found)
     {
-        List<string> descriptions = expected.Select(Describe).ToList();
+        List<string> descriptions = [.. expected.Select(Describe)];
         descriptions.Sort(string.CompareOrdinal);
         List<string> unique = [];
         foreach (string description in descriptions)

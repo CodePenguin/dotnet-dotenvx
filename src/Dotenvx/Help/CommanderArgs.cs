@@ -220,7 +220,7 @@ public static class CommanderArgs
 
     private static string[] Flags(HelpRow row)
     {
-        return row.Term.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries).Where(part => part.StartsWith('-')).ToArray();
+        return [.. row.Term.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries).Where(part => part.StartsWith('-'))];
     }
 
     /// <summary>The shallowest level (0 = root) whose options contain exactly <paramref name="flag" />, or -1.</summary>

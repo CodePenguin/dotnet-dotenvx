@@ -21,11 +21,10 @@ public sealed class PrimitivesOracleParityTest(NodeParityFixture fixture) : Pari
 {
     private sealed record ParseCase(string Src, Dictionary<string, string>? Env = null, bool Overload = false);
 
-    private static readonly string[] Sources = SourceTable.Split('|')
+    private static readonly string[] Sources = [.. SourceTable.Split('|')
         .Select(c => c.Trim((char)10, (char)13, (char)32).Replace("{BOM}", ((char)0xFEFF).ToString()).Replace("{NBSP}", ((char)0xA0).ToString()).Replace("{LS}", ((char)0x2028).ToString())
             .Replace("¦", ((char)92).ToString()).Replace("⏎", ((char)10).ToString())
-            .Replace("␍", ((char)13).ToString()))
-        .ToArray();
+            .Replace("␍", ((char)13).ToString()))];
 
     private const string SourceTable = """
         |
@@ -107,7 +106,9 @@ public sealed class PrimitivesOracleParityTest(NodeParityFixture fixture) : Pari
 
         string json = JsonSerializer.Serialize(cases.Select(c => new
         {
-            src = c.Src, env = c.Env ?? new Dictionary<string, string>(), overload = c.Overload
+            src = c.Src,
+            env = c.Env ?? new Dictionary<string, string>(),
+            overload = c.Overload
         }));
         string script = $$"""
                           const p = require('@dotenvx/primitives');

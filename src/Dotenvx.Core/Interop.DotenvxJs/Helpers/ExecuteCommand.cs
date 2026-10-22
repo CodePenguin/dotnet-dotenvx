@@ -14,7 +14,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// wrapped in `script` (<see cref="PtyCommand" />) when stdin, stdout and stderr are all terminals. On Unix the full
 /// signal-forwarding set lives in <see cref="SignalForwarder" />; Windows kills the child (and its tree) on Ctrl+C.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     private static readonly string[] ErrorSignals = ["SIGINT", "SIGTERM"];
 
@@ -404,11 +404,11 @@ public static partial class Helpers
                 return pathExt.Any(item => item.Length > 0 && path.EndsWith(item, StringComparison.OrdinalIgnoreCase));
             }
 
-            #pragma warning disable CA1416 // reached only when not Windows: isWindows is a parameter so tests can exercise both branches
+#pragma warning disable CA1416 // reached only when not Windows: isWindows is a parameter so tests can exercise both branches
             const UnixFileMode anyExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
 
             return (File.GetUnixFileMode(path) & anyExecute) != 0;
-            #pragma warning restore CA1416
+#pragma warning restore CA1416
         }
         catch (Exception)
         {

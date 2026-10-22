@@ -9,7 +9,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// value dictionary (last value wins, or first value wins with `collectAllValues`), the shape most Core
 /// callers (append/replace/key lookup/encrypt/decrypt/sets) want. The parsing itself lives in `Scan`.
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static Dictionary<string, object> ScanToDictionary(string? src, bool skipExpandForDoubleQuotes = false,
         bool skipConvertingWindowsNewlines = false, bool collectAllValues = false)

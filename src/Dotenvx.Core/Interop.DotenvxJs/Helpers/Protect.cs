@@ -7,7 +7,7 @@ using Dotenvx.Primitives;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>A failed git invocation (`execFileSync` throws with `error.status`).</summary>
-public sealed class GitCommandException(int status, string message) : Exception(message)
+internal sealed class GitCommandException(int status, string message) : Exception(message)
 {
     public int Status { get; } = status;
 }
@@ -17,7 +17,7 @@ public sealed class GitCommandException(int status, string message) : Exception(
 /// removeLegacyProtectFilter,uninstallPrecommitHook,plaintextKeys,precommitEnvPatterns}.js and
 /// envfile/validation/protectEnvfile.js (`dotenvx protect`: Git-level protection of plaintext secrets and private keys).
 /// </remarks>
-public static partial class Protect
+internal static partial class Protect
 {
     public static readonly string[] PrecommitEnvPatterns = [".env*", "*.env", ".flaskenv", ".dev.vars*", ".env.d/*"];
 

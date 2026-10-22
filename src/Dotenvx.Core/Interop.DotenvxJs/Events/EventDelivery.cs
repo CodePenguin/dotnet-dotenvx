@@ -9,7 +9,7 @@ using Dotenvx.Providers;
 namespace Dotenvx.Interop.DotenvxJs.Events;
 
 /// <summary>A place to POST batches of events (backends/armor.js).</summary>
-public interface IEventBackend
+internal interface IEventBackend
 {
     /// <summary>Sends one batch; throws on failure (swallowed by the caller).</summary>
     void Send(JsonArray events);
@@ -19,7 +19,7 @@ public interface IEventBackend
 /// Reference source: dotenvx/src/lib/events/backends/armor.js. Radar ingests client-reported activity at
 /// POST /api/events. Authentication is captured before `run` loads application environment values.
 /// </remarks>
-public sealed class ArmorEventsBackend(string hostname, string token) : IEventBackend
+internal sealed class ArmorEventsBackend(string hostname, string token) : IEventBackend
 {
     /// <summary>Null when Armor is disabled, signed out or has no token.</summary>
     public static ArmorEventsBackend? Create(IReadOnlyDictionary<string, object?> options)
@@ -79,7 +79,7 @@ internal static class EventGate
 /// Reference source: dotenvx/src/lib/events/delivery.js. In-process transport (SDK): a bounded queue pumped in batches with a
 /// hard deadline; backend failures cannot escape this boundary.
 /// </remarks>
-public sealed class EventDelivery : IEventSink
+internal sealed class EventDelivery : IEventSink
 {
     private const int BatchSize = 50;
     private const int QueueLimit = 256;
@@ -244,7 +244,7 @@ public sealed class EventDelivery : IEventSink
 /// Reference source: dotenvx/src/lib/events/background.js. CLI delivery owns no network handles: the events are handed to a
 /// detached `_deliver-events` worker over its stdin and credentials are read by the worker.
 /// </remarks>
-public sealed class EventBackground : IEventSink
+internal sealed class EventBackground : IEventSink
 {
     private const int QueueLimit = 256;
 
@@ -395,7 +395,7 @@ public sealed class EventBackground : IEventSink
 /// Reference source: dotenvx/src/lib/events/worker.js (the hidden `_deliver-events` command). Internal, short-lived worker:
 /// no output, no local logs, no retries.
 /// </remarks>
-public static class EventWorker
+internal static class EventWorker
 {
     /// <summary>Reads {options, events} from the input and delivers them; always returns (the caller exits 0).</summary>
     public static void Run(TextReader input, Func<IReadOnlyDictionary<string, object?>, IEventBackend?>? createBackend = null)

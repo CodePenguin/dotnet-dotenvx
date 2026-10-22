@@ -1,11 +1,12 @@
 using Dotenvx.Interop.DotenvxJs.Helpers;
+
 using static Dotenvx.Interop.PicomatchJs.IndexJs;
 
 namespace Dotenvx.Interop.DotenvxJs.Services;
 
 /// <remarks>Reference source: dotenvx/src/lib/resolvers/ls.js (moved there from src/lib/services/ls.js by this pin)</remarks>
 // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-public class Ls(string directory = "./", string[]? envFile = null, string[]? excludeEnvFile = null)
+internal class Ls(string directory = "./", string[]? envFile = null, string[]? excludeEnvFile = null)
 {
     private static readonly Func<string, string[]?, string[]?, Ls> DefaultFactory =
         (directory, envFile, excludeEnvFile) => new Ls(directory, envFile, excludeEnvFile);
@@ -62,12 +63,11 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
         // filtering, rather than passing each user pattern to Directory.GetFiles as its own OS
         // search pattern - "**/" isn't valid .NET search-pattern syntax, only valid picomatch/glob
         // syntax.
-        return EnumerateFiles(CrawlRoot)
+        return [.. EnumerateFiles(CrawlRoot)
             .Select(file => Path.GetRelativePath(CrawlRoot, file).Replace(Path.DirectorySeparatorChar, '/'))
             .Where(path => !exclude(path) && include(path))
             .Distinct()
-            .OrderBy(path => path, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal) // the crawl order Node shows: case-insensitive on Windows, by code unit elsewhere
-            .ToArray();
+            .OrderBy(path => path, OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal)];
     }
 
     // Fdir skips directories it cannot read
@@ -118,19 +118,19 @@ public class Ls(string directory = "./", string[]? envFile = null, string[]? exc
     private string[] Patterns()
     {
         string[] value = envFile is { Length: > 0 } ? envFile : [".env*"];
-        return value.Select(part => $"**/{part}").ToArray();
+        return [.. value.Select(part => $"**/{part}")];
     }
 
     private string[] ExcludePatterns()
     {
-        return (excludeEnvFile ?? []).Select(part => $"**/{part}").ToArray();
+        return [.. (excludeEnvFile ?? []).Select(part => $"**/{part}")];
     }
 
     private string[] Exclude()
     {
         string[] excludePatterns = ExcludePatterns();
         return excludePatterns.Length > 0
-            ? _ignore.Concat(excludePatterns).ToArray()
+            ? [.. _ignore, .. excludePatterns]
             : _ignore;
     }
 }

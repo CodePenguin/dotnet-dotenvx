@@ -7,22 +7,22 @@ using Dotenvx.Primitives;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <summary>One variable of a generated Envfile (`declaration` in init.js); unset properties are not rendered.</summary>
-public sealed record EnvDeclaration(
+internal sealed record EnvDeclaration(
     string Name, string? Type = null, bool? Encrypted = null, bool? Redacted = null, bool? Optional = null);
 
-public sealed record EnvfileInputFile(string Filename, bool HasValues, List<EnvDeclaration> Declarations);
+internal sealed record EnvfileInputFile(string Filename, bool HasValues, List<EnvDeclaration> Declarations);
 
-public sealed record EnvfileDocument(
+internal sealed record EnvfileDocument(
     List<EnvDeclaration> Declarations, List<(string Filename, List<EnvDeclaration> Declarations)> Files,
     List<EnvDeclaration> CodeDeclarations);
 
-public sealed record InitEnvfileResult(bool Created, bool Replaced = false, string? Content = null);
+internal sealed record InitEnvfileResult(bool Created, bool Replaced = false, string? Content = null);
 
 /// <remarks>
 /// Reference sources: dotenvx/src/lib/services/init.js, envfile/discovery/{discoverEnvFiles,scanSource,extractEnvKeys}.js
 /// and envfile/rendering/{normalizeEnvfile,renderEnvfile}.js (`dotenvx spec`: create an Envfile from env files and code).
 /// </remarks>
-public static partial class EnvfileInit
+internal static partial class EnvfileInit
 {
     private static readonly HashSet<string> IgnoredDirectories =
         [".git", "node_modules", "dist", "build", ".next", "vendor", ".venv", "coverage", "__pycache__"];
@@ -31,9 +31,24 @@ public static partial class EnvfileInit
 
     private static readonly Dictionary<string, string> Languages = new()
     {
-        ["js"] = "js", ["mjs"] = "js", ["cjs"] = "js", ["jsx"] = "js", ["ts"] = "js", ["mts"] = "js", ["cts"] = "js",
-        ["tsx"] = "js", ["vue"] = "js", ["svelte"] = "js", ["astro"] = "js", ["py"] = "python", ["go"] = "go",
-        ["rb"] = "ruby", ["php"] = "php", ["rs"] = "rust", ["java"] = "java", ["cs"] = "csharp"
+        ["js"] = "js",
+        ["mjs"] = "js",
+        ["cjs"] = "js",
+        ["jsx"] = "js",
+        ["ts"] = "js",
+        ["mts"] = "js",
+        ["cts"] = "js",
+        ["tsx"] = "js",
+        ["vue"] = "js",
+        ["svelte"] = "js",
+        ["astro"] = "js",
+        ["py"] = "python",
+        ["go"] = "go",
+        ["rb"] = "ruby",
+        ["php"] = "php",
+        ["rs"] = "rust",
+        ["java"] = "java",
+        ["cs"] = "csharp"
     };
 
     [GeneratedRegex(@"^DOTENV_(?:PUBLIC|PRIVATE)_KEY(?:_|$)")]

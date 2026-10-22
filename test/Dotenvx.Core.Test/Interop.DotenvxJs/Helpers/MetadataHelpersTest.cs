@@ -187,9 +187,9 @@ public class MetadataHelpersTest : EnvironmentTestBase
     [Fact]
     public void TestIsTeamRequiredError()
     {
-        ArmorTeam.IsTeamRequiredError(new global::Dotenvx.Interop.DotenvxJs.Api.ApiException("TEAM_REQUIRED", "x")).ShouldBeTrue();
-        ArmorTeam.IsTeamRequiredError(new global::Dotenvx.Interop.DotenvxJs.Api.ApiException("DOTENVX_TEAM_REQUIRED", "x")).ShouldBeTrue();
-        ArmorTeam.IsTeamRequiredError(new global::Dotenvx.Interop.DotenvxJs.Api.ApiException("PERMISSION_DENIED", "x")).ShouldBeFalse();
+        ArmorTeam.IsTeamRequiredError(new global::Dotenvx.ApiException("TEAM_REQUIRED", "x")).ShouldBeTrue();
+        ArmorTeam.IsTeamRequiredError(new global::Dotenvx.ApiException("DOTENVX_TEAM_REQUIRED", "x")).ShouldBeTrue();
+        ArmorTeam.IsTeamRequiredError(new global::Dotenvx.ApiException("PERMISSION_DENIED", "x")).ShouldBeFalse();
         ArmorTeam.IsTeamRequiredError(null).ShouldBeFalse();
     }
 }

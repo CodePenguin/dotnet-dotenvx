@@ -4,7 +4,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// Reference source: dotenvx/src/lib/helpers/ptyCommand.js. With `--redact` the child's output is piped through the
 /// redactor; when stdin, stdout and stderr are all terminals the child is wrapped in `script` so it still sees a pty.
 /// </remarks>
-public static class PtyCommand
+internal static class PtyCommand
 {
     private static readonly Func<string, string?> DefaultWhich = name => SecretCli.ResolveExecutable(name);
 

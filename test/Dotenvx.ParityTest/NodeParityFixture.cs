@@ -87,20 +87,20 @@ public sealed class NodeParityFixture : IAsyncLifetime
     public Task<CliResult> RunNodeAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env,
         params string[] args)
     {
-        return RunProcessAsync(_nodePath, [DotenvxJsPath, ..args], workingDirectory, env);
+        return RunProcessAsync(_nodePath, [DotenvxJsPath, .. args], workingDirectory, env);
     }
 
     /// <summary>Runs the Node CLI with <paramref name="input" /> piped to stdin ("" = closed stdin).</summary>
     public Task<CliResult> RunNodeWithInputAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env,
         string input, params string[] args)
     {
-        return RunProcessAsync(_nodePath, [DotenvxJsPath, ..args], workingDirectory, env, input);
+        return RunProcessAsync(_nodePath, [DotenvxJsPath, .. args], workingDirectory, env, input);
     }
 
     /// <summary>Runs a Node script file from the `dotenvx/` directory with <paramref name="input" /> piped to stdin.</summary>
     public Task<CliResult> RunNodeFileWithInputAsync(string file, string input, params string[] args)
     {
-        return RunProcessAsync(_nodePath, [file, ..args], Path.Combine(RepoRoot, "dotenvx"), null, input);
+        return RunProcessAsync(_nodePath, [file, .. args], Path.Combine(RepoRoot, "dotenvx"), null, input);
     }
 
     /// <summary>Runs a Node oracle script file with <paramref name="workingDirectory" /> as its current directory.</summary>
@@ -149,13 +149,13 @@ public sealed class NodeParityFixture : IAsyncLifetime
     public Task<CliResult> RunDotnetWithInputAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env,
         string input, params string[] args)
     {
-        return RunProcessAsync(_dotnetPath, [DotenvxDllPath, ..args], workingDirectory, env, input);
+        return RunProcessAsync(_dotnetPath, [DotenvxDllPath, .. args], workingDirectory, env, input);
     }
 
     public Task<CliResult> RunDotnetAsync(string workingDirectory, IReadOnlyDictionary<string, string>? env,
         params string[] args)
     {
-        return RunProcessAsync(_dotnetPath, [DotenvxDllPath, ..args], workingDirectory, env);
+        return RunProcessAsync(_dotnetPath, [DotenvxDllPath, .. args], workingDirectory, env);
     }
 
     /// <summary>

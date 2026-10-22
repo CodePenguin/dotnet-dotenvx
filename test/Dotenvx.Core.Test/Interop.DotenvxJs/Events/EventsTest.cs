@@ -78,7 +78,11 @@ public class EventsTest : EnvironmentTestBase
     {
         JsonObject metadata = EventMetadata.Metadata(new Dictionary<string, object?>
         {
-            ["exit_code"] = 1L, ["secret"] = "x", ["key"] = "HELLO", ["phase"] = "complete", ["token"] = "tok"
+            ["exit_code"] = 1L,
+            ["secret"] = "x",
+            ["key"] = "HELLO",
+            ["phase"] = "complete",
+            ["token"] = "tok"
         });
 
         metadata.ToJsonString().ShouldBe("""{"key":"HELLO","phase":"complete","exit_code":1}""");
@@ -89,7 +93,10 @@ public class EventsTest : EnvironmentTestBase
     {
         JsonObject options = EventMetadata.Options(new Dictionary<string, object?>
         {
-            ["token"] = "tok", ["stdout"] = true, ["envFile"] = new List<string> { ".env", ".env.local" }, ["armor"] = false
+            ["token"] = "tok",
+            ["stdout"] = true,
+            ["envFile"] = new List<string> { ".env", ".env.local" },
+            ["armor"] = false
         });
 
         options.ToJsonString().ShouldBe("""{"envFile":[".env",".env.local"],"stdout":true,"armor":false}""");
@@ -346,7 +353,11 @@ public class EventsTest : EnvironmentTestBase
     {
         Dictionary<string, string> env = WorkerEnvironment.Filter(new Dictionary<string, string>
         {
-            ["Path"] = "p", ["DOTENVX_CONFIG"] = "c", ["https_proxy"] = "h", ["DATABASE_URL"] = "secret", ["DOTENVX_NO_ARMOR"] = "true",
+            ["Path"] = "p",
+            ["DOTENVX_CONFIG"] = "c",
+            ["https_proxy"] = "h",
+            ["DATABASE_URL"] = "secret",
+            ["DOTENVX_NO_ARMOR"] = "true",
             ["DOTENV_PRIVATE_KEY"] = "k"
         });
 

@@ -26,7 +26,10 @@ public class GitignoreActionTest : EnvironmentTestBase
     {
         return new GitignoreGenericResult
         {
-            Filename = filename, Patterns = patterns, Changed = true, Skipped = false,
+            Filename = filename,
+            Patterns = patterns,
+            Changed = true,
+            Skipped = false,
             VerboseMessage = $"add to {filename}"
         };
     }
@@ -35,7 +38,10 @@ public class GitignoreActionTest : EnvironmentTestBase
     {
         return new GitignoreGenericResult
         {
-            Filename = filename, Patterns = patterns, Changed = false, Skipped = false,
+            Filename = filename,
+            Patterns = patterns,
+            Changed = false,
+            Skipped = false,
             VerboseMessage = $"add to {filename}"
         };
     }
@@ -44,7 +50,10 @@ public class GitignoreActionTest : EnvironmentTestBase
     {
         return new GitignoreGenericResult
         {
-            Filename = filename, Patterns = [], Changed = false, Skipped = true,
+            Filename = filename,
+            Patterns = [],
+            Changed = false,
+            Skipped = true,
             VerboseMessage = $"add to {filename}"
         };
     }

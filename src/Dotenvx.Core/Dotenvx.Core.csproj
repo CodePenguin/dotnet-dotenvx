@@ -12,6 +12,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="DynamicProxyGenAssembly2"/>
+        <InternalsVisibleTo Include="Dotenvx"/>
         <InternalsVisibleTo Include="Dotenvx.Configuration.Test"/>
         <InternalsVisibleTo Include="Dotenvx.Core.Test"/>
         <InternalsVisibleTo Include="Dotenvx.Ports.Test"/>

@@ -57,7 +57,9 @@ public sealed class PrimitivesExportsOracleParityTest(NodeParityFixture fixture)
     {
         return new JsonObject
         {
-            ["parsed"] = Dict(r.Parsed), ["injected"] = Dict(r.Injected), ["existed"] = Dict(r.Existed),
+            ["parsed"] = Dict(r.Parsed),
+            ["injected"] = Dict(r.Injected),
+            ["existed"] = Dict(r.Existed),
             ["errors"] = JsonSerializer.SerializeToNode(r.Errors.Select(e => e.Code + "|" + e.Message))
         };
     }
@@ -66,7 +68,9 @@ public sealed class PrimitivesExportsOracleParityTest(NodeParityFixture fixture)
     {
         return new JsonObject
         {
-            ["parsed"] = Dict(r.Parsed), ["injected"] = Dict(r.Injected), ["existed"] = Dict(r.Existed),
+            ["parsed"] = Dict(r.Parsed),
+            ["injected"] = Dict(r.Injected),
+            ["existed"] = Dict(r.Existed),
             ["errors"] = JsonSerializer.SerializeToNode(r.Errors.Select(e => e.Code + "|" + e.Message))
         };
     }
@@ -261,7 +265,10 @@ public sealed class PrimitivesExportsOracleParityTest(NodeParityFixture fixture)
                 EngineCase c = cases[i];
                 PrimitivesParseOptions Options() => new()
                 {
-                    Overload = c.Overload, Ik = c.Ik, Ek = c.Ek, Fk = c.Fk,
+                    Overload = c.Overload,
+                    Ik = c.Ik,
+                    Ek = c.Ek,
+                    Fk = c.Fk,
                     ProcessEnv = new Dictionary<string, string>(c.Env)
                 };
 
@@ -281,7 +288,8 @@ public sealed class PrimitivesExportsOracleParityTest(NodeParityFixture fixture)
                 {
                     Dictionary<string, string> plain = PrimitivesApi.KeyringSync(new KeyringOptions
                     {
-                        Fk = fk, ProcessEnv = new Dictionary<string, string>(env)
+                        Fk = fk,
+                        ProcessEnv = new Dictionary<string, string>(env)
                     });
                     Dictionary<string, string> provided = PrimitivesApi.KeyringSync(new KeyringOptions
                     {

@@ -69,7 +69,8 @@ public class KeyPairProviderTest : EnvironmentTestBase
 
         result.ShouldBe(new Dictionary<string, string?>
         {
-            ["DOTENV_PUBLIC_KEY"] = PublicKey, ["DOTENV_PRIVATE_KEY"] = "private-key"
+            ["DOTENV_PUBLIC_KEY"] = PublicKey,
+            ["DOTENV_PRIVATE_KEY"] = "private-key"
         });
     }
 
@@ -146,7 +147,8 @@ public class KeyPairProviderTest : EnvironmentTestBase
 
         keyPair.Run().ShouldBe(new Dictionary<string, string?>
         {
-            ["DOTENV_PUBLIC_KEY"] = RealPublicKey, ["DOTENV_PRIVATE_KEY"] = RealPrivateKey
+            ["DOTENV_PUBLIC_KEY"] = RealPublicKey,
+            ["DOTENV_PRIVATE_KEY"] = RealPrivateKey
         });
         keyPair.Origin.ShouldBe(".env.keys");
     }
@@ -195,7 +197,11 @@ public class KeyPairProviderTest : EnvironmentTestBase
         {
             KeyAccess = new KeyAccessOptions
             {
-                NoNative = true, Token = "token-1", OnStatus = statuses.Add, OnProvider = callersCallback, Interactive = true
+                NoNative = true,
+                Token = "token-1",
+                OnStatus = statuses.Add,
+                OnProvider = callersCallback,
+                Interactive = true
             }
         };
 

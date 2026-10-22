@@ -5,8 +5,8 @@ using System.Linq;
 using System.Text.Json;
 
 using Dotenvx.Helpers;
-using Dotenvx.Interop.DotenvxJs.Events;
 using Dotenvx.Interop.DotenvxJs.Custodians;
+using Dotenvx.Interop.DotenvxJs.Events;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -37,13 +37,15 @@ public class EncryptAction : Command
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
         {
-            Description = "path to your .env.keys file (default: same path as your env file)", HelpName = "path"
+            Description = "path to your .env.keys file (default: same path as your env file)",
+            HelpName = "path"
         };
 
     private readonly Option<string[]?> _excludeKeyOption =
         new("--exclude-key", "-ek")
         {
-            Description = "keys(s) to exclude from encryption (default: none)", HelpName = "excludeKeys...",
+            Description = "keys(s) to exclude from encryption (default: none)",
+            HelpName = "excludeKeys...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };
@@ -51,7 +53,8 @@ public class EncryptAction : Command
     private readonly Option<string[]?> _keyOption =
         new("--key", "-k")
         {
-            Description = "keys(s) to encrypt (default: all keys in file)", HelpName = "keys...",
+            Description = "keys(s) to encrypt (default: all keys in file)",
+            HelpName = "keys...",
             AllowMultipleArgumentsPerToken = true,
             CustomParser = OptionParsers.ParseMultiValue
         };
@@ -140,9 +143,11 @@ public class EncryptAction : Command
         // stdout - should not have a try so that exit codes can surface to stdout
         if (stdout)
         {
-            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate)
+            Encrypt encryptService = new([.. envItems], key, excludeKey, envKeysFilePath, noCreate)
             {
-                KeyAccess = KeyAccess(parseResult), Profile = profile, With = with
+                KeyAccess = KeyAccess(parseResult),
+                Profile = profile,
+                With = with
             };
             EncryptResult result = encryptService.Run();
 
@@ -169,9 +174,11 @@ public class EncryptAction : Command
         try
         {
             KeyAccessOptions access = KeyAccess(parseResult, spinner.OnStatus);
-            Encrypt encryptService = new(envItems.ToArray(), key, excludeKey, envKeysFilePath, noCreate)
+            Encrypt encryptService = new([.. envItems], key, excludeKey, envKeysFilePath, noCreate)
             {
-                KeyAccess = access, Profile = profile, With = with
+                KeyAccess = access,
+                Profile = profile,
+                With = with
             };
             EncryptResult result = encryptService.Run();
 

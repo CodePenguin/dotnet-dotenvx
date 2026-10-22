@@ -15,7 +15,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// only supports a single `-f` file in this port currently regardless (a separate, already-known
 /// gap - see KeyPairAction.cs).
 /// </remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string[] SplitCommaSeparatedEnvFiles(string[]? envFile)
     {
@@ -24,10 +24,9 @@ public static partial class Helpers
             return [];
         }
 
-        return envFile
+        return [.. envFile
             .SelectMany(value => value.Split(','))
             .Select(value => value.Trim())
-            .Where(value => value.Length > 0)
-            .ToArray();
+            .Where(value => value.Length > 0)];
     }
 }

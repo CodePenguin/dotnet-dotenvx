@@ -5,7 +5,7 @@ using static Dotenvx.Primitives.Primitives;
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
 /// <remarks>Reference source: dotenvx/src/lib/helpers/append.js</remarks>
-public static partial class Helpers
+internal static partial class Helpers
 {
     public static string Append(string src, string key, string appendValue)
     {

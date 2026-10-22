@@ -6,13 +6,13 @@ using Dotenvx.Primitives;
 
 namespace Dotenvx.Interop.DotenvxJs.Helpers;
 
-public record RemoveEnvKeyResult(bool Changed, string Key, string Filepath);
+internal record RemoveEnvKeyResult(bool Changed, string Key, string Filepath);
 
 /// <remarks>
 /// Reference source: dotenvx/src/lib/helpers/readEnvKey.js and removeEnvKey.js (the `.env.keys` editing helpers used by
 /// the `native` services; `upsertEnvKey.js` is <see cref="UpsertEnvKeyHelper" />).
 /// </remarks>
-public static partial class EnvKeyFiles
+internal static partial class EnvKeyFiles
 {
     [GeneratedRegex(@"^\s*(?:export\s+)?[A-Za-z_][A-Za-z0-9_]*\s*=")]
     private static partial Regex AnyEnvKeyLine();

@@ -14,7 +14,7 @@ using static Dotenvx.Primitives.Primitives;
 namespace Dotenvx.Interop.DotenvxJs;
 
 /// <remarks>Reference source: dotenvx/src/lib/main.js</remarks>
-public static class Main
+internal static class Main
 {
     public static ConfigResult Config(ConfigOptions? options = null)
     {
@@ -24,7 +24,7 @@ public static class Main
     /// <summary>Plain `config` or the instrumented one behind <see cref="WithEvents" />.</summary>
     internal static ConfigResult Config(ConfigOptions? options, EventRecorder? events)
     {
-        options ??= new ConfigOptions();
+        options = WithLogger(options ?? new ConfigOptions());
         options = NormalizeDotenvConfigQuiet(options);
         options = NormalizeDotenvConfigConvention(options);
         options = NormalizeDotenvConfigIgnore(options);
@@ -55,7 +55,7 @@ public static class Main
         try
         {
             // `{ ...process.env, ...processEnv }`
-            Dictionary<string, string?> selectionEnv = new(CurrentProcessEnv());
+            Dictionary<string, string?> selectionEnv = new(Helpers.Helpers.CurrentProcessEnv());
             foreach ((string name, string value) in processEnv)
             {
                 selectionEnv[name] = value;
@@ -65,9 +65,9 @@ public static class Main
                 new SelectEnvfileOptions { Profile = options.Profile }, selectionEnv);
             EnvfileSchema schema = ReadEnvfile.Read(null, envs.Where(env => env.Type == EnvType.EnvFile).Select(env => env.Value));
 
-            Run run = Run.Factory(envs, options.Overload ?? false, processEnv, envKeysFile);
+            Run run = Run.Factory(envs, options.Overload == true || options.Override == true, processEnv, envKeysFile);
             run.DetermineOnExecute = false;
-            run.NoNative = options.NoNative == true;
+            run.NoNative = options.NoNative == true || options.Native == false;
             run.KeyAccess.NoArmor = noArmor;
             run.KeyAccess.Logger = options.Logger;
             run.KeyAccess.Token = options.Token;
@@ -183,7 +183,8 @@ public static class Main
 
             events?.Add(new Dictionary<string, object?>
             {
-                ["files"] = runResult.ReadableFilePaths, ["injected_count"] = (long)runResult.UniqueInjectedKeys.Length
+                ["files"] = runResult.ReadableFilePaths,
+                ["injected_count"] = (long)runResult.UniqueInjectedKeys.Length
             });
             logger?.Success(global::Dotenvx.Primitives.Primitives.InjectSummary(runResult.UniqueInjectedKeys.Length,
                 runResult.ReadableFilePaths.Select(filepath =>
@@ -223,7 +224,21 @@ public static class Main
         return options?.NoArmor == true || (string.IsNullOrEmpty(options?.Token) && new Db.Session(options?.Logger).NoArmor());
     }
 
-    private static void SetLogLevel(IDotenvxLogger? logger, ConfigOptions options)
+    /// <summary>Without a logger of its own an options object logs through <see cref="global::Dotenvx.Dotenvx.Logger" />, the way main.js always uses `logger`.</summary>
+    private static T WithLogger<T>(T options) where T : ConfigOptions
+    {
+        if (options.Logger != null)
+        {
+            return options;
+        }
+
+        var copy = (T)options.Clone();
+        copy.Logger = global::Dotenvx.Dotenvx.Logger;
+
+        return copy;
+    }
+
+    internal static void SetLogLevel(IDotenvxLogger? logger, ConfigOptions options)
     {
         if (logger == null)
         {
@@ -256,14 +271,14 @@ public static class Main
 
     internal static object? Get(string? key, GetOptions? options, EventRecorder? events)
     {
-        options ??= new GetOptions();
+        options = WithLogger(options ?? new GetOptions());
         options = (GetOptions)NormalizeDotenvConfigConvention(options);
         options = (GetOptions)NormalizeDotenvConfigIgnore(options);
 
         EnvItem[] envs = BuildEnvs(options);
         Services.Get getService = Services.Get.Factory(key, envs, options.Overload ?? false, options.All ?? false,
             string.IsNullOrEmpty(options.EnvKeysFile) ? null : [options.EnvKeysFile]);
-        getService.NoNative = options.NoNative == true;
+        getService.NoNative = options.NoNative == true || options.Native == false;
         getService.KeyAccess.NoArmor = ResolveNoArmor(options);
         getService.KeyAccess.Logger = options.Logger;
         getService.No1Password = options.No1Password == true;
@@ -347,7 +362,7 @@ public static class Main
     public static IReadOnlyDictionary<string, string> Parse(string? src, ParseOptions? options = null)
     {
         options ??= new ParseOptions();
-        IDotenvxLogger? logger = options.Logger;
+        IDotenvxLogger? logger = options.Logger ?? global::Dotenvx.Dotenvx.Logger;
         Dictionary<string, string> processEnv = options.ProcessEnv?.ToDictionary() ??
                                                 new Dictionary<string, string>(global::Dotenvx.Helpers.EnvironmentHelper.GetEnvironmentVariablesAsDictionary());
 
@@ -355,7 +370,7 @@ public static class Main
         string? privateKey = string.IsNullOrEmpty(options.PrivateKey) ? null : options.PrivateKey;
 
         // overload
-        bool overload = options.Overload ?? false;
+        bool overload = options.Overload == true || options.Override == true;
 
         // ignore
         string[] ignore = options.Ignore ?? [];
@@ -426,10 +441,8 @@ public static class Main
 
     internal static SetsResult Set(string key, string value, SetsOptions? options, EventRecorder? events)
     {
-        if (options != null)
-        {
-            options = (SetsOptions)NormalizeDotenvConfigQuiet(options);
-        }
+        options = WithLogger(options ?? new SetsOptions());
+        options = (SetsOptions)NormalizeDotenvConfigQuiet(options);
 
         // encrypt
         bool encrypt = !(options?.Plain == true || options?.Encrypt == false);
@@ -445,7 +458,7 @@ public static class Main
         string? envKeysFilepath = options?.EnvKeysFile;
 
         Sets setsService = Sets.Factory(key, value, envs, encrypt, envKeysFilepath, noCreate);
-        setsService.NoNative = options?.NoNative == true;
+        setsService.NoNative = options?.NoNative == true || options?.Native == false;
         setsService.KeyAccess.NoArmor = ResolveNoArmor(options);
         setsService.KeyAccess.Logger = options?.Logger;
         setsService.KeyAccess.No1Password = options?.No1Password == true;

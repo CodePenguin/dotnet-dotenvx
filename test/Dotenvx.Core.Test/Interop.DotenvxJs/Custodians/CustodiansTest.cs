@@ -1,11 +1,11 @@
 using Dotenvx.Interop.DotenvxJs.Custodians;
-using CustodiansRegistry = global::Dotenvx.Interop.DotenvxJs.Custodians.Custodians;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 
 using NSubstitute;
 
 using Shouldly;
 
+using CustodiansRegistry = global::Dotenvx.Interop.DotenvxJs.Custodians.Custodians;
 using NativeStoreException = global::Dotenvx.Providers.NativeStoreException;
 
 namespace Dotenvx.Core.Test.Interop.DotenvxJs.Custodians;
@@ -73,7 +73,8 @@ public class CustodiansTest : EnvironmentTestBase
 
         StoreResult result = CustodiansRegistry.Store("native", "public", "private", new StoreContext
         {
-            KeysSrc = "DOTENV_PRIVATE_KEY=existing\n", PrivateKeyName = "DOTENV_PRIVATE_KEY_PRODUCTION",
+            KeysSrc = "DOTENV_PRIVATE_KEY=existing\n",
+            PrivateKeyName = "DOTENV_PRIVATE_KEY_PRODUCTION",
             Comment = ".env.production"
         });
 
@@ -130,7 +131,8 @@ public class CustodiansTest : EnvironmentTestBase
         var writes = new List<(string, string, StoreContext)>();
         var custom = new SyncPlugin("custom")
         {
-            Reader = key => Ring(key, "custom"), SyncReader = key => Ring(key, "custom"),
+            Reader = key => Ring(key, "custom"),
+            SyncReader = key => Ring(key, "custom"),
             Writer = (publicKey, privateKey, context) =>
             {
                 writes.Add((publicKey, privateKey, context));

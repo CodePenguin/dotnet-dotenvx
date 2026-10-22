@@ -5,7 +5,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// separator (`path.resolve('.env/')` is `.../.env`, so `-f .env/` reads the file `.env`), where GetFullPath keeps the trailing
 /// separator and the read then fails. A root (`C:\` or `/`) keeps its separator, like Node.
 /// </remarks>
-public static class NodePath
+internal static class NodePath
 {
     public static string Resolve(string path)
     {

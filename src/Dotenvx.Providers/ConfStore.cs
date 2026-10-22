@@ -7,7 +7,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// <remarks>
 /// Port of `env-paths@2.2.1` (`envPaths(name, { suffix: '' }).config`), bundled in @dotenvx/tooling.
 /// </remarks>
-public static class EnvPaths
+internal static class EnvPaths
 {
     /// <summary>Test seam: replaces the OS default config directory (upstream tests stub `envPaths`).</summary>
     public static Func<string>? ConfigOverride { get; internal set; }
@@ -48,7 +48,7 @@ public static class EnvPaths
 /// reads as empty (`clearInvalidConfig`), and keys are flat (dotenvx never uses dotted keys, so conf's dot-prop
 /// nesting is not ported).
 /// </remarks>
-public class ConfStore
+internal class ConfStore
 {
     private readonly Func<string, Dictionary<string, object>>? _deserialize;
     private readonly string? _encryptionKey;

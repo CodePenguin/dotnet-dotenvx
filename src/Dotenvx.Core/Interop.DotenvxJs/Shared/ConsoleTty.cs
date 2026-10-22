@@ -8,7 +8,7 @@ namespace Dotenvx.Interop.DotenvxJs.Shared;
 /// test runner always redirects both, so GetColorDepth's tests need a way to simulate "really is a
 /// TTY" without real console control.
 /// </remarks>
-public static class ConsoleTty
+internal static class ConsoleTty
 {
     public static Func<bool> IsStdOutTty { get; internal set; } = DefaultIsStdOutTty;
     public static Func<bool> IsStdErrTty { get; internal set; } = DefaultIsStdErrTty;

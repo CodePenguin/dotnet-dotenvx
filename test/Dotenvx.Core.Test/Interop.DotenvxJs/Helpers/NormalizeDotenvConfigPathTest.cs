@@ -41,7 +41,9 @@ public class NormalizeDotenvConfigPathTest
     {
         EnvItem[] result = NormalizeDotenvConfigPath([], new Dictionary<string, string?>
         {
-            ["DOTENV_FILE"] = ".env.production, .env", ["DOTENV_PATH"] = ".env.old", ["DOTENV_F"] = ".env.older"
+            ["DOTENV_FILE"] = ".env.production, .env",
+            ["DOTENV_PATH"] = ".env.old",
+            ["DOTENV_F"] = ".env.older"
         });
 
         result.ShouldBeEquivalentTo(new[]

@@ -68,7 +68,7 @@ public static partial class Primitives
 
         foreach (EnvDeclaration declaration in model.Base.Values)
         {
-            Compile(declaration, document.Strict ?? false);
+            Compile(declaration);
         }
 
         foreach (EnvfileFileBlock block in document.Files)
@@ -85,7 +85,7 @@ public static partial class Primitives
                 EnvDeclaration merged = model.Base.TryGetValue(item.Name, out EnvDeclaration? parent)
                     ? parent.MergedWith(item)
                     : item;
-                Compile(merged, block.Strict ?? document.Strict ?? false);
+                Compile(merged);
             }
 
             model.Blocks[normalized] = block;
@@ -104,7 +104,7 @@ public static partial class Primitives
                 throw new MalformedEnvfileException($"Duplicate profile declaration: {profile.Profile}");
             }
 
-            model.Profiles[profile.Profile] = profile.Paths.Select(EnvfileFilename).ToList();
+            model.Profiles[profile.Profile] = [.. profile.Paths.Select(EnvfileFilename)];
         }
 
         return model;
@@ -139,7 +139,7 @@ public static partial class Primitives
     /// <summary>A comma-separated file selection as a list of validated names.</summary>
     internal static List<string> SplitFiles(string value)
     {
-        return value.Length == 0 ? [] : value.Split(',').Select(EnvfileFilename).ToList();
+        return value.Length == 0 ? [] : [.. value.Split(',').Select(EnvfileFilename)];
     }
 
     private static readonly Func<string, bool>? None = null;
@@ -150,7 +150,7 @@ public static partial class Primitives
             System.Globalization.CultureInfo.InvariantCulture);
     }
 
-    private static string Compile(EnvDeclaration declaration, bool strict, out bool required, out bool encrypted,
+    private static string Compile(EnvDeclaration declaration, out bool required, out bool encrypted,
         out bool redacted, out string? min, out string? max, out List<string>? choices)
     {
         string name = declaration.Name;
@@ -212,20 +212,20 @@ public static partial class Primitives
                 throw new MalformedEnvfileException($"Invalid Envfile enum for {name}: expected {type} choices");
             }
 
-            choices = [..declaration.Enum];
+            choices = [.. declaration.Enum];
         }
 
         return type;
     }
 
-    private static void Compile(EnvDeclaration declaration, bool strict)
+    private static void Compile(EnvDeclaration declaration)
     {
-        Compile(declaration, strict, out _, out _, out _, out _, out _, out _);
+        Compile(declaration, out _, out _, out _, out _, out _, out _);
     }
 
     private static KeyPolicy CompileKey(EnvDeclaration declaration, bool strict)
     {
-        string type = Compile(declaration, strict, out bool required, out bool encrypted, out bool redacted, out string? min,
+        string type = Compile(declaration, out bool required, out bool encrypted, out bool redacted, out string? min,
             out string? max, out List<string>? choices);
         return new KeyPolicy
         {
@@ -238,7 +238,7 @@ public static partial class Primitives
     /// <summary>The rules for the selected files: declarations from the base, then file blocks (the first listed file wins).</summary>
     private static IEnumerable<(string Key, KeyPolicy Rule)> Select(EnvfileModel model, string files)
     {
-        List<string> selected = SplitFiles(files).Select(model.Normalize).Distinct().ToList();
+        List<string> selected = [.. SplitFiles(files).Select(model.Normalize).Distinct()];
         OrderedDictionary<string, EnvDeclaration> merged = new();
         foreach ((string key, EnvDeclaration value) in model.Base)
         {

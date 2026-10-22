@@ -1,6 +1,3 @@
-using Dotenvx.Interop.DotenvxJs;
-using Dotenvx.Interop.DotenvxJs.Types;
-
 using Microsoft.Extensions.Configuration;
 
 namespace Dotenvx.Configuration;
@@ -12,7 +9,7 @@ public class DotenvxConfigurationProvider(DotenvxConfigurationSource source) : C
         Dictionary<string, string?> variables = new();
         ConfigOptions options = new();
         source.Options?.Invoke(options);
-        ConfigResult result = Main.Config(options);
+        ConfigResult result = Dotenvx.Config(options);
         foreach (KeyValuePair<string, string> keyValuePair in result.Parsed)
         {
             variables.Add(keyValuePair.Key, keyValuePair.Value);

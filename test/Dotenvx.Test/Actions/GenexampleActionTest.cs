@@ -32,8 +32,11 @@ public class GenexampleActionTest : EnvironmentTestBase
         Genexample mockGenexample = Substitute.For<Genexample>();
         mockGenexample.Run().Returns(new GenexampleResult
         {
-            EnvExampleFile = "HELLO=\"\"", EnvFile = [".env"], ExampleFilepath = ".env.example",
-            AddedKeys = ["HELLO"], Injected = new Dictionary<string, string> { { "HELLO", "" } },
+            EnvExampleFile = "HELLO=\"\"",
+            EnvFile = [".env"],
+            ExampleFilepath = ".env.example",
+            AddedKeys = ["HELLO"],
+            Injected = new Dictionary<string, string> { { "HELLO", "" } },
             Existed = new Dictionary<string, string>()
         });
         Genexample.Factory = (_, _) => mockGenexample;
@@ -53,8 +56,11 @@ public class GenexampleActionTest : EnvironmentTestBase
         Genexample mockGenexample = Substitute.For<Genexample>();
         mockGenexample.Run().Returns(new GenexampleResult
         {
-            EnvExampleFile = "HELLO=''", EnvFile = [".env"], ExampleFilepath = ".env.example",
-            AddedKeys = [], Injected = new Dictionary<string, string>(),
+            EnvExampleFile = "HELLO=''",
+            EnvFile = [".env"],
+            ExampleFilepath = ".env.example",
+            AddedKeys = [],
+            Injected = new Dictionary<string, string>(),
             Existed = new Dictionary<string, string> { { "HELLO", "" } }
         });
         Genexample.Factory = (_, _) => mockGenexample;

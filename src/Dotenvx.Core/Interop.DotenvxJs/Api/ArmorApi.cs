@@ -13,7 +13,7 @@ namespace Dotenvx.Interop.DotenvxJs.Api;
 /// <see cref="ArmorHttp.Request" /> and returns the parsed JSON; a status of 400 or more raises the error
 /// buildApiError.js / buildOauthError.js would.
 /// </remarks>
-public static class ArmorApi
+internal static class ArmorApi
 {
     private const string OauthClientId = "oac_dotenvxcli";
 
@@ -31,7 +31,8 @@ public static class ArmorApi
     {
         return new Dictionary<string, string>
         {
-            ["Authorization"] = $"Bearer {token ?? ""}", ["Content-Type"] = "application/json"
+            ["Authorization"] = $"Bearer {token ?? ""}",
+            ["Content-Type"] = "application/json"
         };
     }
 
@@ -46,7 +47,8 @@ public static class ArmorApi
 
         return new ApiException(code, $"[{code}] {json["error_description"]}")
         {
-            Json = json, StatusCode = statusCode
+            Json = json,
+            StatusCode = statusCode
         };
     }
 
@@ -191,7 +193,8 @@ public static class ArmorApi
         return Call($"{hostname}/api/account", "GET",
             new Dictionary<string, string>
             {
-                ["Authorization"] = $"Bearer {token ?? "undefined"}", ["Content-Type"] = "application/json"
+                ["Authorization"] = $"Bearer {token ?? "undefined"}",
+                ["Content-Type"] = "application/json"
             }, null, BuildApiError);
     }
 
@@ -203,7 +206,9 @@ public static class ArmorApi
             ["device_public_key"] = devicePublicKey,
             ["system_information"] = new JsonObject
             {
-                ["system_uuid"] = system.SystemUuid, ["os_platform"] = system.OsPlatform, ["os_arch"] = system.OsArch
+                ["system_uuid"] = system.SystemUuid,
+                ["os_platform"] = system.OsPlatform,
+                ["os_arch"] = system.OsArch
             },
             ["dotenvx_project_id"] = null
         };

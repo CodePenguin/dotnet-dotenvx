@@ -1,6 +1,5 @@
-using System.CommandLine;
-
 using System.Collections.Generic;
+using System.CommandLine;
 using System.Linq;
 
 using Dotenvx.Actions;
@@ -31,7 +30,7 @@ public class ExtCommand : Command
         {
             string? command = parseResult.GetValue(commandArgument);
             // `process.argv.slice(3)`: the command line as typed (flags and `--` included), after the first argument
-            string[] rawArgs = parseResult.Tokens.Select(token => token.Value).Skip(1).ToArray();
+            string[] rawArgs = [.. parseResult.Tokens.Select(token => token.Value).Skip(1)];
 
             return ExecuteDynamic.Extension(command, rawArgs, logger,
                 () => parseResult.RootCommandResult.Command.Parse(["ext", "--help"]).Invoke());

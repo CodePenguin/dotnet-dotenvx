@@ -9,7 +9,7 @@ using static Dotenvx.Interop.DotenvxJs.Helpers.Helpers;
 namespace Dotenvx.Interop.DotenvxJs.Custodians;
 
 /// <summary>A locally held private key and how to remove it from where it was found (`Remove` re-checks it first).</summary>
-public sealed class LocalKey
+internal sealed class LocalKey
 {
     public string? PublicKey { get; init; }
     public string? PrivateKey { get; init; }
@@ -21,7 +21,7 @@ public sealed class LocalKey
 /// Reference source: dotenvx/src/lib/custodians/resolveLocalKey.js. Returns the originating store with the key, so a move
 /// only removes that source. Never looks up Armor itself: these operations upload a locally held private key.
 /// </remarks>
-public static class ResolveLocalKey
+internal static class ResolveLocalKey
 {
     private static string? Read(string filename)
     {

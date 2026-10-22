@@ -1,4 +1,4 @@
-namespace Dotenvx.Interop.DotenvxJs.Shared;
+namespace Dotenvx;
 
 /// <remarks>
 /// Mirrors dotenvx/src/shared/colors.js's getColor(color, stream)/bold(message, stream) taking a

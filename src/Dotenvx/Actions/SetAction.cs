@@ -5,8 +5,8 @@ using System.Linq;
 using System.Text.Json;
 
 using Dotenvx.Helpers;
-using Dotenvx.Interop.DotenvxJs.Events;
 using Dotenvx.Interop.DotenvxJs.Custodians;
+using Dotenvx.Interop.DotenvxJs.Events;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
 using Dotenvx.Interop.DotenvxJs.Shared;
@@ -39,7 +39,8 @@ public class SetAction : Command
     private readonly Option<bool> _encryptOption =
         new("--encrypt", "-c")
         {
-            Description = "encrypt value (default: true)", DefaultValueFactory = _ => true
+            Description = "encrypt value (default: true)",
+            DefaultValueFactory = _ => true
         };
 
     private readonly Option<string[]?> _envFileOption =
@@ -48,7 +49,8 @@ public class SetAction : Command
     private readonly Option<string[]?> _envKeysFileOption =
         new("--env-keys-file", "-fk")
         {
-            Description = "path to your .env.keys file (default: same path as your env file)", HelpName = "path"
+            Description = "path to your .env.keys file (default: same path as your env file)",
+            HelpName = "path"
         };
 
     private readonly Argument<string> _keyArgument =
@@ -76,7 +78,7 @@ public class SetAction : Command
         Add(_keyArgument);
         Add(_noCreateOption);
         Add(_plainOption);
-                Add(_valueArgument);
+        Add(_valueArgument);
         Add(_no1PasswordOption);
         Add(_noBitwardenOption);
         Add(_noNativeOption);
@@ -136,7 +138,7 @@ public class SetAction : Command
 
             string? envKeysFilePath = envKeysFile?.LastOrDefault(); // plain `<path>` option: commander keeps the LAST occurrence
 
-            Sets setsService = Sets.Factory(key, value, envItems.ToArray(), encrypt, envKeysFilePath, noCreate);
+            Sets setsService = Sets.Factory(key, value, [.. envItems], encrypt, envKeysFilePath, noCreate);
             // set.js: noArmor = options.armor === false (the custody menu decides about Armor, not the session)
             setsService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.FlagOnly);
             setsService.KeyAccess.No1Password = parseResult.GetValue(_no1PasswordOption);
