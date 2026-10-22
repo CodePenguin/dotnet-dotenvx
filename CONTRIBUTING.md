@@ -138,6 +138,17 @@ Detailed, numbered lessons from past bugs are in [docs/porting-traps.md](docs/po
 - Before changing a shared helper, grep every caller (trap #26). Before concluding something is unreachable or settled, check the submodule's git history and a second scenario (traps #27, #29).
 - Do not make a stale test pass: confirm the real behavior live against Node first (trap #51).
 
+## Release cadence (which upstream version to port)
+
+Upstream ships very fast (11 to 17 npm releases a month, 45 in July 2026), and minor versions carry renames and reversals (`Envfile` was renamed twice and reverted within four days in 2.32.x). A byte-for-byte port with live-oracle parity tests cannot follow every release, so:
+
+1. **Target one settled upstream version at a time.** Retarget only to the latest release of a minor line, and only once no newer upstream release has appeared for about **3 days**.
+2. **Read the changelog first.** Skip a version that a later release renames, removes or reverts within days; wait for the one that says it is final.
+3. **Skip the releases in between.** The .NET packages jump from one settled version to the next, and the changelog names the skipped upstream versions. Do not port unreleased upstream `main`, and ignore npm releases that only change tooling dependencies.
+4. **Port everything the target contains.** The scope rule above still applies; a bump is not done until the full ParityTest passes on Windows and Linux (macOS by its peer) and nothing from the target is left unported.
+5. **Versions track upstream.** The .NET version equals the upstream version; our own fixes against the same upstream version use the fourth number (next section). `@dotenvx/primitives` and `@dotenvx/providers` follow their own npm versions.
+6. **Tag and publish only when the version's work is done.** Never create or move a tag, or publish packages, before the maintainer says so.
+
 ## Releasing a fix for the same upstream version
 
 Package versions track the upstream release (`2.35.0`), and nuget.org never lets a published version be replaced. A bug fixed in our port of a version that is already published ships as a four-part version:
