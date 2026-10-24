@@ -66,6 +66,15 @@ public sealed class SpinnerScope : IDisposable
         }
     };
 
+    /// <summary>`if (spinner) spinner.text = text`: progress text that is shown only on a spinner (init and spec scanning).</summary>
+    public Action<string> OnText => text =>
+    {
+        if (_spinner is not null)
+        {
+            _spinner.Text = text;
+        }
+    };
+
     /// <summary>`statusReporter(null)`: every status text on stderr.</summary>
     public static Action<string> Stderr { get; } = text =>
     {
