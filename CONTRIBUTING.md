@@ -38,6 +38,8 @@ dotnet run --project src/Dotenvx -- get                               # run the 
 
 CI (`.github/workflows/ci.yml`) runs restore / build / format check / unit tests on ubuntu, windows and macos with submodules checked out, in a few minutes; the parity suite is not part of it (run it on every OS before a release); SDK pinned by `global.json` (.NET 10).
 
+Before pushing, run `scripts/prepush.sh`: it builds a fresh clone of the last commit with warnings as errors and runs the unit tests on one processor. Both catch what a warm many-core local build hides (warnings in projects that are already up to date, such as the fakes in `test/fakes`, and timing races that only show on a small CI runner).
+
 Run test projects separately. `Dotenvx.ParityTest` spawns real `node` and `dotnet` subprocesses and takes minutes (`PrimitivesExportsOracleParityTest` alone about 2 minutes, so do not wrap it in a short timeout: a killed test host looks like a crash). It skips itself when Node/npm or the submodule is missing. The other test projects run in seconds and are fully offline.
 
 ## Architecture and porting convention

@@ -15,6 +15,14 @@ namespace Dotenvx.Core.Test.Interop.DotenvxJs.Events;
 /// </remarks>
 public class EventsTest : EnvironmentTestBase
 {
+    static EventsTest()
+    {
+        // Delivery gives up after 500 ms (like the Node SDK) and each send blocks a pool thread while it waits for another one. On a
+        // small runner (3 cores) the pool adds threads too slowly, so the send is abandoned and the events never arrive.
+        ThreadPool.GetMinThreads(out int worker, out int io);
+        ThreadPool.SetMinThreads(Math.Max(worker, 32), Math.Max(io, 32));
+    }
+
     private sealed class CapturingSink : IEventSink
     {
         public List<JsonObject> Events { get; } = [];
