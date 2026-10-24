@@ -8,8 +8,8 @@ on:
     branches: [ "main" ]
   workflow_dispatch: # run it by hand from the Actions tab on any branch
     inputs:
-      all-os:
-        description: Also run on Windows and macOS (push and pull request runs are Linux only)
+      full-parity:
+        description: Also run the whole parity suite against the real Node CLI (15-45 minutes per OS); do this before a release
         type: boolean
         default: false
 
@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false # one OS failing must not hide the others
       matrix:
-        os: ${{ fromJSON(inputs.all-os && '["ubuntu-latest","windows-latest","macos-latest"]' || '["ubuntu-latest"]') }}
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -35,6 +35,7 @@ jobs:
       with:
         dotnet-version: 10.0.x
     - name: Setup Node
+      if: ${{ inputs.full-parity }}
       uses: actions/setup-node@v4
       with:
         node-version: 22 # the parity tests run the real Node CLI: pin it so runner images cannot drift
@@ -45,9 +46,12 @@ jobs:
     - name: Verify formatting
       run: dotnet format --no-restore --verify-no-changes
     - name: Test
-      run: dotnet test --no-build --verbosity normal
-      # Includes Dotenvx.ParityTest (part of Dotenvx.sln): it shells out to the real Node CLI in the dotenvx/ submodule
-      # and diffs output against the built .NET CLI. NodeParityFixture runs `npm install` in dotenvx/ on first use.
+      run: dotnet test --no-build --verbosity normal --filter "FullyQualifiedName!~Dotenvx.ParityTest"
+      # CI checks that the functionality works on every OS and takes about 2 minutes. Dotenvx.ParityTest (the real Node CLI against this
+      # one) is slow: start this workflow by hand with full-parity ticked before a release
+    - name: Full parity tests
+      if: ${{ inputs.full-parity }}
+      run: dotnet test test/Dotenvx.ParityTest --no-build --verbosity normal
     - name: Pack NuGet packages
       if: matrix.os == 'ubuntu-latest'
       run: |

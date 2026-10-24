@@ -36,7 +36,7 @@ dotnet test --filter "FullyQualifiedName~Dotenvx.Core.Test.Interop.DotenvxJs.Mai
 dotnet run --project src/Dotenvx -- get                               # run the CLI
 ```
 
-CI (`.github/workflows/ci.yml`) runs restore / build / test on ubuntu with submodules checked out; SDK pinned by `global.json` (.NET 10).
+CI (`.github/workflows/ci.yml`) runs restore / build / format check / unit tests on ubuntu, windows and macos with submodules checked out, in a few minutes; the parity suite is not part of it (run it on every OS before a release); SDK pinned by `global.json` (.NET 10).
 
 Run test projects separately. `Dotenvx.ParityTest` spawns real `node` and `dotnet` subprocesses and takes minutes (`PrimitivesExportsOracleParityTest` alone about 2 minutes, so do not wrap it in a short timeout: a killed test host looks like a crash). It skips itself when Node/npm or the submodule is missing. The other test projects run in seconds and are fully offline.
 
@@ -123,7 +123,7 @@ Parity is proven by oracle tests, not ported tests: `test/Dotenvx.ParityTest/Pri
 
 ## Parity test suite (`test/Dotenvx.ParityTest/`)
 
-- Both CLIs run as real subprocesses via `NodeParityFixture`, so the shipped artifact is what is tested. It is a separate project for local speed; CI runs it with everything else.
+- Both CLIs run as real subprocesses via `NodeParityFixture`, so the shipped artifact is what is tested. It is a separate project for local speed; CI skips it (it takes 15-45 minutes per OS); run it before a release (the `ci` workflow has a manual `full-parity` option, or run it on each machine).
 - Division of labor: `Dotenvx.Test`/`Dotenvx.Core.Test` are the 1:1 ports of upstream's unit tests and stand alone. This suite exists only to catch drift between the two implementations, so add a scenario here only when cross-implementation behavior needs proving.
 - Compare stdout and exit code, not stderr wording, unless the scenario is about stderr. Redact non-deterministic content (fresh keypairs, ECIES ciphertext) with `ParityTestBase.RedactKeyMaterial`.
 - Deterministic structure tests also live here: `HelpExactParityTest` (exact `--help` bytes for every command path and `help <cmd>`), `HelpTextParityTest` (options per command, against System.CommandLine's native help), `ErrorMessageParityTest` (every error subtype vs `errors.js`), `GlobalOptionsParityTest`.
