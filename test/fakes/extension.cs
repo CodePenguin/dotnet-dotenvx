@@ -10,7 +10,7 @@ using System.Text.Json;
 
 Console.OutputEncoding = new UTF8Encoding(false);
 string name = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "dotenvx-fake");
-string? Env(string key) => Environment.GetEnvironmentVariable(key);
+static string? Env(string key) => Environment.GetEnvironmentVariable(key);
 
 if (Env("FAKEEXT_OUT") is { Length: > 0 } text)
 {

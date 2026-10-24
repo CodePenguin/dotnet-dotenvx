@@ -117,7 +117,7 @@ if (args.Length == 1 && args[0] == "-i")
         }
 
         // interactive security reports a failure on stderr and still exits zero
-        status = Handle(Tokens(line).ToArray()) == 0 ? status : 0;
+        status = Handle([.. Tokens(line)]) == 0 ? status : 0;
     }
 
     return status;
