@@ -55,7 +55,7 @@ internal static class ArmorApi
     private static JsonNode Call(string url, string method, IReadOnlyDictionary<string, string> headers, string? body,
         Func<int, JsonNode, ApiException> buildError)
     {
-        HttpResult response = ArmorHttp.Request(url, method, headers, body);
+        HttpResult response = ArmorHttp.Http(url, method, headers, body);
         JsonNode json = ParseJson(response.Body);
 
         if (response.StatusCode >= 400)

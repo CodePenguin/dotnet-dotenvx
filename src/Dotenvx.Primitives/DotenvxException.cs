@@ -22,6 +22,12 @@ public class DotenvxException(string code, string message, string? help = null) 
     // CatchAndLog.cs needs somewhere to read it from.
     public string? Debug { get; init; }
 
+    /// <summary>Attaches (or replaces) the help text after the fact (`error.help = ...; error.messageWithHelp = ...`).</summary>
+    public void SetHelp(string help)
+    {
+        Help = help;
+    }
+
     public string MessageWithHelp => string.IsNullOrEmpty(Help) ? Message : $"{Message}. {Help}";
 }
 

@@ -9,7 +9,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 internal record HttpResult(int StatusCode, string Body);
 
 /// <summary>A failed request; <see cref="Code" /> is Node's `error.code` (`ECONNREFUSED`, `ENOTFOUND`, `ERR_INVALID_URL`, ...).</summary>
-internal class HttpRequestFailedException(string code, string message) : Exception(message)
+internal class HttpRequestFailedException(string code, string message, Exception? cause = null) : Exception(message, cause)
 {
     public string Code { get; } = code;
 }
@@ -48,6 +48,38 @@ internal static class ArmorHttp
         Request = DefaultRequest;
     }
 
+    /// <summary>
+    /// helpers/http.js `http(url, opts)`: the request, with a connectivity failure turned into
+    /// `[CODE] unable to connect to {origin}. Check your connection and that the server is running.` (code: the error's, else its
+    /// cause's, else NETWORK_ERROR). Every dotenvx call to the Armor service goes through it.
+    /// </summary>
+    public static HttpResult Http(string url, string method, IReadOnlyDictionary<string, string>? headers, string? body)
+    {
+        try
+        {
+            return Request(url, method, headers, body);
+        }
+        catch (Exception error) when (IsNetworkError(error))
+        {
+            string code = CodeOf(error) ?? CodeOf(error.InnerException) ?? "NETWORK_ERROR";
+            string origin = new Uri(url).GetLeftPart(UriPartial.Authority);
+
+            throw new HttpRequestFailedException(code,
+                $"[{code}] unable to connect to {origin}. Check your connection and that the server is running.", error);
+        }
+    }
+
+    private static string? CodeOf(Exception? error)
+    {
+        return error switch
+        {
+            HttpRequestFailedException failed => failed.Code,
+            Dotenvx.Providers.ProviderException provider => provider.Code,
+            DotenvxException dotenvx => dotenvx.Code,
+            _ => null
+        };
+    }
+
     /// <summary>Runs a request with a deadline for the whole exchange, body included (armorRequest.js aborts after 30 seconds).</summary>
     internal static HttpResult RequestWithin(TimeSpan deadline, string url, string method,
         IReadOnlyDictionary<string, string>? headers, string? body)
@@ -74,13 +106,7 @@ internal static class ArmorHttp
             return false;
         }
 
-        string? code = error switch
-        {
-            HttpRequestFailedException failed => failed.Code,
-            Dotenvx.Providers.ProviderException provider => provider.Code,
-            DotenvxException dotenvx => dotenvx.Code,
-            _ => null
-        };
+        string? code = CodeOf(error);
 
         return (code is not null && NetworkErrorCodes.Contains(code)) ||
                IsNetworkError(error.InnerException) ||

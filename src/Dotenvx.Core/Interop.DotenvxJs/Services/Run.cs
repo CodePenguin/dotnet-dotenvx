@@ -295,6 +295,11 @@ internal class Run
             row.Errors.Add(error);
         }
 
+        foreach (Exception error in row.Errors)
+        {
+            EnclavedHint.Apply(error, envFilePath);
+        }
+
         _processedEnvs.Add(row);
     }
 

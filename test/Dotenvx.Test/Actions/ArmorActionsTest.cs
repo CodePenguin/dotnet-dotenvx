@@ -483,12 +483,12 @@ public class ArmorActionsTest : EnvironmentTestBase
 
     /// <remarks>
     /// Refer to "login action reports non-error rejection values". JavaScript can reject with a bare string; .NET
-    /// exceptions always carry a message, so the nearest equivalent (a transport failure) is reported by its message.
+    /// exceptions always carry a message, so the nearest equivalent (any other failure) is reported by its message.
     /// </remarks>
     [Fact]
     public void TestLoginActionReportsNonErrorRejectionValues()
     {
-        ArmorHttp.Request = (_, _, _, _) => throw new HttpRequestFailedException("ECONNREFUSED", "boom");
+        ArmorHttp.Request = (_, _, _, _) => throw new InvalidOperationException("boom");
 
         Run("login").ShouldBe(1);
 
@@ -523,7 +523,7 @@ public class ArmorActionsTest : EnvironmentTestBase
     [Fact]
     public void TestLogoutActionReportsNonErrorRejectionValues()
     {
-        ArmorHttp.Request = (_, _, _, _) => throw new HttpRequestFailedException("ECONNREFUSED", "boom");
+        ArmorHttp.Request = (_, _, _, _) => throw new InvalidOperationException("boom");
 
         Run("logout").ShouldBe(1);
 

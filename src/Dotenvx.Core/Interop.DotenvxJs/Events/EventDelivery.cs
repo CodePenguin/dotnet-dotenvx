@@ -47,7 +47,7 @@ internal sealed class ArmorEventsBackend(string hostname, string token) : IEvent
 
     public void Send(JsonArray events)
     {
-        HttpResult response = ArmorHttp.Request($"{hostname}/api/events", "POST",
+        HttpResult response = ArmorHttp.Http($"{hostname}/api/events", "POST",
             new Dictionary<string, string> { ["Authorization"] = $"Bearer {token}", ["Content-Type"] = "application/json" },
             ArmorWire.Stringify(new JsonObject { ["events"] = events }));
 

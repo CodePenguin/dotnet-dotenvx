@@ -41,6 +41,9 @@ internal class Get(string? key, EnvItem[] envs, bool overload, bool all, string[
 
     public bool PromptForSecrets { get; set; }
 
+    /// <summary>`includeKeySources`: also report where each private key came from.</summary>
+    public bool IncludeKeySources { get; set; }
+
     /// <summary>`--profile`: the Envfile profile that selects the env files.</summary>
     public string? Profile { get; set; }
 
@@ -70,6 +73,20 @@ internal class Get(string? key, EnvItem[] envs, bool overload, bool all, string[
             errors.AddRange(processedEnv.Errors);
         }
 
+        // resolvers/get.js resolveResult: `Object.assign({}, ...processedEnvs.map(row => row.keySources))`
+        Dictionary<string, string>? keySources = null;
+        if (IncludeKeySources)
+        {
+            keySources = [];
+            foreach (RunProcessedEnv processedEnv in runResult.ProcessedEnvs)
+            {
+                foreach ((string publicKey, string source) in processedEnv.KeySources ?? new Dictionary<string, string>())
+                {
+                    keySources[publicKey] = source;
+                }
+            }
+        }
+
         if (!string.IsNullOrEmpty(key)) // resolvers/get.js: `if (key)`, an empty key is the no-key branch
         {
             Dictionary<string, string> parsed = [];
@@ -82,13 +99,13 @@ internal class Get(string? key, EnvItem[] envs, bool overload, bool all, string[
                 errors.Add(new MissingKeyException(key));
             }
 
-            return new GetResult { Parsed = parsed, Errors = [.. errors] };
+            return new GetResult { Parsed = parsed, Errors = [.. errors], KeySources = keySources };
         }
         else
         {
             if (all)
             {
-                return new GetResult { Parsed = processEnv, Errors = [.. errors] };
+                return new GetResult { Parsed = processEnv, Errors = [.. errors], KeySources = keySources };
             }
 
             Dictionary<string, string> parsed = [];
@@ -108,7 +125,7 @@ internal class Get(string? key, EnvItem[] envs, bool overload, bool all, string[
                 }
             }
 
-            return new GetResult { Parsed = parsed, Errors = [.. errors] };
+            return new GetResult { Parsed = parsed, Errors = [.. errors], KeySources = keySources };
         }
     }
 }
