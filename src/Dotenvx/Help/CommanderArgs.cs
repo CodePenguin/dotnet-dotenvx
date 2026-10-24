@@ -152,6 +152,12 @@ public static class CommanderArgs
                     continue;
                 }
 
+                if (term is not null && term.Contains('<') && i + 1 == args.Length)
+                {
+                    // a required value at the very end of the arguments
+                    missingTerm ??= term;
+                }
+
                 result.Add(arg);
 
                 continue;

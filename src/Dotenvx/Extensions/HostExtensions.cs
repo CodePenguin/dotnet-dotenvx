@@ -34,6 +34,13 @@ public static class HostExtensions
         // commander still handles -h/--help/-V/--version anywhere before the action runs
         if (firstUnknown is not null && !args.TakeWhile(a => a != "--").Any(a => a is "-h" or "--help" or "-V" or "--version"))
         {
+            // commander consumes the root options after the unknown command too: `foo -l` is `option '-l, --log-level <level>' argument missing`
+            if (missingTerm is not null)
+            {
+                Console.Error.WriteLine($"error: option '{missingTerm}' argument missing");
+                return 1;
+            }
+
             // `process.argv.slice(3)`: everything after the first user argument
             AnnounceLogLevel(host);
             return ExecuteDynamic.Dynamic(firstUnknown, args[1..], host.Services.GetRequiredService<IDotenvxLogger>());
@@ -50,6 +57,20 @@ public static class HostExtensions
             // `process.argv.slice(3)`: everything after the first user argument
             AnnounceLogLevel(host);
             return ExecuteDynamic.Dynamic(unknownCommand, args[1..], host.Services.GetRequiredService<IDotenvxLogger>());
+        }
+
+        // commander: `error: option '-f, --env-file <path>' argument missing` (stderr, exit 1)
+        if (!RequestsHelpOrVersion(parseResult) && missingTerm is not null)
+        {
+            Console.Error.WriteLine($"error: option '{missingTerm}' argument missing");
+            return 1;
+        }
+
+        // commander checks the required options before it looks at unknown ones
+        if (!RequestsHelpOrVersion(parseResult) && CommanderErrors.RequiredOption(parseResult) is { } required)
+        {
+            Console.Error.WriteLine(required);
+            return 1;
         }
 
         // commander rejects unknown options even though it tolerates extra positional values (see UnknownOptionGuard)
@@ -74,23 +95,9 @@ public static class HostExtensions
             return 1;
         }
 
-        // commander: `error: option '-f, --env-file <path>' argument missing` (stderr, exit 1)
-        if (!RequestsHelpOrVersion(parseResult) && missingTerm is not null)
-        {
-            Console.Error.WriteLine($"error: option '{missingTerm}' argument missing");
-            return 1;
-        }
-
         if (!RequestsHelpOrVersion(parseResult) && CommanderErrors.MissingArgument(parseResult) is { } missing)
         {
             Console.Error.WriteLine(missing);
-            return 1;
-        }
-
-        // commander: `error: required option '-s, --secret <value>' not specified` (stderr, exit 1)
-        if (!RequestsHelpOrVersion(parseResult) && CommanderErrors.RequiredOption(parseResult) is { } required)
-        {
-            Console.Error.WriteLine(required);
             return 1;
         }
 
