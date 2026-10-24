@@ -14,7 +14,8 @@ fi
 
 dir=$(mktemp -d)
 trap 'rm -rf "$dir"' EXIT
-git clone -q --recurse-submodules "$root" "$dir/repo"
+# LF checkout like CI (the submodule fixtures are compared byte for byte); the env form also reaches the submodule clones
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.autocrlf GIT_CONFIG_VALUE_0=false git clone -q --recurse-submodules "$root" "$dir/repo"
 cd "$dir/repo"
 
 dotnet restore -v q
