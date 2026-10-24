@@ -77,6 +77,9 @@ public class MainTest : EnvironmentTestBase
         mockRun.KeyAccess.NoArmor.ShouldBeTrue();
     }
 
+    // Intentionally NOT ported: upstream passes noSpinner on but nothing ever reads it, so an option here would do nothing. It stays as a
+    // skipped test so the upstream-test-titles scan sees it and nobody adds the inert option back.
+
     /// <remarks>Refer to "config supports noSpinner option"</remarks>
     [Fact(Skip = "Not ported: main.js hands noSpinner to the envs resolver, which never reads it, so there is no such option here")]
     public void TestConfigSupportsNoSpinnerOption()
