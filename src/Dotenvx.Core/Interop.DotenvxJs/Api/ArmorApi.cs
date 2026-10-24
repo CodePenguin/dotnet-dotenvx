@@ -53,9 +53,9 @@ internal static class ArmorApi
     }
 
     private static JsonNode Call(string url, string method, IReadOnlyDictionary<string, string> headers, string? body,
-        Func<int, JsonNode, ApiException> buildError)
+        Func<int, JsonNode, ApiException> buildError, TimeSpan? timeout = null)
     {
-        HttpResult response = ArmorHttp.Http(url, method, headers, body);
+        HttpResult response = ArmorHttp.Http(url, method, headers, body, timeout);
         JsonNode json = ParseJson(response.Body);
 
         if (response.StatusCode >= 400)
@@ -184,6 +184,113 @@ internal static class ArmorApi
         return Call($"{hostname}/api/feedback", "POST",
             new Dictionary<string, string> { ["Content-Type"] = "application/json" },
             Stringify(new JsonObject { ["body"] = body }), BuildApiError);
+    }
+
+    private static JsonNode Get(string url, string? token, TimeSpan? timeout = null)
+    {
+        // the listing endpoints send only the authorization header
+        HttpResult response = ArmorHttp.Http(url, "GET", new Dictionary<string, string> { ["Authorization"] = $"Bearer {token ?? ""}" },
+            null, timeout);
+
+        return Result(response);
+    }
+
+    private static JsonNode Result(HttpResult response)
+    {
+        JsonNode json = ParseJson(response.Body);
+        if (response.StatusCode >= 400)
+        {
+            throw BuildApiError(response.StatusCode, json);
+        }
+
+        return json;
+    }
+
+    private static string Segment(string value)
+    {
+        return Uri.EscapeDataString(value);
+    }
+
+    /// <summary>getTeams.js: every page of `GET /api/teams?page=N`, following `meta.next_page`.</summary>
+    public static JsonNode[] GetTeams(string hostname, string? token)
+    {
+        List<JsonNode> teams = [];
+        int? page = 1;
+        while (page is { } current)
+        {
+            JsonNode json = Get($"{hostname}/api/teams?page={current}", token);
+            teams.AddRange(json["teams"]!.AsArray().Select(team => team!));
+            page = NextPage(json);
+        }
+
+        return [.. teams];
+    }
+
+    private static int? NextPage(JsonNode json)
+    {
+        JsonNode? next = json["meta"]?["next_page"];
+
+        return next is null || next.GetValueKind() is JsonValueKind.Null or JsonValueKind.False ? null : next.GetValue<int>();
+    }
+
+    /// <summary>getTeamServices.js: `GET /api/teams/:team/services`.</summary>
+    public static JsonNode GetTeamServices(string hostname, string? token, string team)
+    {
+        return Get($"{hostname}/api/teams/{Segment(team)}/services", token);
+    }
+
+    /// <summary>getTeamConnections.js: every page of the team's connections for a service.</summary>
+    public static JsonNode[] GetTeamConnections(string hostname, string? token, string team, string service)
+    {
+        List<JsonNode> connections = [];
+        int? page = 1;
+        while (page is { } current)
+        {
+            JsonNode json = Get($"{hostname}/api/teams/{Segment(team)}/connections?service={Uri.EscapeDataString(service)}&page={current}",
+                token);
+            connections.AddRange(json["connections"]!.AsArray().Select(connection => connection!));
+            page = NextPage(json);
+        }
+
+        return [.. connections];
+    }
+
+    /// <summary>getConnectionResources.js: `GET .../connections/:id/resources?q=QUERY`.</summary>
+    public static JsonNode GetConnectionResources(string hostname, string? token, string team, string connectionId, string query)
+    {
+        return Get(
+            $"{hostname}/api/teams/{Segment(team)}/connections/{Segment(connectionId)}/resources?q={Uri.EscapeDataString(query)}", token);
+    }
+
+    /// <summary>postConnectionKeypair.js: asks Armor to create the keypair inside a connected resource.</summary>
+    public static JsonNode PostConnectionKeypair(string hostname, string? token, string team, string connectionId,
+        JsonNode resourceId, string? privateKeyName)
+    {
+        return Api($"{hostname}/api/teams/{Segment(team)}/connections/{Segment(connectionId)}/keypairs", "POST", token,
+            new JsonObject { ["resource_id"] = resourceId, ["private_key_name"] = privateKeyName });
+    }
+
+    /// <summary>postTeamInvitation.js: invites a member to a team.</summary>
+    public static JsonNode PostTeamInvitation(string hostname, string? token, string team, string email)
+    {
+        return Api($"{hostname}/api/teams/{Segment(team)}/invitations", "POST", token,
+            new JsonObject { ["email"] = email, ["role"] = "member" });
+    }
+
+    private static readonly TimeSpan SetupTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>teamConnectionSetup.js `create`: starts a connection setup for a service.</summary>
+    public static JsonNode ConnectionSetupCreate(string hostname, string? token, string team, string service)
+    {
+        return Call($"{hostname}/api/teams/{Segment(team)}/connections/setup", "POST", BearerHeaders(token),
+            Stringify(new JsonObject { ["service"] = service }), BuildApiError, SetupTimeout);
+    }
+
+    /// <summary>teamConnectionSetup.js `status`: the state of a connection setup.</summary>
+    public static JsonNode ConnectionSetupStatus(string hostname, string? token, string team, string id)
+    {
+        return Call($"{hostname}/api/teams/{Segment(team)}/connections/setup/{Segment(id)}", "GET", BearerHeaders(token), null,
+            BuildApiError, SetupTimeout);
     }
 
     public static JsonNode Logout(string hostname, string? token)

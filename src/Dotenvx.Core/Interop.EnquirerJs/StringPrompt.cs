@@ -22,6 +22,17 @@ internal class StringPrompt : Prompt
 
     protected string InitialText => (string?)Initial ?? string.Empty;
 
+    protected override void Initialize()
+    {
+        if (Options.PresetInput is { } preset)
+        {
+            Input = preset;
+            Cursor = preset.Length;
+        }
+
+        base.Initialize();
+    }
+
     public override void Keypress(string? input, KeyEvent? key)
     {
         State.PrevKeypress = key;

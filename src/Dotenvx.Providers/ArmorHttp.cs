@@ -53,11 +53,12 @@ internal static class ArmorHttp
     /// `[CODE] unable to connect to {origin}. Check your connection and that the server is running.` (code: the error's, else its
     /// cause's, else NETWORK_ERROR). Every dotenvx call to the Armor service goes through it.
     /// </summary>
-    public static HttpResult Http(string url, string method, IReadOnlyDictionary<string, string>? headers, string? body)
+    public static HttpResult Http(string url, string method, IReadOnlyDictionary<string, string>? headers, string? body,
+        TimeSpan? timeout = null)
     {
         try
         {
-            return Request(url, method, headers, body);
+            return timeout is { } deadline ? RequestWithin(deadline, url, method, headers, body) : Request(url, method, headers, body);
         }
         catch (Exception error) when (IsNetworkError(error))
         {

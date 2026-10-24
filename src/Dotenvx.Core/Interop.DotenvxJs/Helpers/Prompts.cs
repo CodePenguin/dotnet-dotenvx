@@ -25,6 +25,8 @@ internal static class Prompts
         public string? Initial { get; init; }
 
         public string? Prefix { get; init; }
+
+        public string? Footer { get; init; }
     }
 
     /// <summary>The options of prompts.js `multiselect`.</summary>
@@ -46,7 +48,9 @@ internal static class Prompts
 
     private static readonly Func<MultiselectRequest, IReadOnlyList<string>?> DefaultMultiselect = RunMultiselect;
 
-    private static readonly Func<string, string?> DefaultInput = RunInput;
+    private static readonly Func<string, string?> DefaultInput = message => RunInput(message, null);
+
+    private static readonly Func<string, string?, string?> DefaultInputWithInitial = RunInput;
 
     private static readonly Func<string, bool, bool?> DefaultConfirm = RunConfirm;
 
@@ -58,6 +62,9 @@ internal static class Prompts
     public static Func<MultiselectRequest, IReadOnlyList<string>?> Multiselect { get; internal set; } = DefaultMultiselect;
 
     public static Func<string, string?> InputText { get; internal set; } = DefaultInput;
+
+    /// <summary>prompts.js `input({ message, initial })`: (message, initial) => the entered text.</summary>
+    public static Func<string, string?, string?> InputWithInitial { get; internal set; } = DefaultInputWithInitial;
 
     public static Func<string, bool, bool?> Confirm { get; internal set; } = DefaultConfirm;
 
@@ -80,6 +87,7 @@ internal static class Prompts
         Select = DefaultSelect;
         Multiselect = DefaultMultiselect;
         InputText = DefaultInput;
+        InputWithInitial = DefaultInputWithInitial;
         Confirm = DefaultConfirm;
         Password = DefaultPassword;
     }
@@ -110,6 +118,7 @@ internal static class Prompts
     {
         PromptOptions options = Options(request.Message);
         options.Choices = ChoicesForSelect(request.Choices);
+        options.Footer = request.Footer;
         if (request.Prefix is { Length: > 0 } prefix)
         {
             options.PrefixPending = prefix;
@@ -164,11 +173,14 @@ internal static class Prompts
         }
     }
 
-    private static string? RunInput(string message)
+    private static string? RunInput(string message, string? initial)
     {
         try
         {
-            return (string?)new InputPrompt(Options(message)).Run();
+            PromptOptions options = Options(message);
+            options.PresetInput = initial;
+
+            return (string?)new InputPrompt(options).Run();
         }
         catch (PromptInputEndedException)
         {

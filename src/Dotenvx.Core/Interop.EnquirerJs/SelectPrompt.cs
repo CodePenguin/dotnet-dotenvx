@@ -990,7 +990,7 @@ internal class SelectPrompt : Prompt
         string output = Format();
         string help = ErrorText().Length > 0 ? ErrorText() : Hint();
         string body = RenderChoices();
-        string footer = string.Empty;
+        string footer = State.Status == "pending" ? Options.Footer ?? string.Empty : string.Empty;
 
         if (output.Length > 0)
         {

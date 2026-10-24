@@ -79,6 +79,12 @@ internal sealed class PromptOptions
 
     public string? InitialText { get; set; }
 
+    /// <summary>`onRun` of prompts.js `input`: text placed in the input (cursor at its end) before the first render.</summary>
+    public string? PresetInput { get; set; }
+
+    /// <summary>`footer`: a line below a select while it is pending.</summary>
+    public string? Footer { get; set; }
+
     public bool InitialBool { get; set; }
 
     public string? Pointer { get; set; }
