@@ -11,7 +11,7 @@
              dotenvx/node_modules/@dotenvx/primitives/package.json) - bump in lockstep with that
              package's own version, not independently, the same way Dotenvx's own Version tracks the
              dotenvx submodule pin. -->
-        <Version>3.3.0.1</Version>
+        <Version>3.3.1</Version>
     </PropertyGroup>
 
     <ItemGroup>

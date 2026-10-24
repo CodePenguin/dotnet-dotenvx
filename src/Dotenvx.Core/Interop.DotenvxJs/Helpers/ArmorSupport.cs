@@ -9,7 +9,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 /// <remarks>Reference source: dotenvx/src/lib/helpers/packageJson.js (name, version, description of the dotenvx package).</remarks>
 internal static class PackageJson
 {
-    private const string PinnedVersion = "2.35.0";
+    private const string PinnedVersion = "2.38.2";
 
     public static string Version { get; internal set; } =
         Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion

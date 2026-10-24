@@ -1,10 +1,10 @@
 # Porting traps and lessons
 
-Numbered lessons from bugs found while porting `@dotenvx/dotenvx` v2.35.0. Each says what goes wrong and how to avoid it. [CONTRIBUTING.md](../CONTRIBUTING.md) and source comments refer to them by number (`#NN`); keep numbers stable and append new traps at the end. Numbers 1-16 concern the parity test suite; the rest continue in one sequence.
+Numbered lessons from bugs found while porting `@dotenvx/dotenvx` v2.38.2. Each says what goes wrong and how to avoid it. [CONTRIBUTING.md](../CONTRIBUTING.md) and source comments refer to them by number (`#NN`); keep numbers stable and append new traps at the end. Numbers 1-16 concern the parity test suite; the rest continue in one sequence.
 
 ## Pin notes
 
-- The submodule is pinned to the exact `v2.35.0` tag. Native OS secret storage is the default for `encrypt`/`set` when it is enabled and `CI` is unset, so parity tests pass `--no-native --no-armor` (or `DOTENVX_NO_NATIVE=true`) to keep the real OS store untouched.
+- The submodule is pinned to the exact `v2.38.2` tag. Native OS secret storage is the default for `encrypt`/`set` when it is enabled and `CI` is unset, so parity tests pass `--no-native --no-armor` (or `DOTENVX_NO_NATIVE=true`) to keep the real OS store untouched.
 - `precommit`/`prebuild`/`gitignore` are deprecated at the pin in favor of `dotenvx protect`; they still run and print the deprecation warning.
 
 ## Parity test suite

@@ -42,6 +42,7 @@ public static partial class Primitives
             "onepassword" => "1Password ⛊",
             "bitwarden" => "Bitwarden ⛊",
             "armor" or "armored" => "Armor ⛨",
+            "enclaved" => "Armor Enclave ◊",
             _ => null
         };
     }
