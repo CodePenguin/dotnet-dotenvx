@@ -1,5 +1,9 @@
 # dotenvx for .NET
 
+[![NuGet](https://img.shields.io/nuget/v/Dotenvx?label=nuget&logo=nuget)](https://www.nuget.org/packages/Dotenvx)
+[![Downloads](https://img.shields.io/nuget/dt/Dotenvx?logo=nuget)](https://www.nuget.org/packages/Dotenvx)
+[![CI](https://github.com/CodePenguin/dotnet-dotenvx/actions/workflows/ci.yml/badge.svg)](https://github.com/CodePenguin/dotnet-dotenvx/actions/workflows/ci.yml)
+
 *a secure dotenv* for .NET: a port of [`@dotenvx/dotenvx`](https://github.com/dotenvx/dotenvx) by Scott Motte ([@motdotla](https://github.com/motdotla)), the creator of `dotenv`.
 
 - **run anywhere**: one `dotenvx` command that injects your `.env` into any program (cross-platform)
