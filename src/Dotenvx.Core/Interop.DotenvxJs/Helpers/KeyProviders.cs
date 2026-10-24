@@ -125,7 +125,9 @@ internal static class KeyProviders
             ProcessEnv = BitwardenCustodian.CommandEnv(),
             CliVersion = PackageJson.Version,
             NoNative = options.NoNative || !NativeStore.IsSupportedPlatform,
-            NativeGet = key => NativeStore.Current.Get(key),
+            NativeGet = key => NativeStore.Current is NativeStore.WindowsCredentialManager windows
+                ? windows.GetForProviders(key)
+                : NativeStore.Current.Get(key),
             NoArmor = options.NoArmor,
             NoOnePassword = options.No1Password,
             // The async CLI fallback can interactively unlock Bitwarden. The shared synchronous path reads BW_SESSION

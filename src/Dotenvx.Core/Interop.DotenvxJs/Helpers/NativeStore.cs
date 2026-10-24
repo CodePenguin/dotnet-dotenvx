@@ -233,9 +233,29 @@ internal static class NativeStore
                 ["-NoProfile", "-NonInteractive", "-EncodedCommand", EncodedScript], JsonSerializer.Serialize(payload));
         }
 
+        /// <summary>The read-only script of @dotenvx/providers (what the provider chain runs, unlike the CLI's own custodian).</summary>
+        private static readonly string ProvidersEncodedScript =
+            Convert.ToBase64String(Encoding.Unicode.GetBytes(global::Dotenvx.Providers.WindowsCredentialScript.Script));
+
         public string? Get(string publicKey)
         {
-            SecretCliResult result = Run(new { action = "read", target = Target(publicKey) });
+            return Read(publicKey, EncodedScript);
+        }
+
+        /// <summary>
+        /// `@dotenvx/providers` native.js read: the same read as <see cref="Get" /> through the providers package's own script
+        /// (the CLI's custodian uses its helpers/windowsCredentialManager.js script instead; they differ in what they define).
+        /// </summary>
+        public string? GetForProviders(string publicKey)
+        {
+            return Read(publicKey, ProvidersEncodedScript);
+        }
+
+        private string? Read(string publicKey, string encodedScript)
+        {
+            SecretCliResult result = SecretCli.ExecWithInput(PowershellBin,
+                ["-NoProfile", "-NonInteractive", "-EncodedCommand", encodedScript],
+                JsonSerializer.Serialize(new { action = "read", target = Target(publicKey) }));
             if (result.NotFound || result.ExitCode != 0)
             {
                 throw StoreError("failed to read private key from Windows Credential Manager", result);

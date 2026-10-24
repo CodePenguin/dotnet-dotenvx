@@ -1367,8 +1367,8 @@ async function main () {
           let p = 0
           while (p < (fa || '').length && fa[p] === (fb || '')[p]) p++
           const from = Math.max(0, p - 60)
-          lines.push(`  node file ${name}: ${fa === undefined ? '(absent)' : fa.slice(from, from + 240)}`)
-          lines.push(`  dotn file ${name}: ${fb === undefined ? '(absent)' : fb.slice(from, from + 240)}`)
+          lines.push(`  node file ${name}: ${fa === undefined ? '(absent)' : fa.slice(from, from + (process.env.SWEEP_FULL ? 100000 : 240))}`)
+          lines.push(`  dotn file ${name}: ${fb === undefined ? '(absent)' : fb.slice(from, from + (process.env.SWEEP_FULL ? 100000 : 240))}`)
         }
       } else if (f === 'exit') lines.push(`  exit node=${x.n.code} dotnet=${x.d.code}`)
       else { const [a, b] = [JSON.stringify(x.n[f]), JSON.stringify(x.d[f])]; let p = 0; while (p < a.length && a[p] === b[p]) p++; const from = Math.max(0, Math.min(p - 40, p)); lines.push(`  ${f} node=${a.slice(from, from + 300)}`); lines.push(`  ${f} dotn=${b.slice(from, from + 300)}`) } // the window starts just before the first difference
