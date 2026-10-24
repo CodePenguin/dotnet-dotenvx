@@ -92,6 +92,52 @@ public class ArmorHelpersTest : EnvironmentTestBase
         ArmorHttp.IsNetworkError(new Exception("unknown")).ShouldBeFalse();
     }
 
+    /// <remarks>
+    /// Not from a JS test - isNetworkError of @dotenvx/providers 0.3.11 is recursive (cause, errors[]) and knows ARMOR_UNREACHABLE,
+    /// EAI_AGAIN, EPERM and EACCES.
+    /// </remarks>
+    [Fact]
+    public void TestIsNetworkErrorIsRecursiveAndKnowsTheNewCodes()
+    {
+        foreach (string code in new[] { "ARMOR_UNREACHABLE", "EAI_AGAIN", "EPERM", "EACCES" })
+        {
+            ArmorHttp.IsNetworkError(new HttpRequestFailedException(code, "x")).ShouldBeTrue(code);
+        }
+
+        ArmorHttp.IsNetworkError(new Exception("a", new Exception("b", new HttpRequestFailedException("ECONNRESET", "x"))))
+            .ShouldBeTrue();
+        ArmorHttp.IsNetworkError(new AggregateException(new Exception("no"), new HttpRequestFailedException("ETIMEDOUT", "x")))
+            .ShouldBeTrue();
+        ArmorHttp.IsNetworkError(new ArmorUnreachableException("down", "check", new HttpRequestFailedException("ENOTFOUND", "x")))
+            .ShouldBeTrue();
+        ArmorHttp.IsNetworkError(new AggregateException(new Exception("no"))).ShouldBeFalse();
+    }
+
+    /// <remarks>Not from a JS test - http.js turns a connectivity failure into "[CODE] unable to connect to ORIGIN...".</remarks>
+    [Fact]
+    public void TestHttpWrapsConnectivityFailures()
+    {
+        var cause = new HttpRequestFailedException("ECONNREFUSED", "connect ECONNREFUSED");
+        ArmorHttp.Request = (_, _, _, _) => throw cause;
+
+        Exception error = Should.Throw<Exception>(() => ArmorHttp.Http("https://armor.example.com/api/x?y=1", "GET", null, null));
+
+        error.Message.ShouldBe(
+            "[ECONNREFUSED] unable to connect to https://armor.example.com. Check your connection and that the server is running.");
+        error.InnerException.ShouldBe(cause);
+    }
+
+    /// <remarks>Not from a JS test - other failures pass through http.js untouched.</remarks>
+    [Fact]
+    public void TestHttpLeavesOtherFailuresAlone()
+    {
+        var failure = new InvalidOperationException("boom");
+        ArmorHttp.Request = (_, _, _, _) => throw failure;
+
+        Should.Throw<InvalidOperationException>(() => ArmorHttp.Http("https://armor.example.com", "GET", null, null))
+            .ShouldBe(failure);
+    }
+
     /// <remarks>Refer to "jsonToEnv serializes settings as dotenv assignments"</remarks>
     [Fact]
     public void TestJsonToEnvSerializesSettingsAsDotenvAssignments()

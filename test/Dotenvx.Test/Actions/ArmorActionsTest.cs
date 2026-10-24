@@ -5,6 +5,7 @@ using Dotenvx;
 using Dotenvx.Actions;
 using Dotenvx.Core.Test;
 using Dotenvx.Interop.DotenvxJs.Helpers;
+using Dotenvx.Interop.DotenvxJs.Services;
 
 using NSubstitute;
 
@@ -564,6 +565,77 @@ public class ArmorActionsTest : EnvironmentTestBase
     {
         ArmorGroup(Root()).Subcommands.Select(command => command.Name).ShouldBe(
             ["up", "down", "push", "pull", "open", "move", "invite", "login", "logout", "status", "settings"]);
+    }
+
+    /// <remarks>Not from a JS test - armor invite posts the invitation (role member) and reports it.</remarks>
+    [Fact]
+    public void TestArmorInviteInvitesAMember()
+    {
+        Respond((_, _) => (200, "{}"));
+
+        Run("armor", "invite", "--team", "acme", "--email", " dev@example.com ").ShouldBe(0);
+
+        _requests.Single().Url.ShouldBe($"{Hostname}/api/teams/acme/invitations");
+        _requests.Single().Method.ShouldBe("POST");
+        _requests.Single().Body.ShouldBe("""{"email":"dev@example.com","role":"member"}""");
+        MockLogger.InfoMessages.ShouldContain("⛨ invited dev@example.com to acme");
+    }
+
+    /// <remarks>Not from a JS test - armor invite validates the email before calling Armor.</remarks>
+    [Fact]
+    public void TestArmorInviteRejectsAnInvalidEmail()
+    {
+        Respond((_, _) => (200, "{}"));
+
+        Run("armor", "invite", "--team", "acme", "--email", "nope").ShouldBe(1);
+
+        _requests.ShouldBeEmpty();
+        MockLogger.ErrorMessages.ShouldContain("enter a valid email address");
+    }
+
+    /// <remarks>Not from a JS test - armor invite without a terminal needs both --team and --email.</remarks>
+    [Fact]
+    public void TestArmorInviteNeedsFlagsWithoutATerminal()
+    {
+        ArmorInvite.StdinIsTty = () => false;
+
+        Run("armor", "invite", "--team", "acme").ShouldBe(1);
+
+        MockLogger.ErrorMessages.ShouldContain("provide --team and --email when running non-interactively");
+    }
+
+    /// <remarks>Not from a JS test - armor invite offers only the teams where the user is owner or admin.</remarks>
+    [Fact]
+    public void TestArmorInviteOffersTeamsWhereTheUserCanInvite()
+    {
+        ArmorInvite.StdinIsTty = () => true;
+        Respond((path, _) => path.StartsWith("/api/teams") && !path.EndsWith("/invitations")
+            ? (200, """{"teams":[{"slug":"a","current_user_role":"member"},{"slug":"b","current_user_role":"admin"}],"meta":{"next_page":null}}""")
+            : (200, "{}"));
+        Prompts.Choice[]? offered = null;
+        Prompts.Select = request =>
+        {
+            offered = [.. request.Choices];
+
+            return "b";
+        };
+
+        Run("armor", "invite", "--email", "dev@example.com").ShouldBe(0);
+
+        offered!.Select(choice => choice.Value).ShouldBe(["b"]);
+        MockLogger.InfoMessages.ShouldContain("⛨ invited dev@example.com to b");
+    }
+
+    /// <remarks>Not from a JS test - a connectivity failure reads "unable to connect to ORIGIN" (http.js, since 2.38.0).</remarks>
+    [Fact]
+    public void TestArmorInviteReportsUnreachableServer()
+    {
+        ArmorHttp.Request = (_, _, _, _) => throw new HttpRequestFailedException("ECONNREFUSED", "connect ECONNREFUSED");
+
+        Run("armor", "invite", "--team", "acme", "--email", "dev@example.com").ShouldBe(1);
+
+        MockLogger.ErrorMessages.ShouldContain(
+            $"[ECONNREFUSED] unable to connect to {Hostname}. Check your connection and that the server is running.");
     }
 
     /// <remarks>Refer to "armor login and logout resolve through native actions"</remarks>
