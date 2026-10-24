@@ -47,6 +47,25 @@ public class EventsTest : EnvironmentTestBase
 
         public int DelayMs { get; init; }
 
+        /// <summary>The events delivered so far. Delivery gives up after 500 ms (like the Node SDK), so on a slow machine a send can
+        /// still be running when a flush returns: read under the lock and wait for the expected count instead of assuming it is done.</summary>
+        public JsonObject[] Delivered(int expected)
+        {
+            for (int attempt = 0; ; attempt++)
+            {
+                lock (Batches)
+                {
+                    JsonObject[] events = [.. Batches.SelectMany(batch => batch).Select(node => node!.AsObject())];
+                    if (events.Length >= expected || attempt >= 100)
+                    {
+                        return events;
+                    }
+                }
+
+                Thread.Sleep(100);
+            }
+        }
+
         public void Send(JsonArray events)
         {
             Thread.Sleep(DelayMs);
@@ -299,7 +318,7 @@ public class EventsTest : EnvironmentTestBase
     {
         var delivery = new EventDelivery(null);
 
-        delivery.Write(new JsonObject());
+        delivery.Write([]);
         await delivery.Close();
     }
 
@@ -383,8 +402,7 @@ public class EventsTest : EnvironmentTestBase
 
         value.ShouldBe("World");
         File.ReadAllText(envFile).ShouldContain("A=\"1\"");
-        JsonObject[] events = [.. backend.Batches.SelectMany(batch => batch).Select(node => node!.AsObject())
-            .OrderBy(@event => @event["name"]!.GetValue<string>())];
+        JsonObject[] events = [.. backend.Delivered(3).OrderBy(@event => @event["name"]!.GetValue<string>())];
         events.Select(@event => @event["name"]!.GetValue<string>()).ShouldBe(["sdk/get", "sdk/set", "sdk/set"]);
 
         JsonObject get = events[0]["metadata"]!.AsObject();
@@ -407,7 +425,7 @@ public class EventsTest : EnvironmentTestBase
         Should.Throw<DotenvxException>(() => sdk.Get("X", new GetOptions { Path = ["missing-dir/.env"], Strict = true, NoNative = true }));
         await sdk.FlushEvents();
 
-        JsonObject @event = backend.Batches.SelectMany(batch => batch).Select(node => node!.AsObject()).Single();
+        JsonObject @event = backend.Delivered(1).Single();
         @event["outcome"]!.GetValue<string>().ShouldBe("unsuccessful");
         @event["metadata"]!["error_code"]!.GetValue<string>().ShouldBe("MISSING_ENV_FILE");
     }

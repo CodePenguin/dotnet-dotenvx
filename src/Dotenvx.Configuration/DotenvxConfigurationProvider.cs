@@ -56,7 +56,7 @@ public class DotenvxConfigurationProvider : ConfigurationProvider, IDisposable
 
     private static Dictionary<string, string> Snapshot()
     {
-        Dictionary<string, string> snapshot = new();
+        Dictionary<string, string> snapshot = [];
         foreach (System.Collections.DictionaryEntry entry in Environment.GetEnvironmentVariables())
         {
             snapshot[(string)entry.Key] = (string?)entry.Value ?? "";

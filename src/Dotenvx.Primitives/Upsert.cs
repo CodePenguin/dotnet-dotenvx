@@ -87,7 +87,7 @@ public static partial class Primitives
 
     public static Dictionary<string, string> GetQuotes(string src)
     {
-        Dictionary<string, string> obj = new();
+        Dictionary<string, string> obj = [];
         string lines = Regex.Replace(src, "\r\n?", "\n");
         // Leading [\s\uFEFF]* (not just \s*) so a byte-order-mark surviving at the very start of
         // the decoded source doesn't stop the FIRST key from being recognized, and

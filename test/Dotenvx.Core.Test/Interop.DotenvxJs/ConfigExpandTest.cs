@@ -45,7 +45,7 @@ public class ConfigExpandTest : EnvironmentTestBase
     [Fact]
     public void TestExpandsToBringOwnProcessEnv()
     {
-        Dictionary<string, string> myObject = new();
+        Dictionary<string, string> myObject = [];
         ConfigOptions options = new() { Path = [EnvExpandFileName], ProcessEnv = myObject };
         ConfigResult result = Main.Config(options);
 

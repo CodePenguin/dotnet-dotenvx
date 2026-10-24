@@ -53,7 +53,7 @@ public static partial class Primitives
     private static Dictionary<string, string> BuildKeyring(KeyringOptions options, List<string> privateKeys,
         Func<string, IDictionary<string, string>?>? provider)
     {
-        Dictionary<string, string> ring = options.Ring ?? new Dictionary<string, string>();
+        Dictionary<string, string> ring = options.Ring ?? [];
         IDictionary<string, string> env = options.ProcessEnv ?? CurrentProcessEnv();
 
         foreach (KeyValuePair<string, string> kv in env)
@@ -132,7 +132,7 @@ public static partial class Primitives
 
     internal static Dictionary<string, string> CurrentProcessEnv()
     {
-        Dictionary<string, string> env = new();
+        Dictionary<string, string> env = [];
         foreach (System.Collections.DictionaryEntry de in Environment.GetEnvironmentVariables())
         {
             env[(string)de.Key] = (string?)de.Value ?? "";

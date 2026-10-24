@@ -201,7 +201,7 @@ public class ArmorCommand : Command
             SetAction(parseResult =>
             {
                 string? envFile = parseResult.GetValue(_envFileOption);
-                logger.Debug($"options: {JsonStringify(envFile is null ? new Dictionary<string, string>() : new Dictionary<string, string> { ["envFile"] = envFile })}");
+                logger.Debug($"options: {JsonStringify(envFile is null ? [] : new Dictionary<string, string> { ["envFile"] = envFile })}");
 
                 var session = new Session(logger);
                 session.NotifyUpdate();

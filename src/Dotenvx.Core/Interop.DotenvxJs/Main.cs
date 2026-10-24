@@ -92,7 +92,7 @@ internal static class Main
             }
 
             Exception? lastError = null;
-            Dictionary<string, string> parsedAll = new();
+            Dictionary<string, string> parsedAll = [];
 
             foreach (RunProcessedEnv processedEnv in runResult.ProcessedEnvs)
             {

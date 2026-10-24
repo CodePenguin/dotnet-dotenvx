@@ -147,7 +147,7 @@ public class PrimitivesCommand : Command
 
     private static JsonNode PolicyJson(EnvPolicy policy)
     {
-        JsonObject keys = new();
+        JsonObject keys = [];
         foreach ((string key, KeyPolicy rule) in policy.Keys)
         {
             JsonObject env = new() { ["type"] = rule.Env.Type };
@@ -218,7 +218,7 @@ public class PrimitivesCommand : Command
         }
 
         CheckResult result = Primitives.Primitives.Check(rules, finalEnv);
-        JsonObject checkedValues = new();
+        JsonObject checkedValues = [];
         foreach ((string key, string value) in result.Checked)
         {
             checkedValues[key] = value;

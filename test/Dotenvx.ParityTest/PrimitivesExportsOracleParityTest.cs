@@ -44,7 +44,7 @@ public sealed class PrimitivesExportsOracleParityTest(NodeParityFixture fixture)
 
     private static JsonNode Dict<T>(IEnumerable<KeyValuePair<string, T>> d)
     {
-        JsonObject o = new();
+        JsonObject o = [];
         foreach ((string k, T v) in d)
         {
             o[k] = JsonSerializer.SerializeToNode(v);
@@ -207,7 +207,7 @@ public sealed class PrimitivesExportsOracleParityTest(NodeParityFixture fixture)
             ];
             Dictionary<string, string>[] envs =
             [
-                new(),
+                [],
                 new() { ["DOTENV_PRIVATE_KEY"] = priv },
                 new() { ["DOTENV_PRIVATE_KEY"] = priv2 },
                 new() { ["DOTENV_PRIVATE_KEY_X"] = priv },

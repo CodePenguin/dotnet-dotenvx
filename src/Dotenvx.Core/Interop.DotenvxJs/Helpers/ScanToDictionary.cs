@@ -14,7 +14,7 @@ internal static partial class Helpers
     public static Dictionary<string, object> ScanToDictionary(string? src, bool skipExpandForDoubleQuotes = false,
         bool skipConvertingWindowsNewlines = false, bool collectAllValues = false)
     {
-        Dictionary<string, object> obj = new();
+        Dictionary<string, object> obj = [];
         foreach (ScanEntry entry in Scan(src, !skipExpandForDoubleQuotes, !skipConvertingWindowsNewlines))
         {
             if (collectAllValues)

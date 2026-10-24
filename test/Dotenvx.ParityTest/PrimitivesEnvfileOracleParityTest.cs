@@ -43,7 +43,7 @@ public sealed class PrimitivesEnvfileOracleParityTest(NodeParityFixture fixture)
 
     private static JsonNode PolicyJson(EnvPolicy policy)
     {
-        JsonObject keys = new();
+        JsonObject keys = [];
         foreach ((string key, KeyPolicy rule) in policy.Keys)
         {
             JsonObject env = new() { ["type"] = rule.Env.Type };
@@ -291,8 +291,8 @@ public sealed class PrimitivesEnvfileOracleParityTest(NodeParityFixture fixture)
         ];
         (string? Profile, string? F, Dictionary<string, string> Env)[] options =
         [
-            (null, null, new()), ("production", null, new()), ("nope", null, new()), (" ", null, new()), ("", null, new()),
-            (null, ".env.a,.env.b", new()), (null, ".env.a,,.env.b", new()), (null, "", new()), ("production", ".env.x", new()),
+            (null, null, []), ("production", null, []), ("nope", null, []), (" ", null, []), ("", null, []),
+            (null, ".env.a,.env.b", []), (null, ".env.a,,.env.b", []), (null, "", []), ("production", ".env.x", []),
             (null, null, new() { ["NODE_ENV"] = "production" }), (null, null, new() { ["NODE_ENV"] = "nope" }),
             (null, null, new() { ["APP_ENV"] = "production", ["NODE_ENV"] = "development" }),
             (null, null, new() { ["DOTENV_ENV"] = "", ["NODE_ENV"] = "production" }),
@@ -403,7 +403,7 @@ public sealed class PrimitivesEnvfileOracleParityTest(NodeParityFixture fixture)
 
         static JsonNode CheckJson(CheckResult r)
         {
-            JsonObject checkedValues = new();
+            JsonObject checkedValues = [];
             foreach ((string key, string value) in r.Checked)
             {
                 checkedValues[key] = value;

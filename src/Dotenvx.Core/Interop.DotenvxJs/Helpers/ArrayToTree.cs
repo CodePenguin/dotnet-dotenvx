@@ -5,7 +5,7 @@ internal static partial class Helpers
 {
     public static Dictionary<string, object> ArrayToTree(string[] arr)
     {
-        Dictionary<string, object> tree = new();
+        Dictionary<string, object> tree = [];
 
         foreach (string path in arr)
         {

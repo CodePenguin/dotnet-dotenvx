@@ -24,16 +24,16 @@ public sealed class KeyPolicy
 /// <summary>The result of <see cref="Primitives.Policy" />: the compiled policy of every key, in declaration order.</summary>
 public sealed class EnvPolicy
 {
-    public OrderedDictionary<string, KeyPolicy> Keys { get; } = new();
+    public OrderedDictionary<string, KeyPolicy> Keys { get; } = [];
 }
 
 internal sealed class EnvfileModel
 {
     public EnvfileDocument Document { get; init; } = new();
-    public Dictionary<string, EnvfileFileBlock> Blocks { get; } = new();
-    public Dictionary<string, List<EnvDeclaration>> BlockItems { get; } = new();
-    public OrderedDictionary<string, EnvDeclaration> Base { get; } = new();
-    public OrderedDictionary<string, List<string>> Profiles { get; } = new();
+    public Dictionary<string, EnvfileFileBlock> Blocks { get; } = [];
+    public Dictionary<string, List<EnvDeclaration>> BlockItems { get; } = [];
+    public OrderedDictionary<string, EnvDeclaration> Base { get; } = [];
+    public OrderedDictionary<string, List<string>> Profiles { get; } = [];
     public Func<string, string> Normalize { get; init; } = value => value;
 }
 
@@ -239,7 +239,7 @@ public static partial class Primitives
     private static IEnumerable<(string Key, KeyPolicy Rule)> Select(EnvfileModel model, string files)
     {
         List<string> selected = [.. SplitFiles(files).Select(model.Normalize).Distinct()];
-        OrderedDictionary<string, EnvDeclaration> merged = new();
+        OrderedDictionary<string, EnvDeclaration> merged = [];
         foreach ((string key, EnvDeclaration value) in model.Base)
         {
             merged[key] = value;

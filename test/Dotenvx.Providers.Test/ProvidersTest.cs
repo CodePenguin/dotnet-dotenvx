@@ -29,7 +29,7 @@ public sealed class ProvidersTest : IDisposable
     private ProviderOptions Options(Dictionary<string, string>? env = null, Action<ProviderOptions>? _ = null)
     {
         Dictionary<string, string> merged = new() { ["DOTENVX_CONFIG"] = _dir };
-        foreach ((string key, string value) in env ?? new Dictionary<string, string>())
+        foreach ((string key, string value) in env ?? [])
         {
             merged[key] = value;
         }

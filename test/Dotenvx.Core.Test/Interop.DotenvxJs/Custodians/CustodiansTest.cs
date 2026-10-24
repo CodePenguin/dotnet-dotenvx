@@ -79,8 +79,8 @@ public class CustodiansTest : EnvironmentTestBase
         });
 
         result.HasKeysSrc.ShouldBeTrue();
-        result.KeysSrc.ShouldContain("DOTENV_PRIVATE_KEY=existing");
-        result.KeysSrc.ShouldContain("DOTENV_PRIVATE_KEY_PRODUCTION=private");
+        result.KeysSrc!.ShouldContain("DOTENV_PRIVATE_KEY=existing");
+        result.KeysSrc!.ShouldContain("DOTENV_PRIVATE_KEY_PRODUCTION=private");
     }
 
     /// <remarks>Refer to "write failures do not fall back to file custody"</remarks>

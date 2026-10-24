@@ -107,7 +107,7 @@ public sealed class PrimitivesOracleParityTest(NodeParityFixture fixture) : Pari
         string json = JsonSerializer.Serialize(cases.Select(c => new
         {
             src = c.Src,
-            env = c.Env ?? new Dictionary<string, string>(),
+            env = c.Env ?? [],
             overload = c.Overload
         }));
         string script = $$"""
@@ -142,8 +142,8 @@ public sealed class PrimitivesOracleParityTest(NodeParityFixture fixture) : Pari
             {
                 Dictionary<string, object> last = global::Dotenvx.Interop.DotenvxJs.Helpers.Helpers.ScanToDictionary(c.Src);
                 Dictionary<string, object> first = global::Dotenvx.Interop.DotenvxJs.Helpers.Helpers.ScanToDictionary(c.Src, collectAllValues: true);
-                JsonObject expLast = new();
-                JsonObject expFirst = new();
+                JsonObject expLast = [];
+                JsonObject expFirst = [];
                 foreach ((string k, JsonNode? v) in scanParsed)
                 {
                     JsonArray arr = v!.AsArray();
@@ -163,7 +163,7 @@ public sealed class PrimitivesOracleParityTest(NodeParityFixture fixture) : Pari
                 continue;
             }
 
-            Dictionary<string, string> env = c.Env == null ? new() : new Dictionary<string, string>(c.Env);
+            Dictionary<string, string> env = c.Env == null ? [] : new Dictionary<string, string>(c.Env);
             PrimitivesParseOutput actual = PrimitivesApi.ParseSync(c.Src,
                 new PrimitivesParseOptions { ProcessEnv = env, Overload = c.Overload, Fk = [] });
             JsonObject act = new()
@@ -272,7 +272,7 @@ public sealed class PrimitivesOracleParityTest(NodeParityFixture fixture) : Pari
 
     private static JsonObject ToJson<TValue>(IEnumerable<KeyValuePair<string, TValue>> d)
     {
-        JsonObject o = new();
+        JsonObject o = [];
         foreach ((string k, TValue v) in d)
         {
             o[k] = v?.ToString();

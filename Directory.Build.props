@@ -3,6 +3,10 @@
          produce a package; test projects and samples are not packable. Each packable project sets its own PackageId,
          Description and Version (see CONTRIBUTING.md, "Version bump checklist"). -->
     <PropertyGroup>
+        <!-- no warnings, ever: a warning fails the build (locally and in CI) -->
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
         <Authors>Scott Motte (@motdotla), David Lambert</Authors>
         <Copyright>Copyright (c) 2024 Scott Motte; Copyright (c) 2026 David Lambert</Copyright>
         <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>

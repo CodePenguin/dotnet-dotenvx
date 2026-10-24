@@ -31,7 +31,7 @@ public class GetColorDepthTest : IDisposable
     {
         (Dictionary<string, string> Env, int Depth)[] table =
         [
-            (new(), 1),
+            ([], 1),
             (new() { ["FORCE_COLOR"] = "" }, 4),
             (new() { ["FORCE_COLOR"] = "1" }, 4),
             (new() { ["FORCE_COLOR"] = "true" }, 4),

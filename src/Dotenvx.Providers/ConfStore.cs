@@ -85,7 +85,7 @@ internal class ConfStore
                 // conf's `_ensureDirectory()` runs when the config file does not exist
                 Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
 
-                return new Dictionary<string, object>();
+                return [];
             }
 
             try
@@ -97,7 +97,7 @@ internal class ConfStore
             catch (Exception)
             {
                 // clearInvalidConfig: an unreadable file is an empty store
-                return new Dictionary<string, object>();
+                return [];
             }
         }
     }

@@ -149,11 +149,7 @@ internal sealed class EventDelivery : IEventSink
                             break;
                         }
 
-                        batch = new JsonArray();
-                        foreach (JsonObject item in _queue.Take(BatchSize))
-                        {
-                            batch.Add(item);
-                        }
+                        batch = [.. _queue.Take(BatchSize)];
 
                         _queue.RemoveRange(0, Math.Min(BatchSize, _queue.Count));
                     }

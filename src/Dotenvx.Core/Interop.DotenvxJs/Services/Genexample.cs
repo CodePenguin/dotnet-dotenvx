@@ -46,8 +46,8 @@ internal class Genexample(string directory = ".", string[]? envFile = null)
 
         HashSet<string> keys = [];
         HashSet<string> addedKeys = [];
-        Dictionary<string, string> injected = new();
-        Dictionary<string, string> existed = new();
+        Dictionary<string, string> injected = [];
+        Dictionary<string, string> existed = [];
 
         string exampleSrc = $"# {ExampleFilename} - generated with dotenvx\n";
 

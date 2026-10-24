@@ -20,7 +20,7 @@ public sealed class EventSdk
 
     public ConfigResult Config(ConfigOptions? options = null)
     {
-        return Invoke("config", ToEventOptions(options), new Dictionary<string, object?>(),
+        return Invoke("config", ToEventOptions(options), [],
             events => Main.Config(options, events));
     }
 

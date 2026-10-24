@@ -201,7 +201,7 @@ public class KeyPairActionTest : EnvironmentTestBase
     public void TestKeypairKeyNotFound()
     {
         KeyPair mockKeyPair = Substitute.For<KeyPair>();
-        mockKeyPair.Run().Returns(new Dictionary<string, string?>());
+        mockKeyPair.Run().Returns([]);
         KeyPair.Factory = (_, _) => mockKeyPair;
 
         ParseResult parseResult = RootCommand.Parse(["keypair", "NOTFOUND"]);

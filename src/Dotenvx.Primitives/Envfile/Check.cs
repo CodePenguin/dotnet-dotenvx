@@ -10,7 +10,7 @@ public sealed record CheckError(string Key, string Code, string Rule, string Mes
 /// <summary>The result of <see cref="Primitives.Check" />: the values with secrets redacted, and the failures.</summary>
 public sealed class CheckResult
 {
-    public OrderedDictionary<string, string> Checked { get; init; } = new();
+    public OrderedDictionary<string, string> Checked { get; init; } = [];
     public List<CheckError> Errors { get; init; } = [];
 }
 

@@ -59,7 +59,7 @@ internal class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = nul
 
     public virtual Dictionary<string, string?> Run()
     {
-        Dictionary<string, string?> result = new();
+        Dictionary<string, string?> result = [];
 
         foreach (string envFilePath in _envFiles)
         {
@@ -73,7 +73,7 @@ internal class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = nul
                 publicKey = null;
             }
 
-            Dictionary<string, string> ring = new();
+            Dictionary<string, string> ring = [];
             if (publicKey != null)
             {
                 ring[publicKey] = "";

@@ -24,8 +24,8 @@ public static partial class Primitives
         Func<string, bool> included = Match(ik, ek);
         Func<string, bool> excluded = Match(ek);
 
-        Dictionary<string, List<string>> parsed = new();
-        Dictionary<string, List<string?>> comments = new();
+        Dictionary<string, List<string>> parsed = [];
+        Dictionary<string, List<string?>> comments = [];
         foreach (ScanEntry entry in Scan(src, options.ExpandDoubleQuotedNewlines, options.ConvertWindowsNewlines))
         {
             if (excluded(entry.Key) || (ik.Length > 0 && !included(entry.Key)))

@@ -251,7 +251,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigMonorepoAppsBackendEnv()
     {
-        Dictionary<string, string> processEnv = new();
+        Dictionary<string, string> processEnv = [];
         ConfigOptions options = new() { ProcessEnv = processEnv, Path = [BackendEnvFile] };
 
         ConfigResult result = Main.Config(options);
@@ -293,7 +293,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigMonorepoAppsBackendEnvAndFrontendEnv()
     {
-        Dictionary<string, string> processEnv = new();
+        Dictionary<string, string> processEnv = [];
         ConfigOptions options = new() { ProcessEnv = processEnv, Path = [BackendEnvFile, FrontendEnvFile] };
 
         ConfigResult result = Main.Config(options);
@@ -307,7 +307,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigMonorepoAppsBackendEnvAndFrontendEnvOverload()
     {
-        Dictionary<string, string> processEnv = new();
+        Dictionary<string, string> processEnv = [];
         ConfigOptions options = new()
         {
             ProcessEnv = processEnv,
@@ -326,7 +326,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigMonorepoAppsBackendEnvAndFrontendMissing()
     {
-        Dictionary<string, string> processEnv = new();
+        Dictionary<string, string> processEnv = [];
         ConfigOptions options = new()
         {
             ProcessEnv = processEnv,
@@ -345,7 +345,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontend()
     {
-        Dictionary<string, string> processEnv = new();
+        Dictionary<string, string> processEnv = [];
         ConfigOptions options = new() { ProcessEnv = processEnv, Path = [BackendEnvFile, FrontendPath] };
 
         ConfigResult result = Main.Config(options);
@@ -369,7 +369,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestConfigMonorepoAppsBackendEnvAndDirectoryFrontendStrict()
     {
-        Dictionary<string, string> processEnv = new();
+        Dictionary<string, string> processEnv = [];
         ConfigOptions options = new() { ProcessEnv = processEnv, Path = [BackendEnvFile, FrontendPath], Strict = true };
 
         ConfigResult result = Main.Config(options);
@@ -395,7 +395,7 @@ public class MainTest : EnvironmentTestBase
         });
         Run.Factory = (_, _, _, _) => mockRun;
 
-        Dictionary<string, string> processEnv = new();
+        Dictionary<string, string> processEnv = [];
         ConfigOptions options = new()
         {
             ProcessEnv = processEnv,
@@ -452,7 +452,7 @@ public class MainTest : EnvironmentTestBase
     public void TestKeyPairCallsKeyPairRun()
     {
         KeyPair mockKeyPair = Substitute.For<KeyPair>(".env", null!);
-        mockKeyPair.Run().Returns(new Dictionary<string, string?>());
+        mockKeyPair.Run().Returns([]);
         KeyPair.Factory = (_, _) => mockKeyPair;
 
         IReadOnlyDictionary<string, string> result = Main.KeyPair();
@@ -958,7 +958,7 @@ public class MainTest : EnvironmentTestBase
     [Fact]
     public void TestGetMonorepoAppsBackendEnvAndAttemptOnDirectoryFrontendStrictItThrows()
     {
-        Dictionary<string, string> processEnv = new();
+        Dictionary<string, string> processEnv = [];
 
         GetOptions options = new() { ProcessEnv = processEnv, Path = [BackendEnvFile, FrontendPath], Strict = true };
 

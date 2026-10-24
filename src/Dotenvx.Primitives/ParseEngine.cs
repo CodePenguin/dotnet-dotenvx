@@ -81,7 +81,7 @@ public static partial class Primitives
     private static KeyringOptions RingOptions(string? src, PrimitivesParseOptions options)
     {
         // the ring starts with an empty slot for every public key found in the source
-        Dictionary<string, string> ring = new();
+        Dictionary<string, string> ring = [];
         foreach (string publicKey in PublicKeys(src ?? ""))
         {
             ring[publicKey] = "";
@@ -131,12 +131,12 @@ public static partial class Primitives
         Func<string, bool> includes = Match(ik, ek);
         Func<string, bool> excludes = Match(ek);
 
-        Dictionary<string, string> running = new();
-        Dictionary<string, string> literals = new();
-        Dictionary<string, List<string>> parsed = new();
-        Dictionary<string, List<string>> injected = new();
-        Dictionary<string, List<string>> existed = new();
-        Dictionary<string, bool> undecrypted = new();
+        Dictionary<string, string> running = [];
+        Dictionary<string, string> literals = [];
+        Dictionary<string, List<string>> parsed = [];
+        Dictionary<string, List<string>> injected = [];
+        Dictionary<string, List<string>> existed = [];
+        Dictionary<string, bool> undecrypted = [];
 
         foreach (ScanEntry entry in Scan(src))
         {

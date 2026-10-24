@@ -106,7 +106,7 @@ internal static class KeyProviders
             string? privateKeyHex = NativeStore.Current.Get(publicKeyHex);
 
             return string.IsNullOrEmpty(privateKeyHex)
-                ? new Dictionary<string, string>()
+                ? []
                 : new Dictionary<string, string> { [publicKeyHex] = privateKeyHex };
         }
         catch

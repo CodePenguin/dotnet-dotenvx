@@ -549,7 +549,7 @@ internal static partial class EnvfileInit
             }
         }
 
-        OrderedDictionary<string, EnvDeclaration> root = new();
+        OrderedDictionary<string, EnvDeclaration> root = [];
         foreach (EnvfileInputFile file in rootFiles)
         {
             foreach (EnvDeclaration item in file.Declarations)

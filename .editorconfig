@@ -373,3 +373,8 @@ dotnet_naming_style.s_camelcase.required_suffix =
 dotnet_naming_style.s_camelcase.word_separator =
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 
+
+# IDE0028 mistakes `new HelpAction()` / `new HiddenCommand()` (System.CommandLine commands are collections of their subcommands) for an
+# empty collection; `[]` there would hide which command is being created
+[test/Dotenvx.Test/{CommandTreeParityTest,ExtCommandTest}.cs]
+dotnet_diagnostic.IDE0028.severity = none

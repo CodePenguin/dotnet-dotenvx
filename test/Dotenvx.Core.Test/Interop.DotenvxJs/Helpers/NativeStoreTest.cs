@@ -331,7 +331,7 @@ public class NativeStoreTest : EnvironmentTestBase
 
         _calls[0].Command.ShouldBe("/usr/bin/security");
         _calls[0].Args.ShouldBe(["-i"]);
-        _calls[0].Input.ShouldContain("dotenvx (PUB LIC)");
+        _calls[0].Input!.ShouldContain("dotenvx (PUB LIC)");
     }
 
     /// <remarks>Refer to "native provider defaults secret label to key"</remarks>

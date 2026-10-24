@@ -9,7 +9,7 @@ public static partial class Primitives
 {
     public static string[] PublicKeys(string src)
     {
-        Dictionary<string, string> last = new();
+        Dictionary<string, string> last = [];
         foreach (ScanEntry entry in Scan(src))
         {
             if (entry.Key.StartsWith("DOTENV_PUBLIC_KEY", StringComparison.Ordinal))

@@ -108,7 +108,7 @@ public class ConfigTest : EnvironmentTestBase
     [Fact]
     public void TestCanWriteToADifferentObjectThanProcessEnv()
     {
-        Dictionary<string, string> myObject = new();
+        Dictionary<string, string> myObject = [];
         ConfigResult result = Main.Config(new ConfigOptions { Path = [EnvFileName], ProcessEnv = myObject });
 
         result.Parsed["BASIC"].ShouldBe("basic");

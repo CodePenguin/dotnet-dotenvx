@@ -37,7 +37,7 @@ public class GenexampleActionTest : EnvironmentTestBase
             ExampleFilepath = ".env.example",
             AddedKeys = ["HELLO"],
             Injected = new Dictionary<string, string> { { "HELLO", "" } },
-            Existed = new Dictionary<string, string>()
+            Existed = []
         });
         Genexample.Factory = (_, _) => mockGenexample;
 
@@ -60,7 +60,7 @@ public class GenexampleActionTest : EnvironmentTestBase
             EnvFile = [".env"],
             ExampleFilepath = ".env.example",
             AddedKeys = [],
-            Injected = new Dictionary<string, string>(),
+            Injected = [],
             Existed = new Dictionary<string, string> { { "HELLO", "" } }
         });
         Genexample.Factory = (_, _) => mockGenexample;

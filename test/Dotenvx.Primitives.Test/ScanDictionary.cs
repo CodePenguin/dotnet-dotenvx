@@ -7,7 +7,7 @@ internal static class ScanDictionary
 {
     public static Dictionary<string, object> Of(string src, bool skipExpand = false, bool skipConvert = false)
     {
-        Dictionary<string, object> obj = new();
+        Dictionary<string, object> obj = [];
         foreach (ScanEntry entry in Scan(src, !skipExpand, !skipConvert))
         {
             obj[entry.Key] = entry.Value;

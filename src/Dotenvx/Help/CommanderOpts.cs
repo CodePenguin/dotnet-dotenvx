@@ -213,6 +213,6 @@ public static class CommanderOpts
     {
         return current is JsonArray existing
             ? new JsonArray([.. existing.Select(item => item?.DeepClone())])
-            : new JsonArray();
+            : [];
     }
 }

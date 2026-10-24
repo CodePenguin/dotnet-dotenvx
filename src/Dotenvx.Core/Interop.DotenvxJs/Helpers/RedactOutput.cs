@@ -44,7 +44,7 @@ internal static partial class Helpers
             case string text:
                 return global::Dotenvx.Primitives.Primitives.Redact(text, values);
             case System.Collections.IDictionary dictionary:
-                Dictionary<string, object?> mapped = new();
+                Dictionary<string, object?> mapped = [];
                 foreach (System.Collections.DictionaryEntry entry in dictionary)
                 {
                     mapped[(string)entry.Key] = RedactOutputValues(entry.Value, values);
