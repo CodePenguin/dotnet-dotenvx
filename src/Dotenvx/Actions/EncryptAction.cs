@@ -222,10 +222,12 @@ public class EncryptAction : Command
                     continue;
                 }
 
+                Action<string>? previousStatus = access.OnStatus;
                 try
                 {
                     KeyPair keyPair = KeyPair.Factory(row.FilePath, [fk]);
                     keyPair.KeyAccess = access;
+                    access.OnStatus = SpinnerScope.Stderr;
                     keyPair.Run();
                     row.KeySources = new Dictionary<string, string?>
                     {
@@ -235,6 +237,10 @@ public class EncryptAction : Command
                 catch (Exception)
                 {
                     // ignored
+                }
+                finally
+                {
+                    access.OnStatus = previousStatus;
                 }
             }
 

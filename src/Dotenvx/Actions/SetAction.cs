@@ -140,7 +140,8 @@ public class SetAction : Command
 
             Sets setsService = Sets.Factory(key, value, [.. envItems], encrypt, envKeysFilePath, noCreate);
             // set.js: noArmor = options.armor === false (the custody menu decides about Armor, not the session)
-            setsService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.FlagOnly);
+            setsService.KeyAccess = SecretResolverOptions.KeyAccess(_logger, parseResult.GetValue(_noNativeOption), parseResult.GetValue(_noArmorOption), null, SecretResolverOptions.ArmorMode.FlagOnly,
+                spinner.OnStatus);
             setsService.KeyAccess.No1Password = parseResult.GetValue(_no1PasswordOption);
             setsService.KeyAccess.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
             setsService.KeyAccess.Interactive = true;
@@ -183,17 +184,7 @@ public class SetAction : Command
                 }
             }
 
-            if (changedFilePaths.Count > 0)
-            {
-                string msg = encrypt
-                    ? $"◈ encrypted {key} ({string.Join(',', changedFilePaths)})"
-                    : $"◇ set {key} ({string.Join(',', changedFilePaths)})";
-                _logger.Success(msg);
-            }
-            else if (unchangedFilePaths.Count > 0)
-            {
-                _logger.Info($"○ no change ({string.Join(',', unchangedFilePaths)})");
-            }
+            LogSetSummary.Log(_logger, key, encrypt, processedEnvs, [.. changedFilePaths], [.. unchangedFilePaths]);
 
             EventScope.Count(errorCount);
 

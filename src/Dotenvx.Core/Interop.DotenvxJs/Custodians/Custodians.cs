@@ -9,6 +9,9 @@ internal sealed class StoreContext
     public string PrivateKeyName { get; set; } = "";
     public string Comment { get; set; } = "";
     public string? KeysFilepath { get; set; }
+
+    /// <summary>The env file the key belongs to (descriptive context for Armor).</summary>
+    public string? EnvFilepath { get; set; }
     public string? Token { get; set; }
 
     /// <summary>The prompt may offer "back" to return to the custody menu.</summary>

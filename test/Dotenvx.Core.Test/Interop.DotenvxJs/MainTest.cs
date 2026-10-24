@@ -837,12 +837,9 @@ public class MainTest : EnvironmentTestBase
     }
 
     /// <remarks>
-    /// Not from a JS test - dedicated coverage for main.js's `else if (encrypt &amp;&amp;
-    /// localKeyAddedEnv)` branch (the ONLY currently-reachable path since this port has no
-    /// remote/armor key storage): a fresh keypair was generated (PrivateKeyAdded) but the VALUE
-    /// itself didn't change (empty ChangedFilePaths, matching Sets.cs's real "identical value" no-op
-    /// - see docs/porting-traps.md, Sets.cs re-encryption trap), so the success line still needs to report the
-    /// file the key was added to, using localKeyAddedEnv.EnvFilePath as the fallback source.
+    /// Not from a JS test - dedicated coverage for logSetSummary.js: a fresh keypair was generated (PrivateKeyAdded) but the
+    /// VALUE itself didn't change (empty ChangedFilePaths), so since 2.38.0 the closing line is the plain "no change" one (the
+    /// old `localKeyAddedEnv` branch of main.js is gone).
     /// </remarks>
     [Fact]
     public void TestSetCallsSetsRunLocalKeyAddedWithNoChangedFiles()
@@ -875,8 +872,8 @@ public class MainTest : EnvironmentTestBase
         SetsResult result = Main.Set("HELLO", "World", options);
 
         mockSets.Received(1).Run();
-        MockLogger.InfoMessages.ShouldContain("◈ encrypted HELLO (.env)");
-        MockLogger.InfoMessages.ShouldNotContain("○ no change (.env)");
+        MockLogger.InfoMessages.ShouldContain("○ no change (.env)");
+        MockLogger.InfoMessages.ShouldNotContain("◈ encrypted HELLO (.env)");
         result.ShouldNotBeNull();
     }
 

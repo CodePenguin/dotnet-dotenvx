@@ -511,27 +511,8 @@ internal static class Main
             ["error_count"] = (long)result.ProcessedEnvs.Count(env => env.Error is not null)
         });
 
-        // main.js reads `remotePrivateKeyAdded` (the " · armored ⛨" suffix) but no transform ever sets it, so it can never apply
-        ProcessedSet? localKeyAddedEnv = result.ProcessedEnvs.FirstOrDefault(p => p.PrivateKeyAdded);
-
-        if (result.ChangedFilePaths.Length > 0)
-        {
-            string msg = encrypt
-                ? $"◈ encrypted {key} ({string.Join(',', result.ChangedFilePaths)})"
-                : $"◇ set {key} ({string.Join(',', result.ChangedFilePaths)})";
-            options?.Logger?.Success(msg);
-        }
-        else if (encrypt && localKeyAddedEnv != null)
-        {
-            string keyAddedEnvFilepath = !string.IsNullOrEmpty(localKeyAddedEnv.EnvFilePath)
-                ? localKeyAddedEnv.EnvFilePath
-                : result.ChangedFilePaths.FirstOrDefault() ?? ".env";
-            options?.Logger?.Success($"◈ encrypted {key} ({keyAddedEnvFilepath})");
-        }
-        else if (result.UnchangedFilePaths.Length > 0)
-        {
-            options?.Logger?.Info($"○ no change ({string.Join(',', result.UnchangedFilePaths)})");
-        }
+        LogSetSummary.Log(options?.Logger, key, encrypt, result.ProcessedEnvs, result.ChangedFilePaths,
+            result.UnchangedFilePaths);
 
         return result;
     }

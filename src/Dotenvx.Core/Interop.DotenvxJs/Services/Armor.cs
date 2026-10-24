@@ -97,10 +97,11 @@ internal class ArmorUp(string hostname, string? token, string devicePublicKey, s
         LocalKey source = ResolveLocalKey.Resolve(envFile ?? ".env", true);
         string? publicKey = source.PublicKey;
         string? privateKey = source.PrivateKey;
+        Dictionary<string, object> metadata = KeypairMetadata.File(envFile ?? ".env");
 
         JsonNode json = ArmorTeam.Run(team, chosen =>
             ArmorApi.ArmorUp(hostname, token, devicePublicKey, publicKey, privateKey, chosen,
-                omitPrivateKey: privateKey is null));
+                omitPrivateKey: privateKey is null, metadata: metadata));
 
         source.Remove();
 

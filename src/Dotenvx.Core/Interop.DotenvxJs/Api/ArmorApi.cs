@@ -77,7 +77,7 @@ internal static class ArmorApi
     }
 
     public static JsonNode ArmorUp(string hostname, string? token, string devicePublicKey, string? publicKey,
-        string? privateKey, string? team, bool omitPrivateKey = false)
+        string? privateKey, string? team, bool omitPrivateKey = false, IDictionary<string, object>? metadata = null)
     {
         JsonObject body = ArmorBody(devicePublicKey);
         // an undefined value (a key missing locally) is dropped by JSON.stringify, a null one is sent as null
@@ -92,6 +92,10 @@ internal static class ArmorApi
         }
 
         AddTeam(body, team);
+        if (metadata is not null)
+        {
+            body["metadata"] = JsonSerializer.SerializeToNode(metadata);
+        }
 
         return Api($"{hostname}/api/armor/up", "POST", token, body);
     }

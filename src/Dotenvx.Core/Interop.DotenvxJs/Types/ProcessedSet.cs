@@ -12,4 +12,7 @@ public class ProcessedSet
     public bool NativePrivateKeyAdded { get; set; }
     public string EnvSrc { get; set; } = string.Empty;
     public Exception? Error { get; set; }
+
+    /// <summary>Where each public key's private key is kept (`row.keySources`), for the summary line.</summary>
+    public IReadOnlyDictionary<string, string>? KeySources { get; set; }
 }
