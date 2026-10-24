@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <PackageId>Dotenvx.Configuration</PackageId>
-        <Description>Adds .env files, encrypted ones included, to Microsoft.Extensions.Configuration with IConfigurationBuilder.UseDotenvx().</Description>
+        <Description>Adds .env files, encrypted ones included, to Microsoft.Extensions.Configuration with IConfigurationBuilder.AddDotenvx().</Description>
         <!-- tracks the dotenvx release this port matches, in lockstep with Dotenvx.csproj -->
         <Version>2.35.0.1</Version>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -12,6 +12,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Dotenvx.Core\Dotenvx.Core.csproj"/>
+        <PackageReference Include="Microsoft.Extensions.FileProviders.Physical" Version="10.0.0"/>
     </ItemGroup>
 
 </Project>

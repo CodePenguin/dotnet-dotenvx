@@ -1,5 +1,3 @@
-using Dotenvx.Interop.DotenvxJs.Types;
-
 using Microsoft.Extensions.Configuration;
 
 using Shouldly;
@@ -20,22 +18,39 @@ public class DotenvxConfigurationSourceTest
     }
 
     [Fact]
-    public void TestOptionsPropertyStoresAction()
+    public void TestConfigureOptionsStoresAction()
     {
         bool actionCalled = false;
-        DotenvxConfigurationSource source = new(_ => actionCalled = true);
+        DotenvxConfigurationSource source = new() { ConfigureOptions = _ => actionCalled = true };
 
-        source.Options.ShouldNotBeNull();
-        ConfigOptions configOptions = new();
-        source.Options!(configOptions);
+        source.ConfigureOptions.ShouldNotBeNull();
+        source.ConfigureOptions!(new ConfigOptions());
         actionCalled.ShouldBeTrue();
     }
 
     [Fact]
-    public void TestConstructorWithNullOptionsSetsOptionsToNull()
+    public void TestDefaults()
     {
         DotenvxConfigurationSource source = new();
 
-        source.Options.ShouldBeNull();
+        source.ConfigureOptions.ShouldBeNull();
+        source.ReloadOnChange.ShouldBeFalse();
+        source.ReloadDelay.ShouldBe(250);
+    }
+
+    [Fact]
+    public void TestAddDotenvxConfiguresTheSource()
+    {
+        ConfigurationBuilder builder = new();
+
+        builder.AddDotenvx(source =>
+        {
+            source.ReloadOnChange = true;
+            source.ReloadDelay = 10;
+        });
+
+        DotenvxConfigurationSource source = builder.Sources.OfType<DotenvxConfigurationSource>().Single();
+        source.ReloadOnChange.ShouldBeTrue();
+        source.ReloadDelay.ShouldBe(10);
     }
 }

@@ -1,5 +1,4 @@
 using Dotenvx.Core.Test;
-using Dotenvx.Interop.DotenvxJs.Types;
 
 using Microsoft.Extensions.Configuration;
 
@@ -15,28 +14,28 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TestUseDotenvxAddsDotenvxConfigurationSourceToList()
+    public void TestAddDotenvxAddsDotenvxConfigurationSourceToList()
     {
         ConfigurationBuilder configurationBuilder = new();
-        configurationBuilder.UseDotenvx();
+        configurationBuilder.AddDotenvx();
         DotenvxConfigurationSource? dotenvxSource =
             configurationBuilder.Sources.OfType<DotenvxConfigurationSource>().FirstOrDefault();
         dotenvxSource.ShouldNotBeNull();
     }
 
     [Fact]
-    public void TestUseDotenvxDefaultEnvFile()
+    public void TestAddDotenvxDefaultEnvFile()
     {
         Environment.CurrentDirectory = "tests/";
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx().Build();
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddDotenvx().Build();
         configuration["BASIC"].ShouldBe("basic");
     }
 
     [Fact]
-    public void TestUseDotenvxDefaultEnvFileWithLogging()
+    public void TestAddDotenvxDefaultEnvFileWithLogging()
     {
         Environment.CurrentDirectory = "tests/";
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddDotenvx(options =>
         {
             options.Logger = MockLogger;
         }).Build();
@@ -47,9 +46,9 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TestUseDotenvxExpandsVariables()
+    public void TestAddDotenvxExpandsVariables()
     {
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddDotenvx(options =>
         {
             options.Path = ["./tests/.env.expand"];
         }).Build();
@@ -57,9 +56,9 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TestUseDotenvxLocalFileOverrides()
+    public void TestAddDotenvxLocalFileOverrides()
     {
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddDotenvx(options =>
         {
             options.Path = ["./tests/.env.local", "./tests/.env"];
         }).Build();
@@ -67,9 +66,9 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TestUseDotenvxMissingFileDoesNotThrow()
+    public void TestAddDotenvxMissingFileDoesNotThrow()
     {
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddDotenvx(options =>
         {
             options.Path = ["./tests/nonexistent.env"];
         }).Build();
@@ -77,9 +76,9 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TestUseDotenvxWithOverloadLoadsVariables()
+    public void TestAddDotenvxWithOverloadLoadsVariables()
     {
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddDotenvx(options =>
         {
             options.Path = ["./tests/.env"];
             options.Overload = true;
@@ -88,10 +87,10 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TestUseDotenvxWithProcessEnvUsesCustomEnvironment()
+    public void TestAddDotenvxWithProcessEnvUsesCustomEnvironment()
     {
         Dictionary<string, string> customEnv = new() { ["EXISTING_VAR"] = "existing_value" };
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddDotenvx(options =>
         {
             options.Path = ["./tests/.env.expand"];
             options.ProcessEnv = customEnv;
@@ -101,9 +100,9 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TestUseDotenvxWithIgnoreIgnoresSpecifiedErrors()
+    public void TestAddDotenvxWithIgnoreIgnoresSpecifiedErrors()
     {
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddDotenvx(options =>
         {
             options.Path = ["./tests/nonexistent.env"];
             options.Ignore = ["MISSING_ENV_FILE"];
@@ -113,9 +112,9 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TestUseDotenvxWithStrictThrowsOnErrors()
+    public void TestAddDotenvxWithStrictThrowsOnErrors()
     {
-        Should.Throw<Exception>(() => new ConfigurationBuilder().UseDotenvx(options =>
+        Should.Throw<Exception>(() => new ConfigurationBuilder().AddDotenvx(options =>
         {
             options.Path = ["./tests/nonexistent.env"];
             options.Strict = true;
@@ -123,9 +122,9 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TestUseDotenvxWithConventionAppliesConvention()
+    public void TestAddDotenvxWithConventionAppliesConvention()
     {
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(options =>
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddDotenvx(options =>
         {
             options.Path = ["./tests/.env"];
             options.Convention = "nextjs";
@@ -134,11 +133,10 @@ public class ConfigurationBuilderExtensionsTest : EnvironmentTestBase
     }
 
     [Fact]
-    public void TestUseDotenvxNullOptionsCallbackWorks()
+    public void TestAddDotenvxNullOptionsCallbackWorks()
     {
         Environment.CurrentDirectory = "tests/";
-        Action<ConfigOptions?>? callback = null;
-        IConfigurationRoot configuration = new ConfigurationBuilder().UseDotenvx(callback).Build();
+        IConfigurationRoot configuration = new ConfigurationBuilder().AddDotenvx().Build();
         configuration["BASIC"].ShouldBe("basic");
     }
 }

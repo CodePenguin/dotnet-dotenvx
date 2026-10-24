@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureHostConfiguration(builder =>
     {
-        builder.UseDotenvx();
+        builder.AddDotenvx();
     })
     .Build();
 

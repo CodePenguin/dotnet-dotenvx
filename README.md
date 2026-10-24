@@ -102,7 +102,7 @@ Behaviour that is the same as the Node version (commands, flags, file formats, e
 
 - [Using the CLI](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/docs/using-the-cli.md): installing the tool, running .NET programs with `dotenvx run`, and where the CLI differs from Node.
 - [Using the library](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/docs/library.md): `Dotenvx.Config()`, `Get`, `Parse` and `Set` from your own code.
-- [Automatic configuration](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/docs/configuration.md): `UseDotenvx()`, `.env` as an `IConfiguration` source.
+- [Automatic configuration](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/docs/configuration.md): `AddDotenvx()`, `.env` as an `IConfiguration` source.
 
 Runnable versions of each are in [`samples/`](https://github.com/CodePenguin/dotnet-dotenvx/tree/main/samples).
 
@@ -112,7 +112,7 @@ Runnable versions of each are in [`samples/`](https://github.com/CodePenguin/dot
 | --- | --- |
 | `Dotenvx` | the `dotenvx` .NET tool |
 | `Dotenvx.Core` | the library API (`Config`, `Get`, `Parse`, `Set`) and the ported CLI logic |
-| `Dotenvx.Configuration` | `IConfigurationBuilder.UseDotenvx()` |
+| `Dotenvx.Configuration` | `IConfigurationBuilder.AddDotenvx()` |
 | `Dotenvx.Primitives` | port of the `@dotenvx/primitives` package (parse, encrypt, decrypt, keyring, ...); versioned like that package (3.3.0), not like the CLI |
 | `Dotenvx.Providers` | port of the `@dotenvx/providers` package (key lookup in `.env.keys`, the OS secret store, Armor, 1Password, Bitwarden); versioned like that package, not like the CLI |
 

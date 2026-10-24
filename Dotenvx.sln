@@ -18,7 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{C41C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld", "samples\HelloWorld\HelloWorld.csproj", "{8E27FA4E-31D4-45E8-A06D-6262EFB9D963}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld.UseDotenvx", "samples\HelloWorld.UseDotenvx\HelloWorld.UseDotenvx.csproj", "{8FA4535C-1263-42DA-AC82-E31EAFC910E9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld.AddDotenvx", "samples\HelloWorld.AddDotenvx\HelloWorld.AddDotenvx.csproj", "{8FA4535C-1263-42DA-AC82-E31EAFC910E9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dotenvx.Test", "test\Dotenvx.Test\Dotenvx.Test.csproj", "{519D3DF5-E708-4E7F-94C4-6D21F61CEAF9}"
 EndProject

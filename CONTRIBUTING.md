@@ -12,7 +12,7 @@ A .NET 10 port of [`@dotenvx/dotenvx`](https://github.com/dotenvx/dotenvx) that 
 | `src/Dotenvx.Core` | ported library logic (`Dotenvx.Config/Get/Parse/Set`), used by the CLI and `Dotenvx.Configuration` |
 | `src/Dotenvx.Primitives` | port of the external `@dotenvx/primitives` npm package (every export has a public `Primitives.*` counterpart) |
 | `src/Dotenvx.Providers` | port of the external `@dotenvx/providers` npm package (private-key lookup in `.env.keys`, the OS secret store, Armor, 1Password, Bitwarden) |
-| `src/Dotenvx.Configuration` | `IConfigurationBuilder.UseDotenvx()` for `Microsoft.Extensions.Configuration` |
+| `src/Dotenvx.Configuration` | `IConfigurationBuilder.AddDotenvx()` for `Microsoft.Extensions.Configuration` |
 
 The upstream JS project is a git submodule at `dotenvx/`, used as porting reference and as the source of test fixtures. After cloning: `git submodule update --init --recursive` (test projects fail without it).
 
