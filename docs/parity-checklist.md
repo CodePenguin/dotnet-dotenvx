@@ -33,7 +33,7 @@ The goal is byte-for-byte parity with the Node `@dotenvx/dotenvx` CLI at the pin
 | `doctor` | done | hidden |
 | `update` | done | prints the npm commands (never a packaged binary) |
 | `native`, `1password`, `bitwarden` (`up`, `down`, `push`, `pull`) | done | every store shells out like upstream (`security`, `secret-tool`, PowerShell with upstream's script) |
-| `armor` (`up`, `down`, `push`, `pull`, `open`, `move`, `status`, `settings`) | done | verified against a fake Armor API; falls back to a `dotenvx-armor` program like upstream |
+| `armor` (`up`, `down`, `push`, `pull`, `open`, `move`, `invite`, `status`, `settings`) | done | verified against a fake Armor API; falls back to a `dotenvx-armor` program like upstream |
 | `login`, `logout`, `curl` | done | OAuth device flow against the fake API |
 | `ext` (`ls`, `genexample`, `gitignore`, `prebuild`, `precommit`, `scan`) | done | |
 | `ext <name>` dynamic extensions | done | `dotenvx-ext-<name>` from PATH, with upstream's vault install hint |
