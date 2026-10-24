@@ -556,14 +556,14 @@ public class ArmorActionsTest : EnvironmentTestBase
     }
 
     /// <remarks>
-    /// Refer to "armor commands are native cli subcommands". The root-help lines ("curated armor line") are rendered by
+    /// Refer to "armor commands are native cli subcommands" (plus `invite`, new in 2.38.0). The root-help lines ("curated armor line") are rendered by
     /// each CLI's own help builder and compared by HelpTextParityTest; here the subcommand set and its order are checked.
     /// </remarks>
     [Fact]
     public void TestArmorCommandsAreNativeCliSubcommands()
     {
         ArmorGroup(Root()).Subcommands.Select(command => command.Name).ShouldBe(
-            ["up", "down", "push", "pull", "open", "move", "login", "logout", "status", "settings"]);
+            ["up", "down", "push", "pull", "open", "move", "invite", "login", "logout", "status", "settings"]);
     }
 
     /// <remarks>Refer to "armor login and logout resolve through native actions"</remarks>

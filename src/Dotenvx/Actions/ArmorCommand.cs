@@ -47,6 +47,7 @@ public class ArmorCommand : Command
         Subcommands.Add(new Step("move", "move armored key (to other team)", null, logger,
             (host, token, device, file, _) => new ArmorMove(host, token, device, file).Run(),
             (result, display, _) => $"⛨ moved to {result.Team} ({display})"));
+        Subcommands.Add(new InviteStep(logger));
         Subcommands.Add(new LoginAction(logger, "log in to Dotenvx Armor"));
         Subcommands.Add(new LogoutAction(logger, "log out of Dotenvx Armor"));
         Subcommands.Add(new Command("status", "print armor status")
@@ -188,6 +189,43 @@ public class ArmorCommand : Command
 
                 return 1;
             }
+        }
+    }
+
+    private sealed class InviteStep : Command
+    {
+        private readonly Option<string?> _teamOption = new("--team") { Description = "team to invite member to", HelpName = "team" };
+        private readonly Option<string?> _emailOption = new("--email") { Description = "email address to invite", HelpName = "email" };
+        private readonly Option<string?> _tokenOption = Token();
+
+        public InviteStep(IDotenvxLogger logger) : base("invite", "invite a member to your team")
+        {
+            Add(_teamOption);
+            Add(_emailOption);
+            Add(_tokenOption);
+            SetAction(parseResult =>
+            {
+                var session = new Session(logger);
+                session.NotifyUpdate();
+                string hostname = session.Hostname();
+                string? tokenOption = parseResult.GetValue(_tokenOption);
+                string? token = string.IsNullOrEmpty(tokenOption) ? session.Token() : tokenOption;
+
+                try
+                {
+                    ArmorInviteResult result = ArmorInvite.Factory(hostname, token, parseResult.GetValue(_teamOption),
+                        parseResult.GetValue(_emailOption)).Run();
+                    logger.Success($"⛨ invited {result.Email} to {result.Team}");
+
+                    return 0;
+                }
+                catch (Exception error)
+                {
+                    logger.Error(error.Message);
+
+                    return 1;
+                }
+            });
         }
     }
 
