@@ -73,7 +73,7 @@ public sealed class DotenvxConsoleLogger : IDotenvxLogger
                 return;
             }
 
-            (stream == ColorStream.StdErr ? Console.Error : Console.Out).WriteLine(formatted);
+            (stream == ColorStream.StdErr ? Console.Error : Console.Out).Write(formatted + "\n"); // console.log ends a line with LF on every OS
         }
     }
 }

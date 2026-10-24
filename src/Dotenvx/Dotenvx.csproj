@@ -18,7 +18,8 @@
         <!-- A fix released for the same upstream version gets a fourth number (2.35.0.1) here and in Dotenvx.Core and
              Dotenvx.Configuration, plus <InformationalVersion>2.35.0</InformationalVersion> so the version flag stays exact
              (CONTRIBUTING.md, "Releasing a fix for the same upstream version"). -->
-        <Version>2.35.0</Version>
+        <Version>2.35.0.1</Version>
+        <InformationalVersion>2.35.0</InformationalVersion>
         <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>disable</ImplicitUsings>

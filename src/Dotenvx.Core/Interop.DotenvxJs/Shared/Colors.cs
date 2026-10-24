@@ -51,7 +51,7 @@ internal static class Shared
     {
         if (!Colors256.TryGetValue(color, out int value))
         {
-            throw new ArgumentException($"Invalid color {color}");
+            throw new InvalidColorException(color);
         }
 
         int colorDepth = GetColorDepth(stream);

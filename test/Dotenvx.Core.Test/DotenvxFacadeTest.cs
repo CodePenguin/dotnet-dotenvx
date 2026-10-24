@@ -42,6 +42,6 @@ public class DotenvxFacadeTest : EnvironmentTestBase
     [Fact]
     public void TestGetColorRejectsAnUnknownColor()
     {
-        Should.Throw<ArgumentException>(() => Dotenvx.GetColor("not-a-color", ColorStream.StdOut));
+        Should.Throw<InvalidColorException>(() => Dotenvx.GetColor("not-a-color", ColorStream.StdOut));
     }
 }

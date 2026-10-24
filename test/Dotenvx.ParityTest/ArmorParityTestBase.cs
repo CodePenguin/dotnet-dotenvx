@@ -74,7 +74,12 @@ public abstract class ArmorParityTestBase(NodeParityFixture fixture) : ParityTes
             ["FAKE_SECRET_CLI_DIR"] = VaultDir,
             ["DOTENVX_CONFIG"] = ConfigDir,
             ["CI"] = "",
-            ["DOTENVX_NO_NATIVE"] = "false"
+            ["DOTENVX_NO_NATIVE"] = "false",
+            // `protect` installs its Git filter into the global Git config; keep that away from the real one
+            ["GIT_CONFIG_GLOBAL"] = Path.Combine(ConfigDir, "git", "gitconfig"),
+            ["GIT_CONFIG_SYSTEM"] = Path.Combine(ConfigDir, "git", "gitconfig-system"),
+            ["XDG_CONFIG_HOME"] = Path.Combine(ConfigDir, "git", "xdg"),
+            ["GIT_CONFIG_NOSYSTEM"] = "1"
         };
 
         foreach ((string key, string value) in extra ?? [])
@@ -96,7 +101,7 @@ public abstract class ArmorParityTestBase(NodeParityFixture fixture) : ParityTes
             }
         }
 
-        Directory.CreateDirectory(ConfigDir);
+        Directory.CreateDirectory(Path.Combine(ConfigDir, "git"));
         Directory.CreateDirectory(Path.Combine(VaultDir, "native"));
         FakeCliInstaller.Install(BinDir, OperatingSystem.IsWindows() ? "powershell" : "secret-tool");
 

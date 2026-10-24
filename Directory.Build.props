@@ -3,7 +3,7 @@
          produce a package; test projects and samples are not packable. Each packable project sets its own PackageId,
          Description and Version (see CONTRIBUTING.md, "Version bump checklist"). -->
     <PropertyGroup>
-        <Authors>David Lambert, Scott Motte (@motdotla)</Authors>
+        <Authors>Scott Motte (@motdotla), David Lambert</Authors>
         <Copyright>Copyright (c) 2024 Scott Motte; Copyright (c) 2026 David Lambert</Copyright>
         <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
         <PackageProjectUrl>https://github.com/CodePenguin/dotnet-dotenvx</PackageProjectUrl>

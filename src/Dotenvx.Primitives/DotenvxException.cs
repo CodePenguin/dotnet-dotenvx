@@ -30,6 +30,11 @@ public class InvalidConventionException(string convention) : DotenvxException(
     $"[INVALID_CONVENTION] invalid convention ({convention})",
     "fix: [https://github.com/dotenvx/dotenvx/issues/761]");
 
+public class InvalidColorException(string color) : DotenvxException(
+    "INVALID_COLOR",
+    $"[INVALID_COLOR] Invalid color {color}",
+    "fix: [must be 256 colors]");
+
 public class CommandSubstitutionFailed(string key, string command, string message) : DotenvxException(
     "COMMAND_SUBSTITUTION_FAILED",
     $"[COMMAND_SUBSTITUTION_FAILED] could not eval {key} containing command '{command}': {message}",

@@ -88,7 +88,9 @@ public class ColorsTest : EnvironmentTestBase
     [Fact]
     public void TestGetColorInvalidColor()
     {
-        Should.Throw<ArgumentException>(() => Colors.GetColor("invalid", ColorStream.StdErr));
+        InvalidColorException error = Should.Throw<InvalidColorException>(() => Colors.GetColor("invalid", ColorStream.StdErr));
+        error.Code.ShouldBe("INVALID_COLOR");
+        error.MessageWithHelp.ShouldBe("[INVALID_COLOR] Invalid color invalid. fix: [must be 256 colors]");
     }
 
     /// <remarks>Refer to "bold with ansi16 color support"</remarks>

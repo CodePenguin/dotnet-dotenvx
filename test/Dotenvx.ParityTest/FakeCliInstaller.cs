@@ -19,8 +19,9 @@ public static class FakeCliInstaller
         string source = Path.Combine(AppContext.BaseDirectory, "fakes", fake);
 
         // The events worker runs with a filtered environment that has no DOTNET_ROOT, so an apphost cannot find a runtime installed
-        // outside the default location (for example ~/.dotnet). On Unix each tool then becomes a script that restores it.
-        string? dotnetRoot = OperatingSystem.IsWindows() || fake != "secretcli" ? null : Environment.GetEnvironmentVariable("DOTNET_ROOT");
+        // outside the default location (for example ~/.dotnet). On Unix each tool then becomes a script that restores it, from
+        // DOTNET_ROOT or else from the runtime this test process runs on (<root>/shared/Microsoft.NETCore.App/<version>/).
+        string? dotnetRoot = OperatingSystem.IsWindows() || fake != "secretcli" ? null : RuntimeRoot();
 
         foreach (string file in Directory.GetFiles(source))
         {
@@ -55,6 +56,21 @@ public static class FakeCliInstaller
                 Replace(file, Path.Combine(binDirectory, name));
             }
         }
+    }
+
+    private static string? RuntimeRoot()
+    {
+        string? configured = Environment.GetEnvironmentVariable("DOTNET_ROOT");
+        if (!string.IsNullOrEmpty(configured))
+        {
+            return configured;
+        }
+
+        string runtime = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory().TrimEnd(Path.DirectorySeparatorChar);
+        string? root = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(runtime)));
+
+        // an apphost finds a runtime in the default install locations by itself: keep the plain copy there
+        return root is "/usr/share/dotnet" or "/usr/lib/dotnet" or "/usr/local/share/dotnet" ? null : root;
     }
 
     // copy beside the target and rename over it: writing straight into an apphost that just exited fails with "Text file busy" on Linux

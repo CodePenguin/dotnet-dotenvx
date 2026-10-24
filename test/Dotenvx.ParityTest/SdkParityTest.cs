@@ -8,6 +8,8 @@ using Dotenvx.Interop.DotenvxJs.Types;
 
 using Shouldly;
 
+using Sdk = global::Dotenvx.Dotenvx;
+
 namespace Dotenvx.ParityTest;
 
 /// <remarks>
@@ -49,9 +51,15 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         }
     }
 
-    private static JsonObject Call(string fn, JsonNode? args = null, JsonObject? options = null)
+    private static JsonObject Call(string fn, JsonNode? args = null, JsonObject? options = null, bool defaultLogger = false)
     {
         var call = new JsonObject { ["fn"] = fn, ["args"] = args ?? new JsonArray() };
+        if (defaultLogger)
+        {
+            // no logger in the options: the library prints through its own, and stdout/stderr are compared
+            call["defaultLogger"] = true;
+        }
+
         if (options is not null)
         {
             call["options"] = options;
@@ -271,6 +279,68 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         yield return Scenario("redact encrypted env", new() { [".env"] = Encrypted, [".env.keys"] = Keys, ["Envfile"] = "env \"HELLO\"\n" }, null,
             Config(), Call("write", Args("stdout", "World")));
         yield return Scenario("redact non ascii", new() { [".env"] = "HELLO=café\n", ["Envfile"] = "env \"HELLO\"\n" }, null, Config(), Call("write", Args("stdout", "a café b", "caf", "é")));
+
+        // the default logger (main.js `logger`, used when the options carry none): what reaches stdout and stderr, colors included
+        Dictionary<string, string> Color(string value) => new() { ["FORCE_COLOR"] = value };
+        yield return Scenario("default logger config", plain, null, Call("config", null, Opts("""{"processEnv":{}}"""), true));
+        yield return Scenario("default logger config quiet", plain, null, Call("config", null, Opts("""{"processEnv":{},"quiet":true}"""), true));
+        yield return Scenario("default logger config verbose", plain, null, Call("config", null, Opts("""{"processEnv":{},"verbose":true}"""), true));
+        yield return Scenario("default logger config debug", plain, null, Call("config", null, Opts("""{"processEnv":{},"debug":true}"""), true));
+        yield return Scenario("default logger config logLevel warn", plain, null, Call("config", null, Opts("""{"processEnv":{},"logLevel":"warn"}"""), true));
+        yield return Scenario("default logger config logLevel error", plain, null, Call("config", null, Opts("""{"processEnv":{},"logLevel":"error"}"""), true));
+        yield return Scenario("default logger level persists", plain, null,
+            Call("config", null, Opts("""{"processEnv":{},"debug":true}"""), true),
+            Call("config", null, Opts("""{"processEnv":{}}"""), true),
+            Call("config", null, Opts("""{"processEnv":{},"quiet":true}"""), true));
+        yield return Scenario("default logger missing file", none, null, Call("config", null, Opts("""{"processEnv":{}}"""), true));
+        yield return Scenario("default logger missing file strict", none, null, Call("config", null, Opts("""{"processEnv":{},"strict":true}"""), true));
+        yield return Scenario("default logger encrypted no keys", new() { [".env"] = Encrypted }, null, Call("config", null, Opts("""{"processEnv":{}}"""), true));
+        yield return Scenario("default logger malformed", new() { [".env"] = "A=1\nthis is not valid\n" }, null, Call("config", null, Opts("""{"processEnv":{}}"""), true));
+        yield return Scenario("default logger pre-existing verbose", plain, null, Call("config", null, Opts("""{"processEnv":{"HELLO":"mine"},"verbose":true}"""), true));
+        yield return Scenario("default logger parse", none, null, Call("parse", Args("A=1\n"), Opts("""{"processEnv":{"A":"mine"},"debug":true}"""), true));
+        yield return Scenario("default logger get missing file", none, null, Call("get", Args("HELLO"), null, true));
+        yield return Scenario("default logger get debug", plain, null, Call("get", Args("HELLO"), Opts("""{"debug":true}"""), true));
+        yield return Scenario("default logger set", plain, null, Call("set", Args("A", "1"), null, true));
+        yield return Scenario("default logger set verbose", plain, null, Call("set", Args("A", "1"), Opts("""{"verbose":true}"""), true));
+        foreach (string depth in new[] { "0", "1", "2", "3" })
+        {
+            yield return Scenario($"default logger colors FORCE_COLOR={depth}", plain, Color(depth),
+                Call("config", null, Opts("""{"processEnv":{},"debug":true}"""), true),
+                Call("get", Args("HELLO"), Opts("""{"debug":true}"""), true));
+            yield return Scenario($"default logger error colors FORCE_COLOR={depth}", new() { [".env"] = Encrypted }, Color(depth),
+                Call("config", null, Opts("""{"processEnv":{}}"""), true),
+                Call("config", null, Opts("""{"processEnv":{},"logLevel":"warn"}"""), true));
+        }
+
+        yield return Scenario("default logger NO_COLOR", plain, new() { ["NO_COLOR"] = "1" }, Call("config", null, Opts("""{"processEnv":{},"debug":true}"""), true));
+
+        // getColor / bold: every color on both streams for each way the terminal's capability can be decided
+        string[] colors = ["amber", "blue", "gray", "green", "olive", "orangered", "plum", "red", "electricblue", "dodgerblue", "nope"];
+        Dictionary<string, Dictionary<string, string>> terminals = new()
+        {
+            ["plain"] = [],
+            ["FORCE_COLOR=0"] = Color("0"),
+            ["FORCE_COLOR=1"] = Color("1"),
+            ["FORCE_COLOR=2"] = Color("2"),
+            ["FORCE_COLOR=3"] = Color("3"),
+            ["FORCE_COLOR=true"] = Color("true"),
+            ["NO_COLOR"] = new() { ["NO_COLOR"] = "1" },
+            ["NO_COLOR with FORCE_COLOR"] = new() { ["NO_COLOR"] = "1", ["FORCE_COLOR"] = "3" },
+            ["NODE_DISABLE_COLORS"] = new() { ["NODE_DISABLE_COLORS"] = "1", ["FORCE_COLOR"] = "3" },
+            ["COLORTERM truecolor"] = new() { ["COLORTERM"] = "truecolor", ["FORCE_COLOR"] = "1" },
+            ["TERM xterm-256color"] = new() { ["TERM"] = "xterm-256color", ["FORCE_COLOR"] = "1" }
+        };
+        foreach ((string terminal, Dictionary<string, string> env) in terminals)
+        {
+            List<JsonObject> calls = [];
+            foreach (string stream in new[] { "stdout", "stderr" })
+            {
+                calls.AddRange(colors.Select(color => Call("getColor", Args(color, stream, "text"))));
+                calls.Add(Call("bold", Args("text", stream)));
+            }
+
+            yield return Scenario($"colors {terminal}", none, env, [.. calls]);
+        }
     }
 
     private static string Normalise(string text, string workDir)
@@ -319,6 +389,8 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             WriteFile(name, content);
         }
     }
+
+    private static ColorStream Stream(JsonNode? node) => Str(node) == "stdout" ? ColorStream.StdOut : ColorStream.StdErr;
 
     private static string? Str(JsonNode? node) => node?.GetValueKind() == System.Text.Json.JsonValueKind.String ? node.GetValue<string>() : null;
 
@@ -461,9 +533,10 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         var capturedOut = new StringWriter();
         var capturedError = new StringWriter();
         RedactProcessOutput.Reset();
+        Sdk.Logger.SetLevel(DotenvxLogLevel.Info); // the shared logger keeps its level for the life of the process
         Console.SetOut(capturedOut);
         Console.SetError(capturedError);
-        var eventSdk = new global::Dotenvx.EventSdk();
+        var eventSdk = Sdk.WithEvents();
         try
         {
             var rows = new JsonArray();
@@ -475,6 +548,9 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                 JsonObject options = call["options"]?.AsObject() ?? [];
                 var messages = new JsonArray();
                 var logger = new RecordingLogger(messages);
+                bool defaultLogger = call["defaultLogger"]?.GetValue<bool>() == true;
+                capturedOut.GetStringBuilder().Clear();
+                capturedError.GetStringBuilder().Clear();
                 var row = new JsonObject { ["fn"] = fn };
                 IDictionary<string, string>? processEnv = null;
                 try
@@ -484,9 +560,9 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                         case "config":
                             {
                                 ConfigOptions mapped = Map<ConfigOptions>(options);
-                                mapped.Logger = logger;
+                                mapped.Logger = defaultLogger ? null : logger;
                                 processEnv = mapped.ProcessEnv;
-                                ConfigResult result = Main.Config(mapped);
+                                ConfigResult result = Sdk.Config(mapped);
                                 row["result"] = new JsonObject { ["parsed"] = Dict(result.Parsed), ["error"] = DescribeError(result.Error) };
                                 break;
                             }
@@ -494,7 +570,7 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                             {
                                 var parseOptions = new ParseOptions
                                 {
-                                    Logger = logger,
+                                    Logger = defaultLogger ? null : logger,
                                     PrivateKey = Str(options["privateKey"]),
                                     Overload = Flag(options, "overload"),
                                     Override = Flag(options, "override"),
@@ -504,15 +580,15 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                                         : null
                                 };
                                 processEnv = parseOptions.ProcessEnv?.ToDictionary();
-                                row["result"] = new JsonObject { ["parsed"] = Dict(Main.Parse(Str(args[0]), parseOptions)) };
+                                row["result"] = new JsonObject { ["parsed"] = Dict(Sdk.Parse(Str(args[0]), parseOptions)) };
                                 break;
                             }
                         case "get":
                             {
                                 GetOptions mapped = Map<GetOptions>(options);
-                                mapped.Logger = logger;
+                                mapped.Logger = defaultLogger ? null : logger;
                                 processEnv = mapped.ProcessEnv;
-                                object? value = Main.Get(Str(args[0]), mapped);
+                                object? value = Sdk.Get(Str(args[0]), mapped);
                                 JsonNode? shown = value switch
                                 {
                                     null => new JsonObject { ["undefined"] = true },
@@ -527,8 +603,8 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                         case "set":
                             {
                                 SetsOptions mapped = Map<SetsOptions>(options);
-                                mapped.Logger = logger;
-                                SetsResult result = Main.Set(Str(args[0])!, Str(args[1])!, mapped);
+                                mapped.Logger = defaultLogger ? null : logger;
+                                SetsResult result = Sdk.Set(Str(args[0])!, Str(args[1])!, mapped);
                                 row["result"] = new JsonObject
                                 {
                                     ["changed"] = new JsonArray([.. result.ChangedFilePaths.Select(path => (JsonNode?)JsonValue.Create(path))]),
@@ -538,7 +614,7 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                             }
                         case "ls":
                             {
-                                string[] files = Main.Ls(Str(args[0])!, args.Count > 1 && args[1] is not null ? [Str(args[1])!] : null,
+                                string[] files = Sdk.Ls(Str(args[0])!, args.Count > 1 && args[1] is not null ? [Str(args[1])!] : null,
                                     args.Count > 2 && args[2] is not null ? [Str(args[2])!] : null);
                                 row["result"] = new JsonObject { ["files"] = new JsonArray([.. files.Select(path => (JsonNode?)JsonValue.Create(path))]) };
                                 break;
@@ -546,7 +622,7 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                         case "events.config":
                             {
                                 ConfigOptions mapped = Map<ConfigOptions>(options);
-                                mapped.Logger = logger;
+                                mapped.Logger = defaultLogger ? null : logger;
                                 processEnv = mapped.ProcessEnv;
                                 ConfigResult result = eventSdk.Config(mapped);
                                 await_(eventSdk.FlushEvents());
@@ -556,7 +632,7 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                         case "events.get":
                             {
                                 GetOptions mapped = Map<GetOptions>(options);
-                                mapped.Logger = logger;
+                                mapped.Logger = defaultLogger ? null : logger;
                                 processEnv = mapped.ProcessEnv;
                                 object? value = eventSdk.Get(Str(args[0]), mapped);
                                 await_(eventSdk.FlushEvents());
@@ -574,7 +650,7 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                         case "events.set":
                             {
                                 SetsOptions mapped = Map<SetsOptions>(options);
-                                mapped.Logger = logger;
+                                mapped.Logger = defaultLogger ? null : logger;
                                 SetsResult result = eventSdk.Set(Str(args[0])!, Str(args[1])!, mapped);
                                 await_(eventSdk.FlushEvents());
                                 row["result"] = new JsonObject
@@ -584,6 +660,15 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                                 };
                                 break;
                             }
+                        case "getColor":
+                            row["result"] = new JsonObject
+                            {
+                                ["text"] = Sdk.GetColor(Str(args[0])!, Stream(args[1]))(Str(args[2])!)
+                            };
+                            break;
+                        case "bold":
+                            row["result"] = new JsonObject { ["text"] = Sdk.Bold(Str(args[0])!, Stream(args[1])) };
+                            break;
                         case "write":
                             {
                                 capturedOut.GetStringBuilder().Clear();
@@ -615,6 +700,12 @@ public class SdkParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                 }
 
                 row["messages"] = messages;
+                if (defaultLogger)
+                {
+                    row["stdout"] = capturedOut.ToString();
+                    row["stderr"] = capturedError.ToString();
+                }
+
                 rows.Add(row);
             }
 

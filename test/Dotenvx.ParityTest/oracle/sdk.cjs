@@ -10,10 +10,18 @@ const spec = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))
 const main = require(path.join(process.argv[3], 'src', 'lib', 'main.js'))
 const { logger } = main
 
-// record instead of print: the level filter is the logger's business, what the library asks it to say is what must match
+// record instead of print: the level filter is the logger's business, what the library asks it to say is what must match.
+// A call with `defaultLogger` keeps the real logger instead, so what reaches stdout/stderr (colors included) is compared.
+const levels = ['error', 'infoerror', 'warn', 'success', 'info', 'help', 'verbose', 'debug']
+const realLogger = {}
+for (const level of levels) realLogger[level] = logger[level]
 let messages = []
-for (const level of ['error', 'infoerror', 'warn', 'success', 'info', 'help', 'verbose', 'debug']) {
-  logger[level] = (message) => { messages.push([level, typeof message === 'object' ? JSON.stringify(message) : String(message)]) }
+function useLogger (isDefault) {
+  for (const level of levels) {
+    logger[level] = isDefault
+      ? realLogger[level]
+      : (message) => { messages.push([level, typeof message === 'object' ? JSON.stringify(message) : String(message)]) }
+  }
 }
 
 for (const [name, value] of Object.entries(spec.env || {})) process.env[name] = value
@@ -69,6 +77,8 @@ async function call (entry) {
       await events.flushEvents()
       return { changed: result.changedFilepaths, unchanged: result.unchangedFilepaths }
     }
+    case 'getColor': return { text: main.getColor(args[0], process[args[1]])(args[2]) }
+    case 'bold': return { text: main.bold(args[0], process[args[1]]) }
     case 'write': {
       // args: [stream, text...] - each text is one write call; the captured output is what got through the redaction
       written.stdout = []
@@ -84,6 +94,9 @@ async function call (entry) {
   const calls = []
   for (const entry of spec.calls) {
     messages = []
+    useLogger(entry.defaultLogger === true)
+    written.stdout = []
+    written.stderr = []
     const row = { fn: entry.fn }
     try {
       row.result = await call(entry)
@@ -92,6 +105,10 @@ async function call (entry) {
     }
     if (options && options.processEnv) row.processEnv = options.processEnv
     row.messages = messages
+    if (entry.defaultLogger === true) {
+      row.stdout = written.stdout.join('')
+      row.stderr = written.stderr.join('')
+    }
     calls.push(row)
   }
   const env = {}
