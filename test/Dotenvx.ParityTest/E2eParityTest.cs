@@ -182,6 +182,28 @@ public class E2eParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
         });
     }
 
+    /// <remarks>Refer to "#encrypt non-interactively defaults to .env.keys without CI or --no-native"</remarks>
+    [Fact]
+    public async Task EncryptNonInteractivelyDefaultsToEnvKeys()
+    {
+        if (!EnsureAvailable())
+        {
+            return;
+        }
+
+        await ForBothAsync(async cli =>
+        {
+            WriteFile(".env", "HELLO=World\n");
+
+            CliResult output = await cli(["encrypt"]);
+
+            output.ExitCode.ShouldBe(0);
+            Primitives.Primitives.Scan(ReadFile(".env.keys"), new ScanOptions()).Parsed.ContainsKey("DOTENV_PRIVATE_KEY").ShouldBeTrue();
+            ReadFile(".env").ShouldContain("encrypted:");
+            Out(await cli(["get", "HELLO"])).ShouldBe("World");
+        });
+    }
+
     /// <remarks>Refer to "#encrypt creates a minimal sample env"</remarks>
     [Fact]
     public async Task EncryptCreatesAMinimalSampleEnv()
