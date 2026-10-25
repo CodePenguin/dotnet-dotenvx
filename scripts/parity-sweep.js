@@ -1147,6 +1147,7 @@ for (let n = 0; n < 250; n++) {
 const ACCEPTED_STDERR_ONLY = [/^r16 self signal SIGUSR1$/, // Node opens its inspector on SIGUSR1: both runs race for port 9229
   /^r20 seq /, // the lock passphrase prompt redraws differently (accepted difference #3)
   /^r20 ext precommit .*--(install|uninstall)/, // the hook path outside a repository: ENOENT in Node, the .NET wording inside the same dotenvx message
+  /^r16 many keys broken run /, // the EPIPE on the exit-code flush is an uncaught error in both: only the stack trace text differs
   /^r11 .* encrypt --profile=x --stdout/, // "Profile selection requires an Envfile" is an uncaught error in both: only the stack trace text differs
   /^opt plain spec --file(=| )v/, // a missing file: ENOENT in Node, the .NET wording here
   /^r18 DOTENV(_CONFIG)?_CONVENTION=/, // an invalid convention is an uncaught error in both: only the stack trace text differs
@@ -1158,7 +1159,6 @@ const ACCEPTED_STDERR_ONLY = [/^r16 self signal SIGUSR1$/, // Node opens its ins
 
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
-  ...(process.platform === 'win32' ? [/^r16 many keys broken run /] : []), // commandAction.js flushes with stdout.write('') once an action returns an exitCode: libuv's zero-length write to a closed pipe fails with EPIPE on Windows (uncaught, exit 1) and succeeds on POSIX, so Node's crash is the runtime's, not dotenvx's
   ...(process.platform === 'darwin' ? [/^r16 many keys encrypt --stdout$/] : []), // Node on macOS exits before a >64KB write to a pipe drains and cuts the output at ~417 keys; .NET prints it all
   /^r20 ext ls (twin )?r15 tree/, // directory order follows the filesystem crawl in Node (trap #64)
   /^r18 DOTENV_PRIVATE_KEYS=/, // the derived file name is ".env." (trailing dot): Windows file APIs in .NET treat it as ".env", Node does not (documented difference)

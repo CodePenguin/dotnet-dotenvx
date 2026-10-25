@@ -121,7 +121,7 @@ public static class HostExtensions
             AnnounceLogLevel(host);
         }
 
-        return parseResult.Invoke();
+        return StdoutFlush.Finish(parseResult.Invoke());
     }
 
     /// <summary>dotenvx.js preAction hook: `logger.debug(`setting log level to: ...`)` runs only once a command is about to execute.</summary>

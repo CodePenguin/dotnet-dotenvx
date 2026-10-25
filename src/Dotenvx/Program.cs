@@ -4,6 +4,7 @@ using System.Text;
 
 using Dotenvx;
 using Dotenvx.Extensions;
+using Dotenvx.Helpers;
 using Dotenvx.Logging;
 
 using Microsoft.Extensions.Configuration;
@@ -26,6 +27,7 @@ catch (IOException)
 // which is "\r\n" on Windows. Match Node so scripts piping our output don't see stray "\r".
 Console.Out.NewLine = "\n";
 Console.Error.NewLine = "\n";
+StdoutFlush.Track();
 
 DotenvxLoggerOptions loggerOptions = DotenvxRootCommand.GetDotenvxLoggerConfiguration(args);
 
