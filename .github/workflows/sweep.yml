@@ -43,7 +43,8 @@ jobs:
     - name: Build
       run: dotnet build src/Dotenvx
     - name: Install the Node CLI's dependencies
-      run: npm install --prefix dotenvx
+      working-directory: dotenvx # not --prefix: npm on the Windows runner looked for package.json in the repo root
+      run: npm install
     - name: Parity sweep
       env:
         SWEEP_EVERY: ${{ github.event_name == 'workflow_dispatch' && inputs.every || '25' }}
