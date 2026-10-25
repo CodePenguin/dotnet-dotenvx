@@ -1217,7 +1217,7 @@ const installedFakes = new Map()
 const cleanupAtExit = dir => process.on("exit", () => { try { fs.rmSync(dir, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
 const publishFake = name => {
   if (publishedFakes.has(name)) return publishedFakes.get(name)
-  const out = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-fake-' + name + '-'))
+  const out = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'sweep-fake-' + name + '-'))
   execFileSync('dotnet', ['publish', path.join(ROOT, 'test', 'fakes', name + '.cs'), '-o', out], { stdio: 'ignore' })
   cleanupAtExit(out)
   publishedFakes.set(name, out)
@@ -1228,7 +1228,7 @@ const installFake = (name, tools) => {
   if (installedFakes.has(key)) return installedFakes.get(key)
   const published = publishFake(name)
   const suffix = process.platform === 'win32' ? '.exe' : ''
-  const bin = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-bin-'))
+  const bin = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'sweep-bin-'))
   for (const f of fs.readdirSync(published)) {
     if (f === name + suffix) { for (const tool of tools) fs.copyFileSync(path.join(published, f), path.join(bin, tool + suffix)) }
     else fs.copyFileSync(path.join(published, f), path.join(bin, f))
@@ -1240,8 +1240,9 @@ const installFake = (name, tools) => {
 
 function runOne (cliArgs, sc, isNode) {
   return new Promise(resolve => {
+    // (realpathSync.native, not realpathSync: it expands Windows 8.3 short names such as RUNNER~1 on the CI runner, the form the CLIs print)
     // a private parent per run: scenarios that point at '..' must not share it with other scenarios or with the other CLI
-    const parent = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-'))
+    const parent = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'sweep-'))
     const dir = path.join(parent, 'work')
     fs.mkdirSync(dir)
     for (const [f, c] of Object.entries(fixtures[sc.fx])) {
@@ -1256,7 +1257,7 @@ function runOne (cliArgs, sc, isNode) {
     }
     let fakeVault = null
     if (sc.env.FAKECLI_SEED !== undefined) {
-      fakeVault = path.join(fs.realpathSync(os.tmpdir()), 'sweep-fc-' + path.basename(parent))
+      fakeVault = path.join(fs.realpathSync.native(os.tmpdir()), 'sweep-fc-' + path.basename(parent))
       for (const [rel, content] of Object.entries(JSON.parse(sc.env.FAKECLI_SEED))) { fs.mkdirSync(path.dirname(path.join(fakeVault, rel)), { recursive: true }); fs.writeFileSync(path.join(fakeVault, rel), content) }
       fs.mkdirSync(fakeVault, { recursive: true })
       const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
@@ -1267,7 +1268,7 @@ function runOne (cliArgs, sc, isNode) {
     if (Object.keys(sc.env).some(k => k.startsWith('FAKEGL_'))) {
       const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
       env[pathKey] = installFake('gitleaks', ['gitleaks']) + path.delimiter + (env[pathKey] || '')
-      env.FAKEGL_LOG = path.join(fs.realpathSync(os.tmpdir()), 'sweep-gl-' + path.basename(parent) + '.log')
+      env.FAKEGL_LOG = path.join(fs.realpathSync.native(os.tmpdir()), 'sweep-gl-' + path.basename(parent) + '.log')
     }
     // hermetic Armor/device config: a per-run directory unless the scenario names one
     env.DOTENVX_CONFIG = (sc.env.DOTENVX_CONFIG || '<DIR>/.dxcfg').split('<DIR>').join(dir)
