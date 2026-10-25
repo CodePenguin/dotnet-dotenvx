@@ -196,6 +196,7 @@ internal class Sets
                 getService.No1Password = KeyAccess.No1Password;
                 getService.NoBitwarden = KeyAccess.NoBitwarden;
                 getService.IncludeKeySources = true;
+                getService.PromptForSecrets = true;
                 GetResult resolved = getService.Run();
                 row.KeySources ??= resolved.KeySources;
                 string? before = resolved.Parsed.GetValueOrDefault(_key ?? "");
