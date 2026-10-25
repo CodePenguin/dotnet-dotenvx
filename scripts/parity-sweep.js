@@ -1240,7 +1240,10 @@ const installFake = (name, tools) => {
 
 function runOne (cliArgs, sc, isNode) {
   return new Promise(resolve => {
-    const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-'))
+    // a private parent per run: scenarios that point at '..' must not share it with other scenarios or with the other CLI
+    const parent = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-'))
+    const dir = path.join(parent, 'work')
+    fs.mkdirSync(dir)
     for (const [f, c] of Object.entries(fixtures[sc.fx])) {
       fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true })
       fs.writeFileSync(path.join(dir, f), c)
@@ -1253,7 +1256,7 @@ function runOne (cliArgs, sc, isNode) {
     }
     let fakeVault = null
     if (sc.env.FAKECLI_SEED !== undefined) {
-      fakeVault = path.join(fs.realpathSync(os.tmpdir()), 'sweep-fc-' + path.basename(dir))
+      fakeVault = path.join(fs.realpathSync(os.tmpdir()), 'sweep-fc-' + path.basename(parent))
       for (const [rel, content] of Object.entries(JSON.parse(sc.env.FAKECLI_SEED))) { fs.mkdirSync(path.dirname(path.join(fakeVault, rel)), { recursive: true }); fs.writeFileSync(path.join(fakeVault, rel), content) }
       fs.mkdirSync(fakeVault, { recursive: true })
       const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
@@ -1264,7 +1267,7 @@ function runOne (cliArgs, sc, isNode) {
     if (Object.keys(sc.env).some(k => k.startsWith('FAKEGL_'))) {
       const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
       env[pathKey] = installFake('gitleaks', ['gitleaks']) + path.delimiter + (env[pathKey] || '')
-      env.FAKEGL_LOG = path.join(fs.realpathSync(os.tmpdir()), 'sweep-gl-' + path.basename(dir) + '.log')
+      env.FAKEGL_LOG = path.join(fs.realpathSync(os.tmpdir()), 'sweep-gl-' + path.basename(parent) + '.log')
     }
     // hermetic Armor/device config: a per-run directory unless the scenario names one
     env.DOTENVX_CONFIG = (sc.env.DOTENVX_CONFIG || '<DIR>/.dxcfg').split('<DIR>').join(dir)
@@ -1286,7 +1289,7 @@ function runOne (cliArgs, sc, isNode) {
         fs.rmSync(fakeVault, { recursive: true, force: true })
       }
       if (env.FAKEGL_LOG && fs.existsSync(env.FAKEGL_LOG)) { files['<gitleaks calls>'] = fs.readFileSync(env.FAKEGL_LOG, 'utf8'); fs.rmSync(env.FAKEGL_LOG, { force: true }) }
-      try { fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 }) } catch (e2) { /* best effort */ }
+      try { fs.rmSync(parent, { recursive: true, force: true, maxRetries: 3 }) } catch (e2) { /* best effort */ }
       resolve({ code, stdout: normalize(stdout, dir), stderr: normalize(stderr, dir), files })
     }
     const runStep = index => {
