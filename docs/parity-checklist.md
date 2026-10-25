@@ -8,7 +8,7 @@ The goal is byte-for-byte parity with the Node `@dotenvx/dotenvx` CLI at the pin
 | --- | --- | --- |
 | Unit tests | `dotnet test test/<project>` (Primitives, Core, Configuration, Test) | ported upstream unit tests and our own, including a check that the command tree equals upstream's |
 | Parity tests | `dotnet test test/Dotenvx.ParityTest` (about 25 min) | scripted scenarios run against both real CLIs, including exact `--help` bytes for every command |
-| Differential sweep | `node scripts/parity-sweep.js` (about 20-40 min per OS; manual only, see "Platforms and CI") | ~15000 command x flag x fixture combinations and multi-step lifecycles, plus every option of every offline command, comparing exit code, stdout, stderr and files |
+| Differential sweep | `node scripts/parity-sweep.js` (about 20-40 min per OS; a 1-in-25 sample runs in CI, the full run is manual and required before a release, see "Platforms and CI") | ~15000 command x flag x fixture combinations and multi-step lifecycles, plus every option of every offline command, comparing exit code, stdout, stderr and files |
 | Upstream test titles | `node scripts/upstream-test-titles.js` | every upstream test is ported or kept as a skipped test with the reason |
 | Primitives oracle | `PrimitivesOracleParityTest`, `PrimitivesExportsOracleParityTest` | every `@dotenvx/primitives` export against the real package |
 
@@ -61,7 +61,7 @@ All verified against the real CLI; none hides a behavior gap.
 ## Platforms and CI
 
 - **CI** (`.github/workflows/ci.yml`) runs restore, build (warnings are errors), the format check, the unit tests (everything except `Dotenvx.ParityTest`) and pack on Linux, Windows and macOS, on push to `main`, pull requests and tags, in about 3 minutes. The `full-parity` input of a manual run adds the whole `Dotenvx.ParityTest` suite on every OS; a green full-parity run is required for the commit that gets published. The sweep never runs in CI.
-- **Sweep** (`.github/workflows/sweep.yml`, manual only, or `node scripts/parity-sweep.js` locally): ~15,100 scenarios per OS. Status at `99e78d9`/`36f4a4b`: Windows, Linux (WSL2, Node 22) and macOS (arm64, Node 25) 0 unexplained differences. The macOS full run showed 5 load-induced flukes (all pass alone) and the pipe truncation in 10.
+- **Sweep** (`.github/workflows/sweep.yml`: a 1-in-25 sample on pushes to `retarget-*` branches and pull requests to main, the full run by hand before every release, or `node scripts/parity-sweep.js` locally): ~15,100 scenarios per OS. Status at `99e78d9`/`36f4a4b`: Windows, Linux (WSL2, Node 22) and macOS (arm64, Node 25) 0 unexplained differences. The macOS full run showed 5 load-induced flukes (all pass alone) and the pipe truncation in 10.
 - **macOS** skips scenarios that use native stores (`/usr/bin/security` cannot be shadowed on PATH).
 - **Test isolation**: `ConfigExpandTest` clears `PGUSER`/`PGHOST` (a Windows runner defines `PGUSER` machine-wide and dotenvx never overrides existing variables).
 - **Linux box notes**: without libicu set `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`; fakes need `DOTNET_ROOT`; the parity fixture uses `DOTNET_HOST_PATH` to find `dotnet`.

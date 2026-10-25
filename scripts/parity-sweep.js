@@ -1336,6 +1336,17 @@ function runOne (cliArgs, sc, isNode) {
   })
 }
 
+// both CLIs on the same scenario; the fields that differ (empty when they match)
+async function compareOne (sc) {
+  const [n, d] = await Promise.all([runOne(null, sc, true), runOne(null, sc, false)])
+  const fields = []
+  if (n.code !== d.code) fields.push('exit')
+  if (n.stdout !== d.stdout) fields.push('stdout')
+  if (n.stderr !== d.stderr) fields.push('stderr')
+  if (JSON.stringify(n.files) !== JSON.stringify(d.files)) fields.push('files')
+  return { sc, fields, n, d }
+}
+
 async function main () {
   const only = process.argv[2]
   // SWEEP_EVERY=N runs every Nth scenario (a fast, repeatable sample for pull requests); the full sweep runs without it
@@ -1348,19 +1359,23 @@ async function main () {
   const worker = async () => {
     while (i < list.length) {
       const sc = list[i++]
-      const [n, d] = await Promise.all([runOne(null, sc, true), runOne(null, sc, false)])
-      const fields = []
-      if (n.code !== d.code) fields.push('exit')
-      if (n.stdout !== d.stdout) fields.push('stdout')
-      if (n.stderr !== d.stderr) fields.push('stderr')
-      if (JSON.stringify(n.files) !== JSON.stringify(d.files)) fields.push('files')
-      if (fields.length) diffs.push({ sc, fields, n, d })
+      const result = await compareOne(sc)
+      if (result.fields.length) diffs.push(result)
     }
   }
   await Promise.all(Array.from({ length: 6 }, worker))
   const unexpected = diffs.filter(d => !ACCEPTED.some(a => a.test(d.sc.name)) && !(ACCEPTED_STDERR_ONLY.some(a => a.test(d.sc.name)) && d.fields.every(f => f === 'stderr')))
+  // six scenarios run at once, and Node can time out under that load: a difference is reported only if it reproduces when the scenario runs alone
+  const reproduced = []
+  const flaky = []
+  for (const x of unexpected) {
+    const again = unexpected.length > 200 ? x : await compareOne(x.sc) // hundreds of differences are systemic, not load: skip the re-runs
+    if (again.fields.length) reproduced.push(again)
+    else flaky.push(x.sc.name)
+  }
+  if (flaky.length) console.log(`${flaky.length} difference(s) did not reproduce when re-run alone (load flukes): ${flaky.join(', ')}`)
   diffs.length = 0
-  diffs.push(...unexpected)
+  diffs.push(...reproduced)
   diffs.sort((a, b) => a.sc.name.localeCompare(b.sc.name))
   const lines = []
   for (const x of diffs) {
