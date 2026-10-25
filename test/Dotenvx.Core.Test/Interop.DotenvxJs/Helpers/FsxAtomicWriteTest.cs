@@ -261,6 +261,24 @@ public class FsxAtomicWriteTest : IDisposable
         File.ReadAllText(P("target")).ShouldBe("UPDATED\n");
     }
 
+    /// <remarks>Not from a JS test - fs.realpath fails for a dangling link, so write-file-atomic replaces the link itself (found by the r15 link sweep on Linux).</remarks>
+    [Fact]
+    public void ReplacesADanglingLinkInsteadOfWritingThroughIt()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        File.CreateSymbolicLink(P("link"), P("missing/target"));
+
+        Fsx.WriteFileX(P("link"), "NEW\n");
+
+        new FileInfo(P("link")).LinkTarget.ShouldBeNull();
+        File.ReadAllText(P("link")).ShouldBe("NEW\n");
+        Directory.Exists(P("missing")).ShouldBeFalse();
+    }
+
     // write-file-atomic (the library behind fsx writeFileXSync) copies the existing file's uid/gid onto the replacement
 
     [Fact]

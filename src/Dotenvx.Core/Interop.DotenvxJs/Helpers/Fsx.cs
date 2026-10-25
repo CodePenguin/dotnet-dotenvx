@@ -300,8 +300,9 @@ internal static class Fsx
         string target = filepath;
         try
         {
-            // write-file-atomic resolves symbolic links and replaces the file they point to
-            if (File.ResolveLinkTarget(filepath, true) is { } resolved)
+            // write-file-atomic resolves symbolic links and replaces the file they point to; fs.realpath fails for a dangling link,
+            // so the write then replaces the link itself
+            if (File.ResolveLinkTarget(filepath, true) is { } resolved && (File.Exists(resolved.FullName) || Directory.Exists(resolved.FullName)))
             {
                 target = resolved.FullName;
             }
