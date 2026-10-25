@@ -1158,6 +1158,7 @@ const ACCEPTED_STDERR_ONLY = [/^r16 self signal SIGUSR1$/, // Node opens its ins
 
 // Known, deliberate differences (a different help/debug renderer, or output that embeds its own temp directory name).
 const ACCEPTED = [
+  ...(process.platform === 'win32' ? [/^r16 many keys broken run /] : []), // commandAction.js flushes with stdout.write('') once an action returns an exitCode: libuv's zero-length write to a closed pipe fails with EPIPE on Windows (uncaught, exit 1) and succeeds on POSIX, so Node's crash is the runtime's, not dotenvx's
   ...(process.platform === 'darwin' ? [/^r16 many keys encrypt --stdout$/] : []), // Node on macOS exits before a >64KB write to a pipe drains and cuts the output at ~417 keys; .NET prints it all
   /^r20 ext ls (twin )?r15 tree/, // directory order follows the filesystem crawl in Node (trap #64)
   /^r18 DOTENV_PRIVATE_KEYS=/, // the derived file name is ".env." (trailing dot): Windows file APIs in .NET treat it as ".env", Node does not (documented difference)
