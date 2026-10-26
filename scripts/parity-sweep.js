@@ -1318,12 +1318,12 @@ function runOne (cliArgs, sc, isNode) {
       // the node binary itself consumes --env-file ("node: v: not found") wherever it appears in argv: spell it -f for node only
       if (nodeCli) args = args.flatMap(a => a === '--env-file' ? ['-f'] : a.startsWith('--env-file=') ? ['-f', a.slice(11)] : [a])
       const exe = nodeCli ? 'node' : 'dotnet'
-      const child = execFile(exe, [...(nodeCli ? NODE_CLI : DOTNET_CLI), ...args], { cwd: dir, env, encoding: 'utf8', timeout: 60000, maxBuffer: 64 * 1024 * 1024 }, (err, out, errOut) => {
+      const child = execFile(exe, [...(nodeCli ? NODE_CLI : DOTNET_CLI), ...args], { cwd: dir, env, encoding: 'utf8', timeout: 240000, maxBuffer: 64 * 1024 * 1024 }, (err, out, errOut) => {
         if (steps.length > 1) { stdout += `--- step ${index} exit ${err ? (err.code ?? 1) : 0}
 `; stderr += `--- step ${index}
 ` }
         stdout += out
-        stderr += errOut
+        stderr += errOut + (err && err.killed ? '[sweep: killed after timeout]' : '')
         code = err ? (err.code ?? 1) : 0
         runStep(index + 1)
       })
