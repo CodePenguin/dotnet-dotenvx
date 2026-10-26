@@ -1,3 +1,4 @@
+using Dotenvx.Interop.DotenvxJs.Custodians;
 using Dotenvx.Interop.DotenvxJs.Db;
 using Dotenvx.Interop.DotenvxJs.Helpers;
 using Dotenvx.Interop.DotenvxJs.Services;
@@ -79,6 +80,9 @@ public class EnvironmentTestBase : IDisposable
         Del.ResetFactory();
         ArmorUp.ResetFactory();
         ArmorPush.ResetFactory();
+        ArmorInvite.ResetToDefaults();
+        ArmorInvite.Factory = (host, token, team, email) => new ArmorInvite(host, token, team, email);
+        KeyStorage.ResetToDefaults();
         SecretCli.ResetToDefaults();
         NativeStore.ResetToDefaults();
         Session.ResetToDefaults();

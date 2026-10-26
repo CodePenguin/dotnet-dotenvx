@@ -11,7 +11,7 @@
 - **encrypted envs**: commit an encrypted `.env`, keep the private key out of source control
 - **a .NET library** too: load `.env` files into environment variables or `IConfiguration`
 
-The port aims for byte-for-byte compatibility with the Node CLI at **v2.35.0**: same commands, flags, output, exit codes and file formats. A `.env` encrypted by one can be decrypted by the other. See [Compatibility](#compatibility).
+The port aims for byte-for-byte compatibility with the Node CLI at **v2.38.2**: same commands, flags, output, exit codes and file formats. A `.env` encrypted by one can be decrypted by the other. See [Compatibility](#compatibility).
 
 > This is a .NET port, not the upstream project. For the product, documentation and cloud features see [dotenvx.com](https://dotenvx.com). Requires the .NET 10 runtime.
 
@@ -21,7 +21,7 @@ Install the CLI as a .NET tool:
 
 ```sh
 dotnet tool install --global Dotenvx
-dotenvx --version   # 2.35.0
+dotenvx --version   # 2.38.2
 ```
 
 Create a `.env` and run any command with it:
@@ -117,12 +117,12 @@ Runnable versions of each are in [`samples/`](https://github.com/CodePenguin/dot
 | `Dotenvx` | the `dotenvx` .NET tool |
 | `Dotenvx.Core` | the library API (`Config`, `Get`, `Parse`, `Set`) and the ported CLI logic |
 | `Dotenvx.Configuration` | `IConfigurationBuilder.AddDotenvx()` |
-| `Dotenvx.Primitives` | port of the `@dotenvx/primitives` package (parse, encrypt, decrypt, keyring, ...); versioned like that package (3.3.0), not like the CLI |
+| `Dotenvx.Primitives` | port of the `@dotenvx/primitives` package (parse, encrypt, decrypt, keyring, ...); versioned like that package (3.3.1), not like the CLI |
 | `Dotenvx.Providers` | port of the `@dotenvx/providers` package (key lookup in `.env.keys`, the OS secret store, Armor, 1Password, Bitwarden); versioned like that package, not like the CLI |
 
 ## Compatibility
 
-- **Pinned target.** `dotenvx --version` prints `2.35.0`, the upstream release this port matches. The upstream repository is included as a git submodule (`dotenvx/`) at that exact tag and is used as the reference and as a source of test fixtures.
+- **Pinned target.** `dotenvx --version` prints `2.38.2`, the upstream release this port matches. The upstream repository is included as a git submodule (`dotenvx/`) at that exact tag and is used as the reference and as a source of test fixtures.
 - **How it is checked.** Besides the unit tests ported from upstream, the test suite runs the real Node CLI and this one side by side on the same inputs and compares exit codes, stdout, stderr and resulting files. This includes the exact `--help` text of every command and a sweep of more than a thousand command, flag and syntax combinations.
 - **Known differences.** Operating-system error text stays native to .NET, spinner and prompt redraw sequences differ, and a few corner cases are documented in [docs/parity-checklist.md](https://github.com/CodePenguin/dotnet-dotenvx/blob/main/docs/parity-checklist.md).
 

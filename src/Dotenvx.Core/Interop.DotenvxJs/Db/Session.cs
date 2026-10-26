@@ -220,7 +220,7 @@ internal class Session(IDotenvxLogger? logger = null)
             try
             {
                 logger?.Debug("fetching latest available dotenvx version");
-                HttpResult response = ArmorHttp.Request(VersionUrl, "GET", null, null);
+                HttpResult response = ArmorHttp.Http(VersionUrl, "GET", null, null);
                 remote = NormalizeVersion(response.Body);
                 logger?.Debug($"latest dotenvx version: {remote}");
                 store.Set(DotenvxVersion, remote);

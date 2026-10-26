@@ -36,7 +36,7 @@ internal class Sets
     private readonly string? _value;
 
     private string? _keysSrc;
-    private string? _storage;
+    private StorageChoice? _storage;
     private readonly StoreContext _custodyContext = new();
 
     /// <summary>How private keys are looked up and stored: --no-native, --no-armor, --no-1password, --no-bitwarden, --token.</summary>
@@ -154,19 +154,20 @@ internal class Sets
             if (string.IsNullOrEmpty(publicKey) && !noEncrypt)
             {
                 // upsert public key to .env file
-                (string newPublicKey, string privateKey) = Keypair();
-                publicKey = newPublicKey;
                 string publicKeyName = GuessPublicKeyName(envFilePath);
                 string privateKeyName = GuessPrivateKeyName(envFilePath);
-                envSrc = MutateSrc(envSrc, envFilePath, fk, publicKeyName, publicKey);
 
+                _custodyContext.EnvFilepath = filePath;
                 _custodyContext.KeysSrc = _keysSrc;
                 _custodyContext.PrivateKeyName = privateKeyName;
                 _custodyContext.Comment = NodePath.Basename(envFilePath);
                 _custodyContext.KeysFilepath = fk;
-                (string chosen, StoreResult stored) = KeyStorage.Store(_storage, publicKey, privateKey,
+                (StorageChoice chosen, StoreResult stored, string storedPublicKey) = KeyStorage.Store(_storage, null, null,
                     new KeyStorageOptions { Access = KeyAccess, NoCreate = _noCreate, Fk = fk }, _custodyContext);
                 _storage = chosen;
+                publicKey = storedPublicKey;
+                envSrc = MutateSrc(envSrc, envFilePath, fk, publicKeyName, publicKey);
+                row.KeySources = new Dictionary<string, string> { [publicKey] = stored.HasKeysSrc ? "file" : chosen.Id };
                 if (stored.HasKeysSrc)
                 {
                     _keysSrc = stored.KeysSrc;
@@ -194,7 +195,10 @@ internal class Sets
                 getService.KeyAccess = KeyAccess;
                 getService.No1Password = KeyAccess.No1Password;
                 getService.NoBitwarden = KeyAccess.NoBitwarden;
+                getService.IncludeKeySources = true;
+                getService.PromptForSecrets = true;
                 GetResult resolved = getService.Run();
+                row.KeySources ??= resolved.KeySources;
                 string? before = resolved.Parsed.GetValueOrDefault(_key ?? "");
                 if (_value != before)
                 {

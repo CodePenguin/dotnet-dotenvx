@@ -88,11 +88,11 @@ public class SpecAction : Command
             spinner = SpinnerScope.Start(parseResult, "scanning");
             if (scanCode)
             {
-                sourceKeys = EnvfileInit.ScanSource(null, name => spinner.OnStatus($"scanning {name}")).Keys;
+                sourceKeys = EnvfileInit.ScanSource(null, name => spinner.OnText($"scanning {name}")).Keys;
             }
 
             InitEnvfileResult result = EnvfileInit.Init(null, envFile, envFiles, sourceKeys, overwrite, stdout,
-                name => spinner.OnStatus($"scanning {name}"));
+                name => spinner.OnText($"scanning {name}"));
             spinner.Dispose();
             if (stdout)
             {

@@ -18,7 +18,7 @@ The upstream JS project is a git submodule at `dotenvx/`, used as porting refere
 
 ### Pinning rules
 
-- The submodule is pinned to the exact tag **`v2.35.0`** (never upstream HEAD, never a commit past the tag). `src/Dotenvx/Dotenvx.csproj` `Version` stays equal to the pinned tag, so `dotenvx --version` states which release this port matches.
+- The submodule is pinned to the exact tag **`v2.38.2`** (never upstream HEAD, never a commit past the tag). `src/Dotenvx/Dotenvx.csproj` `Version` stays equal to the pinned tag, so `dotenvx --version` states which release this port matches.
 - `src/Dotenvx.Primitives/Dotenvx.Primitives.csproj` `Version` equals the installed `@dotenvx/primitives` version (`dotenvx/node_modules/@dotenvx/primitives/package.json`, currently **3.3.0**).
 - Bump versions only through the "Version bump checklist" below. Do not run `git submodule update --remote`.
 - Scope rule: **anything that exists in the targeted version is in scope**, and all of it is ported: Dotenvx Armor (session/device stores, API client, login/logout/curl/settings/armor commands, key providers and decryptors), native secret stores and `native`, 1Password/Bitwarden resolution, `lock`, `doctor`/`update`/`help`, spinner, pty for `--redact`, signal forwarding and dynamic extensions. [docs/parity-checklist.md](docs/parity-checklist.md) lists every component, its status and the accepted differences; keep it current.
@@ -207,7 +207,7 @@ Goal: retarget, run the suites, and let the failures plus a few diffs say exactl
 
 **3. Run the suites; read failures as the to-do list**
 1. `dotnet build`, then `Dotenvx.Primitives.Test`, `Dotenvx.Core.Test`, `Dotenvx.Configuration.Test`, `Dotenvx.Test`, `Dotenvx.ParityTest`, each separately.
-2. Run `node scripts/parity-sweep.js` (about 12 min): ~2300 command x flag x fixture scenarios against both CLIs. Differences land in `$TMP/dotenvx-parity-sweep.txt`; only the `ACCEPTED` list in the script may remain, each with a reason.
+2. Run `node scripts/parity-sweep.js` (about 40 min; `SWEEP_EVERY=25` runs a repeatable sample in a few minutes, which the `sweep` workflow does on every push to a `retarget-*` branch and every pull request to main): ~15,000 command x flag x fixture scenarios against both CLIs. A difference is reported only if it reproduces when the scenario is re-run alone. The full sweep (the default, or "every" = 1 in the workflow) must pass on every OS right before a release is published. Differences land in `$TMP/dotenvx-parity-sweep.txt`; only the `ACCEPTED` list in the script may remain, each with a reason.
 3. Meaning of failures: the two primitives oracle tests = our port drifted (output prints Node vs C# per input; fix the port, add a table row); `ErrorMessageParityTest` = `errors.js` changed (new codes need a `DotenvxException` subtype); `HelpExactParityTest` = `--help` bytes differ (regenerate the spec, or a command is missing from it); `HelpTextParityTest` = flags or descriptions of the real `System.CommandLine` options changed (it runs the .NET CLI with `DOTENVX_NATIVE_HELP=1` to see them; fix the option, or extend its documented exclusion lists with a reason); `GlobalOptionsParityTest.RootVersionFlagMatchesExactly` = version lockstep broken; other `*ParityTest` = CLI drift; Core/Dotenvx unit tests = ported tests encoding old behavior (confirm the new behavior live before rewriting one).
 4. Constructor changes breaking mocks: see "Static seams" above.
 

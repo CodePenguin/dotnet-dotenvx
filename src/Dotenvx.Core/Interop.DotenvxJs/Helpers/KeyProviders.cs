@@ -125,7 +125,9 @@ internal static class KeyProviders
             ProcessEnv = BitwardenCustodian.CommandEnv(),
             CliVersion = PackageJson.Version,
             NoNative = options.NoNative || !NativeStore.IsSupportedPlatform,
-            NativeGet = key => NativeStore.Current.Get(key),
+            NativeGet = key => NativeStore.Current is NativeStore.WindowsCredentialManager windows
+                ? windows.GetForProviders(key)
+                : NativeStore.Current.Get(key),
             NoArmor = options.NoArmor,
             NoOnePassword = options.No1Password,
             // The async CLI fallback can interactively unlock Bitwarden. The shared synchronous path reads BW_SESSION
@@ -148,6 +150,14 @@ internal static class KeyProviders
     }
 
     [ThreadStatic] private static Action? _cleanupOpenKeyListener;
+
+    private static bool IsEnclaved(Exception error)
+    {
+        return error is DotenvxException { Code: "ENCLAVED" } ||
+               error is DotenvxException { Code: "BAD_REQUEST" } bad &&
+               bad.Message is "[BAD_REQUEST] private key enclaved ◊" or
+                   "[BAD_REQUEST] Private key is held exclusively in its remote enclave.";
+    }
 
     private static IDictionary<string, string> Lookup(string publicKey, KeyAccessOptions options, bool sync)
     {
@@ -174,6 +184,12 @@ internal static class KeyProviders
             bool has = ring.TryGetValue(publicKey, out string? value) && !string.IsNullOrEmpty(value);
             if (!has && armorError is not null)
             {
+                // this response confirms custody even though the private key cannot be retrieved
+                if (IsEnclaved(armorError))
+                {
+                    options.OnProvider?.Invoke("armor", publicKey);
+                }
+
                 System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(armorError).Throw();
             }
 

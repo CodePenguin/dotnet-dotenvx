@@ -108,6 +108,7 @@ public class KeyPairAction : Command
             DotenvxJsHelpers.Filepaths(split.Length == 0 && (envFile is null || envFile.Length == 0) ? null : split);
             Dictionary<string, object?> results = [];
             Dictionary<string, string?> origins = [];
+            List<Exception> errors = [];
             foreach (string resolvedEnvFile in resolvedEnvFiles)
             {
                 if (!Fsx.ExistsSync(resolvedEnvFile))
@@ -122,6 +123,7 @@ public class KeyPairAction : Command
                 keyPair.KeyAccess.Interactive = true;
                 keyPair.KeyAccess.No1Password = parseResult.GetValue(_no1PasswordOption);
                 keyPair.KeyAccess.NoBitwarden = parseResult.GetValue(_noBitwardenOption);
+                keyPair.OnError = errors.Add;
                 foreach ((string resultKey, string? resultValue) in keyPair.Run())
                 {
                     results[resultKey] = resultValue;
@@ -134,6 +136,12 @@ public class KeyPairAction : Command
             {
                 // keypair.js: `out.provider = names.length === 1 ? origins[names[0]] : origins` (a null origin stays null)
                 results["provider"] = origins.Count == 1 ? origins.Values.First() : origins;
+            }
+
+            Spinners.StopActive();
+            foreach (Exception error in errors)
+            {
+                DotenvxJsHelpers.CatchAndLog(_logger, error);
             }
 
             if (key != null)
@@ -157,7 +165,9 @@ public class KeyPairAction : Command
                 {
                     PrintMap(map.ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value), format, prettyPrint);
 
-                    return 0;
+                    EventScope.Count(errors.Count);
+
+                    return errors.Count > 0 ? 1 : 0;
                 }
 
                 string singleText = (string?)singleValue ?? "null";
@@ -177,7 +187,9 @@ public class KeyPairAction : Command
                 PrintMap(results, format, prettyPrint);
             }
 
-            return 0;
+            EventScope.Count(errors.Count);
+
+            return errors.Count > 0 ? 1 : 0;
         }
         catch (Exception error)
         {

@@ -54,6 +54,12 @@ internal class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = nul
         set => KeyAccess.NoNative = value;
     }
 
+    /// <summary>
+    /// `onError`: receives a lookup error (an Armor failure, a key held only in an enclave) instead of it being thrown; the key is
+    /// then reported as not found.
+    /// </summary>
+    public Action<Exception>? OnError { get; set; }
+
     /// <summary>Where the private key came from in the last <see cref="Run" /> (`origins[filepath]`): null when there was none.</summary>
     public string? Origin { get; private set; }
 
@@ -86,8 +92,13 @@ internal class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = nul
 
             // the key files are tried first, then the providers; whichever answers is the origin of the key
             string origin = "environment";
+            bool confirmedProvider = false;
             Action<string, string>? onProvider = KeyAccess.OnProvider;
-            KeyAccess.OnProvider = (name, _) => origin = name;
+            KeyAccess.OnProvider = (name, _) =>
+            {
+                origin = name;
+                confirmedProvider = true;
+            };
             Func<string, IDictionary<string, string>?>? provider = KeyProviders.Resolve(KeyAccess);
 
             FileProvider keys = new(new ProviderOptions { Fk = fk });
@@ -117,6 +128,17 @@ internal class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = nul
                     Provider = lookup
                 });
             }
+            catch (Exception error)
+            {
+                EnclavedHint.Apply(error, envFilePath);
+                if (OnError is null)
+                {
+                    throw;
+                }
+
+                OnError(error);
+                ring = [];
+            }
             finally
             {
                 KeyAccess.OnProvider = onProvider;
@@ -125,7 +147,7 @@ internal class KeyPair(string envFile = ".env", string[]? envKeysFilePaths = nul
             result[GuessPublicKeyName(envFilePath)] = publicKey;
             bool hasKey = publicKey != null && !string.IsNullOrEmpty(ring.GetValueOrDefault(publicKey));
             result[GuessPrivateKeyName(envFilePath)] = hasKey ? ring[publicKey!] : null;
-            Origin = hasKey ? origin : null;
+            Origin = hasKey || (publicKey != null && confirmedProvider) ? origin : null;
         }
 
         return result;

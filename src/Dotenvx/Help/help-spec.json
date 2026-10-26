@@ -3747,6 +3747,11 @@
      "name": "move"
     },
     {
+     "term": "invite [options]",
+     "description": "invite a member to your team",
+     "name": "invite"
+    },
+    {
      "term": "login [options]",
      "description": "log in to Dotenvx Armor",
      "name": "login"
@@ -4178,6 +4183,73 @@
       {
        "term": "-f, --file <path>",
        "description": "path to your env file"
+      },
+      {
+       "term": "--token <token>",
+       "description": "set token"
+      },
+      {
+       "term": "-h, --help",
+       "description": "display help for command"
+      }
+     ],
+     "commands": [],
+     "hidden": false,
+     "after": "",
+     "children": []
+    },
+    {
+     "name": "invite",
+     "allowExcessArguments": true,
+     "argumentCount": 0,
+     "lastArgumentVariadic": false,
+     "registrations": [
+      {
+       "attribute": "team",
+       "long": "--team",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "email",
+       "long": "--email",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      },
+      {
+       "attribute": "token",
+       "long": "--token",
+       "short": null,
+       "negate": false,
+       "variadic": false,
+       "takes": "required",
+       "hasDefault": false,
+       "default": null,
+       "parser": null
+      }
+     ],
+     "usage": "dotenvx armor invite [options]",
+     "description": "invite a member to your team",
+     "padWidth": 15,
+     "arguments": [],
+     "options": [
+      {
+       "term": "--team <team>",
+       "description": "team to invite member to"
+      },
+      {
+       "term": "--email <email>",
+       "description": "email address to invite"
       },
       {
        "term": "--token <token>",

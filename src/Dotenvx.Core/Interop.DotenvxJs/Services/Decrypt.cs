@@ -129,6 +129,7 @@ internal class Decrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, st
             row.Error = e is FileNotFoundException ? new MissingEnvFileException(envFilePath) : e;
         }
 
+        EnclavedHint.Apply(row.Error, envFilePath);
         _processedEnvs.Add(row);
     }
 }

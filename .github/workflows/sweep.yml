@@ -1,9 +1,21 @@
 name: sweep
 
-# The full differential sweep (~15,000 scenarios, 30 to 40 minutes per OS) against the real Node CLI. Manual only: start it from the
-# Actions tab. It is deliberately not part of ci.yml, which runs just the build and the tests.
+# The differential sweep (~15,000 scenarios, 1.5 to 2 hours per OS on the hosted runners) against the real Node CLI.
+# - Pushes to retarget-* branches and pull requests to main run a repeatable sample (every 25th scenario, a few minutes per OS).
+# - The full sweep is started by hand from the Actions tab (leave "every" at 1) and is always run before a release is published. It is
+#   split into 4 shards (SWEEP_SHARD=i/4: every 4th scenario, starting at the i-th) that run at the same time, so each OS takes a quarter of the time.
+# It is deliberately not part of ci.yml, which runs just the build and the tests.
 on:
+  push:
+    branches: [ "retarget-*" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      every:
+        description: Run every Nth scenario (1 = the full sweep, required before a release)
+        type: string
+        default: "1"
 
 jobs:
   sweep:
@@ -11,9 +23,10 @@ jobs:
       fail-fast: false # one OS failing must not hide the others
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        shard: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.every == '1' && '[1,2,3,4]' || '[1]') }}
 
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
+    timeout-minutes: 300
 
     steps:
     - name: Keep LF line endings
@@ -32,8 +45,12 @@ jobs:
     - name: Build
       run: dotnet build src/Dotenvx
     - name: Install the Node CLI's dependencies
-      run: npm install --prefix dotenvx
-    - name: Full parity sweep
+      working-directory: dotenvx # not --prefix: npm on the Windows runner looked for package.json in the repo root
+      run: npm install
+    - name: Parity sweep
+      env:
+        SWEEP_SHARD: ${{ matrix.shard }}/${{ github.event_name == 'workflow_dispatch' && inputs.every == '1' && '4' || '1' }}
+        SWEEP_EVERY: ${{ github.event_name == 'workflow_dispatch' && inputs.every || '25' }}
       run: node scripts/parity-sweep.js
     - name: Differences
       if: failure()

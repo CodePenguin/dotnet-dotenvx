@@ -42,7 +42,7 @@ internal class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, st
     public EncryptResult Run()
     {
         string fk = string.IsNullOrEmpty(envKeysFilePath) ? ".env.keys" : envKeysFilePath;
-        string? storage = null;
+        StorageChoice? storage = null;
         StoreContext custodyContext = new() { Token = KeyAccess.Token };
         KeyStorageOptions storageOptions = new() { Access = KeyAccess, NoCreate = noCreate, Fk = fk };
 
@@ -77,7 +77,7 @@ internal class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, st
         };
     }
 
-    private void EncryptEnvFile(string envFilePath, string fk, ref string? storage, StoreContext custodyContext,
+    private void EncryptEnvFile(string envFilePath, string fk, ref StorageChoice? storage, StoreContext custodyContext,
         KeyStorageOptions storageOptions)
     {
         EncryptProcessedEnv row = new() { Keys = [], Type = EnvType.EnvFile };
@@ -176,20 +176,20 @@ internal class Encrypt(EnvItem[] envs, string[]? keys, string[]? excludeKeys, st
             if (string.IsNullOrEmpty(publicKey))
             {
                 // upsert public key to .env file
-                (string newPublicKey, string privateKey) = Keypair();
-                publicKey = newPublicKey;
                 string publicKeyName = GuessPublicKeyName(envFilePath);
                 string privateKeyName = GuessPrivateKeyName(envFilePath);
-                envSrc = MutateSrc(envSrc, envFilePath, fk, publicKeyName, publicKey);
 
+                custodyContext.EnvFilepath = filepath;
                 custodyContext.KeysSrc = _keysSrc;
                 custodyContext.PrivateKeyName = privateKeyName;
                 custodyContext.Comment = NodePath.Basename(envFilePath);
                 custodyContext.KeysFilepath = fk;
-                (string chosen, StoreResult stored) =
-                    KeyStorage.Store(storage, publicKey, privateKey, storageOptions, custodyContext);
+                (StorageChoice chosen, StoreResult stored, string storedPublicKey) =
+                    KeyStorage.Store(storage, null, null, storageOptions, custodyContext);
                 storage = chosen;
-                row.KeySources = new Dictionary<string, string> { [publicKey] = stored.HasKeysSrc ? "file" : storage };
+                publicKey = storedPublicKey;
+                envSrc = MutateSrc(envSrc, envFilePath, fk, publicKeyName, publicKey);
+                row.KeySources = new Dictionary<string, string> { [publicKey] = stored.HasKeysSrc ? "file" : chosen.Id };
                 if (stored.HasKeysSrc)
                 {
                     _keysSrc = stored.KeysSrc;

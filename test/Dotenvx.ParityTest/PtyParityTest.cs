@@ -286,7 +286,7 @@ public class PtyParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
                 File.WriteAllText(Path.Combine(dump, name + ".port.txt"), Describe(dotnetScreens!));
             }
 
-            AssertSame(Describe(nodeScreens), Describe(dotnetScreens!), string.Join(' ', args));
+            AssertSame(MaskShortKeys(Describe(nodeScreens)), MaskShortKeys(Describe(dotnetScreens!)), string.Join(' ', args));
             dotnetTree.ShouldBe(nodeTree, string.Join(' ', args));
         }
         finally
@@ -294,6 +294,10 @@ public class PtyParityTest(NodeParityFixture fixture) : ParityTestBase(fixture)
             ForceDelete(home);
         }
     }
+
+    /// <summary>The closing line of an encrypt names the new public key shortened ("(023 B08)"), random on every run.</summary>
+    private static string MaskShortKeys(string text) =>
+        System.Text.RegularExpressions.Regex.Replace(text, "[(][0-9A-F]{3} [0-9A-F]{3}[)] via", "(KEY) via");
 
     private static void AssertSame(string want, string got, string label)
     {

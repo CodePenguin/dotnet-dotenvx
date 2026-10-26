@@ -297,19 +297,11 @@ internal static class Fsx
     // separate IOException, deliberately NOT translated, matching upstream's own narrower EACCES/EPERM-only check.
     private static void WriteAtomic(string filepath, string str, UnixFileMode? mode, (uint Uid, uint Gid)? owner = null)
     {
-        string target = filepath;
-        try
-        {
-            // write-file-atomic resolves symbolic links and replaces the file they point to
-            if (File.ResolveLinkTarget(filepath, true) is { } resolved)
-            {
-                target = resolved.FullName;
-            }
-        }
-        catch (IOException)
-        {
-        }
-
+        // write-file-atomic resolves symbolic links and replaces the file they point to; fs.realpath fails for a dangling link,
+        // so the write then replaces the link itself. fs.stat follows links too: a dangling link has no mode or owner to carry over.
+        string? resolved = RealPath(filepath);
+        string target = resolved ?? filepath;
+        bool targetExists = resolved is not null;
         string directory = Path.GetDirectoryName(Path.GetFullPath(target)) ?? ".";
         string temporary = Path.Combine(directory, $".{Guid.NewGuid():N}.tmp");
         try
@@ -317,14 +309,14 @@ internal static class Fsx
             StageWrite(temporary, str);
             if (!OperatingSystem.IsWindows())
             {
-                (uint Uid, uint Gid)? chownTo = owner ?? (File.Exists(target) ? ReadOwner(target) : null);
+                (uint Uid, uint Gid)? chownTo = owner ?? (targetExists ? ReadOwner(target) : null);
                 if (chownTo is { } ids)
                 {
                     ChownFile(temporary, ids.Uid, ids.Gid);
                 }
             }
 
-            if (!OperatingSystem.IsWindows() && (mode is not null || File.Exists(target)))
+            if (!OperatingSystem.IsWindows() && (mode is not null || targetExists))
             {
                 File.SetUnixFileMode(temporary, mode ?? File.GetUnixFileMode(target));
             }
@@ -350,6 +342,25 @@ internal static class Fsx
 
             throw;
         }
+    }
+
+    // fs.realpath: follows every link of the chain (relative targets resolve against the link's directory); null when the chain
+    // ends in nothing (a dangling link, or a missing file)
+    private static string? RealPath(string path)
+    {
+        string current = Path.GetFullPath(path);
+        for (int hops = 0; hops < 40; hops++)
+        {
+            string? link = new FileInfo(current).LinkTarget;
+            if (link is null)
+            {
+                return File.Exists(current) || Directory.Exists(current) ? current : null;
+            }
+
+            current = Path.GetFullPath(link, Path.GetDirectoryName(current) ?? ".");
+        }
+
+        return null;
     }
 
     private static void TryDelete(string path)

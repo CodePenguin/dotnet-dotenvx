@@ -63,6 +63,8 @@ internal static class ArmorWire
         };
     }
 
+    private static readonly TimeSpan RequestDeadline = TimeSpan.FromSeconds(30);
+
     /// <summary>armorRequest.js: POST `{hostname}/api/armor/{endpoint}` with the device public key and CLI version.</summary>
     internal static JsonNode Request(string endpoint, ProviderOptions options, JsonObject body)
     {
@@ -78,19 +80,32 @@ internal static class ArmorWire
         }
 
         string host = string.IsNullOrEmpty(options.Hostname) ? "https://armor.dotenvx.com" : options.Hostname;
-        HttpResult response = ArmorHttp.Request($"{host}/api/armor/{endpoint}", "POST",
-            new Dictionary<string, string>
-            {
-                ["Authorization"] = $"Bearer {options.Token ?? ""}",
-                ["Content-Type"] = "application/json"
-            }, Stringify(payload));
-        JsonNode json = ParseJson(response.Body);
-        if (response.StatusCode >= 400)
+        try
         {
-            throw BuildApiError(response.StatusCode, json);
-        }
+            // each request is bounded, body included; approval polling has its own deadline
+            HttpResult response = ArmorHttp.RequestWithin(RequestDeadline, $"{host}/api/armor/{endpoint}", "POST",
+                new Dictionary<string, string>
+                {
+                    ["Authorization"] = $"Bearer {options.Token ?? ""}",
+                    ["Content-Type"] = "application/json"
+                }, Stringify(payload));
+            JsonNode json = ParseJson(response.Body);
+            if (response.StatusCode >= 400)
+            {
+                throw BuildApiError(response.StatusCode, json);
+            }
 
-        return json;
+            return json;
+        }
+        catch (Exception error) when (error is HttpRequestFailedException { Code: ArmorHttp.AbortedCode } ||
+                                      ArmorHttp.IsNetworkError(error))
+        {
+            string reason = error is HttpRequestFailedException { Code: ArmorHttp.AbortedCode }
+                ? "Armor request timed out after 30 seconds"
+                : "unable to reach Armor";
+
+            throw new ArmorUnreachableException(reason, "check your connection or use --no-armor", error);
+        }
     }
 }
 
@@ -105,7 +120,7 @@ public sealed class ArmorProvider(ProviderOptions options) : IKeyProvider
 {
     private const string Pending = "ACCESS_PENDING";
     private const string ApprovalPending = "ACCESS_APPROVAL_PENDING";
-    private const string ApprovalRequired = "ACCESS_APPROVAL_REQUIRED";
+    private const string ApprovalRequiredCode = "ACCESS_APPROVAL_REQUIRED";
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(1);
     private static readonly TimeSpan PollTimeout = TimeSpan.FromMinutes(5);
 
@@ -224,17 +239,6 @@ public sealed class ArmorProvider(ProviderOptions options) : IKeyProvider
         return ring;
     }
 
-    private static JsonObject KeyringBody(string publicKey, string? grantToken)
-    {
-        JsonObject body = new() { ["public_key"] = publicKey };
-        if (!string.IsNullOrEmpty(grantToken))
-        {
-            body["grant_token"] = grantToken;
-        }
-
-        return body;
-    }
-
     private static ProviderException ApprovalTimeout()
     {
         return new ProviderException("ACCESS_APPROVAL_TIMEOUT",
@@ -246,29 +250,44 @@ public sealed class ArmorProvider(ProviderOptions options) : IKeyProvider
         return error.Code is Pending or ApprovalPending;
     }
 
-    private static async Task<JsonNode> Keyring(ProviderOptions session, string publicKey, bool allowCallbacks)
+    /// <summary>
+    /// approvalRequired.js: the default message when no `onApprovalRequired` callback is supplied (written straight to
+    /// stderr, so it stays visible while a synchronous lookup blocks its caller).
+    /// </summary>
+    public static void ApprovalRequired(ApprovalRequest info)
+    {
+        Console.Error.Write($"[{info.Code}] open [{info.ApprovalUri}] to approve. Waiting for approval…\n");
+        Console.Error.Flush();
+    }
+
+    /// <summary>
+    /// ArmorApprovalRequest: POST `operation`; when the response asks for approval, report the URL and poll with the grant
+    /// token. Callbacks are only supported by asynchronous lookups (a synchronous one always prints the default message).
+    /// </summary>
+    private static async Task<JsonNode> WithApproval(ProviderOptions session, string operation, JsonObject body,
+        bool allowCallbacks)
     {
         string? grantToken;
         string? approvalUri;
         try
         {
-            return ArmorWire.Request("keyring", session, KeyringBody(publicKey, null));
+            return ArmorWire.Request(operation, session, WithGrant(body, null));
         }
-        catch (ApiException error) when (error.Code == ApprovalRequired &&
+        catch (ApiException error) when (error.Code == ApprovalRequiredCode &&
                                          (grantToken = GrantToken(error)) is not null &&
                                          (approvalUri = ApprovalUri(error)) is not null)
         {
-            if (allowCallbacks)
-            {
-                session.OnApprovalRequired?.Invoke(new ApprovalRequest(approvalUri, error.Code));
-            }
+            Action<ApprovalRequest> report = allowCallbacks && session.OnApprovalRequired is not null
+                ? session.OnApprovalRequired
+                : ApprovalRequired;
+            report(new ApprovalRequest(approvalUri, error.Code));
 
             DateTime startedAt = DateTime.UtcNow;
             while (true)
             {
                 try
                 {
-                    return ArmorWire.Request("keyring", session, KeyringBody(publicKey, grantToken));
+                    return ArmorWire.Request(operation, session, WithGrant(body, grantToken));
                 }
                 catch (ApiException poll) when (IsPending(poll))
                 {
@@ -283,11 +302,24 @@ public sealed class ArmorProvider(ProviderOptions options) : IKeyProvider
         }
     }
 
+    private static JsonObject WithGrant(JsonObject body, string? grantToken)
+    {
+        JsonObject copy = (JsonObject)body.DeepClone();
+        if (!string.IsNullOrEmpty(grantToken))
+        {
+            copy["grant_token"] = grantToken;
+        }
+
+        return copy;
+    }
+
     public async Task<IDictionary<string, string>> Get(string publicKey)
     {
         ProviderOptions? session = Session(options);
 
-        return session is null ? ProviderErrors.Empty() : ToRing(await Keyring(session, publicKey, true));
+        return session is null
+            ? ProviderErrors.Empty()
+            : ToRing(await WithApproval(session, "keyring", new JsonObject { ["public_key"] = publicKey }, true));
     }
 
     public IDictionary<string, string> GetSync(string publicKey)
@@ -296,7 +328,8 @@ public sealed class ArmorProvider(ProviderOptions options) : IKeyProvider
 
         return session is null
             ? ProviderErrors.Empty()
-            : ToRing(Keyring(session, publicKey, false).GetAwaiter().GetResult());
+            : ToRing(WithApproval(session, "keyring", new JsonObject { ["public_key"] = publicKey }, false)
+                .GetAwaiter().GetResult());
     }
 
     private static JsonObject DecryptBody(string src, ArmorDecryptContext context)
@@ -310,15 +343,18 @@ public sealed class ArmorProvider(ProviderOptions options) : IKeyProvider
         return body;
     }
 
-    public Task<JsonNode> Decrypt(string src, ArmorDecryptContext? context = null)
+    public async Task<JsonNode> Decrypt(string src, ArmorDecryptContext? context = null)
     {
-        return Task.FromResult(DecryptSync(src, context));
+        ProviderOptions session = Session(options) ?? throw NotConfigured();
+
+        return await WithApproval(session, "decrypt", DecryptBody(src, context ?? new ArmorDecryptContext()), true);
     }
 
     public JsonNode DecryptSync(string src, ArmorDecryptContext? context = null)
     {
         ProviderOptions session = Session(options) ?? throw NotConfigured();
 
-        return ArmorWire.Request("decrypt", session, DecryptBody(src, context ?? new ArmorDecryptContext()));
+        return WithApproval(session, "decrypt", DecryptBody(src, context ?? new ArmorDecryptContext()), false)
+            .GetAwaiter().GetResult();
     }
 }

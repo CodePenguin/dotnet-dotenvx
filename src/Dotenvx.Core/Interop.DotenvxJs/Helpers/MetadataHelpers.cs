@@ -145,6 +145,36 @@ internal static class KeypairMetadata
         }
     }
 
+    /// <summary>
+    /// `keypairMetadata.file(envFile)`: only the descriptive file context of an upload (path, name, project). It must never prevent
+    /// storing a key, so any failure gives an empty object.
+    /// </summary>
+    public static Dictionary<string, object> File(string envFile = ".env")
+    {
+        try
+        {
+            var result = new Dictionary<string, object>();
+
+            void Add(string key, object? value)
+            {
+                if (value is not null && value as string != "")
+                {
+                    result[key] = value;
+                }
+            }
+
+            Add("filepath", NormalizeFilepath(envFile));
+            Add("filename", CanonicalEnvFilename(envFile));
+            Add("project_name", ProjectName());
+
+            return result;
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
     /// <summary>The metadata sent with a keypair (empty values are left out, like upstream's `compact`).</summary>
     public static Dictionary<string, object> Get(string envFile = ".env", string? metadata = null)
     {

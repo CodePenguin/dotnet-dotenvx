@@ -45,12 +45,42 @@ public sealed class SpinnerScope : IDisposable
         public void Stop() => scope.StopOnce();
     }
 
-    /// <summary>`onStatus`: `if (spinner && text) spinner.text = text`.</summary>
+    /// <summary>
+    /// helpers/statusReporter.js: the text goes to the spinner; without one (quiet, no terminal) it is written to stderr, because
+    /// approval instructions must stay visible when spinner output is disabled.
+    /// </summary>
     public Action<string> OnStatus => text =>
     {
-        if (_spinner is not null && !string.IsNullOrEmpty(text))
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        if (_spinner is not null)
         {
             _spinner.Text = text;
+        }
+        else
+        {
+            Stderr(text);
+        }
+    };
+
+    /// <summary>`if (spinner) spinner.text = text`: progress text that is shown only on a spinner (init and spec scanning).</summary>
+    public Action<string> OnText => text =>
+    {
+        if (_spinner is not null)
+        {
+            _spinner.Text = text;
+        }
+    };
+
+    /// <summary>`statusReporter(null)`: every status text on stderr.</summary>
+    public static Action<string> Stderr { get; } = text =>
+    {
+        if (!string.IsNullOrEmpty(text))
+        {
+            Console.Error.Write(text + "\n");
         }
     };
 

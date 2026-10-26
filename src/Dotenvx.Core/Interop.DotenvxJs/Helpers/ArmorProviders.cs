@@ -39,13 +39,22 @@ internal static class ArmorProviders
     {
         Session session = SessionFactory(logger);
         string? token = !string.IsNullOrEmpty(options.Token) ? options.Token : session.Token();
-        JsonNode json = new ArmorProvider(new ProviderOptions
+        var context = new ArmorDecryptContext(options.PublicKey, options.GrantToken);
+        // with a status reporter the approval is reported through it, else providers prints its own default message
+        ProviderOptions providerOptions = new()
         {
             Hostname = session.Hostname(),
             Token = token,
             DevicePublicKey = session.DevicePublicKey(),
-            CliVersion = PackageJson.Version
-        }).DecryptSync(src, new ArmorDecryptContext(options.PublicKey, options.GrantToken));
+            CliVersion = PackageJson.Version,
+            OnApprovalRequired = options.OnStatus is null
+                ? null
+                : request => options.OnStatus($"[{request.Code}] open [{request.ApprovalUri}] to approve. Waiting for approval…")
+        };
+        var provider = new ArmorProvider(providerOptions);
+        JsonNode json = options.OnStatus is null
+            ? provider.DecryptSync(src, context)
+            : provider.Decrypt(src, context).GetAwaiter().GetResult();
 
         return new DecryptorResult(json["src"]?.ToString() ?? "");
     }

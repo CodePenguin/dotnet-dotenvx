@@ -9,7 +9,7 @@ namespace Dotenvx.Interop.DotenvxJs.Helpers;
 internal record HttpResult(int StatusCode, string Body);
 
 /// <summary>A failed request; <see cref="Code" /> is Node's `error.code` (`ECONNREFUSED`, `ENOTFOUND`, `ERR_INVALID_URL`, ...).</summary>
-internal class HttpRequestFailedException(string code, string message) : Exception(message)
+internal class HttpRequestFailedException(string code, string message, Exception? cause = null) : Exception(message, cause)
 {
     public string Code { get; } = code;
 }
@@ -23,9 +23,15 @@ internal static class ArmorHttp
 {
     private static readonly HashSet<string> NetworkErrorCodes =
     [
-        "ECONNRESET", "ECONNREFUSED", "ENOTFOUND", "ENETDOWN", "ENETUNREACH", "EHOSTDOWN", "EHOSTUNREACH", "EPIPE",
-        "ETIMEDOUT", "UND_ERR_CONNECT_TIMEOUT", "UND_ERR_HEADERS_TIMEOUT", "UND_ERR_BODY_TIMEOUT", "UND_ERR_SOCKET"
+        "ARMOR_UNREACHABLE", "EAI_AGAIN", "EPERM", "EACCES", "ECONNRESET", "ECONNREFUSED", "ENOTFOUND", "ENETDOWN",
+        "ENETUNREACH", "EHOSTDOWN", "EHOSTUNREACH", "EPIPE", "ETIMEDOUT", "UND_ERR_CONNECT_TIMEOUT", "UND_ERR_HEADERS_TIMEOUT",
+        "UND_ERR_BODY_TIMEOUT", "UND_ERR_SOCKET"
     ];
+
+    /// <summary>The code of a request that was aborted by its own deadline (the AbortController of armorRequest.js).</summary>
+    public const string AbortedCode = "ABORT_ERR";
+
+    private static readonly AsyncLocal<TimeSpan?> Deadline = new();
 
     private static readonly Func<string, string, IReadOnlyDictionary<string, string>?, string?, HttpResult>
         DefaultRequest = Send;
@@ -42,11 +48,71 @@ internal static class ArmorHttp
         Request = DefaultRequest;
     }
 
+    /// <summary>
+    /// helpers/http.js `http(url, opts)`: the request, with a connectivity failure turned into
+    /// `[CODE] unable to connect to {origin}. Check your connection and that the server is running.` (code: the error's, else its
+    /// cause's, else NETWORK_ERROR). Every dotenvx call to the Armor service goes through it.
+    /// </summary>
+    public static HttpResult Http(string url, string method, IReadOnlyDictionary<string, string>? headers, string? body,
+        TimeSpan? timeout = null)
+    {
+        try
+        {
+            return timeout is { } deadline ? RequestWithin(deadline, url, method, headers, body) : Request(url, method, headers, body);
+        }
+        catch (Exception error) when (IsNetworkError(error))
+        {
+            string code = CodeOf(error) ?? CodeOf(error.InnerException) ?? "NETWORK_ERROR";
+            string origin = new Uri(url).GetLeftPart(UriPartial.Authority);
+
+            throw new HttpRequestFailedException(code,
+                $"[{code}] unable to connect to {origin}. Check your connection and that the server is running.", error);
+        }
+    }
+
+    private static string? CodeOf(Exception? error)
+    {
+        return error switch
+        {
+            HttpRequestFailedException failed => failed.Code,
+            Dotenvx.Providers.ProviderException provider => provider.Code,
+            DotenvxException dotenvx => dotenvx.Code,
+            _ => null
+        };
+    }
+
+    /// <summary>Runs a request with a deadline for the whole exchange, body included (armorRequest.js aborts after 30 seconds).</summary>
+    internal static HttpResult RequestWithin(TimeSpan deadline, string url, string method,
+        IReadOnlyDictionary<string, string>? headers, string? body)
+    {
+        Deadline.Value = deadline;
+        try
+        {
+            return Request(url, method, headers, body);
+        }
+        finally
+        {
+            Deadline.Value = null;
+        }
+    }
+
+    /// <summary>
+    /// isNetworkError.js of @dotenvx/providers: the error, or any error behind it (its cause, the errors of an aggregate),
+    /// carries a connectivity code.
+    /// </summary>
     public static bool IsNetworkError(Exception? error)
     {
-        // isNetworkError.js: `error.code` or `error.cause.code`
-        return (error is HttpRequestFailedException failed && NetworkErrorCodes.Contains(failed.Code)) ||
-               (error?.InnerException is HttpRequestFailedException cause && NetworkErrorCodes.Contains(cause.Code));
+        if (error is null)
+        {
+            return false;
+        }
+
+        string? code = CodeOf(error);
+
+        return (code is not null && NetworkErrorCodes.Contains(code)) ||
+               IsNetworkError(error.InnerException) ||
+               (error is ArmorUnreachableException unreachable && IsNetworkError(unreachable.Cause)) ||
+               (error is AggregateException aggregate && aggregate.InnerExceptions.Any(IsNetworkError));
     }
 
     private static HttpResult Send(string url, string method, IReadOnlyDictionary<string, string>? headers, string? body)
@@ -56,9 +122,10 @@ internal static class ArmorHttp
             throw new HttpRequestFailedException("ERR_INVALID_URL", "Invalid URL");
         }
 
+        TimeSpan? deadline = Deadline.Value;
         using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
         {
-            Timeout = TimeSpan.FromMinutes(5)
+            Timeout = deadline ?? TimeSpan.FromMinutes(5)
         };
         using var request = new HttpRequestMessage(new HttpMethod(method), uri);
 
@@ -110,7 +177,9 @@ internal static class ArmorHttp
         }
         catch (TaskCanceledException)
         {
-            throw new HttpRequestFailedException("UND_ERR_BODY_TIMEOUT", "Body Timeout Error");
+            throw deadline is not null
+                ? new HttpRequestFailedException(AbortedCode, "This operation was aborted")
+                : new HttpRequestFailedException("UND_ERR_BODY_TIMEOUT", "Body Timeout Error");
         }
     }
 

@@ -20,6 +20,12 @@ public static class Dotenvx
         return Main.Get(key, options);
     }
 
+    /// <summary>`getSync`: <see cref="Get" /> without anything interactive.</summary>
+    public static object? GetSync(string? key, GetOptions? options = null)
+    {
+        return Main.GetSync(key, options);
+    }
+
     public static IReadOnlyDictionary<string, string> Parse(string? src, ParseOptions? options = null)
     {
         return Main.Parse(src, options);

@@ -13,6 +13,18 @@ public sealed class ProviderChain(ProviderOptions? options = null) : IKeyProvide
 
     private readonly ProviderOptions _options = options ?? new ProviderOptions();
 
+    /// <summary>`isNetworkError(error)`: a transport failure, including nested causes and aggregate errors.</summary>
+    public static bool IsNetworkError(Exception? error)
+    {
+        return Dotenvx.Interop.DotenvxJs.Helpers.ArmorHttp.IsNetworkError(error);
+    }
+
+    /// <summary>`approvalRequired(info)`: the default approval message, written to stderr.</summary>
+    public static void ApprovalRequired(ApprovalRequest info)
+    {
+        ArmorProvider.ApprovalRequired(info);
+    }
+
     private IKeyProvider Create(string name)
     {
         return name switch

@@ -36,7 +36,7 @@ public static partial class Primitives
             return ring;
         }
 
-        foreach (string key in ring.Keys.ToList())
+        foreach (string key in JsKeyOrder(ring.Keys))
         {
             if (!string.IsNullOrEmpty(ring[key]))
             {
@@ -83,7 +83,7 @@ public static partial class Primitives
 
         if (provider is not null)
         {
-            foreach (string key in ring.Keys.ToList())
+            foreach (string key in JsKeyOrder(ring.Keys))
             {
                 if (!string.IsNullOrEmpty(ring[key]))
                 {
@@ -95,6 +95,18 @@ public static partial class Primitives
         }
 
         return ring;
+    }
+
+    /// <summary>
+    /// The order JavaScript lists an object's keys in: integer-like keys (canonical array indexes, so a key such as "0" or "1")
+    /// first in ascending order, then the others as they were added.
+    /// </summary>
+    private static List<string> JsKeyOrder(IEnumerable<string> keys)
+    {
+        List<string> all = [.. keys];
+        List<string> indexes = [.. all.Where(IsArrayIndex).OrderBy(key => uint.Parse(key))];
+
+        return [.. indexes, .. all.Where(key => !IsArrayIndex(key))];
     }
 
     private static void MergeProvided(Dictionary<string, string> ring, IDictionary<string, string>? found)

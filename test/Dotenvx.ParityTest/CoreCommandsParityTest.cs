@@ -154,6 +154,13 @@ public class CoreCommandsParityTest(NodeParityFixture fixture) : ParityTestBase(
 
         static object[] Case(Dictionary<string, string> files, Dictionary<string, string>? env, params string[] args) => [files, env!, args];
 
+        // commander's order of checks: a missing option value first, then required options, then unknown options; the root
+        // options are consumed after an unknown command too
+        yield return Case(plain, null, "primitives", "redact", "--secretz");
+        yield return Case(plain, null, "nosuch", "-l");
+        yield return Case(plain, null, "get", "-f");
+        yield return Case(plain, null, "get", "--nope", "-f");
+
         // run: command inference, separators and every logging/ignore/strict branch
         yield return Case(plain, null, "run");
         yield return Case(plain, null, "run", "--");

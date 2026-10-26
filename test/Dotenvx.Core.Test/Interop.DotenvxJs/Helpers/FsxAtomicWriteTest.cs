@@ -261,6 +261,44 @@ public class FsxAtomicWriteTest : IDisposable
         File.ReadAllText(P("target")).ShouldBe("UPDATED\n");
     }
 
+    /// <remarks>Not from a JS test - a key file reached through a relative link is written at the link's target, keeping the link and the 0600 mode (found by the r15 link sweep on Linux).</remarks>
+    [Fact]
+    public void WritesAKeyFileThroughARelativeLink()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(P("real"));
+        File.WriteAllText(P("real/.env.keys"), string.Empty);
+        File.CreateSymbolicLink(P(".env.keys"), "real/.env.keys");
+
+        Fsx.WriteKeyFile(P(".env.keys"), "KEY=1\n");
+
+        new FileInfo(P(".env.keys")).LinkTarget.ShouldBe("real/.env.keys");
+        File.ReadAllText(P("real/.env.keys")).ShouldBe("KEY=1\n");
+        File.GetUnixFileMode(P("real/.env.keys")).ShouldBe(UnixFileMode.UserRead | UnixFileMode.UserWrite);
+    }
+
+    /// <remarks>Not from a JS test - fs.realpath fails for a dangling link, so write-file-atomic replaces the link itself (found by the r15 link sweep on Linux).</remarks>
+    [Fact]
+    public void ReplacesADanglingLinkInsteadOfWritingThroughIt()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        File.CreateSymbolicLink(P("link"), P("missing/target"));
+
+        Fsx.WriteFileX(P("link"), "NEW\n");
+
+        new FileInfo(P("link")).LinkTarget.ShouldBeNull();
+        File.ReadAllText(P("link")).ShouldBe("NEW\n");
+        Directory.Exists(P("missing")).ShouldBeFalse();
+    }
+
     // write-file-atomic (the library behind fsx writeFileXSync) copies the existing file's uid/gid onto the replacement
 
     [Fact]

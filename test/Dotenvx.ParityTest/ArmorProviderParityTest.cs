@@ -293,6 +293,8 @@ public class ArmorProviderParityTest(NodeParityFixture fixture) : ArmorParityTes
             return;
         }
 
+        // since 2.38.0 the closing line names the new public key (random per run), so stderr cannot be compared byte for byte
+        CompareStderr = false;
         RedactFiles = true;
 
         Outcome outcome = await CompareWith(null, "", new Dictionary<string, string> { ["DOTENVX_NO_NATIVE"] = "true" }, "set", "A", "1");

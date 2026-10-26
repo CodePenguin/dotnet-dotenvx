@@ -269,7 +269,21 @@ internal static class Main
         return Get(key, options, null);
     }
 
+    /// <summary>
+    /// `getSync(key, options)`: the same as <see cref="Get(string?, GetOptions?)" /> without anything interactive (no prompt, no
+    /// Bitwarden unlock) and without an SDK event.
+    /// </summary>
+    public static object? GetSync(string? key, GetOptions? options = null)
+    {
+        return Get(key, options, null, false);
+    }
+
     internal static object? Get(string? key, GetOptions? options, EventRecorder? events)
+    {
+        return Get(key, options, events, true);
+    }
+
+    private static object? Get(string? key, GetOptions? options, EventRecorder? events, bool promptForSecrets)
     {
         options = WithLogger(options ?? new GetOptions());
         options = (GetOptions)NormalizeDotenvConfigConvention(options);
@@ -287,7 +301,7 @@ internal static class Main
         getService.NoBitwarden = options.NoBitwarden == true;
         getService.Profile = options.Profile;
         getService.ResolveDirectories = false;
-        getService.PromptForSecrets = true;
+        getService.PromptForSecrets = promptForSecrets;
         GetResult result = getService.Run();
 
         IReadOnlyDictionary<string, string> parsed = result.Parsed;
@@ -497,27 +511,8 @@ internal static class Main
             ["error_count"] = (long)result.ProcessedEnvs.Count(env => env.Error is not null)
         });
 
-        // main.js reads `remotePrivateKeyAdded` (the " · armored ⛨" suffix) but no transform ever sets it, so it can never apply
-        ProcessedSet? localKeyAddedEnv = result.ProcessedEnvs.FirstOrDefault(p => p.PrivateKeyAdded);
-
-        if (result.ChangedFilePaths.Length > 0)
-        {
-            string msg = encrypt
-                ? $"◈ encrypted {key} ({string.Join(',', result.ChangedFilePaths)})"
-                : $"◇ set {key} ({string.Join(',', result.ChangedFilePaths)})";
-            options?.Logger?.Success(msg);
-        }
-        else if (encrypt && localKeyAddedEnv != null)
-        {
-            string keyAddedEnvFilepath = !string.IsNullOrEmpty(localKeyAddedEnv.EnvFilePath)
-                ? localKeyAddedEnv.EnvFilePath
-                : result.ChangedFilePaths.FirstOrDefault() ?? ".env";
-            options?.Logger?.Success($"◈ encrypted {key} ({keyAddedEnvFilepath})");
-        }
-        else if (result.UnchangedFilePaths.Length > 0)
-        {
-            options?.Logger?.Info($"○ no change ({string.Join(',', result.UnchangedFilePaths)})");
-        }
+        LogSetSummary.Log(options?.Logger, key, encrypt, result.ProcessedEnvs, result.ChangedFilePaths,
+            result.UnchangedFilePaths);
 
         return result;
     }

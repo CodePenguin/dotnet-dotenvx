@@ -1146,7 +1146,10 @@ for (let n = 0; n < 250; n++) {
 // Differences that may only be in the stderr text: the operating system's own wording (EISDIR/ENOENT in Node, the .NET message here)
 const ACCEPTED_STDERR_ONLY = [/^r16 self signal SIGUSR1$/, // Node opens its inspector on SIGUSR1: both runs race for port 9229
   /^r20 seq /, // the lock passphrase prompt redraws differently (accepted difference #3)
-  /^r20 ext precommit .*--install/, // the hook path outside a repository: ENOENT in Node, the .NET wording inside the same dotenvx message
+  /^r20 ext precommit .*--(install|uninstall)/, // the hook path outside a repository: ENOENT in Node, the .NET wording inside the same dotenvx message
+  /^r16 many keys broken run /, // the EPIPE on the exit-code flush is an uncaught error in both: only the stack trace text differs
+  /^r11 .* encrypt --profile=x --stdout/, // "Profile selection requires an Envfile" is an uncaught error in both: only the stack trace text differs
+  /^opt plain spec --file(=| )v/, // a missing file: ENOENT in Node, the .NET wording here
   /^r18 DOTENV(_CONFIG)?_CONVENTION=/, // an invalid convention is an uncaught error in both: only the stack trace text differs
   /^r17 .* (bogus|next|NEXTJS) env/, // an invalid convention is an uncaught error in both: only the stack trace text differs
   /^r15 link link loop/, // ELOOP in Node, the system message here
@@ -1214,7 +1217,7 @@ const installedFakes = new Map()
 const cleanupAtExit = dir => process.on("exit", () => { try { fs.rmSync(dir, { recursive: true, force: true }) } catch (e) { /* best effort */ } })
 const publishFake = name => {
   if (publishedFakes.has(name)) return publishedFakes.get(name)
-  const out = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-fake-' + name + '-'))
+  const out = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'sweep-fake-' + name + '-'))
   execFileSync('dotnet', ['publish', path.join(ROOT, 'test', 'fakes', name + '.cs'), '-o', out], { stdio: 'ignore' })
   cleanupAtExit(out)
   publishedFakes.set(name, out)
@@ -1225,7 +1228,7 @@ const installFake = (name, tools) => {
   if (installedFakes.has(key)) return installedFakes.get(key)
   const published = publishFake(name)
   const suffix = process.platform === 'win32' ? '.exe' : ''
-  const bin = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-bin-'))
+  const bin = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'sweep-bin-'))
   for (const f of fs.readdirSync(published)) {
     if (f === name + suffix) { for (const tool of tools) fs.copyFileSync(path.join(published, f), path.join(bin, tool + suffix)) }
     else fs.copyFileSync(path.join(published, f), path.join(bin, f))
@@ -1237,7 +1240,11 @@ const installFake = (name, tools) => {
 
 function runOne (cliArgs, sc, isNode) {
   return new Promise(resolve => {
-    const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'sweep-'))
+    // (realpathSync.native, not realpathSync: it expands Windows 8.3 short names such as RUNNER~1 on the CI runner, the form the CLIs print)
+    // a private parent per run: scenarios that point at '..' must not share it with other scenarios or with the other CLI
+    const parent = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), 'sweep-'))
+    const dir = path.join(parent, 'work')
+    fs.mkdirSync(dir)
     for (const [f, c] of Object.entries(fixtures[sc.fx])) {
       fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true })
       fs.writeFileSync(path.join(dir, f), c)
@@ -1250,7 +1257,7 @@ function runOne (cliArgs, sc, isNode) {
     }
     let fakeVault = null
     if (sc.env.FAKECLI_SEED !== undefined) {
-      fakeVault = path.join(fs.realpathSync(os.tmpdir()), 'sweep-fc-' + path.basename(dir))
+      fakeVault = path.join(fs.realpathSync.native(os.tmpdir()), 'sweep-fc-' + path.basename(parent))
       for (const [rel, content] of Object.entries(JSON.parse(sc.env.FAKECLI_SEED))) { fs.mkdirSync(path.dirname(path.join(fakeVault, rel)), { recursive: true }); fs.writeFileSync(path.join(fakeVault, rel), content) }
       fs.mkdirSync(fakeVault, { recursive: true })
       const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
@@ -1261,7 +1268,7 @@ function runOne (cliArgs, sc, isNode) {
     if (Object.keys(sc.env).some(k => k.startsWith('FAKEGL_'))) {
       const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'
       env[pathKey] = installFake('gitleaks', ['gitleaks']) + path.delimiter + (env[pathKey] || '')
-      env.FAKEGL_LOG = path.join(fs.realpathSync(os.tmpdir()), 'sweep-gl-' + path.basename(dir) + '.log')
+      env.FAKEGL_LOG = path.join(fs.realpathSync.native(os.tmpdir()), 'sweep-gl-' + path.basename(parent) + '.log')
     }
     // hermetic Armor/device config: a per-run directory unless the scenario names one
     env.DOTENVX_CONFIG = (sc.env.DOTENVX_CONFIG || '<DIR>/.dxcfg').split('<DIR>').join(dir)
@@ -1283,7 +1290,7 @@ function runOne (cliArgs, sc, isNode) {
         fs.rmSync(fakeVault, { recursive: true, force: true })
       }
       if (env.FAKEGL_LOG && fs.existsSync(env.FAKEGL_LOG)) { files['<gitleaks calls>'] = fs.readFileSync(env.FAKEGL_LOG, 'utf8'); fs.rmSync(env.FAKEGL_LOG, { force: true }) }
-      try { fs.rmSync(dir, { recursive: true, force: true, maxRetries: 3 }) } catch (e2) { /* best effort */ }
+      try { fs.rmSync(parent, { recursive: true, force: true, maxRetries: 3 }) } catch (e2) { /* best effort */ }
       resolve({ code, stdout: normalize(stdout, dir), stderr: normalize(stderr, dir), files })
     }
     const runStep = index => {
@@ -1311,12 +1318,12 @@ function runOne (cliArgs, sc, isNode) {
       // the node binary itself consumes --env-file ("node: v: not found") wherever it appears in argv: spell it -f for node only
       if (nodeCli) args = args.flatMap(a => a === '--env-file' ? ['-f'] : a.startsWith('--env-file=') ? ['-f', a.slice(11)] : [a])
       const exe = nodeCli ? 'node' : 'dotnet'
-      const child = execFile(exe, [...(nodeCli ? NODE_CLI : DOTNET_CLI), ...args], { cwd: dir, env, encoding: 'utf8', timeout: 60000, maxBuffer: 64 * 1024 * 1024 }, (err, out, errOut) => {
+      const child = execFile(exe, [...(nodeCli ? NODE_CLI : DOTNET_CLI), ...args], { cwd: dir, env, encoding: 'utf8', timeout: 240000, maxBuffer: 64 * 1024 * 1024 }, (err, out, errOut) => {
         if (steps.length > 1) { stdout += `--- step ${index} exit ${err ? (err.code ?? 1) : 0}
 `; stderr += `--- step ${index}
 ` }
         stdout += out
-        stderr += errOut
+        stderr += errOut + (err && err.killed ? '[sweep: killed after timeout]' : '')
         code = err ? (err.code ?? 1) : 0
         runStep(index + 1)
       })
@@ -1330,31 +1337,51 @@ function runOne (cliArgs, sc, isNode) {
   })
 }
 
+// both CLIs on the same scenario; the fields that differ (empty when they match)
+async function compareOne (sc) {
+  const [n, d] = await Promise.all([runOne(null, sc, true), runOne(null, sc, false)])
+  const fields = []
+  if (n.code !== d.code) fields.push('exit')
+  if (n.stdout !== d.stdout) fields.push('stdout')
+  if (n.stderr !== d.stderr) fields.push('stderr')
+  if (JSON.stringify(n.files) !== JSON.stringify(d.files)) fields.push('files')
+  return { sc, fields, n, d }
+}
+
 async function main () {
   const only = process.argv[2]
   // SWEEP_EVERY=N runs every Nth scenario (a fast, repeatable sample for pull requests); the full sweep runs without it
   const every = Math.max(1, Number(process.env.SWEEP_EVERY) || 1)
   // macOS keeps keys through /usr/bin/security, an absolute path no fake on PATH can replace: scenarios that run `native` stay off the real keychain
   const usesNative = s => (s.steps || [{ args: s.args }]).some(step => step.args && step.args[0] === 'native' && s.env.FAKECLI_SEED !== undefined)
-  const list = scenarios.filter(s => !only || s.name.includes(only)).filter(s => !(process.platform === 'darwin' && usesNative(s))).filter((_, index) => index % every === 0)
+  const sampled = scenarios.filter(s => !only || s.name.includes(only)).filter(s => !(process.platform === 'darwin' && usesNative(s))).filter((_, index) => index % every === 0)
+  // SWEEP_SHARD=i/n runs every n-th scenario starting at the i-th (1-based), so n machines can split one sweep and each gets a mix of the
+  // slow and the fast scenarios
+  const shard = /^(\d+)\/(\d+)$/.exec(process.env.SWEEP_SHARD || '1/1')
+  if (!shard || Number(shard[1]) < 1 || Number(shard[1]) > Number(shard[2])) throw new Error('SWEEP_SHARD must be i/n with 1 <= i <= n, for example 2/4')
+  const list = sampled.filter((_, index) => index % Number(shard[2]) === Number(shard[1]) - 1)
   const diffs = []
   let i = 0
   const worker = async () => {
     while (i < list.length) {
       const sc = list[i++]
-      const [n, d] = await Promise.all([runOne(null, sc, true), runOne(null, sc, false)])
-      const fields = []
-      if (n.code !== d.code) fields.push('exit')
-      if (n.stdout !== d.stdout) fields.push('stdout')
-      if (n.stderr !== d.stderr) fields.push('stderr')
-      if (JSON.stringify(n.files) !== JSON.stringify(d.files)) fields.push('files')
-      if (fields.length) diffs.push({ sc, fields, n, d })
+      const result = await compareOne(sc)
+      if (result.fields.length) diffs.push(result)
     }
   }
   await Promise.all(Array.from({ length: 6 }, worker))
   const unexpected = diffs.filter(d => !ACCEPTED.some(a => a.test(d.sc.name)) && !(ACCEPTED_STDERR_ONLY.some(a => a.test(d.sc.name)) && d.fields.every(f => f === 'stderr')))
+  // six scenarios run at once, and Node can time out under that load: a difference is reported only if it reproduces when the scenario runs alone
+  const reproduced = []
+  const flaky = []
+  for (const x of unexpected) {
+    const again = unexpected.length > 200 ? x : await compareOne(x.sc) // hundreds of differences are systemic, not load: skip the re-runs
+    if (again.fields.length) reproduced.push(again)
+    else flaky.push(x.sc.name)
+  }
+  if (flaky.length) console.log(`${flaky.length} difference(s) did not reproduce when re-run alone (load flukes): ${flaky.join(', ')}`)
   diffs.length = 0
-  diffs.push(...unexpected)
+  diffs.push(...reproduced)
   diffs.sort((a, b) => a.sc.name.localeCompare(b.sc.name))
   const lines = []
   for (const x of diffs) {
@@ -1367,8 +1394,8 @@ async function main () {
           let p = 0
           while (p < (fa || '').length && fa[p] === (fb || '')[p]) p++
           const from = Math.max(0, p - 60)
-          lines.push(`  node file ${name}: ${fa === undefined ? '(absent)' : fa.slice(from, from + 240)}`)
-          lines.push(`  dotn file ${name}: ${fb === undefined ? '(absent)' : fb.slice(from, from + 240)}`)
+          lines.push(`  node file ${name}: ${fa === undefined ? '(absent)' : fa.slice(from, from + (process.env.SWEEP_FULL ? 100000 : 240))}`)
+          lines.push(`  dotn file ${name}: ${fb === undefined ? '(absent)' : fb.slice(from, from + (process.env.SWEEP_FULL ? 100000 : 240))}`)
         }
       } else if (f === 'exit') lines.push(`  exit node=${x.n.code} dotnet=${x.d.code}`)
       else { const [a, b] = [JSON.stringify(x.n[f]), JSON.stringify(x.d[f])]; let p = 0; while (p < a.length && a[p] === b[p]) p++; const from = Math.max(0, Math.min(p - 40, p)); lines.push(`  ${f} node=${a.slice(from, from + 300)}`); lines.push(`  ${f} dotn=${b.slice(from, from + 300)}`) } // the window starts just before the first difference

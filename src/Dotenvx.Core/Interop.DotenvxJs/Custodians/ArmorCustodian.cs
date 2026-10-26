@@ -49,10 +49,11 @@ internal sealed class ArmorCustodian : ICustodian
         string hostname = session.Hostname();
         string? token = !string.IsNullOrEmpty(context.Token) ? context.Token : session.Token();
         string devicePublicKey = session.DevicePublicKey();
+        Dictionary<string, object> metadata = KeypairMetadata.File(context.EnvFilepath ?? ".env");
 
         try
         {
-            ArmorApi.ArmorUp(hostname, token, devicePublicKey, publicKey, privateKey, null);
+            ArmorApi.ArmorUp(hostname, token, devicePublicKey, publicKey, privateKey, null, metadata: metadata);
         }
         catch (Exception error) when (ArmorTeam.IsTeamRequiredError(error))
         {
@@ -71,7 +72,7 @@ internal sealed class ArmorCustodian : ICustodian
                 throw new KeyCustodyBackException();
             }
 
-            ArmorApi.ArmorUp(hostname, token, devicePublicKey, publicKey, privateKey, team);
+            ArmorApi.ArmorUp(hostname, token, devicePublicKey, publicKey, privateKey, team, metadata: metadata);
         }
 
         return new StoreResult();

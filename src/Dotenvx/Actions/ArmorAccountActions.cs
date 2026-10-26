@@ -186,7 +186,7 @@ public class CurlAction : Command
             }
 
             logger.Debug($"request [{method} {url}]");
-            HttpResult response = ArmorHttp.Request(url, method, headers, body);
+            HttpResult response = ArmorHttp.Http(url, method, headers, body);
             Console.Out.WriteLine(OutputBody(response.Body));
 
             return response.StatusCode >= 400 ? 1 : 0;

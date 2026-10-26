@@ -9,7 +9,7 @@
         <Description>Look up dotenvx private keys in .env.keys, the OS secret store, Dotenvx Armor, 1Password and Bitwarden, ported from the @dotenvx/providers npm package and matching it at the same version.</Description>
         <!-- Tracks the exact @dotenvx/providers npm package version this is ported from (see
              dotenvx/node_modules/@dotenvx/providers/package.json) - bump in lockstep with that package's own version. -->
-        <Version>0.3.5.1</Version>
+        <Version>0.3.11</Version>
     </PropertyGroup>
 
     <ItemGroup>
