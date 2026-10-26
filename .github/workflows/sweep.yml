@@ -2,7 +2,8 @@ name: sweep
 
 # The differential sweep (~15,000 scenarios, 1.5 to 2 hours per OS on the hosted runners) against the real Node CLI.
 # - Pushes to retarget-* branches and pull requests to main run a repeatable sample (every 25th scenario, a few minutes per OS).
-# - The full sweep is started by hand from the Actions tab (leave "every" at 1) and is always run before a release is published.
+# - The full sweep is started by hand from the Actions tab (leave "every" at 1) and is always run before a release is published. It is
+#   split into 4 consecutive groups of scenarios (SWEEP_SHARD=i/4) that run at the same time, so each OS takes a quarter of the time.
 # It is deliberately not part of ci.yml, which runs just the build and the tests.
 on:
   push:
@@ -22,6 +23,7 @@ jobs:
       fail-fast: false # one OS failing must not hide the others
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        shard: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.every == '1' && '[1,2,3,4]' || '[1]') }}
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 300
@@ -47,6 +49,7 @@ jobs:
       run: npm install
     - name: Parity sweep
       env:
+        SWEEP_SHARD: ${{ matrix.shard }}/${{ github.event_name == 'workflow_dispatch' && inputs.every == '1' && '4' || '1' }}
         SWEEP_EVERY: ${{ github.event_name == 'workflow_dispatch' && inputs.every || '25' }}
       run: node scripts/parity-sweep.js
     - name: Differences
