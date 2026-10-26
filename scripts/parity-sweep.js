@@ -1355,11 +1355,11 @@ async function main () {
   // macOS keeps keys through /usr/bin/security, an absolute path no fake on PATH can replace: scenarios that run `native` stay off the real keychain
   const usesNative = s => (s.steps || [{ args: s.args }]).some(step => step.args && step.args[0] === 'native' && s.env.FAKECLI_SEED !== undefined)
   const sampled = scenarios.filter(s => !only || s.name.includes(only)).filter(s => !(process.platform === 'darwin' && usesNative(s))).filter((_, index) => index % every === 0)
-  // SWEEP_SHARD=i/n runs the i-th (1-based) of n consecutive groups of the scenarios, so n machines can split one sweep
+  // SWEEP_SHARD=i/n runs every n-th scenario starting at the i-th (1-based), so n machines can split one sweep and each gets a mix of the
+  // slow and the fast scenarios
   const shard = /^(\d+)\/(\d+)$/.exec(process.env.SWEEP_SHARD || '1/1')
   if (!shard || Number(shard[1]) < 1 || Number(shard[1]) > Number(shard[2])) throw new Error('SWEEP_SHARD must be i/n with 1 <= i <= n, for example 2/4')
-  const size = Math.ceil(sampled.length / Number(shard[2]))
-  const list = sampled.slice((Number(shard[1]) - 1) * size, Number(shard[1]) * size)
+  const list = sampled.filter((_, index) => index % Number(shard[2]) === Number(shard[1]) - 1)
   const diffs = []
   let i = 0
   const worker = async () => {
