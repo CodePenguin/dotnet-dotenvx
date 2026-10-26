@@ -169,6 +169,7 @@ Packages are published by the `publish` workflow with nuget.org Trusted Publishi
 2. The maintainer pushes the version tag (`v2.38.2`, `v2.38.2.1`, `v2.38.2-rc.1`). The tag, minus the `v`, must equal `<Version>` in `src/Dotenvx/Dotenvx.csproj`, or the workflow stops.
 3. The workflow builds, checks the format, runs the unit tests and packs. The `publish` job then waits for the maintainer to approve the `nuget` environment.
 4. After approval, `NuGet/login` exchanges the job's GitHub OIDC token for a short-lived API key that the trust policy on nuget.org allows only for this repository, `publish.yml` and the `nuget` environment. `dotnet nuget push --skip-duplicate` publishes the five packages; versions that are already on nuget.org (an unchanged Primitives or Providers version) are skipped.
+5. The last step creates the GitHub release for the tag with generated notes (a pre-release for tags like `-rc.1`), unless a release for the tag already exists. Replace the generated notes with the package table and highlights, as in earlier releases.
 
 One-time setup: a Trusted Publishing policy on nuget.org for each of the five packages (owner `CodePenguin`, repository `dotnet-dotenvx`, workflow `publish.yml`, environment `nuget`); a GitHub environment named `nuget` with the maintainer as required reviewer; and a `NUGET_USER` variable on that environment holding the nuget.org profile name.
 
@@ -226,7 +227,8 @@ Goal: retarget, run the suites, and let the failures plus a few diffs say exactl
 ## Line endings and formatting
 
 - The repo is LF everywhere (`.gitattributes`: `* text=auto eol=lf`), except `*.sln` (CRLF). C# raw and verbatim strings keep the file's newlines, so LF keeps test expectations identical on every OS.
-- The `dotenvx/` submodule is outside our `.gitattributes`: run `git -C dotenvx config core.autocrlf false` before checking it out on Windows. `FixtureLineEndingsTest` fails if a fixture (other than `.env.crlf`, `.env.latin1`, `.env.utf16le`) contains ``.
+- The `dotenvx/` submodule is outside our `.gitattributes`: run `git -C dotenvx config core.autocrlf false` before checking it out on Windows. `FixtureLineEndingsTest` fails if a fixture (other than `.env.crlf`, `.env.latin1`, `.env.utf16le`) contains `
+`.
 - Run `dotnet format` before committing; CI runs `dotnet format --verify-no-changes`.
 
 ## Source encoding cautions

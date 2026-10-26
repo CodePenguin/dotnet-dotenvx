@@ -64,6 +64,7 @@ jobs:
     environment: nuget # configure required reviewers on this environment: the maintainer's approval is what releases the packages
     permissions:
       id-token: write # the OIDC token that NuGet/login exchanges for a temporary API key
+      contents: write # creates the GitHub release
     steps:
     - name: Download packages
       uses: actions/download-artifact@v8
@@ -82,3 +83,15 @@ jobs:
     - name: Push packages
       # --skip-duplicate: a package version that is already published (an unchanged Primitives or Providers version) is left alone
       run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+    - name: Create the GitHub release
+      # a release that already exists (written by hand) is left alone; edit the generated notes afterwards
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+          echo "Release $GITHUB_REF_NAME already exists."
+        else
+          prerelease=""
+          case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag $prerelease
+        fi
