@@ -1,0 +1,84 @@
+name: publish
+
+# Publishes the NuGet packages with nuget.org Trusted Publishing: no API key is stored in this repository. The job asks GitHub for a
+# short-lived OIDC token and NuGet/login exchanges it for a temporary API key that the trust policy on nuget.org allows for this
+# repository, this workflow file and the "nuget" environment.
+#
+# It starts when the maintainer pushes a version tag (v2.38.2, v2.38.2.1, v2.38.2-rc.1), and only after the maintainer approves the
+# "nuget" environment (a required reviewer). Tag only when the version's work is done (CONTRIBUTING, "Version bump checklist"),
+# which includes a green full sweep and full parity run on every OS right before publishing.
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Keep LF line endings
+      run: git config --global core.autocrlf false
+    - uses: actions/checkout@v7
+      with:
+        submodules: true
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: 10.0.x
+    - name: The tag must name the Dotenvx tool version
+      shell: bash
+      run: |
+        tag="${GITHUB_REF_NAME#v}"
+        version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/Dotenvx/Dotenvx.csproj | head -n 1)"
+        if [ "$tag" != "$version" ]; then
+          echo "::error::The tag $GITHUB_REF_NAME does not match <Version>$version</Version> in src/Dotenvx/Dotenvx.csproj"
+          exit 1
+        fi
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore -c Release
+    - name: Verify formatting
+      run: dotnet format --no-restore --verify-no-changes
+    - name: Test
+      run: dotnet test --no-build -c Release --verbosity normal --filter "FullyQualifiedName!~Dotenvx.ParityTest"
+    - name: Pack NuGet packages
+      run: |
+        dotnet pack src/Dotenvx -c Release --no-build -o artifacts
+        dotnet pack src/Dotenvx.Primitives -c Release --no-build -o artifacts
+        dotnet pack src/Dotenvx.Providers -c Release --no-build -o artifacts
+        dotnet pack src/Dotenvx.Core -c Release --no-build -o artifacts
+        dotnet pack src/Dotenvx.Configuration -c Release --no-build -o artifacts
+    - name: Upload packages
+      uses: actions/upload-artifact@v7
+      with:
+        name: nuget-packages
+        path: artifacts/*
+        if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: nuget # configure required reviewers on this environment: the maintainer's approval is what releases the packages
+    permissions:
+      id-token: write # the OIDC token that NuGet/login exchanges for a temporary API key
+    steps:
+    - name: Download packages
+      uses: actions/download-artifact@v8
+      with:
+        name: nuget-packages
+        path: artifacts
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: 10.0.x
+    - name: Log in to nuget.org
+      id: login
+      uses: NuGet/login@v1
+      with:
+        user: ${{ vars.NUGET_USER }} # the nuget.org profile name (not a secret): set it as a variable on the "nuget" environment
+    - name: Push packages
+      # --skip-duplicate: a package version that is already published (an unchanged Primitives or Providers version) is left alone
+      run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate

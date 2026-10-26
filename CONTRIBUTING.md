@@ -161,6 +161,17 @@ Upstream ships very fast (11 to 17 npm releases a month, 45 in July 2026), and m
 5. **Versions track upstream.** The .NET version equals the upstream version; our own fixes against the same upstream version use the fourth number (next section). `@dotenvx/primitives` and `@dotenvx/providers` follow their own npm versions.
 6. **Tag and publish only when the version's work is done.** Never create or move a tag, or publish packages, before the maintainer says so.
 
+### How packages are published
+
+Packages are published by the `publish` workflow with nuget.org Trusted Publishing, so no API key is stored in the repository:
+
+1. Run the full sweep and the full parity run on every OS against the commit to release (the `sweep` workflow with "every" at 1, and `ci` with `full-parity`).
+2. The maintainer pushes the version tag (`v2.38.2`, `v2.38.2.1`, `v2.38.2-rc.1`). The tag, minus the `v`, must equal `<Version>` in `src/Dotenvx/Dotenvx.csproj`, or the workflow stops.
+3. The workflow builds, checks the format, runs the unit tests and packs. The `publish` job then waits for the maintainer to approve the `nuget` environment.
+4. After approval, `NuGet/login` exchanges the job's GitHub OIDC token for a short-lived API key that the trust policy on nuget.org allows only for this repository, `publish.yml` and the `nuget` environment. `dotnet nuget push --skip-duplicate` publishes the five packages; versions that are already on nuget.org (an unchanged Primitives or Providers version) are skipped.
+
+One-time setup: a Trusted Publishing policy on nuget.org for each of the five packages (owner `CodePenguin`, repository `dotnet-dotenvx`, workflow `publish.yml`, environment `nuget`); a GitHub environment named `nuget` with the maintainer as required reviewer; and a `NUGET_USER` variable on that environment holding the nuget.org profile name.
+
 ## Releasing a fix for the same upstream version
 
 Package versions track the upstream release (`2.35.0`), and nuget.org never lets a published version be replaced. A bug fixed in our port of a version that is already published ships as a four-part version:
